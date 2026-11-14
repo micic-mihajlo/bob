@@ -1,5 +1,6 @@
 import { liveAsks } from "./asks";
 import { brainKind } from "./brain";
+import { linearStatus } from "./integrations/linear/config";
 import { openAsk, openFollowUp, openInboxQuestion } from "./brain/intake";
 import { policyFor } from "./policy";
 import { releaseNotesOf } from "./release-notes";
@@ -101,5 +102,6 @@ export function buildSnapshot(s: State): Snapshot {
     live: s.live ?? {},
     inbox: s.inbox ?? [],
     answering: answeringOf(s),
+    linear: linearStatus(),
   };
 }

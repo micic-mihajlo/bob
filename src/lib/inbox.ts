@@ -7,7 +7,7 @@ import { getState, transact, update } from "./store";
 import { isPullRequest, requestAsk, type PullRequestArtifact } from "./threads";
 import { done, fail, type ToolContext, type ToolOutput } from "./tools/context";
 import { drain } from "./turns";
-import type { InboxCandidate, InboxItem, InboxKind, RequestId, WorkOrder } from "./types";
+import type { InboxCandidate, InboxItem, InboxKind, LinearIssueRef, RequestId, WorkOrder } from "./types";
 
 export const INBOX_KINDS = ["meeting", "feedback", "error"] as const;
 
@@ -103,7 +103,7 @@ function framed(s: State, item: InboxItem): string {
 }
 
 /** Stores raw material and wakes the captain with a triage turn. An error about a shipped change is linked to that pull request, and an error it had resolved reopens. */
-export function addInboxItem(input: { kind: InboxKind; source: string; text: string }): { ok: true; inboxId: string } | { ok: false; error: string } {
+export function addInboxItem(input: { kind: InboxKind; source: string; text: string; linear?: LinearIssueRef }): { ok: true; inboxId: string } | { ok: false; error: string } {
   const s = getState();
   const captain = captainOf(s);
   if (!captain) return { ok: false, error: "There is no captain to triage it." };
@@ -120,6 +120,7 @@ export function addInboxItem(input: { kind: InboxKind; source: string; text: str
     status: "new",
     candidates: [],
     ...(shipped ? { followUpOf: { pullRequestId: shipped.id, number: shipped.pullRequest.number } } : {}),
+    ...(input.linear ? { linear: input.linear } : {}),
   };
   const sent = send({ from: { kind: "user" }, to: [captain.id], text: framed(s, { ...draft, messageId: "" }), expectsReply: false, replyTo: null, causedBy: null, requestId: newId("req"), inboxId: id });
   if (!sent.ok) return { ok: false, error: sent.error.message };

@@ -25,7 +25,7 @@ export function traceWhy(s: State, messageId: MessageId): WhyHop[] {
       fromName: senderName(s, message),
       toNames: message.to.map((id) => agentName(s, id)),
       ...(question ? { question } : {}),
-      ...(item ? { source: { inboxId: item.id, kind: item.kind, label: item.source, quote } } : {}),
+      ...(item ? { source: { inboxId: item.id, kind: item.kind, label: item.source, quote, ...(item.linear ? { linear: { identifier: item.linear.identifier, title: item.linear.title, url: item.linear.url } } : {}) } } : {}),
     });
     cursor = message.causedBy ?? message.continues ?? null;
   }
