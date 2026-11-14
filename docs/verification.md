@@ -31,3 +31,7 @@ Every pull request that changes source code passes a verification gate before th
 - `request_approval` and `merge_pull_request` refuse a pull request with source changes until tiers 1 to 3 pass on its head.
 - The gate needs the project's dependencies (vitest and fast-check), so it is off when Bob does not install them (`installDeps`, off under Bob's own tests) or with `BOB_VERIFY=off`.
 
+
+## The scripted demo
+
+On the invoices sample, the scripted build thread writes its contract, its properties and a Lean model, and runs `verify_change` before it opens the pull request. Its first properties leave one mutant alive (`dueDate <= today` for overdue invoices, dropped quote escaping for the CSV export); the thread adds the property that kills it and runs the gate again. Each verification takes about four seconds on this machine; the Lean build about one.

@@ -1,5 +1,7 @@
 import { slugify } from "../ids";
+import { TEMPLATE_FILES } from "../workspace/template/files";
 import { summarize } from "./script-plan";
+import { CSV_VERIFICATION, OVERDUE_VERIFICATION, type ScriptedVerification } from "./script-verify";
 
 /**
  * What the scripted crew builds for a request, picked by the first matching row. The last row matches
@@ -19,6 +21,8 @@ export interface ScriptedChange {
    * ending in a question mark, and what it assumes when no answer comes.
    */
   intake: (request: string) => Record<IntentPart, { ask: string; assume: string }>;
+  /** What the build writes for verify_change after its tests pass, when the change touches source code. */
+  verification?: ScriptedVerification;
 }
 
 export type IntentPart = "user" | "scope" | "acceptance";
@@ -27,14 +31,14 @@ const CSV_MODULE = `import type { Invoice } from "./invoices";
 
 const HEADER = ["id", "customer", "amount", "status", "dueDate"];
 
-function cell(value: string): string {
+export function csvCell(value: string): string {
   return /[",\\n]/.test(value) ? \`"\${value.replace(/"/g, '""')}"\` : value;
 }
 
 /** One header row, then one row per invoice, amounts in dollars with two decimals. */
 export function invoicesToCsv(list: readonly Invoice[]): string {
   const rows = list.map((i) => [i.id, i.customer, (i.amountCents / 100).toFixed(2), i.status, i.dueDate]);
-  return [HEADER, ...rows].map((row) => row.map(cell).join(",")).join("\\n");
+  return [HEADER, ...rows].map((row) => row.map(csvCell).join(",")).join("\\n");
 }
 `;
 
@@ -50,6 +54,33 @@ describe("invoicesToCsv", () => {
   it("quotes a customer name that holds a comma", () => {
     const csv = invoicesToCsv([{ id: "INV-2", customer: "Smith, Jones", amountCents: 1, status: "draft", dueDate: "2026-12-02" }]);
     expect(csv.split("\\n")[1]).toBe('INV-2,"Smith, Jones",0.01,draft,2026-12-02');
+  });
+});
+`;
+
+const OVERDUE_FUNCTION = `
+/** The sent invoices whose due date is before today, oldest due date first. */
+export function overdueInvoices(list: readonly Invoice[], today: string): Invoice[] {
+  return list.filter((invoice) => invoice.status === "sent" && invoice.dueDate < today).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+}
+`;
+
+const invoicesWithOverdue = () => (TEMPLATE_FILES.find((f) => f.path === "src/invoices.ts")?.content ?? "") + OVERDUE_FUNCTION;
+
+const OVERDUE_TEST = `import { describe, expect, it } from "vitest";
+import { overdueInvoices, type Invoice } from "../invoices";
+
+const base = { customer: "Customer A", amountCents: 1000, issuedDate: "2026-10-01" };
+
+describe("overdueInvoices", () => {
+  it("returns the sent invoices due before today, oldest due date first", () => {
+    const list: Invoice[] = [
+      { ...base, id: "INV-1", status: "sent", dueDate: "2026-11-01" },
+      { ...base, id: "INV-2", status: "paid", dueDate: "2026-10-15" },
+      { ...base, id: "INV-3", status: "sent", dueDate: "2026-12-01" },
+      { ...base, id: "INV-4", status: "sent", dueDate: "2026-10-20" },
+    ];
+    expect(overdueInvoices(list, "2026-11-14").map((i) => i.id)).toEqual(["INV-4", "INV-1"]);
   });
 });
 `;
@@ -70,6 +101,37 @@ describe("the request note", () => {
 const noteFor = (request: string) => `# Request\n\n${request.trim()}\n\nThis note records the request so the next change can start from it.\n`;
 
 export const SCRIPTED_CHANGES: readonly ScriptedChange[] = [
+  {
+    match: /\boverdueInvoices\b|\boverdue invoices\b/i,
+    workTitle: () => "List overdue invoices",
+    files: () => [{ path: "src/invoices.ts", content: invoicesWithOverdue() }],
+    acceptance: () => OVERDUE_TEST,
+    commit: "Add overdueInvoices",
+    pullRequest: {
+      title: "List overdue invoices",
+      body: "Adds overdueInvoices(list, today) in src/invoices.ts: the sent invoices whose due date is before today, oldest due date first. The acceptance test covers an overdue, a paid and a not-yet-due invoice. verify/ holds the contract, its fast-check properties and a Lean model of the rule.",
+    },
+    finding: {
+      path: "src/invoices.ts",
+      line: null,
+      category: "tests",
+      severity: "low",
+      confidence: 0.7,
+      comment: "The page summary does not show the overdue count yet; a follow-up work order can add it.",
+    },
+    intake: () => ({
+      user: { ask: "Who reads the overdue list: you, or your finance team?", assume: "The finance team" },
+      scope: {
+        ask: "I'd count an invoice as overdue when it was sent and its due date is before today, oldest first. Is that the rule?",
+        assume: "Sent invoices whose due date is before today, oldest due date first; drafts and paid invoices never count",
+      },
+      acceptance: {
+        ask: "I'd call it done when a test shows an overdue, a paid and a not-yet-due invoice sorted out right. Is that the check you want?",
+        assume: "overdueInvoices returns only the sent invoices due before today, oldest first, and its test passes",
+      },
+    }),
+    verification: OVERDUE_VERIFICATION,
+  },
   {
     match: /\bcsv\b|\bexport\b/i,
     workTitle: () => "CSV export for invoices",
@@ -99,6 +161,7 @@ export const SCRIPTED_CHANGES: readonly ScriptedChange[] = [
         assume: "invoicesToCsv returns a header row and one row per invoice with the amount in dollars, and its test passes",
       },
     }),
+    verification: CSV_VERIFICATION,
   },
   {
     match: /[\s\S]*/,
