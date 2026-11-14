@@ -144,7 +144,7 @@ try {
     ["Model", model],
     ["run sandbox", nsSandbox ? "namespace sandbox" : `plain shell (${env.BOB_SANDBOX === "off" ? "BOB_SANDBOX=off" : `no namespace sandbox on ${process.platform}`}); commands still get no API keys`],
     ["HydraDB graph", env.BOB_STORE === "hydra" ? (has("HYDRADB_API_KEY") ? "on" : "BOB_STORE=hydra but no HYDRADB_API_KEY, so JSON only") : "off (BOB_STORE=hydra turns it on)"],
-    ["Voice", has("ELEVENLABS_API_KEY") ? "on (ElevenLabs)" : "off (needs ELEVENLABS_API_KEY)"],
+    ["Voice", env.BOB_VOICE === "elevenlabs" ? (has("ELEVENLABS_API_KEY") ? "ElevenLabs" : "BOB_VOICE=elevenlabs but no ELEVENLABS_API_KEY") : "browser speech (BOB_VOICE=elevenlabs for ElevenLabs)"],
     ["GitHub PRs", github === "gh" || github === "composio" ? `on via ${github} to ${env.BOB_GITHUB_REPO || "micic-mihajlo/bob"}` : "off (BOB_GITHUB=gh turns it on)"],
     ["Vercel previews", env.BOB_PREVIEWS?.trim().toLowerCase() === "vercel" ? "on" : "off (BOB_PREVIEWS=vercel turns it on)"],
     ["Project", `${snapshot.project?.name ?? "?"} (${snapshot.project?.repo ?? "invoices template"})`],
