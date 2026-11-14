@@ -80,7 +80,7 @@
     "remote:env:validate": "cd remote && bin/dotenvx validate -f .env.production -fk .env.keys",
     "dev:prepare": "bun scripts/prepare-dev-environment.ts",
     "dev:bootstrap": "bun scripts/prepare-dev-environment.ts",
-    "dev": "bun scripts/dev-services.ts app",
+    "dev": "bun scripts/name-dev-electron.ts && bun scripts/dev-services.ts app",
     "dev:api": "bun scripts/dev-services.ts api",
     "dev:apns-key": "bun scripts/dev-apns-key.ts",
     "dev:test-client": "bun scripts/dev-services.ts test-client",
