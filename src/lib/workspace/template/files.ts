@@ -1,7 +1,9 @@
 /**
- * The sample app a new project starts from: a small invoices module with real tests, so a request such as
- * "customers want to export invoices as CSV" has a place to land and a test suite to prove it. Kept as
- * strings rather than files on disk so Bob's own typecheck and test run never pick it up.
+ * The sample app a new project starts from: a small invoices web page over an invoices module with real
+ * tests, so a request such as "customers want to export invoices as CSV" has a place to land, a test suite
+ * to prove it, and a page a preview deployment can show. Vite builds it with no config (vitest already
+ * installs it), which Vercel detects as is. Kept as strings rather than files on disk so Bob's own
+ * typecheck and test run never pick it up.
  */
 export interface TemplateFile {
   path: string;
@@ -10,15 +12,17 @@ export interface TemplateFile {
 
 const readme = `# Invoices
 
-A small TypeScript module that keeps a list of invoices, works out what is owed, and formats invoices for display.
+A small web page that lists invoices, over a TypeScript module that keeps the list, works out what is owed, and formats invoices for display.
 
+- \`index.html\` and \`src/main.ts\`: the page. It shows the summary, an actions bar for buttons, and the invoice table.
+- \`src/page.ts\`: renders the summary and the table rows as HTML strings, so the page logic has tests.
 - \`src/invoices.ts\`: the \`Invoice\` type, sample data, and list operations (add, mark paid, outstanding, overdue, totals).
 - \`src/format.ts\`: money and invoice formatting for display.
 - \`src/*.test.ts\`: vitest tests next to the code they check.
 
 Amounts are integer cents. Dates are ISO \`YYYY-MM-DD\` strings.
 
-Run the tests with \`npm test\` and the type check with \`npm run typecheck\`.
+Run the tests with \`npm test\`, the type check with \`npm run typecheck\`, and build the page into \`dist/\` with \`npm run build\`. \`npm run dev\` serves it locally.
 `;
 
 const packageJson = `{
@@ -27,11 +31,14 @@ const packageJson = `{
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "typescript": "5.9.3",
+    "vite": "8.3.8",
     "vitest": "5.1.0"
   }
 }
@@ -40,6 +47,7 @@ const packageJson = `{
 const tsconfig = `{
   "compilerOptions": {
     "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
@@ -51,6 +59,123 @@ const tsconfig = `{
 `;
 
 const gitignore = `node_modules
+dist
+`;
+
+const indexHtml = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Invoices</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Invoices</h1>
+      <p id="summary"></p>
+      <div id="actions"></div>
+      <table>
+        <thead>
+          <tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Status</th><th>Due</th></tr>
+        </thead>
+        <tbody id="invoices"></tbody>
+      </table>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+`;
+
+const style = `body {
+  margin: 0;
+  font: 15px/1.5 system-ui, sans-serif;
+  color: #1c1c1c;
+  background: #fafafa;
+}
+
+main {
+  max-width: 760px;
+  margin: 48px auto;
+  padding: 0 24px;
+}
+
+#actions {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+th,
+td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e6e6e6;
+  text-align: left;
+}
+
+td.amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+`;
+
+const page = `import { formatAmount } from "./format";
+import { outstanding, totalCents, type Invoice } from "./invoices";
+
+const escapeHtml = (text: string) =>
+  text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
+
+/** One table row per invoice. */
+export function invoiceRows(list: readonly Invoice[]): string {
+  return list
+    .map(
+      (invoice) =>
+        \`<tr><td>\${escapeHtml(invoice.id)}</td><td>\${escapeHtml(invoice.customer)}</td><td class="amount">\${formatAmount(invoice.amountCents)}</td><td>\${invoice.status}</td><td>\${invoice.dueDate}</td></tr>\`,
+    )
+    .join("");
+}
+
+export function summary(list: readonly Invoice[]): string {
+  const owed = outstanding(list);
+  return \`\${list.length} invoices, \${owed.length} outstanding (\${formatAmount(totalCents(owed))} owed)\`;
+}
+`;
+
+const main = `import { SAMPLE_INVOICES } from "./invoices";
+import { invoiceRows, summary } from "./page";
+
+const invoices = [...SAMPLE_INVOICES];
+
+document.querySelector("#summary")!.textContent = summary(invoices);
+document.querySelector("#invoices")!.innerHTML = invoiceRows(invoices);
+`;
+
+const pageTest = `import { describe, expect, it } from "vitest";
+import { SAMPLE_INVOICES } from "./invoices";
+import { invoiceRows, summary } from "./page";
+
+describe("page", () => {
+  it("renders one row per invoice", () => {
+    const rows = invoiceRows(SAMPLE_INVOICES);
+    expect(rows.match(/<tr>/g)).toHaveLength(SAMPLE_INVOICES.length);
+    expect(rows).toContain("<td>Globex, Inc.</td>");
+    expect(rows).toContain("$480.50");
+  });
+
+  it("escapes customer names", () => {
+    expect(invoiceRows([{ ...SAMPLE_INVOICES[0], customer: "<b>A&B</b>" }])).toContain("&lt;b&gt;A&amp;B&lt;/b&gt;");
+  });
+
+  it("summarises what is owed", () => {
+    expect(summary(SAMPLE_INVOICES)).toBe("3 invoices, 2 outstanding ($579.50 owed)");
+  });
+});
 `;
 
 const invoices = `export type InvoiceStatus = "draft" | "sent" | "paid";
@@ -152,6 +277,11 @@ export const TEMPLATE_FILES: readonly TemplateFile[] = [
   { path: "package.json", content: packageJson },
   { path: "tsconfig.json", content: tsconfig },
   { path: ".gitignore", content: gitignore },
+  { path: "index.html", content: indexHtml },
+  { path: "src/style.css", content: style },
+  { path: "src/main.ts", content: main },
+  { path: "src/page.ts", content: page },
+  { path: "src/page.test.ts", content: pageTest },
   { path: "src/invoices.ts", content: invoices },
   { path: "src/invoices.test.ts", content: invoicesTest },
   { path: "src/format.ts", content: format },
