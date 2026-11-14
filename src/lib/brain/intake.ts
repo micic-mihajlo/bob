@@ -1,6 +1,6 @@
 import { trackOf } from "../roadmap";
 import type { State } from "../state";
-import type { AgentId, Message, ThreadItem } from "../types";
+import type { AgentId, InboxCandidate, InboxItem, Message, ThreadItem } from "../types";
 
 /** Rounds of questions the captain may ask about one request before it goes on with stated assumptions. */
 export const MAX_PUSHBACK_ROUNDS = 2;
@@ -31,6 +31,15 @@ export function pushbackRounds(items: ThreadItem[]): number {
  * with a question and has not recorded as an intent yet. Null when no question is open, so a new message starts a
  * new request. A request the person started while a question was open does not close that question.
  */
+/** The newest inbox ask still waiting on the person's answer, with the inbox item it came from. */
+export function openInboxQuestion(s: State): { item: InboxItem; candidate: InboxCandidate } | null {
+  for (const item of [...(s.inbox ?? [])].reverse()) {
+    const candidate = item.candidates.findLast((c) => c.verdict === "vague");
+    if (candidate) return { item, candidate };
+  }
+  return null;
+}
+
 export function openAsk(s: State, captainId: AgentId): Message | null {
   const items = s.threads[captainId] ?? [];
   const acted = new Set(items.flatMap((i) => (i.kind === "step" ? [i.turnId] : [])));
