@@ -21,8 +21,16 @@
   content: "";
 }
 
-.sidebar-brain-sync[data-live]::before {
+.sidebar-brain-sync[data-sync="live"]::before {
   background: var(--bob-success);
+}
+
+.sidebar-brain-sync[data-sync="offline"] {
+  color: var(--bob-warning-text);
+}
+
+.sidebar-brain-sync[data-sync="offline"]::before {
+  background: var(--bob-warning);
 }
 
 .new-agent-form {

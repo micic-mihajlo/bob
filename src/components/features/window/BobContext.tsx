@@ -14,8 +14,8 @@ export interface FocusTarget {
 
 interface BobContextValue {
   snapshot: Snapshot;
-  /** False while the event stream is down and the window is polling. */
-  connected: boolean;
+  /** How updates arrive: the event stream, polling while the stream is down, or nothing while the server can't be reached. */
+  sync: SyncState;
   agentsById: ReadonlyMap<AgentId, Agent>;
   captain: Agent | undefined;
   selectedAgent: Agent | undefined;
@@ -55,7 +55,9 @@ export function useBob(): BobContextValue {
   return value;
 }
 
-export function BobProvider({ snapshot, connected, children }: { snapshot: Snapshot; connected: boolean; children: ReactNode }) {
+export type SyncState = "live" | "polling" | "offline";
+
+export function BobProvider({ snapshot, sync, children }: { snapshot: Snapshot; sync: SyncState; children: ReactNode }) {
   const [selectedId, setSelectedId] = useState<AgentId | null>(null);
   // Where the panel would float over the thread, it starts closed.
   const [panelOpen, setPanelOpen] = useState(
@@ -109,7 +111,7 @@ export function BobProvider({ snapshot, connected, children }: { snapshot: Snaps
   const value = useMemo<BobContextValue>(
     () => ({
       snapshot,
-      connected,
+      sync,
       agentsById,
       captain,
       selectedAgent,
@@ -138,7 +140,7 @@ export function BobProvider({ snapshot, connected, children }: { snapshot: Snaps
     }),
     [
       snapshot,
-      connected,
+      sync,
       agentsById,
       captain,
       selectedAgent,
