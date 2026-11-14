@@ -51,6 +51,7 @@ export * from "./ipc-bob-onboarding";
 export * from "./ipc-bob-roadmap";
 export * from "./ipc-events";
 export * from "./ipc-external-links";
+export * from "./ipc-composio";
 export * from "./ipc-github-connector";
 export * from "./ipc-hermes-import";
 export * from "./ipc-hidden-agents";

@@ -52,6 +52,7 @@ import {
   decodeProviderRuntimeDownload,
   decodeRegistryEntries,
   decodeRegistryInstallations,
+  decodeComposioStatus,
   decodeRegistryInstallResult,
   decodeRegistryOperations,
   decodeSaveAgentProfileResult,
@@ -828,6 +829,10 @@ const bobApi: BobDesktopApi = {
     publish: decodeHostedSite,
     replace: decodeHostedSite,
     delete: decodeVoid,
+  }),
+  composio: bridgeGroup(IPC_ENDPOINTS.composio, {
+    status: decodeComposioStatus,
+    connect: decodeComposioStatus,
   }),
   githubConnector: bridgeGroup(IPC_ENDPOINTS.githubConnector, {
     status: decodeGitHubConnectorStatus,

@@ -152,6 +152,17 @@ export const messages = defineMessages("settings", {
     "Choose what the agents on this computer can do when you do not set it for an agent.",
   "settings.tab.notifications.title": "Notifications",
   "settings.tab.notifications.description": "Choose how Bob alerts you.",
+  "settings.tab.connectors.title": "Connectors",
+  "settings.tab.connectors.description":
+    "Apps your agents can use, connected through Composio. Each one is an account you sign in to on Composio's page.",
+  "settings.connectors.toolkits.title": "Composio toolkits",
+  "settings.connectors.connect": "Connect",
+  "settings.connectors.connected": "Connected",
+  "settings.connectors.connectedAs": "Connected as {account}",
+  "settings.connectors.pending": "Waiting for you to finish signing in on Composio's page.",
+  "settings.connectors.notConnected": "Not connected",
+  "settings.connectors.refresh": "Check again",
+  "settings.connectors.noKey": "Set COMPOSIO_API_KEY before you start Bob to connect apps through Composio.",
   "settings.tab.voice.title": "Voice",
   "settings.tab.voice.description":
     "Dictation in the message box. Local models run on this computer; ElevenLabs runs in the cloud.",
