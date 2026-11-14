@@ -28,9 +28,16 @@ export function outstanding(list: readonly Invoice[]): Invoice[] {
   return list.filter((invoice) => invoice.status !== "paid");
 }
 
-/** Sent and unpaid past their due date. Dates compare as ISO strings. */
+/** Sent and unpaid past their due date, oldest due date first. Dates compare as ISO strings. */
+export function overdueInvoices(invoices: readonly Invoice[], today: string): Invoice[] {
+  return invoices
+    .filter((invoice) => invoice.status === "sent" && invoice.dueDate < today)
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+}
+
+/** Sent and unpaid past their due date, oldest due date first. */
 export function overdue(invoices: readonly Invoice[], today: string): Invoice[] {
-  return invoices.filter((invoice) => invoice.status === "sent" && invoice.dueDate < today);
+  return overdueInvoices(invoices, today);
 }
 
 export function totalCents(list: readonly Invoice[]): number {

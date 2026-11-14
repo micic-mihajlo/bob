@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addInvoice, markPaid, outstanding, overdue, SAMPLE_INVOICES, totalCents } from "./invoices";
+import { addInvoice, markPaid, outstanding, overdue, overdueInvoices, SAMPLE_INVOICES, totalCents } from "./invoices";
 
 describe("invoices", () => {
   it("adds an invoice and refuses a duplicate id", () => {
@@ -17,6 +17,17 @@ describe("invoices", () => {
   it("finds overdue invoices", () => {
     expect(overdue(SAMPLE_INVOICES, "2026-11-20").map((i) => i.id)).toEqual(["INV-1002"]);
     expect(overdue(SAMPLE_INVOICES, "2026-11-01")).toEqual([]);
+  });
+
+  it("lists overdue invoices only, oldest due date first", () => {
+    const list = [
+      { ...SAMPLE_INVOICES[1], id: "INV-2001", dueDate: "2026-11-10" },
+      { ...SAMPLE_INVOICES[0], id: "INV-2002", status: "paid" as const, dueDate: "2026-10-01" },
+      { ...SAMPLE_INVOICES[1], id: "INV-2003", dueDate: "2026-11-20" },
+      { ...SAMPLE_INVOICES[2], id: "INV-2004", dueDate: "2026-12-01" },
+      { ...SAMPLE_INVOICES[1], id: "INV-2005", dueDate: "2026-09-15" },
+    ];
+    expect(overdueInvoices(list, "2026-11-20").map((i) => i.id)).toEqual(["INV-2005", "INV-2001"]);
   });
 
   it("totals amounts in cents", () => {

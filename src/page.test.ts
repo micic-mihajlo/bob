@@ -14,7 +14,8 @@ describe("page", () => {
     expect(invoiceRows([{ ...SAMPLE_INVOICES[0], customer: "<b>A&B</b>" }])).toContain("&lt;b&gt;A&amp;B&lt;/b&gt;");
   });
 
-  it("summarises what is owed", () => {
-    expect(summary(SAMPLE_INVOICES)).toBe("3 invoices, 2 outstanding ($579.50 owed)");
+  it("summarises what is owed and counts overdue invoices", () => {
+    expect(summary(SAMPLE_INVOICES, "2026-11-20")).toBe("3 invoices, 2 outstanding ($579.50 owed), 1 overdue");
+    expect(summary(SAMPLE_INVOICES, "2026-11-01")).toBe("3 invoices, 2 outstanding ($579.50 owed), 0 overdue");
   });
 });
