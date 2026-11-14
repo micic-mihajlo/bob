@@ -4,7 +4,8 @@ import { setBrainOverride } from "../brain";
 import { scriptBrain } from "../brain/script";
 import type { Brain, TurnContext } from "../brain/types";
 import { globals } from "../globals";
-import { getState, replaceState } from "../store";
+import type { State } from "../state";
+import { getState, replaceState, subscribe } from "../store";
 import { settle } from "../turns";
 import { freshTeam } from "./helpers";
 
@@ -65,6 +66,28 @@ describe("a restart loses nothing and strands nothing", { timeout: TIMEOUT }, ()
     expect(getState().roadmap.today).toHaveLength(1);
     expect(pending()).toHaveLength(1);
     expect(digest()).toBe("1 thing needs you: approve the merge of #1\n");
+  });
+
+  it("starts the build thread again when the restart cut off start_thread before the thread got its brief", async () => {
+    let saved: unknown = null;
+    const off = subscribe(() => {
+      if (!saved && getState().agents.some((a) => a.id === "inv-1")) saved = JSON.parse(JSON.stringify(getState()));
+    });
+    postUserMessage("bob", REQUEST);
+    await settle();
+    off();
+    expect(saved).not.toBeNull();
+    globals().inflight.clear();
+    replaceState(saved as State);
+    expect(getState().messages.some((m) => m.to.includes("inv-1"))).toBe(false);
+
+    await restart();
+    expect(notices("inv-1")).toContain("Closed by the restart, before it got its brief. The thread stays readable.");
+    expect(notices("bob").some((n) => /Starting a build thread.* was cut off before it finished, so do it again\./.test(n))).toBe(true);
+    const build = getState().agents.filter((a) => a.crewRole === "build" && !a.closedAt);
+    expect(build).toHaveLength(1);
+    expect(getState().turns.some((t) => t.agentId === build[0].id && t.status === "completed")).toBe(true);
+    expect(pending()).toHaveLength(1);
   });
 
   it("picks a captain turn up after it merged, and the request still reaches Learn with its threads closed", async () => {
