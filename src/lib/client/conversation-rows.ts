@@ -1,4 +1,5 @@
 import type { AgentId, Artifact, ThreadItem, TurnId } from "@/lib/types";
+import { pluralize } from "./format";
 import { liveSteps, timeOf, type LiveTurn, type StepItem } from "./thread-rows";
 
 type Item<K extends ThreadItem["kind"]> = Extract<ThreadItem, { kind: K }>;
@@ -18,6 +19,11 @@ export interface TurnSteps {
 export function unrecoveredFailures(steps: readonly StepItem[]): number {
   return steps.filter((step, index) => step.outcome === "failed" && !steps.slice(index + 1).some((later) => later.tool === step.tool && later.outcome === "ok"))
     .length;
+}
+
+/** The one-line summary of a finished turn's steps, such as "9 steps". */
+export function stepsSummary(steps: readonly StepItem[]): string {
+  return steps.length > 0 ? pluralize(steps.length, "step") : "";
 }
 
 /**

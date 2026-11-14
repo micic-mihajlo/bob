@@ -14,7 +14,7 @@ import { liveSteps, type LiveTurn } from "@/lib/client/thread-rows";
 import { useNow } from "@/lib/client/use-now";
 import { useStickToBottom } from "@/lib/client/use-stick-to-bottom";
 import type { Agent, ThreadView } from "@/lib/types";
-import { AgentActivityIndicator, DEFAULT_ACTIVITY_LABEL } from "./AgentActivity";
+import { AgentActivityIndicator } from "./AgentActivity";
 import { AgentStepsDisclosure } from "./AgentSteps";
 import { ApprovalCard } from "./ApprovalCard";
 import { ChatActionMarker } from "./ChatActionMarker";
@@ -24,6 +24,7 @@ import { ChatScrollRail, chatScrollSections } from "./ChatScrollRail";
 import { ScrollToLatestButton } from "./MessageNavigation";
 import { ArtifactCard } from "./PullRequestCard";
 import { scrollToUnreadBoundary, UnreadMessagesBanner, UnreadMessagesDivider, unreadMessagesDividerIsVisible } from "./UnreadMessages";
+import { useAgentActivity } from "./use-agent-activity";
 
 /** Slack in pixels before an edge counts as reached, absorbing sub-pixel scroll positions. */
 const EDGE_EPSILON = 2;
@@ -299,8 +300,10 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
     element.scrollTo({ top, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   };
 
-  const label =
-    pending.at(-1)?.label ?? (activity?.state === "working" ? (activity.step ?? running.at(-1)?.label ?? DEFAULT_ACTIVITY_LABEL) : DEFAULT_ACTIVITY_LABEL);
+  const detail = pendingReply
+    ? "Thinking…"
+    : (pending.at(-1)?.label ?? (activity?.state === "working" ? (activity.step ?? running.at(-1)?.label ?? null) : null));
+  const shown = useAgentActivity(live ? `turn-${live.since}` : pendingReply ? `sent-${sent.at}` : null, detail);
   /*
    * A thread with no message yet, and no turn and no reply on its way. The activity line shows the
    * turn, so it is read here.
@@ -383,10 +386,15 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
         </div>
         <div className="conversation-live">
           <div className="agent-activity-slot" data-reserved={activityShown ? "true" : "false"}>
-            {live && activity?.state === "working" ? (
-              <AgentActivityIndicator agent={agent} label={label} since={activity.since} steps={running} />
-            ) : pendingReply ? (
-              <AgentActivityIndicator agent={agent} label="Thinking…" since={new Date(sent.at).toISOString()} steps={[]} />
+            {shown ? (
+              <AgentActivityIndicator
+                agent={agent}
+                label={shown.label}
+                detail={shown.detail}
+                phase={shown.phase}
+                since={shown.since}
+                steps={live ? running : []}
+              />
             ) : null}
           </div>
         </div>
