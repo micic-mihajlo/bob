@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { Options, SdkMcpToolDefinition, SDKMessage } from "@anthropic-ai/claude-agent-sdk";
+import type { Options, SdkMcpToolDefinition, SDKMessage, SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import { postUserMessage } from "../actions";
 import { NATIVE_TOOLS, setSdkQuery, workspaceGuard } from "../brain/agent-sdk";
@@ -25,7 +25,7 @@ interface Seen {
 
 /** A scripted coding agent: it reads a file, then reports, and stops when interrupted, like the SDK. */
 function fakeAgent(seen: Seen, hold?: Promise<void>) {
-  return ({ options }: { prompt: string; options: Options }, tools: SdkMcpToolDefinition[]) => {
+  return ({ options }: { prompt: AsyncIterable<SDKUserMessage>; options: Options }, tools: SdkMcpToolDefinition[]) => {
     seen.options.push(options);
     let interrupted = false;
     let wakeUp: () => void = () => {};
@@ -98,6 +98,39 @@ describe("BOB_ENGINE=sdk runs crew build and review turns as one coding-agent qu
     const s = getState();
     expect(s.turns.find((t) => t.agentId === "inv-1")?.status).toBe("interrupted");
     expect(s.messages.some((m) => m.from.kind === "agent" && m.from.agentId === "inv-1" && m.text === REPORT)).toBe(false);
+  });
+
+  it("steers a person's message into the running query instead of queueing it for the next turn", async () => {
+    let release: () => void = () => {};
+    const hold = new Promise<void>((r) => (release = r));
+    const heard: string[] = [];
+    setSdkQuery(({ prompt }, tools) => {
+      seen.options.push({});
+      return {
+        async interrupt() {
+          seen.interrupts++;
+        },
+        async *[Symbol.asyncIterator]() {
+          const input = prompt[Symbol.asyncIterator]();
+          heard.push(String((await input.next()).value?.message.content));
+          yield toolUse("t1", "Read", { file_path: "src/invoices.ts" });
+          yield toolResult("t1");
+          await hold;
+          heard.push(String((await input.next()).value?.message.content));
+          await tools.find((x) => x.name === "report")!.handler({ text: REPORT }, {});
+          await new Promise((r) => setTimeout(r, 20));
+        },
+      };
+    });
+    postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+    for (let i = 0; i < 200 && heard.length === 0; i++) await new Promise((r) => setTimeout(r, 25));
+    const steer = postUserMessage("inv-1", "Also quote names that contain commas.", "steer");
+    expect(steer.ok && steer.steered).toBe(true);
+    release();
+    await settle();
+    expect(heard[1]).toMatch(/while you work[\s\S]*Also quote names that contain commas\./);
+    expect(getState().turns.filter((t) => t.agentId === "inv-1")).toHaveLength(1);
+    expect(getState().turns.find((t) => t.agentId === "inv-1")?.status).toBe("completed");
   });
 
   it("leaves the captain and the scripted brain on the move loop", async () => {
