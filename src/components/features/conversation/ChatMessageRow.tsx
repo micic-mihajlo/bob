@@ -21,10 +21,12 @@ export interface ChatMessageRowProps {
   voice?: boolean;
   /** Still being written by the model: no actions or time until the real message lands. */
   streaming?: boolean;
+  /** The open question the person is answering: drawn as a speech bubble in the print themes. */
+  asking?: boolean;
 }
 
 /** One message of the chat: the person's bubble at the end, the agent's at the start. */
-export function ChatMessageRow({ id, author, name, text, at, animate = false, voice = false, streaming = false }: ChatMessageRowProps) {
+export function ChatMessageRow({ id, author, name, text, at, animate = false, voice = false, streaming = false, asking = false }: ChatMessageRowProps) {
   const user = author === "user";
   const [copyFailed, setCopyFailed] = useState(false);
   const copy = () => {
@@ -42,6 +44,7 @@ export function ChatMessageRow({ id, author, name, text, at, animate = false, vo
       data-author={user ? "user" : "assistant"}
       data-chat-search-message={id}
       data-streaming={streaming ? "true" : undefined}
+      data-asking={asking ? "true" : undefined}
       aria-busy={streaming ? "true" : undefined}
       className={cx("ui-message message-entry", user ? "message-entry-user" : "message-entry-agent", animate && "message-entry-animated")}
     >

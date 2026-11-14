@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, ChevronRight, Clock3, GitMerge, GitPullRequest, LoaderCircle, MessageSquareText, X } from "lucide-react";
+import { useState } from "react";
 import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
@@ -113,6 +114,7 @@ function PullRequestBody({ artifact }: { artifact: PullRequestArtifact }) {
 function PullRequestCardView({ artifact, animate }: { artifact: PullRequestArtifact; animate: boolean }) {
   const { snapshot } = useBob();
   const state = pullRequestState(artifact, snapshot.approvals);
+  const [mergedOnMount] = useState(state === "merged");
   const titleId = `pull-request-${artifact.id}-title`;
   return (
     <article aria-labelledby={titleId} className={cx("conversation-interaction-card chat-action-card", animate && "chat-action-entry-animated")} data-artifact-id={artifact.id}>
@@ -134,6 +136,11 @@ function PullRequestCardView({ artifact, animate }: { artifact: PullRequestArtif
           <StatusIcon state={state} />
           {PULL_REQUEST_STATE_LABEL[state]}
         </span>
+        {state === "merged" ? (
+          <span className="pr-merged-stamp" data-fresh={mergedOnMount ? undefined : ""} aria-hidden="true">
+            Merged!
+          </span>
+        ) : null}
       </footer>
     </article>
   );

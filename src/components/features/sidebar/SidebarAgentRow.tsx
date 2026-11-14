@@ -43,6 +43,7 @@ export function SidebarAgentRow({ agent, state, waiting = false }: { agent: Agen
       className={buttonClass({ variant: "ghost", className: cx("agent-row", active && "agent-row-active") })}
       aria-label={`${name}${badge ? `, ${badge}` : ""}${wait ? "" : `. ${preview}`}${stateLabel ? `. ${stateLabel}` : ""}`}
       aria-pressed={active ? "true" : "false"}
+      data-status={status}
       data-slot="button"
       data-variant="ghost"
       data-size="default"

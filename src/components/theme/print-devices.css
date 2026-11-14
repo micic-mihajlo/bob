@@ -1,0 +1,167 @@
+/*
+ * Bob in print, comic devices. Each one marks a state that matters, and nothing else:
+ * - the "Needs you" group is a yellow narration box,
+ * - the question Bob is waiting on is a speech bubble with a tail,
+ * - a merged pull request carries a MERGED! stamp (it pops only when the merge lands while you watch),
+ * - a green test run gets a PASS tag on its step,
+ * - a working thread in the sidebar gets faint speed lines.
+ * The stamp and the PASS tag are hidden in the classic look. Motion lives in print-motion.css.
+ */
+
+.pr-merged-stamp,
+.agent-step-pass {
+  display: none;
+}
+
+/* Narration box. Ink type on yellow: the group re-points the text tokens, so rows inside stay AA. */
+[data-print] .sidebar-waiting-group {
+  --bob-text-primary: var(--bob-print-on-ink);
+  --bob-text-secondary: rgb(11 10 7 / 0.82);
+  --bob-text-muted: rgb(11 10 7 / 0.72);
+  --bob-text-dim: rgb(11 10 7 / 0.66);
+  --bob-text-readable: rgb(11 10 7 / 0.72);
+  --bob-ink: var(--bob-print-on-ink);
+  --bob-mute: rgb(11 10 7 / 0.72);
+  --bob-accent-text: var(--bob-print-on-ink);
+  --bob-hover: rgb(11 10 7 / 0.08);
+  --bob-bg-control: rgb(11 10 7 / 0.08);
+  --bob-bg-control-hover: rgb(11 10 7 / 0.12);
+  --bob-bg-control-active: rgb(11 10 7 / 0.14);
+  --bob-bg-surface-raised: rgb(11 10 7 / 0.1);
+  --bob-border: rgb(11 10 7 / 0.2);
+  --bob-border-strong: rgb(11 10 7 / 0.28);
+  --agent-avatar-outline: var(--bob-print-yellow);
+  margin: var(--bob-space-1) var(--bob-space-1) var(--bob-space-3);
+  border: 1.5px solid var(--bob-print-on-ink);
+  border-radius: 2px;
+  background: var(--bob-print-yellow);
+  box-shadow: 3px 3px 0 var(--bob-print-slab);
+  color: var(--bob-print-on-ink);
+  padding-bottom: var(--bob-space-1);
+}
+
+[data-print] .sidebar-waiting-group .agent-row {
+  background: transparent;
+}
+
+[data-print] .sidebar-waiting-group .agent-row:is(:hover, .agent-row-active) {
+  background: rgb(11 10 7 / 0.1);
+}
+
+[data-print] .sidebar-waiting-group .sidebar-waiting-group-name {
+  color: var(--bob-print-on-ink);
+}
+
+[data-print] .subagents-progress-failed {
+  margin-left: var(--bob-space-1);
+  border: 1px solid var(--bob-print-on-ink);
+  border-radius: 2px;
+  background: var(--bob-print-yellow);
+  color: var(--bob-print-on-ink);
+  font-family: var(--bob-font-display);
+  letter-spacing: 0.04em;
+  padding: 0 var(--bob-space-1);
+  text-transform: uppercase;
+}
+
+/* Speech bubble: paper, an ink outline and a tail that points back at the speaker. */
+[data-print] [data-asking="true"] .ui-bubble-content {
+  position: relative;
+  overflow: visible;
+  border: 1.5px solid var(--bob-print-line);
+  border-radius: var(--bob-radius-bubble);
+  background: var(--bob-bg-surface-raised);
+  box-shadow: var(--bob-print-shadow);
+}
+
+[data-print] [data-asking="true"] .ui-bubble-content::after {
+  position: absolute;
+  bottom: -9px;
+  left: 22px;
+  width: 16px;
+  height: 16px;
+  border-right: 1.5px solid var(--bob-print-line);
+  border-bottom: 1.5px solid var(--bob-print-line);
+  background: var(--bob-bg-surface-raised);
+  clip-path: polygon(0 55%, 100% 0, 100% 100%);
+  content: "";
+  transform: skewX(-24deg) rotate(18deg);
+}
+
+/* MERGED! stamp: a yellow burst with ink type, set a little off square, like a rubber stamp. */
+[data-print] .pr-merged-stamp {
+  display: inline-grid;
+  width: 92px;
+  height: 46px;
+  margin-left: auto;
+  place-items: center;
+  background: var(--bob-print-yellow);
+  clip-path: polygon(
+    50% 0%,
+    60% 22%,
+    80% 6%,
+    76% 30%,
+    100% 28%,
+    84% 48%,
+    100% 70%,
+    76% 70%,
+    80% 96%,
+    60% 80%,
+    50% 100%,
+    40% 80%,
+    20% 96%,
+    24% 70%,
+    0% 70%,
+    16% 48%,
+    0% 28%,
+    24% 30%,
+    20% 6%,
+    40% 22%
+  );
+  color: var(--bob-print-on-ink);
+  font-family: var(--bob-font-display);
+  font-size: var(--bob-text-md);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  rotate: -8deg;
+  text-transform: uppercase;
+}
+
+/* PASS: a small ink-on-yellow tag after a green test run. */
+[data-print] .agent-step-pass {
+  display: inline-block;
+  margin-left: var(--bob-space-1-5);
+  border: 1px solid var(--bob-print-on-ink);
+  border-radius: 2px;
+  background: var(--bob-print-yellow);
+  color: var(--bob-print-on-ink);
+  font-family: var(--bob-font-display);
+  font-size: var(--bob-text-sm);
+  letter-spacing: 0.06em;
+  line-height: var(--bob-leading-sm);
+  padding: 0 var(--bob-space-1);
+  rotate: -4deg;
+  text-transform: uppercase;
+}
+
+/* Speed lines: faint cyan streaks trailing off the right edge of a working thread's row. */
+[data-print] .agent-row[data-status="working"] {
+  position: relative;
+  isolation: isolate;
+}
+
+[data-print] .agent-row[data-status="working"]::before {
+  position: absolute;
+  z-index: -1;
+  inset: 4px 0 4px 40%;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0 5px,
+    var(--bob-print-cyan-soft) 5px 6px,
+    transparent 6px 9px,
+    var(--bob-print-cyan-soft) 9px 10.5px
+  );
+  content: "";
+  mask-image: linear-gradient(90deg, transparent, black 70%);
+  pointer-events: none;
+}
