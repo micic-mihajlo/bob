@@ -1,10 +1,12 @@
 import { execFile } from "node:child_process";
-import { rm } from "node:fs/promises";
+import { chmod, mkdir, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { promisify } from "node:util";
 import { agentById, isCrew, type State } from "./state";
 import { getConfig } from "./store";
+import { traceTrailers } from "./trace";
 import { findPullRequest, isPullRequest, type PullRequestArtifact } from "./threads";
-import type { Project, WorkspaceChanges, WorkspaceListing } from "./types";
+import type { AgentId, Project, RequestId, WorkspaceChanges, WorkspaceListing } from "./types";
 import {
   branchChanges,
   defaultRoot,
@@ -37,6 +39,32 @@ export async function threadWorkspace(project: Project, agentId: string): Promis
   const options = workspaceOptions();
   await ensureProject(project.id, sourceOf(project), options);
   return ensureWorkspace(project.id, agentId, options);
+}
+
+const HOOK = `#!/bin/sh
+# Bob: stamp every commit with the request, work order and thread it serves.
+trailers="$(git rev-parse --git-dir)/bob-trailers"
+[ -f "$trailers" ] || exit 0
+msg="$1"
+set --
+while IFS= read -r line; do [ -n "$line" ] && set -- "$@" --trailer "$line"; done < "$trailers"
+exec git interpret-trailers --in-place --if-exists replace "$@" "$msg"
+`;
+
+/**
+ * Makes every commit in a thread's workspace carry its trace trailers, however it is made: open_pull_request,
+ * the git tool or a shell command. Safe to call again; the latest trailers win.
+ */
+export async function stampThread(s: State, agentId: AgentId, requestId: RequestId): Promise<void> {
+  const agent = s.agents.find((a) => a.id === agentId);
+  if (!agent?.code) return;
+  const ws = await threadWorkspace(s.project, agentId);
+  const gitDir = path.join(ws.root, ".git");
+  await mkdir(path.join(gitDir, "hooks"), { recursive: true });
+  await writeFile(path.join(gitDir, "bob-trailers"), `${traceTrailers(requestId, agent.workOrderId ?? null, agent.code).join("\n")}\n`);
+  const hook = path.join(gitDir, "hooks", "commit-msg");
+  await writeFile(hook, HOOK);
+  await chmod(hook, 0o755);
 }
 
 /** The files on the project's main branch, so the captain plans against what exists. */

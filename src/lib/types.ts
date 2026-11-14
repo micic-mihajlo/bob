@@ -85,6 +85,8 @@ export interface Message {
   continues?: MessageId;
   /** Optional: set on a hand-off the runtime sends for the captain. It spends the request's hand-off budget instead of its delivery budget. */
   automatic?: true;
+  /** Optional: "voice" on what a person said in a call; the text is the transcript. */
+  via?: "voice";
   at: string;
 }
 
@@ -117,7 +119,7 @@ export interface Turn {
 
 /** What one agent's thread shows, oldest first. */
 export type ThreadItem =
-  | { kind: "user_text"; id: string; text: string; at: string }
+  | { kind: "user_text"; id: string; text: string; at: string; via?: "voice" }
   | { kind: "agent_text"; id: string; turnId: TurnId; text: string; at: string }
   | {
       kind: "step";
@@ -403,6 +405,10 @@ export const THREAD_MODELS = [
  * POST /api/agents/:id/close              {}                                close a crew thread
  * POST /api/agents/:id/model              { model }                         pick a crew thread's model, one of THREAD_MODELS
  * POST /api/reset                         {}                                back to the seeded team
+ * GET  /api/voice                         -> { elevenlabs: boolean }        whether a call goes through ElevenLabs
+ * POST /api/voice/session                 {}                                -> { ok: true, conversationToken }
+ * POST /api/voice/turn                    { agentId, text }                 a person says something in a call; answers
+ *                                                                             -> { messageId, reply } once that agent's turn ends
  */
 export const API = {
   state: "/api/state",
@@ -421,4 +427,7 @@ export const API = {
   reset: "/api/reset",
   projects: "/api/projects",
   verification: "/api/verification",
+  voice: "/api/voice",
+  voiceSession: "/api/voice/session",
+  voiceTurn: "/api/voice/turn",
 } as const;

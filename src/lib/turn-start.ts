@@ -13,7 +13,7 @@ export interface StartedTurn {
 }
 
 function inboundItem(m: Message): ThreadItem {
-  if (m.from.kind === "user") return { kind: "user_text", ...stamp(), text: m.text };
+  if (m.from.kind === "user") return { kind: "user_text", ...stamp(), text: m.text, ...(m.via ? { via: m.via } : {}) };
   return { kind: "message_in", ...stamp(), messageId: m.id, from: m.from.agentId, text: m.text, isReply: m.replyTo !== null };
 }
 

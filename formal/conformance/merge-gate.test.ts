@@ -6,6 +6,7 @@ import type { State } from "@/lib/state";
 import { getState, update } from "@/lib/store";
 import type { PullRequestArtifact } from "@/lib/threads";
 import { callTool } from "@/lib/tools";
+import { reviewGateRefusal } from "@/lib/tools/handoff";
 import { mergePullRequestTool, recordReview } from "@/lib/tools/pull-requests";
 import { requestApproval } from "@/lib/tools/work";
 import { drain, settle } from "@/lib/turns";
@@ -99,6 +100,7 @@ describe("merge gate conforms to BobFormal.MergeGate", () => {
       expect(moved()?.pullRequest.merged).toBe(false);
       const refused = await mergePullRequestTool({ pullRequestId: pr.id });
       expect(String(refused.result.error)).toMatch(/changed after the person approved it/);
+      expect(String(refused.result.error)).toMatch(reviewGateRefusal(getState(), moved() as PullRequestArtifact) ? /goes back through review/ : /already approves the new head/);
 
       const asBob = { agentId: "bob", turnId: "turn_formal", requestId: pr.requestId, causedBy: pr.messageId };
       const asked = await callTool("request_approval", { title: `Merge #${pr.pullRequest.number} again`, detail: "Adds src/unreviewed.ts.", pullRequestId: pr.id }, asBob);
