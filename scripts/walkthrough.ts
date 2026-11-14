@@ -75,9 +75,9 @@ const C = newRequest("C", A.vague, A.testable);
 const SELF = { repo: "https://github.com/micic-mihajlo/bob.git", branch: "demo/self-base", name: "bob", prBase: "demo/self" };
 if (opts.self) {
   for (const r of [A, C]) {
-    r.vague = "Show how long each request has been running on its roadmap card.";
+    r.vague = "Put a big timer on each roadmap card showing how long its request has been running.";
     r.testable =
-      "Add formatElapsed(ms) in src/lib/format-time.ts: 45s under a minute, 3m 05s under an hour, else 1h 02m, and show it on each roadmap card. Done when a vitest test passes for 45, 185 and 3720 seconds.";
+      "Add formatElapsed(ms) in src/lib/format-time.ts: 45s under a minute, 3m 05s under an hour, else 1h 02m. Show it as a large number at the top of each roadmap card, counting every second from track.startedAt (when the request was recorded) with useNow from src/lib/client/use-now.ts. Done when a vitest test passes for 45, 185 and 3720 seconds.";
   }
   B.vague =
     "Show when each pull request was opened as relative time on its card: add formatAgo(ms) in src/lib/format-time.ts returning just now under 10 s, then 12s ago, 5m ago, 2h ago, 3d ago. Done when a vitest test passes for 5 s, 12 s, 300 s, 7200 s and 3 days.";
