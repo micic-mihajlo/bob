@@ -6,6 +6,7 @@ import { newId, nowIso } from "./ids";
 import type { ReplyStatus } from "./reply-format";
 import { relayOwed } from "./relay";
 import { withUnplannedNotices } from "./thread-status";
+import { closePending } from "./threads";
 import { agentById, messageById, type State } from "./state";
 import { addNotice, addThreadItem, patchDelivery, patchTurn, stamp } from "./state-ops";
 import { liveMove } from "./live";
@@ -174,7 +175,7 @@ function closeTurn(t: StartedTurn, status: "completed" | "interrupted" | "failed
   update((s) => {
     const turn = s.turns.find((x) => x.id === t.turnId);
     const next = turn?.status === "running" ? patchTurn(s, t.turnId, { status, endedAt: nowIso() }) : s;
-    const closed = t.deliveryIds.reduce((acc, id) => patchDelivery(acc, id, { status: deliveries }), next);
+    const closed = closePending(t.deliveryIds.reduce((acc, id) => patchDelivery(acc, id, { status: deliveries }), next));
     return agentById(closed, t.agentId)?.kind === "captain" ? withUnplannedNotices(closed, t.agentId) : closed;
   });
 }

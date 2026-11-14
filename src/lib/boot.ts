@@ -1,6 +1,7 @@
 import { nowIso } from "./ids";
 import type { State } from "./state";
 import { addNotice, patchDelivery, patchTurn } from "./state-ops";
+import { closePending } from "./threads";
 import type { ThreadItem, Turn } from "./types";
 
 export interface SweepResult {
@@ -78,7 +79,7 @@ function closeOrphan(s: State, t: Turn): State {
  */
 export function sweepOrphans(s: State): SweepResult {
   const orphans = s.turns.filter((t) => t.status === "running");
-  const swept = orphans.reduce(closeOrphan, s);
+  const swept = closePending(orphans.reduce(closeOrphan, s));
   // A changed state needs a new rev, or clients holding the old rev would not refetch.
   const state = orphans.length > 0 ? { ...swept, rev: swept.rev + 1 } : swept;
   return { state, orphanTurnIds: orphans.map((t) => t.id) };

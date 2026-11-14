@@ -5,10 +5,10 @@ import { nowIso } from "../ids";
 import { inboxItem, isInboxRequest } from "../inbox";
 import { send } from "../mailbox";
 import { updateWorkOrder } from "../roadmap";
-import { captainOf, isClosed, runningTurn, type State } from "../state";
+import { agentById, captainOf, isClosed, runningTurn, type State } from "../state";
 import { getState, transact, update } from "../store";
 import { checkoutBranch, prewarmProject, stampThread, threadWorkspace } from "../thread-workspace";
-import { busyThreads, closeThreadState, findThread, isBusy, isPullRequest, openThreads, requestAsk, threadRequestId } from "../threads";
+import { busyThreads, closeThreadState, closeWhenIdle, findThread, isBusy, isPullRequest, openThreads, requestAsk, threadRequestId } from "../threads";
 import { isThreadModel, unknownModel } from "../models";
 import { THREAD_MODELS, type Agent, type CrewRole } from "../types";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
@@ -193,9 +193,8 @@ export function closeThread(input: z.infer<typeof closeThreadSchema>): ToolOutpu
     const thread = findThread(s, input.threadId);
     if (!thread || thread.kind !== "crew") return { state: s, value: fail(`No crew thread ${input.threadId}. Call list_threads.`) };
     if (isClosed(thread)) return { state: s, value: done({ threadId: thread.id, alreadyClosed: true }) };
-    if (runningTurn(s, thread.id)) {
-      return { state: s, value: fail(`${thread.name} is still working. Wait for its report, then close it.`) };
-    }
-    return { state: closeThreadState(s, thread.id, captainOf(s)?.name ?? "the captain"), value: done({ threadId: thread.id, closed: true }) };
+    const next = closeWhenIdle(s, thread.id, captainOf(s)?.name ?? "the captain");
+    if (!isClosed(agentById(next, thread.id))) return { state: next, value: done({ threadId: thread.id, closing: true, next: `${thread.name} closes as soon as its running turn ends.` }) };
+    return { state: next, value: done({ threadId: thread.id, closed: true }) };
   });
 }
