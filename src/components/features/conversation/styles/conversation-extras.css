@@ -9,6 +9,24 @@
   text-align: center;
 }
 
+/* A long agent name shortens before the header's actions do: the title first, then the name. */
+.conversation-header-actions {
+  flex: none;
+}
+
+.conversation-heading-group > .conversation-title {
+  min-width: 0;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+.conversation-title h1 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Bob only: a thread's title beside its name, in the reference header's muted tone. */
 .conversation-header-subtitle {
   min-width: 0;

@@ -676,8 +676,12 @@
 .composer-editor-placeholder {
   position: absolute;
   top: 2px;
+  right: 0;
   left: 4px;
+  overflow: hidden;
   color: var(--bob-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--bob-text-lg);
   line-height: 20px;
   pointer-events: none;
