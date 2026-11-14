@@ -7,7 +7,7 @@ import { fileBadge, fileReferenceTone } from "../file-reference";
 import { fileDayLabel, fileTypeCounts, groupFilesByDay, queryFiles } from "../files-view";
 import { parseMarkdown } from "../markdown";
 import { openPanes, paneAfterClose, PANEL_TABS, selectedPane } from "../panel-tabs";
-import { currentStep, forUserLine, hasPlan, roadmapSteps, trackViews, workOrderProgress } from "../roadmap-view";
+import { currentStep, forUserLine, hasPlan, roadmapSteps, trackProgress, trackViews, workOrderProgress } from "../roadmap-view";
 import { groupTheorems } from "../verification";
 import type { Agent, Roadmap, Snapshot, WorkOrder } from "@/lib/types";
 
@@ -64,6 +64,20 @@ describe("roadmap view", () => {
   it("counts finished work orders over every planned one", () => {
     expect(workOrderProgress(roadmap)).toEqual({ done: 1, total: 3 });
     expect(hasPlan({ ...roadmap, goal: null, gates: [], today: [], backlog: [] })).toBe(false);
+  });
+
+  it("counts a learning track's open backlog as follow-ups, not as unfinished work", () => {
+    const track = {
+      key: "r",
+      ask: null,
+      goal: null,
+      stageTitle: "",
+      gates: [],
+      today: [order("a", "done")],
+      backlog: [order("b", "open"), order("c", "open")],
+    };
+    expect(trackProgress({ ...track, stage: 3 }, 5)).toEqual({ done: 1, total: 3, followUps: 0 });
+    expect(trackProgress({ ...track, stage: 5 }, 5)).toEqual({ done: 1, total: 1, followUps: 2 });
   });
 });
 

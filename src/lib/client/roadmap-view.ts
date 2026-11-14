@@ -72,6 +72,15 @@ export function workOrderProgress(track: { today: readonly WorkOrder[]; backlog?
   return { done: orders.filter((order) => order.status === "done").length, total: orders.length };
 }
 
+/**
+ * A track's progress line. Once it reaches the last stage, the open work left in its backlog is follow-ups for the
+ * next request, so it is counted apart instead of holding the bar short of done.
+ */
+export function trackProgress(track: TrackView, lastStage: number): { done: number; total: number; followUps: number } {
+  if (track.stage < lastStage) return { ...workOrderProgress(track), followUps: 0 };
+  return { ...workOrderProgress({ today: track.today }), followUps: track.backlog.filter((order) => order.status !== "done").length };
+}
+
 /** "For an accountant": the goal's user after "For", with a leading article in lower case. */
 export function forUserLine(user: string): string {
   return `For ${user.replace(/^(A|An|The)\b/, (article) => article.toLowerCase())}`;

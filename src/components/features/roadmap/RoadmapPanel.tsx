@@ -17,7 +17,7 @@ import {
   roadmapSteps,
   trackViews,
   WORK_ORDER_STATUS_LABEL,
-  workOrderProgress,
+  trackProgress,
   type StepPhase,
   type TrackView,
 } from "@/lib/client/roadmap-view";
@@ -109,7 +109,7 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
             {started
               ? tracks.map((track) => {
                   const { goal } = track;
-                  const progress = workOrderProgress(track);
+                  const progress = trackProgress(track, roadmap.totalStages);
                   return (
                     <Card key={track.key} className="bob-roadmap-card" aria-label={goal?.title ?? "Goal"}>
                       <p className="bob-roadmap-label">Goal</p>
@@ -129,6 +129,7 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                       />
                       <p className="bob-roadmap-earned">
                         {progress.done} of {progress.total} work orders done
+                        {progress.followUps > 0 ? ` · ${progress.followUps} follow-up${progress.followUps === 1 ? "" : "s"}` : null}
                       </p>
 
                       <section className="bob-roadmap-section">
