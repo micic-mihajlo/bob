@@ -1,0 +1,22 @@
+{
+  "acceptance": "A vitest test with fake timers on the roadmap view advances the clock by 1000ms and asserts the card's label changes from \"2m 14s\" to \"2m 15s\"; typecheck and the existing formatElapsed test in src/lib/format-time.test.ts pass.",
+  "propertiesFile": "src/lib/client/roadmap-view.properties.test.ts",
+  "properties": [
+    {
+      "name": "counts a running request up to the clock it is given",
+      "criterion": "A vitest test with fake timers on the roadmap view advances the clock by 1000ms and asserts the card's label changes from \"2m 14s\" to \"2m 15s\"; typecheck and the existing formatElapsed test in src/lib/format-time.test.ts pass."
+    },
+    {
+      "name": "never changes a finished request's label as the clock moves",
+      "criterion": "A vitest test with fake timers on the roadmap view advances the clock by 1000ms and asserts the card's label changes from \"2m 14s\" to \"2m 15s\"; typecheck and the existing formatElapsed test in src/lib/format-time.test.ts pass."
+    },
+    {
+      "name": "holds a finished request at zero when its track has no usable stop",
+      "criterion": "A vitest test with fake timers on the roadmap view advances the clock by 1000ms and asserts the card's label changes from \"2m 14s\" to \"2m 15s\"; typecheck and the existing formatElapsed test in src/lib/format-time.test.ts pass."
+    },
+    {
+      "name": "shows no label for a track saved without a start",
+      "criterion": "A vitest test with fake timers on the roadmap view advances the clock by 1000ms and asserts the card's label changes from \"2m 14s\" to \"2m 15s\"; typecheck and the existing formatElapsed test in src/lib/format-time.test.ts pass."
+    }
+  ]
+}

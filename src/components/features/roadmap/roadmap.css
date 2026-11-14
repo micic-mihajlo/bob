@@ -80,6 +80,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* How long a request's card has run: it ticks every second while the request is in progress. */
+.bob-roadmap-elapsed {
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
 .bob-roadmap-list {
   display: flex;
   flex-direction: column;

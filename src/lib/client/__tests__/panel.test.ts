@@ -7,7 +7,7 @@ import { fileBadge, fileReferenceTone } from "../file-reference";
 import { fileDayLabel, fileTypeCounts, groupFilesByDay, queryFiles } from "../files-view";
 import { parseMarkdown } from "../markdown";
 import { openPanes, paneAfterClose, PANEL_TABS, selectedPane } from "../panel-tabs";
-import { currentStep, forUserLine, hasPlan, roadmapSteps, trackProgress, trackViews, workOrderProgress } from "../roadmap-view";
+import { currentStep, forUserLine, hasPlan, roadmapSteps, trackActive, trackElapsed, trackProgress, trackViews, workOrderProgress } from "../roadmap-view";
 import { groupTheorems } from "../verification";
 import type { Agent, Roadmap, Snapshot, WorkOrder } from "@/lib/types";
 
@@ -81,6 +81,29 @@ describe("roadmap view", () => {
   });
 });
 
+describe("track elapsed time", () => {
+  const started = "2026-11-14T12:00:00.000Z";
+  const at = (seconds: number) => Date.parse(started) + seconds * 1000;
+
+  it("counts up every second while the request is in progress", () => {
+    const track = { stage: 3, startedAt: started, updatedAt: started };
+    expect(trackActive(track, 5)).toBe(true);
+    expect(trackElapsed(track, 5, at(134))).toBe("2m 14s");
+    expect(trackElapsed(track, 5, at(135))).toBe("2m 15s");
+  });
+
+  it("holds a finished request at the moment its track last moved", () => {
+    const track = { stage: 5, startedAt: started, updatedAt: new Date(at(245)).toISOString() };
+    expect(trackActive(track, 5)).toBe(false);
+    expect(trackElapsed(track, 5, at(245))).toBe("4m 05s");
+    expect(trackElapsed(track, 5, at(900))).toBe("4m 05s");
+  });
+
+  it("shows nothing on a track saved without a start", () => {
+    expect(trackElapsed({ stage: 3 }, 5, at(10))).toBeNull();
+  });
+});
+
 describe("trackViews", () => {
   const track = (requestId: string, stage: number) => ({
     requestId,
@@ -131,6 +154,14 @@ describe("trackViews", () => {
     expect(view.tracks).toHaveLength(1);
     expect(view.tracks[0]).toMatchObject({ ask: null, stage: 3, today: roadmap.today, backlog: roadmap.backlog });
     expect(view.backlog).toEqual([]);
+  });
+
+  it("carries each track's start and last move for its card's elapsed time", () => {
+    const view = trackViews({
+      ...roadmap,
+      tracks: [{ ...track("r1", 3), startedAt: "2026-11-14T12:00:00.000Z", updatedAt: "2026-11-14T12:02:14.000Z" }],
+    });
+    expect(view.tracks[0]).toMatchObject({ startedAt: "2026-11-14T12:00:00.000Z", updatedAt: "2026-11-14T12:02:14.000Z" });
   });
 });
 

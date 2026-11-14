@@ -1,4 +1,5 @@
 import type { Goal, RequestId, Roadmap, StageGate, WorkOrder, WorkOrderStatus } from "@/lib/types";
+import { formatElapsed } from "./format";
 
 export type StepPhase = "done" | "current" | "next";
 
@@ -20,6 +21,10 @@ export interface TrackView {
   today: WorkOrder[];
   /** Its work orders not yet scheduled. */
   backlog: WorkOrder[];
+  /** When the request started, for its card's elapsed time. Missing on a roadmap saved before tracks. */
+  startedAt?: string;
+  /** When the track last moved, which is where a finished request's elapsed time stops. Missing on a roadmap saved before tracks. */
+  updatedAt?: string;
 }
 
 /**
@@ -46,6 +51,8 @@ export function trackViews(roadmap: Roadmap): { tracks: TrackView[]; backlog: Wo
       gates: track.gates,
       today: roadmap.today.filter(owns(track.requestId)),
       backlog: backlog.filter(owns(track.requestId)),
+      startedAt: track.startedAt,
+      updatedAt: track.updatedAt,
     })),
     backlog: backlog.filter((order) => !shown.some((track) => order.requestId === track.requestId)),
   };
@@ -79,6 +86,29 @@ export function workOrderProgress(track: { today: readonly WorkOrder[]; backlog?
 export function trackProgress(track: TrackView, lastStage: number): { done: number; total: number; followUps: number } {
   if (track.stage < lastStage) return { ...workOrderProgress(track), followUps: 0 };
   return { ...workOrderProgress({ today: track.today }), followUps: track.backlog.filter((order) => order.status !== "done").length };
+}
+
+/** A track's request is still in progress until it reaches the last stage. */
+export function trackActive(track: Pick<TrackView, "stage">, lastStage: number): boolean {
+  return track.stage < lastStage;
+}
+
+function parsed(value: string | undefined): number | null {
+  const time = value ? Date.parse(value) : NaN;
+  return Number.isNaN(time) ? null : time;
+}
+
+/**
+ * How long a card's request has run, like "2m 14s": it counts up to `now` every second while the
+ * request is in progress, and holds at the moment the track last moved once the request is finished.
+ * A `now` of 0 is the server render, before the window's clock is known, so there is no label yet.
+ */
+export function trackElapsed(track: Pick<TrackView, "stage" | "startedAt" | "updatedAt">, lastStage: number, now: number): string | null {
+  if (now === 0) return null;
+  const start = parsed(track.startedAt);
+  if (start === null) return null;
+  const end = trackActive(track, lastStage) ? now : (parsed(track.updatedAt) ?? start);
+  return formatElapsed(end - start);
 }
 
 /** "For an accountant": the goal's user after "For", with a leading article in lower case. */

@@ -16,6 +16,8 @@ import {
   forUserLine,
   hasPlan,
   roadmapSteps,
+  trackActive,
+  trackElapsed,
   trackViews,
   WORK_ORDER_STATUS_LABEL,
   trackProgress,
@@ -23,6 +25,7 @@ import {
   type StepPhase,
   type TrackView,
 } from "@/lib/client/roadmap-view";
+import { useNow } from "@/lib/client/use-now";
 import type { WorkOrder } from "@/lib/types";
 
 const PHASE_LABEL: Record<StepPhase, string> = {
@@ -40,6 +43,9 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
   const { snapshot, agentsById, selectAgent, captain, openThreadTab } = useBob();
   const { roadmap, releaseNotes = [], requests = [], budgets, inbox = [] } = snapshot;
   const { tracks, backlog } = trackViews(roadmap);
+  // One clock for the pane: it ticks only while some card's request is still in progress.
+  const ticking = tracks.some((track) => trackActive(track, roadmap.totalStages));
+  const now = useNow(ticking);
   const started = tracks.some((track) => track.goal !== null) || roadmap.today.length > 0 || (roadmap.backlog?.length ?? 0) > 0;
 
   const meta = (order: WorkOrder) => {
@@ -118,11 +124,18 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                   const progress = trackProgress(track, roadmap.totalStages);
                   const asked = track.ask ? requestLabel(track.ask, inbox) : null;
                   const steps = roadmapSteps(track);
+                  const elapsed = trackElapsed(track, roadmap.totalStages, now);
                   return (
                     <Fragment key={track.key}>
                       <Card className="bob-roadmap-card" aria-label={goal?.title ?? "Goal"}>
                         <p className="bob-roadmap-label">Goal</p>
                         <h3 className="bob-roadmap-goal">{goal?.title ?? "No goal set yet"}</h3>
+                        {elapsed ? (
+                          <p className="bob-roadmap-elapsed">
+                            <span className="sr-only">Elapsed time </span>
+                            {elapsed}
+                          </p>
+                        ) : null}
                         {asked ? (
                           <p className="bob-roadmap-ask" title={asked}>
                             {asked === track.ask ? `“${asked}”` : asked}
