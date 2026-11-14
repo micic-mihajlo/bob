@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { sweepOrphans } from "./boot";
 import { withCaptainFiles } from "./captain-files";
+import { withPullRequestTraces } from "./trace";
 import { globals, type Config } from "./globals";
 import { mirrorCommit } from "./graph/mirror";
 import { seedState } from "./seed";
@@ -68,7 +69,7 @@ function schedulePersist(): void {
 
 function commit(next: State): State {
   const g = globals();
-  g.state = { ...withCaptainFiles(next), rev: getState().rev + 1 };
+  g.state = { ...withCaptainFiles(withPullRequestTraces(next)), rev: getState().rev + 1 };
   schedulePersist();
   mirrorCommit(g.state);
   for (const listener of [...g.listeners]) {
