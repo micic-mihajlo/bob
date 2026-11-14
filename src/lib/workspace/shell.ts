@@ -75,7 +75,9 @@ export function sandboxMode(): string {
 
 /**
  * The mount setup that confines a command: the system is read-only, /tmp is a fresh empty tmpfs, Bob's
- * data folder and every other workspace are hidden behind empty tmpfs mounts, and Bob's env files read as
+ * data folder, every other workspace and Bob's own node_modules are hidden behind empty tmpfs mounts (vitest
+ * writes its module cache to node_modules at the nearest pnpm workspace root, which for a workspace under
+ * .data is Bob's own checkout), and Bob's env files read as
  * empty. Only the thread's workspace, its project's origin and home, and the package cache stay writable.
  */
 export function sandboxScript(ws: Workspace, hidden: string[], secrets: string[], caches: string[]): string {
@@ -101,7 +103,7 @@ export function sandboxScript(ws: Workspace, hidden: string[], secrets: string[]
 function commandLine(ws: Workspace, command: string): { file: string; args: string[] } {
   if (!sandboxAvailable()) return { file: "bash", args: ["-c", command] };
   const cwd = process.cwd();
-  const hidden = [path.join(cwd, ".data"), path.dirname(ws.project.dir)].filter((p, i, all) => all.indexOf(p) === i);
+  const hidden = [path.join(cwd, ".data"), path.dirname(ws.project.dir), path.join(cwd, "node_modules")].filter((p, i, all) => all.indexOf(p) === i);
   const secrets = [".env", ".env.local", ".env.development.local", ".env.production.local"].map((f) => path.join(cwd, f));
   const caches = [path.join(os.homedir(), ".npm"), path.join(os.homedir(), ".cache"), path.join(os.homedir(), ".local", "share", "pnpm")].filter((p) => {
     if (!existsSync(p)) mkdirSync(p, { recursive: true });
