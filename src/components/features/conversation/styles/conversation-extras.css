@@ -1,0 +1,26 @@
+/* Copied from the reference's channels.css: the line that stands where a read-only chat's composer was. */
+.channel-preview-notice {
+  flex-shrink: 0;
+  margin: 0;
+  padding: var(--bob-space-4);
+  color: var(--bob-text-secondary);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+  text-align: center;
+}
+
+/* Bob only: a thread's title beside its name, in the reference header's muted tone. */
+.conversation-header-subtitle {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The name opens the side panel here, where the reference opens the agent's settings. */
+.conversation-title[data-opens-panel]:hover {
+  color: var(--bob-text-primary);
+}
