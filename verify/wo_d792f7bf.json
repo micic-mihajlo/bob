@@ -1,0 +1,22 @@
+{
+  "acceptance": "A track whose request was set 5 minutes ago shows \"5m\" on the roadmap.",
+  "propertiesFile": "src/lib/client/roadmap-view.properties.test.ts",
+  "properties": [
+    {
+      "name": "shows whole minutes under an hour",
+      "criterion": "A track whose request was set 5 minutes ago shows \"5m\" on the roadmap."
+    },
+    {
+      "name": "shows <1m in the first minute and for negative time",
+      "criterion": "A track whose request was set 5 minutes ago shows \"5m\" on the roadmap."
+    },
+    {
+      "name": "shows hours and minutes from an hour up",
+      "criterion": "A track whose request was set 5 minutes ago shows \"5m\" on the roadmap."
+    },
+    {
+      "name": "freezes a finished track at its last change and keeps counting an open one",
+      "criterion": "A track whose request was set 5 minutes ago shows \"5m\" on the roadmap."
+    }
+  ]
+}

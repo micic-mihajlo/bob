@@ -18,6 +18,8 @@ export interface TrackView {
   gates: StageGate[];
   /** When the request was recorded, which its card's elapsed timer counts from. */
   startedAt: string;
+  /** When the track last changed; once it is finished, this is when its clock stopped. */
+  updatedAt: string;
   /** Its work orders scheduled for today. */
   today: WorkOrder[];
   /** Its work orders not yet scheduled. */
@@ -33,7 +35,7 @@ export function trackViews(roadmap: Roadmap): { tracks: TrackView[]; backlog: Wo
   const tracks = roadmap.tracks ?? [];
   if (tracks.length === 0) {
     const { goal, stage, stageTitle, gates, today, updatedAt } = roadmap;
-    return { tracks: [{ key: "roadmap", ask: null, goal, stage, stageTitle, gates, startedAt: updatedAt, today, backlog }], backlog: [] };
+    return { tracks: [{ key: "roadmap", ask: null, goal, stage, stageTitle, gates, startedAt: updatedAt, updatedAt, today, backlog }], backlog: [] };
   }
   const active = tracks.filter((track) => track.stage < roadmap.totalStages);
   const shown = active.length > 0 ? active : [tracks.reduce((last, track) => (track.updatedAt >= last.updatedAt ? track : last))];
@@ -47,6 +49,7 @@ export function trackViews(roadmap: Roadmap): { tracks: TrackView[]; backlog: Wo
       stageTitle: track.stageTitle,
       gates: track.gates,
       startedAt: track.startedAt,
+      updatedAt: track.updatedAt,
       today: roadmap.today.filter(owns(track.requestId)),
       backlog: backlog.filter(owns(track.requestId)),
     })),
@@ -58,6 +61,20 @@ export function trackViews(roadmap: Roadmap): { tracks: TrackView[]; backlog: Wo
 export function elapsedSince(startedAt: string, now: number): number {
   const recorded = Date.parse(startedAt);
   return Number.isNaN(recorded) ? 0 : now - recorded;
+}
+
+/** A duration as the small track label: "<1m" in the first minute, "5m" under an hour, "1h 12m" from an hour up. */
+export function formatTrackElapsed(milliseconds: number): string {
+  const minutes = Math.floor(milliseconds / 60_000);
+  if (minutes < 1) return "<1m";
+  if (minutes < 60) return `${minutes}m`;
+  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+}
+
+/** A track's label: its time since it was set, frozen at its last change once it reaches the last stage (merged). */
+export function trackElapsedLabel(track: Pick<TrackView, "startedAt" | "updatedAt" | "stage">, lastStage: number, now: number): string {
+  const end = track.stage >= lastStage ? Date.parse(track.updatedAt) : now;
+  return formatTrackElapsed(elapsedSince(track.startedAt, Number.isNaN(end) ? now : end));
 }
 
 /** The stage the work is in: the gate of the track's stage, else the first one not done. */

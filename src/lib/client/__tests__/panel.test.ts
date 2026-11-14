@@ -74,6 +74,7 @@ describe("roadmap view", () => {
       stageTitle: "",
       gates: [],
       startedAt: "",
+      updatedAt: "",
       today: [order("a", "done")],
       backlog: [order("b", "open"), order("c", "open")],
     };

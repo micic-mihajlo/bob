@@ -13,14 +13,13 @@ import { displayName } from "@/lib/client/crew";
 import { formatDeadline } from "@/lib/client/format";
 import { requestLabel, requestUsage } from "@/lib/client/requests";
 import { useNow } from "@/lib/client/use-now";
-import { formatElapsed } from "@/lib/format-time";
 import {
-  elapsedSince,
   forUserLine,
   hasPlan,
   roadmapSteps,
   trackViews,
   WORK_ORDER_STATUS_LABEL,
+  trackElapsedLabel,
   trackProgress,
   type RoadmapStep,
   type StepPhase,
@@ -123,12 +122,12 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                   const progress = trackProgress(track, roadmap.totalStages);
                   const asked = track.ask ? requestLabel(track.ask, inbox) : null;
                   const steps = roadmapSteps(track);
-                  const elapsed = elapsedSince(track.startedAt, now);
+                  const elapsed = trackElapsedLabel(track, roadmap.totalStages, now);
                   return (
                     <Fragment key={track.key}>
                       <Card className="bob-roadmap-card" aria-label={goal?.title ?? "Goal"}>
-                        <p className="bob-roadmap-elapsed" aria-label={`Elapsed ${formatElapsed(elapsed)}`}>
-                          {formatElapsed(elapsed)}
+                        <p className="bob-roadmap-elapsed" aria-label={`Elapsed ${elapsed}`}>
+                          {elapsed}
                         </p>
                         <p className="bob-roadmap-label">Goal</p>
                         <h3 className="bob-roadmap-goal">{goal?.title ?? "No goal set yet"}</h3>
