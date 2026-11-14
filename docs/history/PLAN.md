@@ -1,5 +1,7 @@
 # Bob: build plan
 
+> Kept for the record: this is the plan written before the build started. Bob did not end up on eve. It runs its own turn loop, mailbox and git workspaces in this Next.js app, and the eve spike never happened. HydraDB is a mirror of the JSON store rather than the store itself, and some primitives below changed or were dropped. The README and docs/ARCHITECTURE.md describe what exists.
+
 Hard stops: DevPost closes 3:15 PM Saturday, last commit 3:30 PM. Demo is 3 minutes plus 2 of questions, judged on technical execution and enterprise utility.
 
 ## What Bob is

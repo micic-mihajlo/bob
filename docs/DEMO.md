@@ -27,7 +27,7 @@ Open http://localhost:3000.
   Model            live: captain moonshotai/kimi-k3.1-pro, crew deepseek/deepseek-v4.1-flash
   run sandbox      plain shell (no namespace sandbox on darwin); commands still get no API keys
   HydraDB graph    off (BOB_STORE=hydra turns it on)
-  Voice            off (needs ELEVENLABS_API_KEY)
+  Voice            browser speech (BOB_VOICE=elevenlabs for ElevenLabs)
   GitHub PRs       off (BOB_GITHUB=gh turns it on)
   Vercel previews  off (BOB_PREVIEWS=vercel turns it on)
   Project          invoices-app (invoices template)
