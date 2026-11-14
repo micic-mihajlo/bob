@@ -117,7 +117,7 @@ const runDef = define({
   }),
   sets: ["build", "review", "research", "subagent"],
   label: (i) => `Running ${clip(i.command, 70)}`,
-  detail: (i, r) => (typeof r.output === "string" ? `$ ${i.command}\n${r.output.slice(-STEP_OUTPUT)}\n${String(r.note ?? "")}`.trim() : undefined),
+  detail: (i, r) => (typeof r.output === "string" ? `$ ${i.command}   (${String(r.sandbox)})\n${r.output.slice(-STEP_OUTPUT)}\n${String(r.note ?? "")}`.trim() : undefined),
   execute: async (i, ctx) => {
     const ws = await workspaceOf(ctx);
     const deps = getConfig().installDeps ? await ensureWorkspaceDeps(ws) : null;

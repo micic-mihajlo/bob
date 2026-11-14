@@ -1,10 +1,10 @@
 import { mkdir, stat, writeFile as writeFs } from "node:fs/promises";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { ensureWorkspaceDeps, prepareProjectDeps } from "../deps";
 import { gitOrThrow } from "../run-git";
 import { ensureProject, ensureWorkspace } from "../setup";
-import { runCommand, sandboxAvailable, shellEnv } from "../shell";
+import { runCommand, sandboxAvailable, sandboxMode, shellEnv } from "../shell";
 import { GIT_TEST_TIMEOUT, templateWorkspace, withTempRoot } from "./fixture";
 
 const temp = withTempRoot();
@@ -62,6 +62,43 @@ describe.runIf(sandboxAvailable())("the sandbox", { timeout: GIT_TEST_TIMEOUT },
     expect((await check("touch /usr/bob-sandbox-test"))?.output).toMatch(/Read-only file system/);
     expect((await check(`test -s ${envFile}`))?.exitCode).not.toBe(0);
     expect((await check("git switch --quiet --create sandboxed && git push --quiet origin sandboxed && echo pushed"))?.output).toContain("pushed");
+  });
+});
+
+describe("on macOS", { timeout: GIT_TEST_TIMEOUT }, () => {
+  const platform = process.platform;
+  beforeEach(() => Object.defineProperty(process, "platform", { value: "darwin" }));
+  afterEach(() => Object.defineProperty(process, "platform", { value: platform }));
+
+  it("runs commands in a plain shell, says so, and still hides the server's secrets", async () => {
+    expect(sandboxAvailable()).toBe(false);
+    expect(sandboxMode()).toBe("plain shell (no namespace sandbox on darwin)");
+    const ws = await templateWorkspace(temp.root);
+    process.env.AI_GATEWAY_API_KEY = "secret-for-test";
+    try {
+      const out = await runCommand(ws, "pwd && env");
+      expect(out).toMatchObject({ ok: true, exitCode: 0, sandbox: "plain shell (no namespace sandbox on darwin)" });
+      expect(out.ok && out.output).toContain(ws.root);
+      expect(out.ok && out.output).not.toContain("secret-for-test");
+    } finally {
+      delete process.env.AI_GATEWAY_API_KEY;
+    }
+  });
+
+  it("gives a workspace the project's install, by plain copy where the clone flag is refused", async () => {
+    const source = path.join(temp.root, "source");
+    await mkdir(source, { recursive: true });
+    await writeFs(path.join(source, "package.json"), JSON.stringify({ name: "mac", private: true }));
+    const run = (args: string[]) => gitOrThrow({ cwd: source, home: temp.root, identity: { name: "t", email: "t@t" }, args });
+    await run(["init", "--quiet", "--initial-branch=main"]);
+    await run(["add", "--all"]);
+    await run(["commit", "--quiet", "-m", "start"]);
+    await ensureProject("mac", { kind: "git", url: source }, { root: temp.root });
+    const ws = await ensureWorkspace("mac", "agent-a", { root: temp.root });
+    expect(await prepareProjectDeps(ws.project)).toMatchObject({ kind: "ready" });
+    expect(await ensureWorkspaceDeps(ws)).toMatchObject({ ok: true, state: { kind: "ready", reused: true } });
+    const out = await runCommand(ws, "test -f node_modules/.bob-deps && echo copied");
+    expect(out.ok && out.output).toBe("copied");
   });
 });
 
