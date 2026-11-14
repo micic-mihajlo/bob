@@ -1,5 +1,9 @@
 import { liveAsks } from "./asks";
+import { openAsk } from "./brain/intake";
+import { ordersOf, tracksOf } from "./roadmap";
+import { requestAsk } from "./threads";
 import { messageById, runningTurn, type State } from "./state";
+import { addNotice } from "./state-ops";
 import type { Agent, AgentId, NeedsYouItem, RunStatus, ThreadState, Turn } from "./types";
 
 const latestTurn = (s: State, agentId: AgentId): Turn | undefined =>
@@ -44,6 +48,39 @@ function failure(s: State, agent: Agent): NeedsYouItem | null {
 }
 
 /** Pending approvals, open questions and failed threads, newest first. */
+/**
+ * Requests the captain recorded (they have a track) that hold no work order once its turn on them ended, while it
+ * is not waiting on the person's answer about them. They are named in the captain's thread, in its next turn and in
+ * DIGEST.md, so no request is dropped without a word.
+ */
+export function unplannedRequests(s: State): { requestId: string; ask: string }[] {
+  const captain = s.agents.find((a) => a.kind === "captain");
+  if (!captain) return [];
+  const running = runningTurn(s, captain.id);
+  const asking = openAsk(s, captain.id)?.requestId;
+  return tracksOf(s.roadmap)
+    .filter((t) => t.stage <= SPEC_STAGE && t.requestId !== asking)
+    .filter((t) => !running?.messageIds.some((id) => messageById(s, id)?.requestId === t.requestId))
+    .filter((t) => {
+      const { today, backlog } = ordersOf(s.roadmap, t.requestId);
+      return today.length + backlog.length === 0;
+    })
+    .map((t) => ({ requestId: t.requestId, ask: requestAsk(s, t.requestId) ?? t.goal?.title ?? t.requestId }));
+}
+
+const SPEC_STAGE = 2;
+
+const unplannedNotice = (ask: string) => `Not planned yet: "${ask}" has no work order.`;
+
+/** Names each unplanned request once in the captain's thread, when the captain's turn ends. */
+export function withUnplannedNotices(s: State, captainId: AgentId): State {
+  const shown = new Set((s.threads[captainId] ?? []).flatMap((i) => (i.kind === "notice" ? [i.text] : [])));
+  return unplannedRequests(s)
+    .map((r) => unplannedNotice(r.ask))
+    .filter((text) => !shown.has(text))
+    .reduce((acc, text) => addNotice(acc, captainId, "warning", text), s);
+}
+
 /** Vague asks the captain found in the inbox, each waiting on the person's answer. */
 function inboxQuestions(s: State): NeedsYouItem[] {
   const captain = s.agents.find((a) => a.kind === "captain");

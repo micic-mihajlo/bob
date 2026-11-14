@@ -446,6 +446,11 @@ export interface Snapshot {
   inbox?: InboxItem[];
   /** By agent, the move its model is writing right now. Gone when the move's real text and steps land. */
   live?: Record<AgentId, LiveMove>;
+  /**
+   * The captain's open question, or null. The person's next message to the captain answers it and joins the request
+   * `ask` started, unless it is posted with `newRequest: true`.
+   */
+  answering?: { agentId: AgentId; requestId: RequestId; ask: string; question: string | null } | null;
 }
 
 /** Model use the factory recorded for one request, from the AI SDK's usage on each call. */
