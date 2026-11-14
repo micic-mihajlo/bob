@@ -31,6 +31,8 @@ export interface AgentAvatarProps {
 
 // Cap the head at 30fps: at 24-40px the eye cannot see the difference, and the CPU can.
 const AVATAR_FPS = 30;
+// The print themes draw the head on twos, at 12fps, like a hand-drawn cartoon.
+const PRINT_FPS = 12;
 const HOVER_GROUP = "[data-avatar-hover], button, a, [role='button'], [role='link'], [role='menuitem']";
 const GAZE_DISTANCE = 320;
 
@@ -99,7 +101,8 @@ export function AgentAvatar({ agent, mood = "idle", motion = "hover", followPoin
       time += dt;
       const goal = goalFor(live.current.moving);
       current = current ? easeAsciiFaceFrame(current, goal, dt) : goal;
-      if (now - drawnAt >= 1000 / AVATAR_FPS) {
+      const fps = document.documentElement.hasAttribute("data-print") ? PRINT_FPS : AVATAR_FPS;
+      if (now - drawnAt >= 1000 / fps) {
         drawnAt = now;
         draw(current);
       }

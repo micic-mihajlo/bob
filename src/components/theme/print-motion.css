@@ -1,0 +1,52 @@
+/*
+ * Bob in print, motion on twos. The stamp and the PASS tag pop in stepped at 12fps (steps() with one
+ * step per 83ms frame), and the faces redraw at 12fps (AgentAvatar). Everything else keeps the
+ * smooth ease-out. Only transform and opacity animate. Under reduced motion nothing here moves.
+ */
+
+@keyframes print-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes print-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* One stamp, when the merge lands while the card is on screen: 4 frames at 12fps. */
+[data-print] .pr-merged-stamp[data-fresh] {
+  animation: print-stamp 333ms steps(4, jump-end) both;
+}
+
+/* The PASS tag pops when its step appears: 3 frames at 12fps. */
+[data-print] .agent-step-pass {
+  animation: print-pop 250ms steps(3, jump-end) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-print] .pr-merged-stamp[data-fresh],
+  [data-print] .agent-step-pass {
+    animation: none;
+  }
+}
