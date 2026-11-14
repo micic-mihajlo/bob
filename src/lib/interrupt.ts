@@ -4,6 +4,7 @@ import { relayOwed } from "./relay";
 import { agentName, messageById, runningTurn, type State } from "./state";
 import { addNotice, patchTurn } from "./state-ops";
 import { getState, transact } from "./store";
+import { closePending } from "./threads";
 import { drain } from "./turns";
 import type { AgentId, Message, RequestId, Turn } from "./types";
 
@@ -65,9 +66,11 @@ function applyInterrupt(s: State, agentId: AgentId): { state: State; value: Inte
   const scope = scopeOf(s, agentId, requests);
   const turns = turnsToStop(s, scope);
   const at = nowIso();
-  let next = closeSubtree(
-    turns.reduce((acc, t) => patchTurn(acc, t.id, { status: "interrupted", endedAt: at }), s),
-    scope,
+  let next = closePending(
+    closeSubtree(
+      turns.reduce((acc, t) => patchTurn(acc, t.id, { status: "interrupted", endedAt: at }), s),
+      scope,
+    ),
   );
   const others = [...new Set(turns.map((t) => t.agentId))].filter((id) => id !== agentId);
   const stillRunning = next.turns.filter((t) => t.status === "running" && requests.has(t.requestId)).map((t) => t.agentId);
