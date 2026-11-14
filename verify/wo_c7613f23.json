@@ -1,0 +1,41 @@
+{
+  "acceptance": "An accountant downloads every invoice as one CSV file at month end: a header row, then one row per invoice with id, customer, amount, status and due date.",
+  "propertiesFile": "src/csv.properties.test.ts",
+  "properties": [
+    {
+      "name": "one row per invoice",
+      "criterion": "one row per invoice"
+    },
+    {
+      "name": "amounts in dollars with two decimals",
+      "criterion": "the amount in dollars"
+    },
+    {
+      "name": "a cell with a comma, quote or line break is quoted",
+      "criterion": "a customer name with a comma"
+    },
+    {
+      "name": "reading a cell back gives the value",
+      "criterion": "a customer name with a comma"
+    }
+  ],
+  "lean": {
+    "file": "verify/Csv.lean",
+    "theorems": [
+      "Csv.unescape_escape"
+    ],
+    "conformance": {
+      "lean": "Csv.cell",
+      "module": "src/csv.ts",
+      "export": "csvCell",
+      "inputs": [
+        "Acme Corp",
+        "Smith, Jones",
+        "say \"hi\"",
+        "two\nlines",
+        "",
+        "\"\""
+      ]
+    }
+  }
+}
