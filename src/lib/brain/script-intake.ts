@@ -22,12 +22,14 @@ export interface IntentDraft {
 export type IntakeDecision = { kind: "ask"; reply: string } | { kind: "record"; intent: IntentDraft };
 
 /**
- * The scripted input inspection over everything the person wrote since the last recorded intent: ask
- * about the missing parts, at most two at a time and for at most two rounds, then record the intent
- * with each remaining gap filled by a stated assumption.
+ * The scripted input inspection over everything the person wrote since the last recorded intent. A request
+ * that names its behaviour and an acceptance check goes straight through. Otherwise ask about the
+ * acceptance check, and the scope when it is missing too, for at most two rounds. Then record the intent
+ * with each remaining gap filled by a stated assumption. The user is always assumed, never asked.
  */
 export function inspectRequest(texts: string[], rounds: number, change: ScriptedChange): IntakeDecision {
   const all = texts.join("\n");
+  const intake = change.intake(texts[0] ?? "");
   const user = USER.exec(all)?.[0] ?? null;
   const acceptance = sentences(all).find((x) => ACCEPTANCE.test(x)) ?? null;
   const missing: IntentPart[] = [
@@ -35,8 +37,8 @@ export function inspectRequest(texts: string[], rounds: number, change: Scripted
     ...(acceptance ? [] : (["acceptance"] as const)),
     ...(user ? [] : (["user"] as const)),
   ];
-  if (missing.length > 0 && rounds < MAX_PUSHBACK_ROUNDS && !PROCEED.test(texts[texts.length - 1] ?? "")) {
-    const asks = missing.slice(0, 2).map((part) => change.intake[part].ask);
+  if (!acceptance && rounds < MAX_PUSHBACK_ROUNDS && !PROCEED.test(texts[texts.length - 1] ?? "")) {
+    const asks = missing.filter((part) => part !== "user").map((part) => intake[part].ask);
     const lead = rounds === 0 ? (asks.length > 1 ? "Two quick ones before I plan it." : "One quick one before I plan it.") : "One more round and I'll start.";
     return { kind: "ask", reply: [lead, ...asks.map((a) => `- ${a}`)].join("\n") };
   }
@@ -45,10 +47,10 @@ export function inspectRequest(texts: string[], rounds: number, change: Scripted
     kind: "record",
     intent: {
       title: change.workTitle(request),
-      user: user ? capitalize(user) : change.intake.user.assume,
+      user: user ? capitalize(user) : intake.user.assume,
       behaviour: [summarize(request), ...texts.slice(1).flatMap(sentences).filter((x) => SCOPE.test(x))].map((x) => x.replace(/[.!?]+$/, "")).join(". ") + ".",
-      acceptance: acceptance ?? change.intake.acceptance.assume,
-      assumptions: missing.map((part) => `${capitalize(part)}: ${change.intake[part].assume}`),
+      acceptance: acceptance ?? intake.acceptance.assume,
+      assumptions: missing.map((part) => `${capitalize(part)}: ${intake[part].assume}`),
     },
   };
 }

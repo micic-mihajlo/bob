@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { postUserMessage } from "../actions";
 import { systemPrompt } from "../brain/prompt";
+import { buildSnapshot } from "../snapshot";
 import { getState } from "../store";
 import { traceWhy } from "../why";
 import { settle } from "../turns";
@@ -37,6 +38,22 @@ describe("the captain inspects a request before work starts", { timeout: 60_000 
     expect(road.today[0].id).toMatch(/^wo_/);
     expect(crew().map((a) => a.crewRole)).toEqual(["build", "review"]);
     expect(captainSaid()).toHaveLength(3);
+  });
+
+  it("ends its pushback with a question that shows in needs-you and DIGEST.md", async () => {
+    await say(VAGUE);
+    const [question] = captainSaid();
+    expect(question.trim()).toMatch(/\?$/);
+    expect((buildSnapshot(getState()).needsYou ?? []).filter((n) => n.kind === "question" && n.agentId === "bob")).toHaveLength(1);
+    expect(getState().drive.find((f) => f.name === "DIGEST.md")?.content).toMatch(/^1 thing needs you: answer Bob/);
+  });
+
+  it("starts a request that names its behaviour and an acceptance check without asking anything", async () => {
+    await say("Add isOverdue(invoice, today) in src/overdue.ts: true when the invoice is not paid and its dueDate is before today. Done means a vitest test passes for a paid invoice, an unpaid one past due, and one due today.");
+    expect(captainSaid()[0]).not.toMatch(/\?/);
+    expect(captainSaid()[0]).not.toMatch(/by role|in scope/);
+    expect(crew().some((a) => a.crewRole === "build")).toBe(true);
+    expect((getState().roadmap.goal?.assumptions ?? []).join(" ")).toMatch(/User: The person who asked/);
   });
 
   it("traces the pull request to the first thing the person typed, with the question and answer as hops", async () => {

@@ -73,22 +73,25 @@ function requestPlan(ctx: TurnContext): Plan {
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1).replace(/\.$/, "");
 
 interface Facts {
-  pr?: PullRequestArtifact;
+  pr: PullRequestArtifact;
   review?: Artifact & { review: ReviewData };
   asked: boolean;
   builder?: Agent;
   reviewer?: Agent;
 }
 
-function factsOf(s: State): Facts {
-  const pr = [...s.artifacts].reverse().find((a): a is PullRequestArtifact => isPullRequest(a) && !a.pullRequest.merged);
-  if (!pr) return { asked: false };
-  const review = [...s.artifacts].reverse().find((a): a is Artifact & { review: ReviewData } => a.review?.pullRequestId === pr.id);
-  const builder = s.agents.find((a) => a.id === pr.agentId && !a.closedAt);
-  const reviewer = s.agents.find((a) => a.crewRole === "review" && !a.closedAt && a.workOrderId === (builder?.workOrderId ?? null));
-  const head = pr.pullRequest.headSha;
-  const asked = s.approvals.some((a) => a.pullRequestId === pr.id && (a.status === "pending" || !a.headSha || a.headSha === head));
-  return { pr, review, asked, builder, reviewer };
+/** Every open pull request, oldest first, with what is known about it. Two requests in flight are two of these. */
+function factsOf(s: State): Facts[] {
+  return s.artifacts
+    .filter((a): a is PullRequestArtifact => isPullRequest(a) && !a.pullRequest.merged)
+    .map((pr) => {
+      const review = [...s.artifacts].reverse().find((a): a is Artifact & { review: ReviewData } => a.review?.pullRequestId === pr.id);
+      const builder = s.agents.find((a) => a.id === pr.agentId && !a.closedAt);
+      const reviewer = s.agents.find((a) => a.crewRole === "review" && !a.closedAt && a.workOrderId === (builder?.workOrderId ?? null));
+      const head = pr.pullRequest.headSha;
+      const asked = s.approvals.some((a) => a.pullRequestId === pr.id && (a.status === "pending" || !a.headSha || a.headSha === head));
+      return { pr, review, asked, builder, reviewer };
+    });
 }
 
 const prLine = (pr: PullRequestArtifact) => `#${pr.pullRequest.number} (id ${pr.id}) "${pr.title}" on branch ${pr.pullRequest.branch}`;
@@ -104,13 +107,14 @@ function reviewBrief(pr: PullRequestArtifact): string {
   ].join("\n");
 }
 
-type Rule = { when: (f: Facts) => boolean; plan: (f: Facts) => Plan };
+/** `ends`: the plan calls request_approval, which ends the turn, so it runs last in a combined turn. */
+type Rule = { when: (f: Facts) => boolean; plan: (f: Facts) => Plan; ends?: true };
 
 const REPORT_RULES: Rule[] = [
   {
-    when: (f) => !!f.pr && f.review?.review.verdict === "approve" && !f.asked,
-    plan: ({ pr, review }) => {
-      const p = pr as PullRequestArtifact;
+    when: (f) => f.review?.review.verdict === "approve" && (!f.review.review.headSha || f.review.review.headSha === f.pr.pullRequest.headSha) && !f.asked,
+    ends: true,
+    plan: ({ pr: p, review }) => {
       const detail = `Merges ${prLine(p)} into main. Files: ${filesLine(p)}. Review: approved with ${review?.review.findings.length ?? 0} finding(s).`;
       return {
         steps: [
@@ -124,22 +128,13 @@ const REPORT_RULES: Rule[] = [
     },
   },
   {
-    when: (f) => f.review?.review.verdict === "request_changes" && !!f.builder,
-    plan: ({ review, builder }) => {
-      const findings = (review?.review.findings ?? []).map((x) => `- ${x.path}: ${x.comment}`).join("\n");
+    when: (f) => !f.review && !f.reviewer,
+    plan: ({ pr: p, builder }) => {
+      const title = `Review #${p.pullRequest.number}`;
+      const started = (done: CallRecord[]) => done.find((c) => c.name === "start_thread" && (c.input as { title?: string }).title === title && !("error" in c.result))?.result.code;
       return {
-        steps: [() => [call("message_thread", { threadId: builder?.id, text: `The review asked for changes:\n${findings}\nFix them, commit, call open_pull_request again, and report.` })]],
-        reply: () => `The review asked for changes. I sent the findings to ${builder?.code}.`,
-      };
-    },
-  },
-  {
-    when: (f) => !!f.pr && !f.review && !f.reviewer,
-    plan: ({ pr, builder }) => {
-      const p = pr as PullRequestArtifact;
-      return {
-        steps: [() => [call("start_thread", { role: "review", title: `Review #${p.pullRequest.number}`, brief: reviewBrief(p), ...(builder?.workOrderId ? { workOrderId: builder.workOrderId } : {}) })]],
-        reply: (done) => `${builder?.code ?? "The build thread"} opened #${p.pullRequest.number}. ${resultOf(done, "start_thread")?.code ?? "A review thread"} is reviewing it.`,
+        steps: [() => [call("start_thread", { role: "review", title, brief: reviewBrief(p), ...(builder?.workOrderId ? { workOrderId: builder.workOrderId } : {}) })]],
+        reply: (done) => `${builder?.code ?? "The build thread"} opened #${p.pullRequest.number}. ${String(started(done) ?? "A review thread")} is reviewing it.`,
       };
     },
   },
@@ -160,9 +155,25 @@ function restartPlan(ctx: TurnContext): Plan | null {
 function reportPlan(ctx: TurnContext): Plan {
   const restarted = restartPlan(ctx);
   if (restarted) return restarted;
-  const facts = factsOf(ctx.initial);
-  const rule = REPORT_RULES.find((r) => r.when(facts));
-  if (rule) return rule.plan(facts);
+  const matched = factsOf(ctx.initial).flatMap((f) => {
+    const rule = REPORT_RULES.find((r) => r.when(f));
+    return rule ? [{ plan: rule.plan(f), ends: !!rule.ends }] : [];
+  });
+  if (matched.length > 0) {
+    const ending = matched.filter((m) => m.ends).map((m) => m.plan);
+    const rest = matched.filter((m) => !m.ends).map((m) => m.plan);
+    return {
+      steps: [
+        ...rest.flatMap((p) => p.steps),
+        (done) => {
+          const calls = ending.flatMap((p) => p.steps.flatMap((step) => step(done)));
+          const asks = calls.filter((c) => c.name !== "advance_stage");
+          return calls.length > asks.length && ctx.initial.roadmap.stageTitle === "Build" ? [call("advance_stage", {}), ...asks] : asks;
+        },
+      ],
+      reply: (done) => [...rest, ...ending].map((p) => p.reply(done)).join(" "),
+    };
+  }
   const heard = ctx.inbound.map((i) => (i.from.kind === "agent" ? i.from.name : "Someone")).join(", ");
   return { steps: [], reply: () => `Noted the report from ${heard}. Nothing else to start right now.` };
 }

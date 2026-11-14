@@ -27,7 +27,7 @@ function openQuestion(s: State, agent: Agent): NeedsYouItem | null {
   if (!turn || turn.status !== "completed" || runningTurn(s, agent.id)) return null;
   if (agent.kind !== "captain" && !fromPerson(s, turn)) return null;
   const text = finalText(s, turn)?.trim();
-  if (!text?.endsWith("?")) return null;
+  if (!text || !/\?\s*$/m.test(text)) return null;
   const answered = s.messages.some((m) => m.from.kind === "user" && m.to.includes(agent.id) && m.at > (turn.endedAt ?? turn.startedAt));
   if (answered) return null;
   return { id: `question:${turn.id}`, agentId: agent.id, kind: "question", title: `${agent.name} asks you something`, detail: text, at: turn.endedAt ?? turn.startedAt };
