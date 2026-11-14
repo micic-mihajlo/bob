@@ -34,7 +34,7 @@ export function openAsk(s: State, captainId: AgentId): Message | null {
   if (pushbackRounds(items) === 0) return null;
   const since = [...items].reverse().find((i) => i.kind === "step" && i.tool === "set_goal")?.at ?? "";
   return (
-    s.messages.find((m) => m.from.kind === "user" && m.to.includes(captainId) && !m.approvalId && !m.continues && m.at > since) ?? null
+    s.messages.find((m) => m.from.kind === "user" && m.to.includes(captainId) && !m.approvalId && !m.inboxId && !m.continues && m.at > since) ?? null
   );
 }
 

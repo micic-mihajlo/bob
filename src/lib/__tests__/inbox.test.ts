@@ -37,6 +37,9 @@ describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_
     expect(item?.status).toBe("new");
     expect(messageById(getState(), item?.messageId ?? "")?.inboxId).toBe(added.inboxId);
     expect(getState().turns.some((t) => t.agentId === "bob" && t.messageIds.includes(item?.messageId ?? ""))).toBe(true);
+    const shown = getState().threads.bob;
+    expect(shown.filter((i) => i.kind === "notice").map((i) => (i.kind === "notice" ? i.text : ""))).toContain("Triaging: customer call, Nov 13");
+    expect(shown.some((i) => i.kind === "user_text")).toBe(false);
 
     const ctx = asBob(requestOf(added.inboxId), item?.messageId ?? null);
     const misquoted = await callTool("triage_inbox", { inboxId: added.inboxId, candidates: [{ ...CSV, quote: "Dana wants CSV." }] }, ctx);
@@ -72,6 +75,8 @@ describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_
     await settle();
     const go = messageById(getState(), promoted.messageId);
     expect(go?.text).toContain(CSV.quote);
+    const typed = getState().threads.bob.filter((i) => i.kind === "user_text").map((i) => (i.kind === "user_text" ? i.text : ""));
+    expect(typed).toEqual([`Build this: ${CSV.ask}`]);
     const ctx = asBob(go?.requestId ?? "", promoted.messageId);
     await callTool("set_today", { workOrderIds: [order?.id] }, ctx);
     const started = await callTool("start_thread", { role: "build", title: "CSV export", brief: "Goal: CSV export.", workOrderId: order?.id }, ctx);

@@ -23,6 +23,7 @@ export interface SendInput {
   automatic?: boolean;
   via?: "voice";
   inboxId?: string;
+  shown?: string;
   quote?: string;
 }
 
@@ -147,6 +148,7 @@ function buildMessage(input: SendInput, to: AgentId[]): Message {
     ...(input.automatic ? { automatic: true as const } : {}),
     ...(input.via ? { via: input.via } : {}),
     ...(input.inboxId ? { inboxId: input.inboxId } : {}),
+    ...(input.shown ? { shown: input.shown } : {}),
     ...(input.quote ? { quote: input.quote } : {}),
     at: nowIso(),
   };

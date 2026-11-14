@@ -12,8 +12,10 @@ export interface StartedTurn {
   messageIds: string[];
 }
 
-function inboundItem(m: Message): ThreadItem {
-  if (m.from.kind === "user") return { kind: "user_text", ...stamp(), text: m.text, ...(m.via ? { via: m.via } : {}) };
+/** An inbox item reaches the captain as instructions plus the raw text; the thread shows only a short notice. */
+function inboundItem(s: State, m: Message): ThreadItem {
+  if (m.inboxId) return { kind: "notice", ...stamp(), tone: "info", text: `Triaging: ${(s.inbox ?? []).find((i) => i.id === m.inboxId)?.source ?? "an inbox item"}` };
+  if (m.from.kind === "user") return { kind: "user_text", ...stamp(), text: m.shown ?? m.text, ...(m.via ? { via: m.via } : {}) };
   return { kind: "message_in", ...stamp(), messageId: m.id, from: m.from.agentId, text: m.text, isReply: m.replyTo !== null };
 }
 
@@ -22,7 +24,7 @@ function showInbound(s: State, agentId: AgentId, batch: Delivery[]): State {
     const m = messageById(acc, d.messageId);
     // A requeued delivery was already shown when it first started.
     if (!m || acc.requeuedDeliveryIds.includes(d.id)) return acc;
-    return addThreadItem(acc, agentId, inboundItem(m));
+    return addThreadItem(acc, agentId, inboundItem(acc, m));
   }, s);
 }
 

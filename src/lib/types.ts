@@ -93,6 +93,8 @@ export interface Message {
   via?: "voice";
   /** Optional: on the message that hands an inbox item to the captain, the item's id. Why? ends here. */
   inboxId?: string;
+  /** What the person's thread shows for a message whose text carries instructions for the captain. */
+  shown?: string;
   /** Optional: on a brief for a work order that came from the inbox, the source line it quotes. */
   quote?: string;
   at: string;
