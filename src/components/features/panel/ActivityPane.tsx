@@ -59,7 +59,6 @@ export function ActivityPane({ onClose }: { onClose: () => void }) {
             label="Artifacts"
             groupByDay
             filters={false}
-            summary={artifacts.length === 1 ? "1 artifact" : `${artifacts.length} artifacts`}
             emptyTitle="No artifacts yet"
             emptyDescription="Pull requests, reviews and notes show up here as the team makes them."
             rows={artifacts.map((artifact) => ({

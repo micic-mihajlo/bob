@@ -124,7 +124,6 @@ export function ChangesPane({ agent, onClose }: { agent: Agent; onClose: () => v
         <FileList
           label="Changed files"
           filters={false}
-          summary={`${fileCountLabel(view.files.length)} · +${totals.additions} −${totals.deletions}`}
           emptyTitle="No changes yet"
           emptyDescription={`${name}'s branch matches main so far.`}
           rows={view.files.map((file) => {
@@ -167,7 +166,7 @@ export function ChangesPane({ agent, onClose }: { agent: Agent; onClose: () => v
       summary={
         view ? (
           <span className="conversation-files-summary">
-            +{totals.additions} −{totals.deletions}
+            {fileCountLabel(view.files.length)} · +{totals.additions} −{totals.deletions}
           </span>
         ) : null
       }
