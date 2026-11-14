@@ -1,13 +1,13 @@
 "use client";
 
 import "./inbox-pane.css";
-import { Bug, Hammer, Inbox, MessageSquareQuote, MessagesSquare, Reply, type LucideIcon } from "lucide-react";
+import { Bug, Hammer, Inbox, MessageSquareQuote, MessagesSquare, RefreshCw, Reply, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { useBob } from "@/components/features/window/BobContext";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Surface";
-import { postInboxSample, promoteInboxOrder } from "@/lib/client/api";
+import { postInboxSample, promoteInboxOrder, syncLinear } from "@/lib/client/api";
 import { formatChatTimestamp } from "@/lib/client/chat-time";
 import { displayName } from "@/lib/client/crew";
 import { candidateOutcome, inboxStatus, quotedLines } from "@/lib/client/inbox";
@@ -31,6 +31,7 @@ const TONE_BADGE = { new: "info-light", done: "success-light", alert: "destructi
 export function InboxPane({ onClose }: { onClose: () => void }) {
   const { snapshot } = useBob();
   const items = snapshot.inbox ?? [];
+  const linear = snapshot.linear?.on ? snapshot.linear : null;
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +47,17 @@ export function InboxPane({ onClose }: { onClose: () => void }) {
     <PaneFrame className="bob-inbox-panel" label="Inbox">
       <PaneHeader title="Inbox" onClose={onClose} />
       <div className="bob-inbox-body">
+        {linear ? (
+          <div className="bob-inbox-linear">
+            <Button size="sm" variant="secondary" disabled={busy !== null} onClick={() => run("linear", syncLinear)}>
+              <RefreshCw aria-hidden="true" />
+              {busy === "linear" ? "Pulling…" : "Pull from Linear"}
+            </Button>
+            <span className="bob-inbox-linear-note" data-error={linear.error ? "" : undefined} role={linear.error ? "alert" : undefined}>
+              {linear.error ?? "Open issues labelled bob come in by themselves every 20 seconds."}
+            </span>
+          </div>
+        ) : null}
         {error ? (
           <p className="bob-inbox-error" role="alert">
             {error}
@@ -84,9 +96,26 @@ function InboxCard({ item, busy, onBuild }: { item: InboxItem; busy: string | nu
           <Icon aria-label={label} />
         </span>
         <div className="bob-inbox-title">
-          <h3>{item.source}</h3>
+          <h3>
+            {item.linear ? (
+              <>
+                <a className="bob-inbox-linear-link" href={item.linear.url} target="_blank" rel="noreferrer">
+                  {item.linear.identifier}
+                </a>{" "}
+                {item.linear.title}
+              </>
+            ) : (
+              item.source
+            )}
+          </h3>
           <p>
-            <span>{label}</span> · <span>{formatChatTimestamp(item.at)}</span>
+            <span>{item.linear ? `${label} from Linear` : label}</span> · <span>{formatChatTimestamp(item.at)}</span>
+            {item.linear?.shippedIn ? (
+              <>
+                {" "}
+                · <span>closed on Linear</span>
+              </>
+            ) : null}
             {item.followUpOf ? (
               <>
                 {" "}

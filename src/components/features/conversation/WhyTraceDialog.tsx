@@ -119,9 +119,11 @@ export function WhyTraceDialog() {
   const startedWith =
     origin && from
       ? from.kind === "inbox"
-        ? `From the inbox: ${from.source}`
+        ? from.linear
+          ? `From Linear: ${from.linear.identifier} ${from.linear.title}`
+          : `From the inbox: ${from.source}`
         : from.kind === "build"
-          ? `${origin.name} pressed Build this on “${from.title}”`
+          ? `${origin.name} pressed Build this on “${from.title}”${from.linear ? `, from Linear ${from.linear.identifier}` : ""}`
           : `${origin.name} wrote “${from.text}”`
       : null;
 
@@ -183,7 +185,13 @@ export function WhyTraceDialog() {
           <footer className="trace-footer">
             {startedWith ? (
               <p className="trace-empty-description" title={startedWith}>
-                {startedWith}
+                {from && from.kind !== "typed" && from.linear ? (
+                  <a href={from.linear.url} target="_blank" rel="noreferrer">
+                    {startedWith}
+                  </a>
+                ) : (
+                  startedWith
+                )}
               </p>
             ) : (
               <span />

@@ -85,6 +85,11 @@ export function postInboxSample(): Promise<ActionResult> {
   return post(API.inbox, { sample: true });
 }
 
+/** Pulls open Linear issues labelled "bob" into the inbox now, instead of at the next 20s poll. */
+export function syncLinear(): Promise<ActionResult> {
+  return post(API.inboxLinearSync, {});
+}
+
 /** The person's "build this" on an inbox work order in the backlog. */
 export function promoteInboxOrder(workOrderId: string): Promise<ActionResult> {
   return post(API.inboxPromote, { workOrderId });

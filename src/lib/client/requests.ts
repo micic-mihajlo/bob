@@ -1,4 +1,4 @@
-import type { InboxItem, RequestBudgets, RequestControl } from "@/lib/types";
+import type { InboxItem, LinearIssueRef, RequestBudgets, RequestControl } from "@/lib/types";
 import { formatElapsed, pluralize } from "./format";
 
 function dollars(value: number): string {
@@ -8,13 +8,19 @@ function dollars(value: number): string {
 const BUILD_ORDER = /^Build work order \S+ now: ("(?:[^"\\]|\\.)*")/;
 
 /** Where a request's text came from: the person typing it, an inbox item handed over for triage, or a "Build this" press. */
-export type RequestOrigin = { kind: "typed"; text: string } | { kind: "inbox"; source: string } | { kind: "build"; title: string };
+export type RequestOrigin =
+  { kind: "typed"; text: string } | { kind: "inbox"; source: string; linear?: LinearIssueRef } | { kind: "build"; title: string; linear?: LinearIssueRef };
 
 export function requestOrigin(ask: string, inbox: readonly InboxItem[]): RequestOrigin {
   const build = BUILD_ORDER.exec(ask);
-  if (build) return { kind: "build", title: JSON.parse(build[1]) as string };
+  if (build) {
+    const title = JSON.parse(build[1]) as string;
+    const linear = inbox.find((candidate) => candidate.linear && ask.includes(candidate.source))?.linear;
+    return linear ? { kind: "build", title, linear } : { kind: "build", title };
+  }
   const item = inbox.find((candidate) => ask.includes(candidate.id));
-  return item ? { kind: "inbox", source: item.source } : { kind: "typed", text: ask };
+  if (!item) return { kind: "typed", text: ask };
+  return item.linear ? { kind: "inbox", source: item.source, linear: item.linear } : { kind: "inbox", source: item.source };
 }
 
 /** What a request is called: the sentence the person typed, "Triage: <source>" for an inbox item, or "Build: <order>" for a Build this press. */

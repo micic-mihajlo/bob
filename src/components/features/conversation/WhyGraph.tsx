@@ -60,7 +60,13 @@ export function WhyGraph({ pullRequestId }: { pullRequestId: string }) {
                       <Glyph aria-hidden="true" />
                       {node.title}
                     </span>
-                    <span className="why-graph-node-label">{node.label}</span>
+                    {node.href ? (
+                      <a className="why-graph-node-label why-graph-node-link" href={node.href} target="_blank" rel="noreferrer">
+                        {node.label}
+                      </a>
+                    ) : (
+                      <span className="why-graph-node-label">{node.label}</span>
+                    )}
                   </div>
                 );
               })}

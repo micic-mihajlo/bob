@@ -13,6 +13,8 @@ export interface PathNode {
   /** What the node is, such as "Review" or "Bob wrote". */
   title: string;
   label: string;
+  /** On a path that starts at a Linear issue: the issue. */
+  href?: string;
 }
 
 /** One column of the path, and the words on the arrow that leads into it. */
@@ -95,7 +97,15 @@ export function buildPathGraph(view: GraphView, facts: GateFacts = { approvals: 
     if (next === view.rootMessageId) {
       const from = requestOrigin(message.label, facts.inbox ?? []);
       const label = from.kind === "inbox" ? from.source : from.kind === "build" ? from.title : from.text;
-      columns.push({ link, nodes: [{ id: next, kind: "origin", title: ORIGIN_TITLE[from.kind], label }] });
+      const linear = from.kind === "typed" ? undefined : from.linear;
+      columns.push({
+        link,
+        nodes: [
+          linear
+            ? { id: next, kind: "origin", title: "From Linear", label: `${linear.identifier}: ${linear.title}`, href: linear.url }
+            : { id: next, kind: "origin", title: ORIGIN_TITLE[from.kind], label },
+        ],
+      });
       break;
     }
     columns.push({ link, nodes: [{ id: next, kind: "message", title: `${name(sender)} wrote`, label: message.label }] });

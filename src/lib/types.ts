@@ -643,4 +643,5 @@ export const API = {
   voiceTurn: "/api/voice/turn",
   inbox: "/api/inbox",
   inboxPromote: "/api/inbox/promote",
+  inboxLinearSync: "/api/inbox/linear/sync",
 } as const;
