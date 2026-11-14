@@ -195,16 +195,42 @@ async function copyOf(ws: Workspace, dir: string, files: string[]): Promise<void
   await symlink(path.join(ws.root, "node_modules"), path.join(dir, "node_modules"), "dir").catch(() => undefined);
 }
 
-/** Tier 3: every mutant must fail the tests or the properties, run whole in a throwaway copy, four at a time. */
-export async function runMutants(ws: Workspace, mutants: Mutant[], h: Harness): Promise<{ ok: boolean; mutants: MutantRun[]; error?: string }> {
+const TEST_FILE = /\.test\.[cm]?[jt]sx?$/;
+const SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bvi\.mock\(\s*|^\s*import\s+)(["'])([^"']+)\1/gm;
+const stem = (f: string) => f.replace(/\.[cm]?[jt]sx?$/, "").replace(/\/index$/, "");
+
+/** The test files that import or vi.mock the module directly, resolved relative to the test file, or @/ as src/. */
+async function directTests(ws: Workspace, files: string[], module: string): Promise<string[]> {
+  const hits = await Promise.all(
+    files.filter((f) => TEST_FILE.test(f)).map(async (t) => {
+      const src = await readFile(path.join(ws.root, t), "utf8").catch(() => "");
+      return [...src.matchAll(SPECIFIER)].some(([, , spec]) => {
+        const target = spec.startsWith("@/") ? path.posix.join("src", spec.slice(2)) : spec.startsWith(".") ? path.posix.join(path.posix.dirname(t), spec) : null;
+        return target !== null && stem(target) === stem(module);
+      })
+        ? t
+        : null;
+    }),
+  );
+  return hits.filter((t): t is string => t !== null);
+}
+
+/**
+ * Tier 3: every mutant must fail the properties or a test file that imports its module directly, run in a
+ * throwaway copy, four at a time. A mutant none of them catches survives.
+ */
+export async function runMutants(ws: Workspace, mutants: Mutant[], h: Harness, propertiesFile: string): Promise<{ ok: boolean; mutants: MutantRun[]; error?: string }> {
   if (mutants.length === 0) return { ok: true, mutants: [] };
   const listed = await gitIn(ws, ["ls-files", "--cached", "--others", "--exclude-standard"]);
   const files = listed.stdout.split("\n").filter((f) => f && existsSync(path.join(ws.root, f)));
   const root = path.join(ws.project.home, ".bob-verify", ws.agentId);
   const copies = Array.from({ length: Math.min(PARALLEL, mutants.length) }, (_, i) => path.join(root, `m${i}`));
   await Promise.all(copies.map((c) => copyOf(ws, c, files)));
-  const suite = (copy: string) => `cd ${quote(copy)} && ${vitest(ws)} run --config ${quote(h.config)} --root . --bail=1`;
-  const baseline = await runCommand(ws, suite(copies[0]), 180_000);
+  const sources = [...new Set(mutants.map((m) => m.file))];
+  const testsOf = new Map(await Promise.all(sources.map(async (f) => [f, await directTests(ws, files, f)] as const)));
+  const suite = (copy: string, of: string[]) =>
+    `cd ${quote(copy)} && ${vitest(ws)} run ${[...new Set([propertiesFile, ...of.flatMap((f) => testsOf.get(f) ?? [])])].map(quote).join(" ")} --config ${quote(h.config)} --root . --bail=1`;
+  const baseline = await runCommand(ws, suite(copies[0], sources), 180_000);
   if (!baseline.ok || baseline.exitCode !== 0) {
     const tail = baseline.ok ? baseline.output.trim().split("\n").slice(-10).join("\n") : baseline.error;
     return { ok: false, mutants: [], error: `the tests fail before any mutation: ${tail}` };
@@ -219,7 +245,7 @@ export async function runMutants(ws: Workspace, mutants: Mutant[], h: Harness): 
         const target = path.join(copy, m.file);
         const original = await readFile(target, "utf8");
         await writeFile(target, m.source);
-        const out = await runCommand(ws, suite(copy), 60_000);
+        const out = await runCommand(ws, suite(copy, [m.file]), 60_000);
         await writeFile(target, original);
         results[i] = { file: m.file, line: m.line, operator: m.operator, before: m.before, after: m.after, killed: !out.ok || out.exitCode !== 0 };
       }

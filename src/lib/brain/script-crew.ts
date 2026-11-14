@@ -10,15 +10,16 @@ const goalOf = (brief: string) => /^Goal:[ \t]*(.+)$/m.exec(brief)?.[1]?.replace
 
 const formatted = (status: string, result: string, evidence: string) => `Status: ${status}\nResult: ${result}\nEvidence: ${evidence}`;
 
-const TEST_COMMAND = "npm test";
-const runTests = () => call("run", { command: TEST_COMMAND });
+/** The test files of the change, not the whole suite. */
+const runTests = (paths: string[]) => call("run", { command: `npx vitest run ${paths.filter((p) => /\.test\.[cm]?[jt]sx?$/.test(p)).join(" ")}` });
 
 /** What the last test run showed, for the Evidence line. */
 function testsLine(done: CallRecord[]): string {
   const run = [...done].reverse().find((c) => c.name === "run");
   if (!run) return "tests not run";
-  if ("error" in run.result) return `${TEST_COMMAND} could not run: ${String(run.result.error)}`;
-  return run.result.passed ? `${TEST_COMMAND} passed` : `${TEST_COMMAND} failed (${String(run.result.note ?? "non-zero exit")})`;
+  const command = String((run.input as { command?: string }).command);
+  if ("error" in run.result) return `${command} could not run: ${String(run.result.error)}`;
+  return run.result.passed ? `${command} passed` : `${command} failed (${String(run.result.note ?? "non-zero exit")})`;
 }
 
 /** What each verify_change run found, for the Evidence line. */
@@ -32,7 +33,7 @@ function verifyLine(done: CallRecord[]): string | null {
 }
 
 /**
- * Acceptance test first: write it, show it red on its own, then implement and show the whole suite green.
+ * Acceptance test first: write it, show it red on its own, then implement and show the change's test files green.
  * A change to source code then writes its contract and properties and runs verify_change; the first draft
  * of the properties lets a mutant live, and the second kills it, before the pull request opens.
  */
@@ -50,7 +51,7 @@ function buildPlan(ctx: TurnContext, brief: string): Plan {
       () => [call("write_files", { files: files.slice(0, 1) })],
       () => [call("run", { command: `npx vitest run ${acceptance}` })],
       () => [call("write_files", { files: files.slice(1) })],
-      () => [runTests()],
+      () => [runTests(files.map((f) => f.path))],
       ...(verification
         ? [
             () => [call("write_files", { files: verification.files(contract, criteria) })],
@@ -129,8 +130,9 @@ export function crewPlan(ctx: TurnContext, role: CrewRole): Plan {
   if (person && !ctx.inbound.some((i) => i.rule === "request")) return { steps: [], reply: () => `I am ${ctx.agent.code}, working on "${ctx.agent.title}". I report to the captain when it is done.` };
   const brief = ctx.inbound.find((i) => i.rule === "request");
   // A reviewer asked again reviews again: the pull request has a new head, and approval needs a review of it.
-  if (brief && role === "build" && ctx.initial.artifacts.some((a) => a.agentId === ctx.agent.id)) {
-    return { steps: [() => [runTests()]], reply: (done) => formatted("partial", "Read the new message and ran the tests again. My pull request stands as it is.", testsLine(done)) };
+  const own = [...ctx.initial.artifacts].reverse().find((a): a is PullRequestArtifact => isPullRequest(a) && a.agentId === ctx.agent.id);
+  if (brief && role === "build" && own) {
+    return { steps: [() => [runTests(own.pullRequest.files.map((f) => f.path))]], reply: (done) => formatted("partial", "Read the new message and ran the tests again. My pull request stands as it is.", testsLine(done)) };
   }
   if (brief && role !== "review" && ctx.initial.artifacts.some((a) => a.agentId === ctx.agent.id)) {
     return { steps: [], reply: () => formatted("partial", "Read the new message. My earlier result stands; nothing changed.", "none") };

@@ -40,12 +40,12 @@ export const ROLE_RULES: Record<CrewRole, string> = {
   build: `Building:
 - Your branch is already checked out, and your first message shows the file tree and the key files. Read any other file you change first, several in one read_files call.
 - Acceptance test first. When your brief names an acceptance test, your first write_files writes that file alone, so it asserts the brief's acceptance check. Run that file alone with run and show it failing before you change any code.
-- Then write the change, and run the whole suite with run. Fix what fails and run it again until it passes.
+- Then write the change, and run the test files that import what you changed with run (e.g. npx vitest run src/lib/__tests__/x.test.ts), not the whole suite. Fix what fails and run them again until they pass.
 - Once the tests pass and your change touches source code, write one fast-check properties file, src/<module>.properties.test.ts (each property one it() calling fc.assert(fc.property(...)), no seed or numRuns), then call verify_change, which writes the contract from your work order, until it passes: a counterexample or a surviving mutant is a finding for you to fix. Its result shows on the person's approval card, and with the scripted brain the merge waits until it passes on the pull request's exact head.
 - Then call open_pull_request: it commits your changes and returns the diff to read. After more changes, call verify_change and open_pull_request again; it updates the same pull request.
 - Report the pull request number and id, the branch, the files and how you checked it. You never merge.`,
   review: `Reviewing:
-- Your first message holds the pull request's diff and the changed files in full, and your workspace has its branch checked out. Run its tests with run, and read other files with read_files only when the diff is not enough.
+- Your first message holds the pull request's diff and the changed files in full, and your workspace has its branch checked out. Run the test files that import what it changed with run (e.g. npx vitest run src/lib/__tests__/x.test.ts), not the whole suite, and read other files with read_files only when the diff is not enough.
 - Check it against the acceptance check in your brief, then correctness, edge cases, tests and safety. You never change code.
 - When your brief names an acceptance test, confirm the pull request has it and that it really asserts the acceptance check. If it is missing or checks something weaker or different, that is a finding with category tests, and request_changes.
 - When verify_change shows a surviving mutant that no input at all can tell apart from the original line, call mark_equivalent_mutant with a one-line reason; any other survivor or counterexample is a finding.

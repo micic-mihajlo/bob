@@ -1,4 +1,5 @@
-import { mkdtempSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -10,7 +11,7 @@ import type { Agent, Artifact } from "../types";
 import type { PullRequestArtifact } from "../threads";
 import { verificationLine, verificationRefusal, verificationStatus, type EquivalentMutant, type Verification } from "../verification";
 import { changedLines, mutantsOf } from "../verify/mutants";
-import { propertyNames, runProof } from "../verify/run";
+import { propertyNames, runMutants, runProof, writeHarness } from "../verify/run";
 import { freshTeam } from "./helpers";
 import type { Workspace } from "../workspace";
 
@@ -154,6 +155,41 @@ describe("the contract written for a thread", () => {
     const src = 'it("one row per invoice", () => {});\ntest(\'a "quoted" name\', () => {});\nit(`template name`, () => {});\nfit("not this one", () => {});';
     expect(propertyNames(src)).toEqual(["one row per invoice", 'a "quoted" name', "template name"]);
   });
+});
+
+describe("the mutation tier", () => {
+  it("runs only the properties and the test files that import each mutant's module: a mutant none of them reaches survives", async () => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), "bob-mutants-"));
+    const root = path.join(dir, "ws");
+    const files: Record<string, string> = {
+      "src/a.ts": "export const a = (x: number) => x + 1;\n",
+      "src/a.test.ts": 'import { expect, it } from "vitest";\nimport { a } from "./a";\nit("adds one", () => expect(a(1)).toBe(2));\n',
+      "src/b.ts": "export const b = (x: number) => x * 2;\n",
+      "src/wrap.ts": 'export { b } from "./b";\n',
+      "src/wrap.test.ts": 'import { expect, it } from "vitest";\nimport { b } from "./wrap";\nit("doubles through the wrapper", () => expect(b(2)).toBe(4));\n',
+      "src/p.properties.test.ts": 'import { expect, it } from "vitest";\nit("holds", () => expect(true).toBe(true));\n',
+      "src/unrelated.test.ts": 'import { expect, it } from "vitest";\nit("fails whenever the whole suite runs", () => expect(1).toBe(2));\n',
+    };
+    for (const d of [path.join(root, "src"), path.join(dir, "home")]) mkdirSync(d, { recursive: true });
+    for (const [f, src] of Object.entries(files)) writeFileSync(path.join(root, f), src);
+    symlinkSync(path.join(process.cwd(), "node_modules"), path.join(root, "node_modules"), "dir");
+    execFileSync("git", ["init", "-q"], { cwd: root });
+    const ws = { root, projectId: "p", agentId: "a1", project: { dir, origin: dir, home: path.join(dir, "home"), agentsDir: dir, deps: dir } } as Workspace;
+    const contract = { acceptance: "x", propertiesFile: "src/p.properties.test.ts", properties: [{ name: "holds", criterion: "x" }] };
+    const h = await writeHarness(ws, contract, 1);
+    const mutant = (file: string, before: string, after: string) => ({ file, line: 1, operator: "swapped arithmetic", before, after, source: files[file].replace(before, after) });
+    const sandbox = process.env.BOB_SANDBOX;
+    process.env.BOB_SANDBOX = "off";
+    const run = await runMutants(ws, [mutant("src/a.ts", "x + 1", "x - 1"), mutant("src/b.ts", "x * 2", "x / 2")], h, contract.propertiesFile).finally(() => {
+      if (sandbox === undefined) delete process.env.BOB_SANDBOX;
+      else process.env.BOB_SANDBOX = sandbox;
+    });
+    expect(run.error).toBeUndefined();
+    expect(run.mutants.map((m) => [m.file, m.killed])).toEqual([
+      ["src/a.ts", true],
+      ["src/b.ts", false],
+    ]);
+  }, 60_000);
 });
 
 describe("the Lean tier", () => {

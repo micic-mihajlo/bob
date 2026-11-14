@@ -122,7 +122,7 @@ const editFilesDef = define({
 const runDef = define({
   name: "run",
   description:
-    "Run one shell command in your workspace root, such as \"npm test\", \"npm run typecheck\" or \"ls src\", and get its exit code and output. Dependencies are already installed. Chain steps with && in one call. Commands run with no network credentials and no API keys, are killed at the timeout (default 120 seconds), and long output keeps its head and tail. Use it to run the tests before you open a pull request and name the command in Evidence.",
+    "Run one shell command in your workspace root, such as \"npx vitest run src/lib/__tests__/x.test.ts\", \"npm run typecheck\" or \"ls src\", and get its exit code and output. Dependencies are already installed. Chain steps with && in one call. Commands run with no network credentials and no API keys, are killed at the timeout (default 120 seconds), and long output keeps its head and tail. Use it to run the test files that import what you changed, not the whole suite, before you open a pull request and name the command in Evidence.",
   schema: z.object({
     command: z.string().min(1).describe("A bash command line, run from the workspace root"),
     timeoutSeconds: z.number().int().min(1).max(600).optional(),

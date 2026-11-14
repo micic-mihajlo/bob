@@ -153,7 +153,8 @@ async function testCommand(ws: Workspace): Promise<string | null> {
   if (!pkg.ok) return null;
   try {
     const scripts = (JSON.parse(pkg.content) as { scripts?: Record<string, string> }).scripts ?? {};
-    return scripts.test ? "npm test" : null;
+    if (!scripts.test) return null;
+    return /\bvitest\b/.test(scripts.test) ? "npx vitest run <the test files that import what you changed>, not the whole suite (npm test)" : "npm test";
   } catch {
     return null;
   }
