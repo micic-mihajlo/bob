@@ -1,3 +1,4 @@
+import { STAGES } from "../stages";
 import type { State } from "../state";
 import { isPullRequest, type PullRequestArtifact } from "../threads";
 import type { Agent, Artifact, ReviewData } from "../types";
@@ -32,23 +33,30 @@ function requestPlan(ctx: TurnContext): Plan {
   if (decision.kind === "ask") return { steps: [], reply: () => decision.reply };
   const { intent } = decision;
   const workTitle = intent.title;
+  const s = ctx.initial;
+  // A turn the server cut off may have planned and started this already: pick up from the state.
+  const building = s.agents.find((a) => a.crewRole === "build" && !a.closedAt && s.messages.some((m) => m.requestId === ctx.requestId && m.from.kind === "agent" && m.from.agentId === ctx.agent.id && m.to.includes(a.id)));
+  if (building) return { steps: [], reply: () => `${building.code} is building "${building.title}" on ${building.branch}.` };
+  const planned = road.today.find((w) => w.title === workTitle && w.status !== "done");
   const fresh = road.stage === 1;
+  const orderOf = (done: CallRecord[]) => planned ?? newOrder(done);
   return {
     steps: [
       () => [
         call("set_goal", { title: intent.title, user: intent.user, behaviour: intent.behaviour, acceptance: intent.acceptance, assumptions: intent.assumptions }),
         ...(fresh ? [call("advance_stage", {})] : []),
       ],
-      () => [call("set_roadmap", { workOrderTitles: [workTitle, ...(road.backlog ?? []).map((w) => w.title).filter((t) => t !== workTitle)] })],
+      () => (planned ? [] : [call("set_roadmap", { workOrderTitles: [workTitle, ...(road.backlog ?? []).map((w) => w.title).filter((t) => t !== workTitle)] })]),
       (done) => {
         const order = newOrder(done);
+        if (planned) return road.stage === 2 ? [call("advance_stage", {})] : [];
         if (!order) return [];
         const keep = road.today.filter((w) => w.status !== "done").map((w) => w.id);
         const today = call("set_today", { workOrderIds: [...keep, order.id].slice(-3) });
         return fresh || road.stage === 2 ? [today, call("advance_stage", {})] : [today];
       },
       (done) => {
-        const order = newOrder(done);
+        const order = orderOf(done);
         return order ? [call("start_thread", { role: "build", title: workTitle, brief: buildBrief(intent, texts, workTitle), workOrderId: order.id })] : [];
       },
     ],
@@ -171,7 +179,8 @@ function decisionPlan(ctx: TurnContext, decision: NonNullable<InboundItem["decis
   const findings = [...s.artifacts].reverse().find((a) => a.review?.pullRequestId === pr.id)?.review?.findings ?? [];
   const followUps = findings.map((f) => `Follow up on #${pr.pullRequest.number}: ${f.comment}`);
   const backlog = (s.roadmap.backlog ?? []).map((w) => w.title).filter((t) => !followUps.includes(t));
-  const merged = (done: CallRecord[]) => succeeded(done, "merge_pull_request");
+  const already = pr.pullRequest.merged;
+  const merged = (done: CallRecord[]) => already || succeeded(done, "merge_pull_request");
   const refusal = (done: CallRecord[]) => String(done.find((c) => c.name === "merge_pull_request")?.result.error ?? "");
   const headMoved = (done: CallRecord[]) => /changed after the person approved it/.test(refusal(done));
   const fresh = s.artifacts.find((a): a is PullRequestArtifact => a.id === pr.id && isPullRequest(a)) ?? pr;
@@ -183,11 +192,11 @@ function decisionPlan(ctx: TurnContext, decision: NonNullable<InboundItem["decis
     });
   return {
     steps: [
-      () => [call("merge_pull_request", { pullRequestId: pr.id })],
+      () => (already ? [] : [call("merge_pull_request", { pullRequestId: pr.id })]),
       (done) => (headMoved(done) ? [again()] : []),
       (done) => (merged(done) ? threads.map((t) => call("close_thread", { threadId: t.id })) : []),
-      (done) => (merged(done) ? [call("advance_stage", {})] : []),
-      (done) => (merged(done) && followUps.length > 0 ? [call("set_roadmap", { workOrderTitles: [...backlog, ...followUps] })] : []),
+      (done) => (merged(done) && s.roadmap.stage < STAGES.length ? [call("advance_stage", {})] : []),
+      (done) => (merged(done) && followUps.some((f) => !(s.roadmap.backlog ?? []).some((w) => w.title === f)) ? [call("set_roadmap", { workOrderTitles: [...backlog, ...followUps] })] : []),
     ],
     reply: (done) =>
       merged(done)

@@ -52,7 +52,7 @@ describe("a restart loses nothing and strands nothing", { timeout: TIMEOUT }, ()
     expect(digest()).toBe("1 thing needs you: approve the merge of #1\n");
   });
 
-  it("does not run a captain turn again after it started a thread, and the thread it started still finishes", async () => {
+  it("picks a captain turn up after it started a thread, without starting another, and the request reaches approval", async () => {
     setBrainOverride(
       dyingAt((ctx) => (ctx.agent.kind === "captain" && ctx.moves.some((m) => m.calls.some((c) => c.name === "start_thread"))) || (ctx.agent.kind === "crew" && ctx.moves.length === 0)),
     );
@@ -60,9 +60,26 @@ describe("a restart loses nothing and strands nothing", { timeout: TIMEOUT }, ()
     await until(() => running("bob") && running("inv-1") && getState().agents.some((a) => a.id === "inv-1"));
 
     await restart();
-    expect(notices("bob").some((n) => /Starting a build thread.*must not happen twice/.test(n))).toBe(true);
+    expect(notices("bob").some((n) => /back in the queue.*Starting a build thread.*already happened and must not happen twice/.test(n))).toBe(true);
     expect(getState().agents.filter((a) => a.crewRole === "build")).toHaveLength(1);
+    expect(getState().roadmap.today).toHaveLength(1);
     expect(pending()).toHaveLength(1);
+    expect(digest()).toBe("1 thing needs you: approve the merge of #1\n");
+  });
+
+  it("picks a captain turn up after it merged, and the request still reaches Learn with its threads closed", async () => {
+    postUserMessage("bob", REQUEST);
+    await settle();
+    const [approval] = pending();
+    setBrainOverride(dyingAt((ctx) => ctx.agent.kind === "captain" && ctx.moves.some((m) => m.calls.some((c) => c.name === "merge_pull_request"))));
+    expect(decideApproval(approval.id, "approved").ok).toBe(true);
+    await until(() => running("bob") && !!getState().artifacts.find((a) => a.kind === "pull_request")?.pullRequest?.merged);
+
+    await restart();
+    expect(notices("bob").some((n) => /picks up from where things stand: Merging \S+ already happened/.test(n))).toBe(true);
+    expect(getState().roadmap.stageTitle).toBe("Learn");
+    expect(getState().agents.filter((a) => a.kind === "crew" && !a.closedAt)).toHaveLength(0);
+    expect(getState().turns.filter((t) => t.agentId === "bob").at(-1)?.status).toBe("completed");
   });
 
   it("keeps a pending approval and the captain's files across a restart, and merges when approved after it", async () => {
