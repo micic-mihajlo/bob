@@ -995,3 +995,17 @@
   height: 100%;
   object-fit: cover;
 }
+
+
+/* The "+" menu opens upward from its button, as the reference's add menu does (placement top-start). */
+.composer-add-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.composer-add-menu-content {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+}
+

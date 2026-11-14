@@ -20,7 +20,20 @@ export function ComposerNotice({
   action?: ReactNode;
 }) {
   return (
-    <div className="composer-notice" data-tone={tone} role={onDismiss ? "alert" : "status"}>
+    <div
+      className="composer-notice"
+      data-tone={tone}
+      role={onDismiss ? "alert" : "status"}
+      onKeyDown={
+        onDismiss
+          ? (event) => {
+              if (event.key !== "Escape" || event.defaultPrevented) return;
+              event.preventDefault();
+              onDismiss();
+            }
+          : undefined
+      }
+    >
       <TriangleAlert className="composer-notice-icon" aria-hidden="true" />
       <div className="composer-notice-copy">
         {title ? <strong>{title}</strong> : null}
