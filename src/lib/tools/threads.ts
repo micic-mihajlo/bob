@@ -7,7 +7,8 @@ import { captainOf, isClosed, runningTurn, type State } from "../state";
 import { getState, transact, update } from "../store";
 import { checkoutBranch, threadWorkspace } from "../thread-workspace";
 import { busyThreads, closeThreadState, findThread, isBusy, isPullRequest, openThreads } from "../threads";
-import type { Agent, CrewRole } from "../types";
+import { isThreadModel, unknownModel } from "../models";
+import { THREAD_MODELS, type Agent, type CrewRole } from "../types";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
 import { recordOutgoing } from "./messaging";
 
@@ -16,10 +17,12 @@ export const startThreadSchema = z.object({
   title: z.string().min(1).max(80).describe("What the thread does, in a few words, such as \"CSV export for invoices\"."),
   brief: z.string().min(1).describe("The thread's first message. It sees nothing else, so it must stand alone."),
   workOrderId: z.string().optional().describe("The work order in today this thread serves."),
+  model: z.string().optional().describe(`The model the thread runs on, one of ${THREAD_MODELS.join(", ")}. Leave it out for the default.`),
 });
 type StartInput = z.infer<typeof startThreadSchema>;
 
 function startRefusal(s: State, input: StartInput): string | null {
+  if (input.model && !isThreadModel(input.model)) return unknownModel(input.model);
   if (input.workOrderId) {
     if (!s.roadmap.today.some((w) => w.id === input.workOrderId)) {
       return `Work order ${input.workOrderId} is not in today. Schedule it with set_today, or leave workOrderId out.`;
@@ -53,7 +56,7 @@ function newThread(s: State, input: StartInput, captainId: string): Agent {
     branch: template.ownBranch ? branchName(code, order?.title ?? input.title) : null,
     closedAt: null,
     hue: threadHue(template.role, code),
-    model: template.model,
+    model: input.model ?? template.model,
     createdAt: nowIso(),
     createdBy: { kind: "agent", agentId: captainId },
   };
