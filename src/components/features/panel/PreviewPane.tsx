@@ -31,7 +31,7 @@ export function PreviewPane() {
         ) : null}
       </div>
       {ready ? (
-        <iframe className="bob-preview-frame" src={url} title={title} />
+        <iframe className="bob-preview-frame" src={`${url}?embed=1&tab=roadmap`} title={title} />
       ) : (
         <div className="bob-preview-status" role="status">
           {error ??
