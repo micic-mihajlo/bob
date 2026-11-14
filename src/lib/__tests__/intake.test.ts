@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { postUserMessage } from "../actions";
 import { systemPrompt } from "../brain/prompt";
 import { getState } from "../store";
+import { traceWhy } from "../why";
 import { settle } from "../turns";
 import { freshTeam } from "./helpers";
 
@@ -36,6 +37,26 @@ describe("the captain inspects a request before work starts", { timeout: 60_000 
     expect(road.today[0].id).toMatch(/^wo_/);
     expect(crew().map((a) => a.crewRole)).toEqual(["build", "review"]);
     expect(captainSaid()).toHaveLength(3);
+  });
+
+  it("traces the pull request to the first thing the person typed, with the question and answer as hops", async () => {
+    await say(VAGUE);
+    const answer = "All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.";
+    await say(answer);
+    const s = getState();
+    const [ask, reply] = s.messages.filter((m) => m.from.kind === "user");
+    expect(reply).toMatchObject({ text: answer, continues: ask.id, requestId: ask.requestId, causedBy: null });
+    const pr = s.artifacts.find((a) => a.kind === "pull_request");
+    const hops = traceWhy(s, pr?.messageId ?? "");
+    expect(hops[hops.length - 1].message.text).toBe(VAGUE);
+    const answered = hops[hops.length - 2];
+    expect(answered.message.text).toBe(answer);
+    expect(answered.question).toMatch(/columns/);
+
+    await say("what's the status?");
+    const later = getState().messages.filter((m) => m.from.kind === "user").at(-1);
+    expect(later?.continues).toBeUndefined();
+    expect(later?.requestId).not.toBe(ask.requestId);
   });
 
   it("asks at most two rounds, then goes on with stated assumptions", async () => {

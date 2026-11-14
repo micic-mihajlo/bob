@@ -1,3 +1,4 @@
+import { openAsk } from "./brain/intake";
 import { globals } from "./globals";
 import { newId } from "./ids";
 import { interrupt, type InterruptResult } from "./interrupt";
@@ -40,7 +41,9 @@ export function boot(): void {
 const unknownAgent = (agentId: AgentId) => ({ ok: false as const, error: `No agent with id ${agentId}.` });
 
 export function postUserMessage(agentId: AgentId, text: string): ActionResult<{ messageId: string }> {
-  if (!agentById(getState(), agentId)) return unknownAgent(agentId);
+  const agent = agentById(getState(), agentId);
+  if (!agent) return unknownAgent(agentId);
+  const ask = agent.kind === "captain" ? openAsk(getState(), agentId) : null;
   const sent = send({
     from: { kind: "user" },
     to: [agentId],
@@ -48,7 +51,8 @@ export function postUserMessage(agentId: AgentId, text: string): ActionResult<{ 
     expectsReply: false,
     replyTo: null,
     causedBy: null,
-    requestId: newId("req"),
+    requestId: ask?.requestId ?? newId("req"),
+    ...(ask ? { continues: ask.id } : {}),
   });
   if (!sent.ok) return { ok: false, error: sent.error.message };
   drain(agentId);
