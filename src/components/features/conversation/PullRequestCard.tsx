@@ -140,7 +140,7 @@ function PullRequestCardView({ artifact, animate }: { artifact: PullRequestArtif
 }
 
 function ReviewCardView({ artifact, animate }: { artifact: ReviewArtifact; animate: boolean }) {
-  const { snapshot } = useBob();
+  const { snapshot, openThreadTab } = useBob();
   const reviewed = snapshot.artifacts.find((candidate) => candidate.id === artifact.review.pullRequestId);
   const number = reviewed && isPullRequest(reviewed) ? reviewed.pullRequest.number : null;
   const titleId = `review-${artifact.id}-title`;
@@ -175,6 +175,12 @@ function ReviewCardView({ artifact, animate }: { artifact: ReviewArtifact; anima
               <p className="approval-detail-text">{finding.comment}</p>
             </div>
           ))}
+          {findings.length > 3 ? (
+            <Button variant="ghost" size="xs" className="review-card-more" onClick={() => openThreadTab(artifact.agentId, "review")}>
+              {findings.length - 3} more in Review
+              <ChevronRight aria-hidden="true" />
+            </Button>
+          ) : null}
         </div>
       ) : null}
       <footer className="chat-action-card-footer">
