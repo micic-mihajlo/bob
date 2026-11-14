@@ -47,8 +47,8 @@ function randomOp(r: Roadmap, rand: () => number): { name: string; req: string; 
   const own = trackView(r, req);
   const choice = Math.floor(rand() * 7);
   if (choice === 0) {
-    const testable = rand() < 0.6 ? { user: "Accountants", behaviour: "Export invoices as CSV", acceptance: "One row per invoice" } : { acceptance: rand() < 0.5 ? "" : null };
-    return { name: "setGoal", req, result: setGoal(r, ref, { title: rand() < 0.2 ? " " : "Invoices export as CSV", ...testable }) };
+    const testable = rand() < 0.6 ? { user: "Accountants", behaviour: "Export tasks as CSV", acceptance: "One row per task" } : { acceptance: rand() < 0.5 ? "" : null };
+    return { name: "setGoal", req, result: setGoal(r, ref, { title: rand() < 0.2 ? " " : "Tasks export as CSV", ...testable }) };
   }
   if (choice === 1) return { name: "setRoadmap", req, result: setRoadmap(r, ref, ["Export", "Docs", "Tests", "Polish"].filter(() => rand() < 0.7)) };
   if (choice === 2) {

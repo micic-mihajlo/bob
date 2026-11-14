@@ -1,8 +1,12 @@
 /**
  * The blank TypeScript project a new project can start from: one module, one test and the tooling to run them,
- * with nothing in it about any one app. Kept as strings for the same reason as the invoices sample.
+ * with nothing in it about any one app. Kept as strings rather than files on disk so Bob's own typecheck and
+ * test run never pick it up.
  */
-import type { TemplateFile } from "./files";
+export interface TemplateFile {
+  path: string;
+  content: string;
+}
 
 const readme = `# App
 

@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
-/** The live run: the real model brain against a fresh invoices project. Needs AI_GATEWAY_API_KEY in .env.local. */
+/** The live run: the real model brain against a fresh tasks project. Needs AI_GATEWAY_API_KEY in .env.local. */
 export default defineConfig({
   resolve: { alias: { "@": path.resolve(__dirname, "src") } },
   test: {

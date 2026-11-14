@@ -18,8 +18,8 @@ function buildBrief(intent: IntentDraft, texts: string[], workTitle: string): st
     `Goal: ${workTitle}.`,
     `Context: the person wrote ${texts.map((t) => JSON.stringify(t)).join(" then ")}. User: ${intent.user}. Acceptance: ${intent.acceptance}.`,
     ...(intent.assumptions.length > 0 ? [`Assumed: ${intent.assumptions.join("; ")}.`] : []),
-    "Area: the invoices module under src/, next to src/invoices.ts and src/format.ts.",
-    "You can rely on: the Invoice type in src/invoices.ts and the project's test setup.",
+    "Area: the modules under src/, next to src/index.ts.",
+    "You can rely on: the project's TypeScript and vitest setup.",
     "Out of scope: the UI and any change to existing behaviour.",
     "Done means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.",
   ].join("\n");

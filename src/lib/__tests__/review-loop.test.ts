@@ -24,7 +24,7 @@ const inbox = (agentId: string) =>
 
 /** The scripted flow up to the pending merge approval, then every agent idles so the test drives each step. */
 async function toApprovalThenIdle() {
-  postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+  postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
   await settle();
   setBrainOverride(brainFrom({}));
 }
@@ -39,22 +39,22 @@ describe("review and fix loop", { timeout: GIT_TIMEOUT }, () => {
     expect(decideApproval(pending?.id ?? "", "denied").ok).toBe(true);
     await settle();
 
-    const changes = await callTool("record_review", { pullRequestId: "#1", verdict: "request_changes", findings: [finding] }, as("inv-2"));
-    expect(changes.wake).toContain("inv-1");
-    expect(inbox("inv-1").at(-1)?.text).toMatch(/fix round 1 of 2[\s\S]*src\/csv\.ts:3[\s\S]*Quote fields/);
-    expect(inbox("inv-1").at(-1)?.text).toMatch(/\(id art_\w+\), fix round 1 of 2:\n/);
+    const changes = await callTool("record_review", { pullRequestId: "#1", verdict: "request_changes", findings: [finding] }, as("tas-2"));
+    expect(changes.wake).toContain("tas-1");
+    expect(inbox("tas-1").at(-1)?.text).toMatch(/fix round 1 of 2[\s\S]*src\/csv\.ts:3[\s\S]*Quote fields/);
+    expect(inbox("tas-1").at(-1)?.text).toMatch(/\(id art_\w+\), fix round 1 of 2:\n/);
     const sentNotice = getState().threads.bob.findLast((i) => i.kind === "notice" && i.text.startsWith("Sent to"));
-    expect(sentNotice?.kind === "notice" && sentNotice.text).toMatch(/^Sent to INV-1 automatically: Review by INV-2 requests changes on pull request #1, fix round 1 of 2$/);
+    expect(sentNotice?.kind === "notice" && sentNotice.text).toMatch(/^Sent to TAS-1 automatically: Review by TAS-2 requests changes on pull request #1, fix round 1 of 2$/);
     expect(String((await callTool("request_approval", { title: "Merge #1", detail: "x", pullRequestId: "#1" }, asBob)).result.error)).toMatch(/requests changes/);
 
-    await callTool("write_files", { files: [{ path: "src/csv.ts", content: "export const fixed = true;\n" }] }, as("inv-1"));
-    const reopened = await callTool("open_pull_request", { title: "Add CSV export", body: "Fixed quoting." }, as("inv-1"));
-    expect(reopened.wake).toContain("inv-2");
+    await callTool("write_files", { files: [{ path: "src/csv.ts", content: "export const fixed = true;\n" }] }, as("tas-1"));
+    const reopened = await callTool("open_pull_request", { title: "Add CSV export", body: "Fixed quoting." }, as("tas-1"));
+    expect(reopened.wake).toContain("tas-2");
     const head = prOf()?.pullRequest?.headSha ?? "";
-    expect(inbox("inv-2").at(-1)?.text).toContain(`new head ${head.slice(0, 7)}`);
+    expect(inbox("tas-2").at(-1)?.text).toContain(`new head ${head.slice(0, 7)}`);
     expect(String((await callTool("request_approval", { title: "Merge #1", detail: "x", pullRequestId: "#1" }, asBob)).result.error)).toMatch(/after its last review/);
 
-    await callTool("record_review", { pullRequestId: "#1", verdict: "approve", findings: [] }, as("inv-2"));
+    await callTool("record_review", { pullRequestId: "#1", verdict: "approve", findings: [] }, as("tas-2"));
     const asked = await callTool("request_approval", { title: "Merge #1", detail: "x", pullRequestId: "#1" }, asBob);
     expect(asked.result.approvalId).toBeTruthy();
     expect(getState().approvals.find((a) => a.id === asked.result.approvalId)?.headSha).toBe(head);
@@ -63,9 +63,9 @@ describe("review and fix loop", { timeout: GIT_TIMEOUT }, () => {
   it("stops after two fix rounds: the build thread is told to report blocked with the open findings", async () => {
     await toApprovalThenIdle();
     for (let round = 1; round <= 3; round++) {
-      await callTool("record_review", { pullRequestId: "#1", verdict: "request_changes", findings: [finding] }, as("inv-2"));
+      await callTool("record_review", { pullRequestId: "#1", verdict: "request_changes", findings: [finding] }, as("tas-2"));
     }
-    const [first, second, third] = inbox("inv-1").slice(-3);
+    const [first, second, third] = inbox("tas-1").slice(-3);
     expect([first?.text, second?.text].map((t) => /fix round (\d) of 2/.exec(t ?? "")?.[1])).toEqual(["1", "2"]);
     expect(third?.text).toMatch(/after 2 fix rounds\. Change no more code\. Call report with Status: blocked/);
     expect(third?.expectsReply).toBe(true);
@@ -74,15 +74,15 @@ describe("review and fix loop", { timeout: GIT_TIMEOUT }, () => {
   it("still hands off after the request has spent its message budget, and the hand-offs do not spend it", async () => {
     await toApprovalThenIdle();
     const requestId = prOf()?.requestId ?? "";
-    while (send({ from: { kind: "agent", agentId: "bob" }, to: ["inv-1"], text: "Status?", expectsReply: false, replyTo: null, causedBy: null, requestId }).ok);
+    while (send({ from: { kind: "agent", agentId: "bob" }, to: ["tas-1"], text: "Status?", expectsReply: false, replyTo: null, causedBy: null, requestId }).ok);
     const used = budgetUsed(getState(), requestId);
     expect(used).toBe(REQUEST_DELIVERY_BUDGET);
 
-    const changes = await callTool("record_review", { pullRequestId: "#1", verdict: "request_changes", findings: [finding] }, as("inv-2"));
-    expect(changes.wake).toContain("inv-1");
-    expect(inbox("inv-1").at(-1)?.text).toMatch(/fix round 1 of 2/);
-    await callTool("write_files", { files: [{ path: "src/csv.ts", content: "export const fixed = true;\n" }] }, as("inv-1"));
-    expect((await callTool("open_pull_request", { title: "Add CSV export", body: "Fixed quoting." }, as("inv-1"))).wake).toContain("inv-2");
+    const changes = await callTool("record_review", { pullRequestId: "#1", verdict: "request_changes", findings: [finding] }, as("tas-2"));
+    expect(changes.wake).toContain("tas-1");
+    expect(inbox("tas-1").at(-1)?.text).toMatch(/fix round 1 of 2/);
+    await callTool("write_files", { files: [{ path: "src/csv.ts", content: "export const fixed = true;\n" }] }, as("tas-1"));
+    expect((await callTool("open_pull_request", { title: "Add CSV export", body: "Fixed quoting." }, as("tas-1"))).wake).toContain("tas-2");
     expect(budgetUsed(getState(), requestId)).toBe(used);
   });
 

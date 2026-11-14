@@ -5,15 +5,15 @@ import type { Approval, PreviewDeployment, PullRequestData } from "@/lib/types";
 const pullRequest = (status: PullRequestArtifact["status"], merged = false): PullRequestArtifact => ({
   id: "pr-1",
   kind: "pull_request",
-  title: "Export invoices as CSV",
+  title: "Export tasks as CSV",
   detail: "",
   status,
-  agentId: "inv-1",
+  agentId: "tas-1",
   turnId: "turn-1",
   requestId: "req-1",
   messageId: null,
   at: "2026-11-14T00:00:00.000Z",
-  pullRequest: { number: 1, branch: "inv-1/csv", headSha: "abc1234", files: [], patch: "", merged },
+  pullRequest: { number: 1, branch: "tas-1/csv", headSha: "abc1234", files: [], patch: "", merged },
 });
 
 const approval = (status: Approval["status"], overrides: Partial<Approval> = {}): Approval => ({
@@ -35,15 +35,15 @@ describe("pullRequestOfThread", () => {
     ...pullRequest("approved"),
     id: "rev-1",
     kind: "review" as const,
-    agentId: "inv-2",
+    agentId: "tas-2",
     pullRequest: undefined,
     review: { pullRequestId: "pr-1", verdict: "approve" as const, findings: [] },
   };
 
   it("gives a build thread the pull request it opened and a review thread the one it reviewed", () => {
     const artifacts = [pullRequest("approved"), review];
-    expect(pullRequestOfThread(artifacts, "inv-1")?.id).toBe("pr-1");
-    expect(pullRequestOfThread(artifacts, "inv-2")?.id).toBe("pr-1");
+    expect(pullRequestOfThread(artifacts, "tas-1")?.id).toBe("pr-1");
+    expect(pullRequestOfThread(artifacts, "tas-2")?.id).toBe("pr-1");
     expect(pullRequestOfThread(artifacts, "bob")).toBeUndefined();
   });
 });
@@ -85,7 +85,7 @@ describe("pull request state", () => {
 describe("previewStatus", () => {
   const data = (preview?: PreviewDeployment): PullRequestData => ({
     number: 1,
-    branch: "inv-1/csv",
+    branch: "tas-1/csv",
     headSha: "abc1234",
     files: [],
     patch: "",
@@ -93,7 +93,7 @@ describe("previewStatus", () => {
     preview,
   });
   const deployment = (overrides: Partial<PreviewDeployment> = {}): PreviewDeployment => ({
-    url: "https://invoices-abc.vercel.app",
+    url: "https://tasks-abc.vercel.app",
     state: "ready",
     source: "vercel",
     headSha: "abc1234",
@@ -126,7 +126,7 @@ describe("reasonWithoutFiles", () => {
   it("drops the files sentence and keeps the rest", () => {
     expect(
       reasonWithoutFiles(
-        "Merges #2 (Add a filter) from fir-3-filter at a7c2c58 into main. Files: src/invoices.ts (+2 -2), src/main.test.ts (+23 -0). FIR-4 approved this head with 3 non-blocking findings.",
+        "Merges #2 (Add a filter) from fir-3-filter at a7c2c58 into main. Files: src/tasks.ts (+2 -2), src/main.test.ts (+23 -0). FIR-4 approved this head with 3 non-blocking findings.",
       ),
     ).toBe("Merges #2 (Add a filter) from fir-3-filter at a7c2c58 into main. FIR-4 approved this head with 3 non-blocking findings.");
   });

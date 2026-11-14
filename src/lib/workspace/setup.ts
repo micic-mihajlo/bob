@@ -4,14 +4,12 @@ import path from "node:path";
 import { agentIdentity, checkId, MAIN_BRANCH, MERGE_IDENTITY, projectLayout, rootOf } from "./layout";
 import { gitOrThrow } from "./run-git";
 import { BLANK_TS_FILES } from "./template/blank-ts";
-import { TEMPLATE_FILES } from "./template/files";
 import type { ProjectTemplate } from "../types";
 import type { ProjectLayout, ProjectSource, Workspace, WorkspaceOptions } from "./types";
 
 const CLONE_TIMEOUT_MS = 120_000;
 
 const TEMPLATES: Record<ProjectTemplate, { files: readonly { path: string; content: string }[]; commit: string }> = {
-  invoices: { files: TEMPLATE_FILES, commit: "Start the invoices app" },
   "blank-ts": { files: BLANK_TS_FILES, commit: "Start a blank TypeScript project" },
 };
 
@@ -39,7 +37,7 @@ export async function ensureProject(
   if (await exists(path.join(layout.origin, "HEAD"))) return { origin: layout.origin };
   await mkdir(layout.home, { recursive: true });
   await buildThenRename(layout.origin, async (tmp) => {
-    if (source.kind === "template") await seedTemplate(layout, tmp, TEMPLATES[source.template ?? "invoices"]);
+    if (source.kind === "template") await seedTemplate(layout, tmp, TEMPLATES[source.template ?? "blank-ts"] ?? TEMPLATES["blank-ts"]);
     else await cloneSource(layout, source.url, tmp, source.branch);
     await protectMain(layout, tmp);
   });

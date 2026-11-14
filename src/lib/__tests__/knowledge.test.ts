@@ -35,7 +35,7 @@ function fakeHydra(query: (body: Record<string, unknown>, signal: AbortSignal) =
 const ingested = (sent: Sent[]) =>
   sent.filter((x) => x.url.endsWith("/context/ingest")).flatMap((x) => JSON.parse(String(x.form?.get("app_knowledge"))) as { id: string; title: string; additional_metadata: Record<string, string> }[]);
 
-const chunk = (id: string, meta: Record<string, string>, content = "export function invoicesToCsv() {}") => ({ id, source_title: meta.path ?? id, chunk_content: content, additional_metadata: meta });
+const chunk = (id: string, meta: Record<string, string>, content = "export function tasksToCsv() {}") => ({ id, source_title: meta.path ?? id, chunk_content: content, additional_metadata: meta });
 
 describe("HydraDB knowledge", { timeout: 60_000 }, () => {
   beforeEach(() => {
@@ -70,19 +70,19 @@ describe("HydraDB knowledge", { timeout: 60_000 }, () => {
   it("puts what HydraDB recalls into a build brief, with file paths, and keeps it on the message", async () => {
     const sent = fakeHydra(() =>
       envelope({
-        chunks: [chunk("file_a", { source: "file", path: "src/invoices.ts" }), chunk("pr_7", { source: "pr", pr: "7" }), chunk("file_b", { source: "file", path: "src/format.ts" })],
+        chunks: [chunk("file_a", { source: "file", path: "src/tasks.ts" }), chunk("pr_7", { source: "pr", pr: "7" }), chunk("file_b", { source: "file", path: "src/format.ts" })],
       }),
     );
-    const out = await callTool("start_thread", { role: "build", title: "CSV export", brief: "Goal: export invoices as CSV." }, asBob);
-    expect(out.result).toMatchObject({ code: "INV-1" });
-    const brief = getState().messages.find((m) => m.to.includes("inv-1"));
+    const out = await callTool("start_thread", { role: "build", title: "CSV export", brief: "Goal: export tasks as CSV." }, asBob);
+    expect(out.result).toMatchObject({ code: "TAS-1" });
+    const brief = getState().messages.find((m) => m.to.includes("tas-1"));
     expect(brief?.text).toContain("Relevant code and history from HydraDB");
-    expect(brief?.text).toContain("- src/invoices.ts: exports invoicesToCsv");
+    expect(brief?.text).toContain("- src/tasks.ts: exports tasksToCsv");
     expect(brief?.text).not.toContain("PR #7");
-    expect(brief?.knowledge?.files.map((f) => f.path)).toEqual(["src/invoices.ts", "src/format.ts"]);
+    expect(brief?.knowledge?.files.map((f) => f.path)).toEqual(["src/tasks.ts", "src/format.ts"]);
     const query = sent.find((x) => x.url.endsWith(".com/query"))?.json;
     expect(query).toMatchObject({ type: "knowledge", mode: "fast", graph_context: true });
-    expect(String(query?.query)).toContain("export invoices as CSV");
+    expect(String(query?.query)).toContain("export tasks as CSV");
     expect(knowledgeSummary(brief!.knowledge!)).toMatch(/^Context from HydraDB: 2 files · \d+ ms$/);
   });
 
@@ -91,8 +91,8 @@ describe("HydraDB knowledge", { timeout: 60_000 }, () => {
     expect(await recallKnowledge(getState(), "csv", 50)).toBeNull();
 
     vi.stubEnv("BOB_STORE", "");
-    await callTool("start_thread", { role: "build", title: "CSV export", brief: "Goal: export invoices as CSV." }, asBob);
-    const brief = getState().messages.find((m) => m.to.includes("inv-1"));
+    await callTool("start_thread", { role: "build", title: "CSV export", brief: "Goal: export tasks as CSV." }, asBob);
+    const brief = getState().messages.find((m) => m.to.includes("tas-1"));
     expect(brief?.text).not.toContain("HydraDB");
     expect(brief?.knowledge).toBeUndefined();
   });

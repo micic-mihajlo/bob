@@ -23,9 +23,9 @@ const ISSUES = {
       {
         id: "9f1c2e7a-1111-4c3b-9a55-2f1e6d1b0c01",
         identifier: "STA-123",
-        title: "Accountants want a CSV of all invoices",
-        description: "Dana from Northwind: we need every invoice in one CSV file, one row per invoice, so finance can import it.",
-        url: "https://linear.app/stan/issue/STA-123/accountants-want-a-csv-of-all-invoices",
+        title: "Accountants want a CSV of all tasks",
+        description: "Dana from Northwind: we need every task in one CSV file, one row per task, so finance can import it.",
+        url: "https://linear.app/stan/issue/STA-123/accountants-want-a-csv-of-all-tasks",
         team: { id: "team_7d2a", key: "STA" },
       },
     ],
@@ -68,9 +68,9 @@ describe("Linear as an inbox source", { timeout: 30_000 }, () => {
     const item = inboxItem(getState(), first.ok ? first.added[0] : "")!;
     expect(item).toMatchObject({
       kind: "feedback",
-      source: "Linear STA-123: Accountants want a CSV of all invoices",
+      source: "Linear STA-123: Accountants want a CSV of all tasks",
       text: ISSUES.issues.nodes[0].description,
-      linear: { issueId: ISSUES.issues.nodes[0].id, identifier: "STA-123", title: "Accountants want a CSV of all invoices", url: ISSUES.issues.nodes[0].url, teamId: "team_7d2a" },
+      linear: { issueId: ISSUES.issues.nodes[0].id, identifier: "STA-123", title: "Accountants want a CSV of all tasks", url: ISSUES.issues.nodes[0].url, teamId: "team_7d2a" },
     });
     await settle();
 
@@ -78,7 +78,7 @@ describe("Linear as an inbox source", { timeout: 30_000 }, () => {
     expect(again).toEqual({ ok: true, added: [] });
     expect(inboxItems(getState())).toHaveLength(1);
 
-    expect(traceWhy(getState(), item.messageId).at(-1)?.source?.linear).toEqual({ identifier: "STA-123", title: "Accountants want a CSV of all invoices", url: ISSUES.issues.nodes[0].url });
+    expect(traceWhy(getState(), item.messageId).at(-1)?.source?.linear).toEqual({ identifier: "STA-123", title: "Accountants want a CSV of all tasks", url: ISSUES.issues.nodes[0].url });
     expect(buildSnapshot(getState()).linear).toEqual({ on: true, error: null });
   });
 
@@ -101,7 +101,7 @@ describe("Linear as an inbox source", { timeout: 30_000 }, () => {
 
   it("puts a triage question on the issue once", async () => {
     const item = await pulled();
-    const vague = { quote: "Dana from Northwind: we need every invoice in one CSV file, one row per invoice, so finance can import it.", ask: "Export invoices as CSV", question: "Which columns should the file have?" };
+    const vague = { quote: "Dana from Northwind: we need every task in one CSV file, one row per task, so finance can import it.", ask: "Export tasks as CSV", question: "Which columns should the file have?" };
     await callTool("triage_inbox", { inboxId: item.id, candidates: [vague] }, asBob(requestOf(item.messageId)));
     await settle();
     await callTool("triage_inbox", { inboxId: item.id, candidates: [vague] }, asBob(requestOf(item.messageId)));
@@ -113,20 +113,20 @@ describe("Linear as an inbox source", { timeout: 30_000 }, () => {
 
   it("after the merge of work from the issue, comments the pull request and its release note there and moves it to Done, once", async () => {
     const item = await pulled();
-    await callTool("triage_inbox", { inboxId: item.id, candidates: [{ quote: "Dana from Northwind: we need every invoice in one CSV file, one row per invoice, so finance can import it.", ask: "Export all invoices as CSV", user: "finance", behaviour: "imports every invoice from one CSV file", acceptance: "a test shows one row per invoice" }] }, asBob(requestOf(item.messageId)));
+    await callTool("triage_inbox", { inboxId: item.id, candidates: [{ quote: "Dana from Northwind: we need every task in one CSV file, one row per task, so finance can import it.", ask: "Export all tasks as CSV", user: "finance", behaviour: "imports every task from one CSV file", acceptance: "a test shows one row per task" }] }, asBob(requestOf(item.messageId)));
     const order = getState().roadmap.backlog?.find((w) => w.source?.inboxId === item.id);
-    const pr = { id: "art_pr1", kind: "pull_request", agentId: "bob", requestId: "req_x", title: "Add invoice CSV export", detail: "", at: "", pullRequest: { number: 1, branch: "b1", headSha: "abc", files: [], patch: "", merged: true } } as unknown as Artifact;
+    const pr = { id: "art_pr1", kind: "pull_request", agentId: "bob", requestId: "req_x", title: "Add task CSV export", detail: "", at: "", pullRequest: { number: 1, branch: "b1", headSha: "abc", files: [], patch: "", merged: true } } as unknown as Artifact;
     update((s) => ({
       ...s,
       artifacts: [...s.artifacts, pr],
       roadmap: { ...s.roadmap, backlog: (s.roadmap.backlog ?? []).map((w) => (w.id === order?.id ? { ...w, artifactId: pr.id } : w)) },
-      releaseNotes: { ...s.releaseNotes, [pr.id]: { pullRequestId: pr.id, number: 1, workOrderId: order?.id ?? null, text: "You can now download every invoice as one CSV file.", source: "factory", at: "" } },
+      releaseNotes: { ...s.releaseNotes, [pr.id]: { pullRequestId: pr.id, number: 1, workOrderId: order?.id ?? null, text: "You can now download every task as one CSV file.", source: "factory", at: "" } },
     }));
     calls.length = 0;
     await shipToLinear(pr.id);
     await shipToLinear(pr.id);
     expect(calls.map((c) => c.query)).toEqual([COMMENT_MUTATION, DONE_STATE_QUERY, MOVE_MUTATION]);
-    expect(calls[0].variables.input).toEqual({ issueId: ISSUES.issues.nodes[0].id, body: 'Shipped by Bob in pull request #1 "Add invoice CSV export", merged into main.\n\nRelease note: You can now download every invoice as one CSV file.' });
+    expect(calls[0].variables.input).toEqual({ issueId: ISSUES.issues.nodes[0].id, body: 'Shipped by Bob in pull request #1 "Add task CSV export", merged into main.\n\nRelease note: You can now download every task as one CSV file.' });
     expect(calls[1].variables).toEqual({ teamId: "team_7d2a" });
     expect(calls[2].variables).toEqual({ id: ISSUES.issues.nodes[0].id, input: { stateId: "state_done" } });
     expect(getState().threads.bob.some((i) => i.kind === "notice" && i.text === "Commented #1 on Linear STA-123 and moved it to Done.")).toBe(true);
@@ -136,7 +136,7 @@ describe("Linear as an inbox source", { timeout: 30_000 }, () => {
     const item = await pulled();
     delete process.env.BOB_LINEAR;
     calls.length = 0;
-    await callTool("triage_inbox", { inboxId: item.id, candidates: [{ quote: "Dana from Northwind: we need every invoice in one CSV file, one row per invoice, so finance can import it.", ask: "Export invoices as CSV", question: "Which columns?" }] }, asBob(requestOf(item.messageId)));
+    await callTool("triage_inbox", { inboxId: item.id, candidates: [{ quote: "Dana from Northwind: we need every task in one CSV file, one row per task, so finance can import it.", ask: "Export tasks as CSV", question: "Which columns?" }] }, asBob(requestOf(item.messageId)));
     await settle();
     expect(calls).toHaveLength(0);
   });

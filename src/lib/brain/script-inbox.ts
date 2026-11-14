@@ -60,7 +60,7 @@ export function promotePlan(ctx: TurnContext): Plan | null {
   const brief = [
     `Goal: ${order.title}.`,
     `Context: from ${order.source.label}, the line "${order.source.quote}". Acceptance: ${check}`,
-    "Area: the invoices module under src/, next to src/invoices.ts and src/format.ts.",
+    "Area: the modules under src/, next to src/index.ts.",
     "Done means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.",
   ].join("\n");
   const keep = ordersOf(road, ctx.requestId).today.filter((w) => w.status !== "done" && w.id !== order.id).map((w) => w.id);

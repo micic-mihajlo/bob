@@ -11,29 +11,34 @@ import type { ProjectTemplate } from "@/lib/types";
 const FORM_ID = "open-project-form";
 const stayOpen = () => {};
 
-/** The templates a new project can start from, blank first. The invoices app is the sample the demo runs on. */
+/** The templates a new project can start from. */
 export const TEMPLATE_LABELS: Record<ProjectTemplate, string> = {
   "blank-ts": "Blank TypeScript",
-  invoices: "Sample: invoices app",
 };
+
+/** Bob's own repository at the pinned demo base, as pnpm demo --self opens it. */
+const BOB_ITSELF = { repo: "https://github.com/micic-mihajlo/bob.git", branch: "demo/self-base", name: "bob" };
+
+type Start = ProjectTemplate | "self";
+const START_LABELS: Record<Start, string> = { self: "Bob itself", ...TEMPLATE_LABELS };
 
 /** Brings in a repository by URL or local path, or starts a new project from a template. Without onClose it is the first-run choice and stays open. */
 export function OpenProjectDialog({ onClose }: { onClose?: () => void }) {
   const { selectAgent } = useBob();
   const [repo, setRepo] = useState("");
   const [name, setName] = useState("");
-  const [template, setTemplate] = useState<ProjectTemplate>("blank-ts");
+  const [start, setStart] = useState<Start>("self");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fromTemplate = repo.trim() === "";
-  const ready = !fromTemplate || name.trim() !== "";
+  const ready = !fromTemplate || start === "self" || name.trim() !== "";
 
   async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     if (!ready || pending) return;
     setPending(true);
     setError(null);
-    const result = await openProject(fromTemplate ? { name: name.trim(), template } : { repo: repo.trim(), name: name.trim() || undefined });
+    const result = await openProject(!fromTemplate ? { repo: repo.trim(), name: name.trim() || undefined } : start === "self" ? BOB_ITSELF : { name: name.trim(), template: start });
     setPending(false);
     if (!result.ok) return setError(result.error);
     selectAgent("bob");
@@ -43,7 +48,7 @@ export function OpenProjectDialog({ onClose }: { onClose?: () => void }) {
   return (
     <ConfirmDialog
       title="Open a project"
-      description={`Bring in a repository by URL or path, or start from a template: blank TypeScript, or the invoices sample.${onClose ? " The project you leave keeps its threads." : ""}`}
+      description={`Bring in a repository by URL or path, or start from Bob itself or the blank TypeScript template.${onClose ? " The project you leave keeps its threads." : ""}`}
       icon={<FolderGit2 />}
       error={error}
       onClose={onClose ?? stayOpen}
@@ -55,7 +60,7 @@ export function OpenProjectDialog({ onClose }: { onClose?: () => void }) {
             </Button>
           ) : null}
           <Button type="submit" form={FORM_ID} className="ui-confirm-dialog-confirm" disabled={!ready || pending}>
-            {pending ? (fromTemplate ? "Creating" : "Cloning") : fromTemplate ? "Start from template" : "Bring it in"}
+            {pending ? (fromTemplate && start !== "self" ? "Creating" : "Cloning") : fromTemplate ? (start === "self" ? "Open Bob itself" : "Start from template") : "Bring it in"}
           </Button>
         </>
       }
@@ -74,15 +79,17 @@ export function OpenProjectDialog({ onClose }: { onClose?: () => void }) {
             onChange={(event) => setRepo(event.target.value)}
           />
         </label>
-        <label className="ui-field">
-          <span className="ui-label">{fromTemplate ? "Name" : "Name (optional)"}</span>
-          <input className="ui-input" data-size="md" value={name} maxLength={80} placeholder={fromTemplate ? "shop" : "Taken from the repository"} onChange={(event) => setName(event.target.value)} />
-        </label>
+        {fromTemplate && start === "self" ? null : (
+          <label className="ui-field">
+            <span className="ui-label">{fromTemplate ? "Name" : "Name (optional)"}</span>
+            <input className="ui-input" data-size="md" value={name} maxLength={80} placeholder={fromTemplate ? "shop" : "Taken from the repository"} onChange={(event) => setName(event.target.value)} />
+          </label>
+        )}
         {fromTemplate ? (
           <label className="ui-field">
-            <span className="ui-label">Template</span>
-            <select className="ui-input" data-size="md" value={template} onChange={(event) => setTemplate(event.target.value as ProjectTemplate)}>
-              {Object.entries(TEMPLATE_LABELS).map(([id, label]) => (
+            <span className="ui-label">Start from</span>
+            <select className="ui-input" data-size="md" value={start} onChange={(event) => setStart(event.target.value as Start)}>
+              {Object.entries(START_LABELS).map(([id, label]) => (
                 <option key={id} value={id}>
                   {label}
                 </option>

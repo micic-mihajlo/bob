@@ -30,7 +30,7 @@ describe("the captain's prompt follows the open project", { timeout: 60_000 }, (
   beforeEach(freshTeam);
   afterAll(freshTeam);
 
-  it("grounds the captain in a non-invoices project's README and names no invoices anywhere", async () => {
+  it("grounds the captain in a non-tasks project's README and names no tasks anywhere", async () => {
     useProject("weather-station", repoWith({ "README.md": "# Weather station\nReads sensors and charts the temperature.\n", "sensors.ts": "export {};\n" }));
     const files = await projectFiles(getState().project);
     const readme = await projectReadme(getState().project, files);
@@ -44,7 +44,7 @@ describe("the captain's prompt follows the open project", { timeout: 60_000 }, (
     const tool = (name: string) => REGISTRY.find((t) => t.name === name)!;
     const toolText = ["start_thread", "set_goal"].map((name) => `${tool(name).description}\n${JSON.stringify(z.toJSONSchema(tool(name).schema))}`);
     expect(toolText.join("\n")).toMatch(/such as/);
-    for (const text of [...prompts, ...toolText, ...Object.values(PLAYBOOKS)]) expect(text).not.toMatch(/invoice|accountant/i);
+    for (const text of [...prompts, ...toolText, ...Object.values(PLAYBOOKS)]) expect(text).not.toMatch(/task|accountant/i);
   });
 
   it("leaves the README out when the project has none", async () => {

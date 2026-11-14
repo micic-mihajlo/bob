@@ -20,7 +20,7 @@ function agent(id: string, extra: Partial<Agent> = {}): Agent {
 function snapshot(agents: Agent[], extra: Partial<Snapshot> = {}): Snapshot {
   return {
     rev: 1,
-    project: { id: "p", name: "invoices-app", repo: null },
+    project: { id: "p", name: "tasks-app", repo: null },
     agents,
     activity: {},
     threads: {},
@@ -34,29 +34,29 @@ function snapshot(agents: Agent[], extra: Partial<Snapshot> = {}): Snapshot {
 
 describe("sidebarList", () => {
   const captain = agent("bob", { kind: "captain", role: "orchestrator" });
-  const build = agent("inv-1", { kind: "crew", code: "INV-1", crewRole: "build" });
-  const review = agent("inv-2", { kind: "crew", code: "INV-2", crewRole: "review" });
+  const build = agent("tas-1", { kind: "crew", code: "TAS-1", crewRole: "build" });
+  const review = agent("tas-2", { kind: "crew", code: "TAS-2", crewRole: "review" });
 
   it("puts the captain first, unheaded, then crew by status", () => {
     const list = sidebarList(
       snapshot([captain, build, review], {
-        activity: { "inv-1": { state: "working", since: "", step: null } },
-        threadState: { "inv-1": { status: "working", needsYou: false, closed: false }, "inv-2": { status: "idle", needsYou: false, closed: true } },
+        activity: { "tas-1": { state: "working", since: "", step: null } },
+        threadState: { "tas-1": { status: "working", needsYou: false, closed: false }, "tas-2": { status: "idle", needsYou: false, closed: true } },
       }),
     );
     expect(list.sections.map((section) => [section.id, section.name, section.agents.map((a) => a.id)])).toEqual([
       ["captain", null, ["bob"]],
-      ["working", "Working", ["inv-1"]],
-      ["closed", "Closed", ["inv-2"]],
+      ["working", "Working", ["tas-1"]],
+      ["closed", "Closed", ["tas-2"]],
     ]);
     expect(list.sections.find((section) => section.id === "closed")?.collapsedByDefault).toBe(true);
-    expect(list.states["inv-1"]).toEqual({ kind: "working" });
+    expect(list.states["tas-1"]).toEqual({ kind: "working" });
   });
 
   it("moves a thread that needs the person into Needs you only", () => {
     const list = sidebarList(
       snapshot([captain, build], {
-        threadState: { "inv-1": { status: "waiting", needsYou: true, closed: false } },
+        threadState: { "tas-1": { status: "waiting", needsYou: true, closed: false } },
         needsYou: [{ id: "n1", agentId: "bob", kind: "approval", title: "Merge #1", detail: "Approve the merge", approvalId: "a1", at: "" }],
       }),
     );
@@ -68,19 +68,19 @@ describe("sidebarList", () => {
   it("marks unread replies and failures", () => {
     const list = sidebarList(
       snapshot([captain, build], {
-        threadState: { "inv-1": { status: "failed", needsYou: false, closed: false } },
+        threadState: { "tas-1": { status: "failed", needsYou: false, closed: false } },
         threads: { bob: { agentId: "bob", items: [], waitingOn: [], queued: 0, unread: 2 } },
       }),
     );
     expect(list.states.bob).toEqual({ kind: "unread", count: 2 });
-    expect(list.states["inv-1"]).toEqual({ kind: "failed" });
+    expect(list.states["tas-1"]).toEqual({ kind: "failed" });
   });
 
   it("nests a subagent under its thread and never lists it at the top level", () => {
-    const sub = agent("inv-1-s1", { kind: "subagent", code: "INV-1.1", parentAgentId: "inv-1", workspaceMode: "copy" });
-    const list = sidebarList(snapshot([captain, build, sub], { threadState: { "inv-1": { status: "working", needsYou: false, closed: false } } }));
-    expect(list.sections.flatMap((section) => section.agents.map((a) => a.id))).toEqual(["bob", "inv-1"]);
-    expect(list.subagents["inv-1"]?.map((a) => a.id)).toEqual(["inv-1-s1"]);
+    const sub = agent("tas-1-s1", { kind: "subagent", code: "TAS-1.1", parentAgentId: "tas-1", workspaceMode: "copy" });
+    const list = sidebarList(snapshot([captain, build, sub], { threadState: { "tas-1": { status: "working", needsYou: false, closed: false } } }));
+    expect(list.sections.flatMap((section) => section.agents.map((a) => a.id))).toEqual(["bob", "tas-1"]);
+    expect(list.subagents["tas-1"]?.map((a) => a.id)).toEqual(["tas-1-s1"]);
   });
 });
 
@@ -93,9 +93,9 @@ describe("sidebarMessageTime", () => {
 
 describe("waitingLine", () => {
   it("shows the captain's question instead of the generic title", () => {
-    const detail = "Two quick ones before I plan it.\n- I'd put every invoice in the file. Is that the right set of columns?\n- Who opens it?";
+    const detail = "Two quick ones before I plan it.\n- I'd put every task in the file. Is that the right set of columns?\n- Who opens it?";
     expect(waitingLine({ id: "question:t1", title: "Bob asks you something", detail })).toBe(
-      "I'd put every invoice in the file. Is that the right set of columns?",
+      "I'd put every task in the file. Is that the right set of columns?",
     );
   });
 

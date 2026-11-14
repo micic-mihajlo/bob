@@ -17,12 +17,12 @@ describe("the captain's files are kept in code", () => {
 
   it("rewrites the plan on each change and keeps what the captain wrote as its notes", async () => {
     await callTool("write_drive", { name: "NOTES.md", content: "Customers mean accountants here." }, asBob);
-    await callTool("set_goal", { title: "CSV export", user: "Accountants", behaviour: "Export invoices", acceptance: "One row per invoice", assumptions: ["All invoices.", "Columns as listed"] }, asBob);
+    await callTool("set_goal", { title: "CSV export", user: "Accountants", behaviour: "Export tasks", acceptance: "One row per task", assumptions: ["All tasks.", "Columns as listed"] }, asBob);
     const notes = file("NOTES.md");
-    expect(notes).toMatch(/\n\n### CSV export\n- Intent: CSV export, for accountants\.\n- Acceptance: One row per invoice\n- Assumed: All invoices; columns as listed\.\n- Stage \d of \d: \w+\.\n- Today:\n {2}- none\n\nBacklog:/);
+    expect(notes).toMatch(/\n\n### CSV export\n- Intent: CSV export, for accountants\.\n- Acceptance: One row per task\n- Assumed: All tasks; columns as listed\.\n- Stage \d of \d: \w+\.\n- Today:\n {2}- none\n\nBacklog:/);
     expect(notes).toMatch(/## Notes\nCustomers mean accountants here\.\n$/);
-    await callTool("set_roadmap", { workOrderTitles: ["Add invoicesToCsv"] }, asBob);
-    expect(file("NOTES.md")).toMatch(/Backlog:\n- wo_\w+ Add invoicesToCsv \(open\)[\s\S]*## Notes\nCustomers mean accountants here\./);
+    await callTool("set_roadmap", { workOrderTitles: ["Add tasksToCsv"] }, asBob);
+    expect(file("NOTES.md")).toMatch(/Backlog:\n- wo_\w+ Add tasksToCsv \(open\)[\s\S]*## Notes\nCustomers mean accountants here\./);
   });
 
   it("lists every ask newest first and writes over what the model put in DIGEST.md", async () => {

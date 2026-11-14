@@ -96,7 +96,7 @@ export function promoteInboxOrder(workOrderId: string): Promise<ActionResult> {
 }
 
 /** Opens a parked project by name, brings in a repository, or starts one from the template. */
-export function openProject(input: { repo?: string; name?: string; template?: ProjectTemplate }): Promise<ActionResult> {
+export function openProject(input: { repo?: string; branch?: string; name?: string; template?: ProjectTemplate }): Promise<ActionResult> {
   return post(API.projects, input);
 }
 

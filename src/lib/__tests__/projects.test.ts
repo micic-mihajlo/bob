@@ -34,26 +34,26 @@ describe("projects", { timeout: 60_000 }, () => {
     expect(opened).toMatchObject({ ok: true, project: { id: "shop-one" } });
     expect(getState().project.id).toBe("shop-one");
     expect(getState().threads.bob).toEqual([]);
-    expect(await projectFiles(getState().project)).toContain("src/invoices.ts");
-    expect(listProjects().projects.map((p) => p.id)).toEqual(["shop-one", "invoices-app"]);
+    expect(await projectFiles(getState().project)).toContain("src/index.ts");
+    expect(listProjects().projects.map((p) => p.id)).toEqual(["shop-one", "tasks-app"]);
 
-    const back = await openProject({ name: "invoices-app" });
+    const back = await openProject({ name: "tasks-app" });
     expect(back.ok).toBe(true);
     expect(getState().threads.bob).toHaveLength(before);
   });
 
-  it("starts a blank TypeScript project that records its template and holds nothing about invoices", async () => {
+  it("starts a blank TypeScript project that records its template and holds nothing about tasks", async () => {
     const opened = await openProject({ name: "blank-one", template: "blank-ts" });
     expect(opened).toMatchObject({ ok: true, project: { id: "blank-one", repo: null, template: "blank-ts" } });
     const files = await projectFiles(getState().project);
     expect(files).toEqual([".gitignore", "README.md", "package.json", "src/index.test.ts", "src/index.ts", "tsconfig.json"]);
     const { BLANK_TS_FILES } = await import("../workspace/template/blank-ts");
-    expect(BLANK_TS_FILES.map((f) => f.content).join("\n")).not.toMatch(/invoice/i);
+    expect(BLANK_TS_FILES.map((f) => f.content).join("\n")).not.toMatch(/task/i);
   });
 
-  it("records the invoices sample as the template of a new project that names none", async () => {
+  it("records blank TypeScript as the template of a new project that names none", async () => {
     const opened = await openProject({ name: "shop-three" });
-    expect(opened).toMatchObject({ ok: true, project: { id: "shop-three", template: "invoices" } });
+    expect(opened).toMatchObject({ ok: true, project: { id: "shop-three", template: "blank-ts" } });
   });
 
   it("starts a fresh Bob with no project, and leaves nothing behind when the first one opens", async () => {
@@ -68,14 +68,14 @@ describe("projects", { timeout: 60_000 }, () => {
     expect(ids).not.toContain("");
   });
 
-  it("resets to the invoices sample only when asked, and otherwise keeps the project", async () => {
+  it("resets to the scripted sample only when asked, and otherwise keeps the project", async () => {
     resetState();
     expect(await resetAll()).toEqual({ ok: true });
     expect(getState().project.id).toBe("");
 
     expect((await resetAll({ sample: true })).ok).toBe(true);
-    expect(getState().project).toEqual({ id: "invoices-app", name: "invoices-app", repo: null, template: "invoices" });
-    expect(await projectFiles(getState().project)).toContain("src/invoices.ts");
+    expect(getState().project).toEqual({ id: "tasks-app", name: "tasks-app", repo: null, template: "blank-ts" });
+    expect(await projectFiles(getState().project)).toContain("src/index.ts");
 
     await openProject({ name: "blank-two", template: "blank-ts" });
     expect((await resetAll()).ok).toBe(true);
@@ -98,14 +98,14 @@ describe("projects", { timeout: 60_000 }, () => {
   it("refuses a bad repository and leaves the active project alone", async () => {
     const result = await openProject({ repo: "ext::sh -c touch% /tmp/pwned" });
     expect(result.ok).toBe(false);
-    expect(getState().project.id).toBe("invoices-app");
+    expect(getState().project.id).toBe("tasks-app");
   });
 
   it("refuses to switch while work is running", async () => {
     update((s) => ({ ...s, turns: [...s.turns, { id: "turn_x", agentId: "bob", requestId: "req_x", messageIds: [], status: "running", startedAt: "", endedAt: null }] }));
     const result = await openProject({ name: "shop-two" });
     expect(result).toMatchObject({ ok: false });
-    expect(getState().project.id).toBe("invoices-app");
+    expect(getState().project.id).toBe("tasks-app");
   });
 
   it("keeps every other project when the sample is reset, and the active one across a restart", async () => {
@@ -114,14 +114,14 @@ describe("projects", { timeout: 60_000 }, () => {
     await settle();
     const ids = () => listProjects().projects.map((p) => p.id);
     const before = ids();
-    expect(before).toEqual(expect.arrayContaining(["mine", "invoices-app"]));
+    expect(before).toEqual(expect.arrayContaining(["mine", "tasks-app"]));
 
     replaceState(getState());
     expect(getState().project.id).toBe("mine");
     expect(ids()).toEqual(before);
 
     expect(await resetAll({ sample: true })).toEqual({ ok: true });
-    expect(getState().project.id).toBe("invoices-app");
+    expect(getState().project.id).toBe("tasks-app");
     expect(ids().sort()).toEqual([...before].sort());
     expect(await openProject({ name: "mine" })).toMatchObject({ ok: true, project: { id: "mine", template: "blank-ts" } });
     expect(getState().threads.bob.some((i) => i.kind === "user_text" && i.text === "hello from mine")).toBe(true);

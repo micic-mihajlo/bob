@@ -54,7 +54,7 @@ export const MAX_BUSY_THREADS = 3;
 export const DRIVE_FILES = ["DIGEST.md", "CREW.md", "NOTES.md"] as const;
 export type DriveName = (typeof DRIVE_FILES)[number];
 
-/** "invoices-app" gives "INV": the first three letters of the project name's first word. */
+/** "tasks-app" gives "TAS": the first three letters of the project name's first word. */
 export function projectKey(projectName: string): string {
   const word = projectName.split(/[^A-Za-z0-9]+/).find(Boolean) ?? "BOB";
   return word.slice(0, 3).toUpperCase();
@@ -68,7 +68,7 @@ export function nextThreadCode(s: State): string {
 
 const BRANCH_SLUG_MAX = 40;
 
-/** `inv-3-csv-export`: the thread code, then what the work is. */
+/** `tas-3-csv-export`: the thread code, then what the work is. */
 export function branchName(code: string, subject: string): string {
   const slug = slugify(subject).slice(0, BRANCH_SLUG_MAX).replace(/-+$/, "");
   return slug ? `${code.toLowerCase()}-${slug}` : code.toLowerCase();

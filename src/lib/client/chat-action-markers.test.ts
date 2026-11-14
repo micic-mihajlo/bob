@@ -6,13 +6,13 @@ const sent = (id: string, at: string): ConversationRow => ({
   kind: "sent",
   id,
   at,
-  item: { kind: "message_out", id, turnId: "turn" as never, messageId: id as never, to: ["inv-1" as never], text: "Do it", expectsReply: false, at },
+  item: { kind: "message_out", id, turnId: "turn" as never, messageId: id as never, to: ["tas-1" as never], text: "Do it", expectsReply: false, at },
 });
 const received = (id: string, at: string): ConversationRow => ({
   kind: "received",
   id,
   at,
-  item: { kind: "message_in", id, messageId: id as never, from: "inv-1" as never, text: "Done", isReply: true, at },
+  item: { kind: "message_in", id, messageId: id as never, from: "tas-1" as never, text: "Done", isReply: true, at },
 });
 const notice = (id: string, at: string): ConversationRow => ({ kind: "notice", id, at, item: { kind: "notice", id, tone: "warning", text: "Stopped", at } });
 

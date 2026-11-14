@@ -33,19 +33,19 @@ describe("captain steps the rules already fix run without a model call", { timeo
   it("asks for the merge as soon as a review approves the current head", async () => {
     const { brain, calls } = counting();
     setBrainOverride(brain);
-    postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+    postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
     await settle();
     const asked = stepTurn(/^Asking for approval: Merge #1/);
     expect(asked?.kind === "step" && asked.outcome).toBe("ok");
     const turnId = asked?.kind === "step" ? asked.turnId : "";
     expect(calls.filter((c) => c.turnId === turnId)).toHaveLength(0);
     const approval = getState().approvals.find((a) => a.status === "pending");
-    expect(approval?.detail).toMatch(/Merges #1 .* at [0-9a-f]{7} into main\. Files: .*INV-2 approved this head/);
+    expect(approval?.detail).toMatch(/Merges #1 .* at [0-9a-f]{7} into main\. Files: .*TAS-2 approved this head/);
     expect(getState().roadmap.stageTitle).toBe("Ship");
   });
 
   it("leaves a turn to the captain when a review's approval arrives with another thread's report", async () => {
-    postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+    postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
     await settle();
     const s = { ...getState(), approvals: [] };
     const fromCrew = (role: string) => [...s.messages].reverse().find((m) => m.from.kind === "agent" && m.to.includes("bob") && s.agents.find((a) => m.from.kind === "agent" && a.id === m.from.agentId)?.crewRole === role)!;
@@ -57,7 +57,7 @@ describe("captain steps the rules already fix run without a model call", { timeo
   it("merges an approved pull request and closes its threads before the captain's first model call", async () => {
     const { brain, calls } = counting();
     setBrainOverride(brain);
-    postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+    postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
     await settle();
     const approval = getState().approvals.find((a) => a.status === "pending");
     expect(decideApproval(approval?.id ?? "", "approved").ok).toBe(true);

@@ -7,7 +7,7 @@ import { settle } from "../turns";
 import { freshTeam } from "./helpers";
 
 const REQUEST =
-  "Customers want to export invoices as CSV: all invoices, columns id, customer, amount, status and due date. Done when invoicesToCsv returns a header row and one row per invoice.";
+  "Users want to export their tasks as CSV: all tasks, columns id, title, hours, status and due date. Done when tasksToCsv returns a header row and one row per task.";
 
 describe("test runner output", () => {
   it("counts failed tests from vitest, jest and node:test summaries", () => {
@@ -22,9 +22,9 @@ describe("test runner output", () => {
   it("reads the first red run and the last green run from a build thread's steps", () => {
     const step = (id: string, command: string, outcome: "ok" | "failed", output: string) => ({ kind: "step", id, turnId: "t", tool: "run", label: "", at: id, outcome, detail: `$ ${command}   (namespace sandbox)\n${output}` });
     const s = {
-      agents: [{ id: "inv-1", workOrderId: "wo_1" }],
+      agents: [{ id: "tas-1", workOrderId: "wo_1" }],
       threads: {
-        "inv-1": [
+        "tas-1": [
           step("1", "ls src", "ok", ""),
           step("2", "npx vitest run src/acceptance/wo_1.test.ts", "failed", " Test Files  1 failed (1)"),
           step("3", "npm test", "failed", "Tests  1 failed | 3 passed (4)"),
@@ -32,7 +32,7 @@ describe("test runner output", () => {
         ],
       },
     } as unknown as State;
-    const record = acceptanceOf(s, "inv-1");
+    const record = acceptanceOf(s, "tas-1");
     expect(acceptanceLine(record, ["src/acceptance/wo_1.test.ts"])).toBe(
       "- Acceptance test: `src/acceptance/wo_1.test.ts`: red (`npx vitest run src/acceptance/wo_1.test.ts`, 1 failed) → green (`npm test`)",
     );

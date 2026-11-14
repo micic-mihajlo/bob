@@ -117,22 +117,22 @@ export const SCRIPTED_MEMORIES: MemoryItem[] = [
   {
     id: "lesson_scripted_csv_quoting",
     collection: "lessons",
-    title: "Lesson: CSV export of invoices",
+    title: "Lesson: CSV export of tasks",
     text: [
-      'Lesson from the request "customers want to export invoices as CSV" (CSV export for invoices).',
-      "Shipped: #1 Add CSV export for invoices.",
-      "Review caught: medium in src/csv.ts: a customer name with a comma broke the row; quote cells that hold commas, quotes or newlines.",
-      "Mutants that survived: dropped .replace() at src/csv.ts:2, until a property test with quoted names killed it.",
-      "Follow-ups: export amounts in dollars, not cents.",
+      'Lesson from the request "users want to export their tasks as CSV" (CSV export for tasks).',
+      "Shipped: #1 Add CSV export for tasks.",
+      "Review caught: medium in src/csv.ts: a title with a comma broke the row; quote cells that hold commas, quotes or newlines.",
+      "Mutants that survived: dropped .replace() at src/csv.ts:2, until a property test with quoted titles killed it.",
+      "Follow-ups: export estimates in hours, not minutes.",
     ].join("\n"),
-    metadata: { kind: "lesson", project: "invoices-app", requestId: "req_scripted", prIds: "", messageId: "" },
+    metadata: { kind: "lesson", project: "tasks-app", requestId: "req_scripted", prIds: "", messageId: "" },
   },
   {
-    id: "decision_scripted_dollars",
+    id: "decision_scripted_hours",
     collection: "person",
-    title: "Instruction: amounts in dollars",
-    text: 'The person said: "Always show amounts in dollars with two decimals, never in cents."',
-    metadata: { kind: "instruction", project: "invoices-app", requestId: "req_scripted" },
+    title: "Instruction: estimates in hours",
+    text: 'The person said: "Always show estimates in hours with two decimals, never in minutes."',
+    metadata: { kind: "instruction", project: "tasks-app", requestId: "req_scripted" },
   },
 ];
 

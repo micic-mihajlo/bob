@@ -7,7 +7,7 @@ import { traceWhy } from "../why";
 import { settle } from "../turns";
 import { freshTeam } from "./helpers";
 
-const VAGUE = "customers want to export invoices as CSV";
+const VAGUE = "users want to export their tasks as CSV";
 
 const captainSaid = () => (getState().threads.bob ?? []).filter((i) => i.kind === "agent_text").map((i) => (i.kind === "agent_text" ? i.text : ""));
 const crew = () => getState().agents.filter((a) => a.kind === "crew");
@@ -29,10 +29,10 @@ describe("the captain inspects a request before work starts", { timeout: 60_000 
     expect(crew()).toHaveLength(0);
     expect(getState().roadmap.stageTitle).toBe("Intent");
 
-    await say("All invoices, columns id, customer, amount, status and due date, button above the invoices table. Done when the file has one row per invoice.");
+    await say("All tasks, columns id, title, hours, status and due date, button above the tasks table. Done when the file has one row per task.");
     const road = getState().roadmap;
-    expect(road.goal).toMatchObject({ user: "Customers", acceptance: "Done when the file has one row per invoice." });
-    expect(road.goal?.behaviour).toMatch(/export invoices as CSV/);
+    expect(road.goal).toMatchObject({ user: "Users", acceptance: "Done when the file has one row per task." });
+    expect(road.goal?.behaviour).toMatch(/export their tasks as CSV/);
     expect(road.goal?.assumptions).toEqual([]);
     expect(road.stageTitle).toBe("Ship");
     expect(road.today[0].id).toMatch(/^wo_/);
@@ -49,7 +49,7 @@ describe("the captain inspects a request before work starts", { timeout: 60_000 
   });
 
   it("starts a request that names its behaviour and an acceptance check without asking anything", async () => {
-    await say("Add isOverdue(invoice, today) in src/overdue.ts: true when the invoice is not paid and its dueDate is before today. Done means a vitest test passes for a paid invoice, an unpaid one past due, and one due today.");
+    await say("Add isOverdue(task, today) in src/overdue.ts: true when the task is not paid and its dueDate is before today. Done means a vitest test passes for a paid task, an unpaid one past due, and one due today.");
     expect(captainSaid()[0]).not.toMatch(/\?/);
     expect(captainSaid()[0]).not.toMatch(/by role|in scope/);
     expect(crew().some((a) => a.crewRole === "build")).toBe(true);
@@ -58,7 +58,7 @@ describe("the captain inspects a request before work starts", { timeout: 60_000 
 
   it("traces the pull request to the first thing the person typed, with the question and answer as hops", async () => {
     await say(VAGUE);
-    const answer = "All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.";
+    const answer = "All tasks, columns id, title, hours, status and due date. Done when the file has one row per task.";
     await say(answer);
     const s = getState();
     const [ask, reply] = s.messages.filter((m) => m.from.kind === "user");
@@ -84,9 +84,9 @@ describe("the captain inspects a request before work starts", { timeout: 60_000 
     await say("still not sure");
     const road = getState().roadmap;
     expect(road.goal?.assumptions?.map((a) => a.split(":")[0])).toEqual(["Scope", "Acceptance"]);
-    expect(road.goal?.acceptance).toMatch(/one row per invoice/);
+    expect(road.goal?.acceptance).toMatch(/one row per task/);
     expect(crew()[0]?.crewRole).toBe("build");
-    expect(captainSaid()[2]).toMatch(/Going with: Scope: All invoices/);
+    expect(captainSaid()[2]).toMatch(/Going with: Scope: All tasks/);
   });
 
   it("goes ahead with assumptions as soon as the person says so", async () => {

@@ -10,9 +10,9 @@ import { settle } from "../turns";
 import { freshTeam } from "./helpers";
 
 const CSV =
-  "Customers want to export invoices as CSV: all invoices, columns id, customer, amount, status and due date. Done when invoicesToCsv returns a header row and one row per invoice.";
+  "Users want to export their tasks as CSV: all tasks, columns id, title, hours, status and due date. Done when tasksToCsv returns a header row and one row per task.";
 const OVERDUE =
-  "Add isOverdue(invoice, today) in src/overdue.ts: true when the invoice is not paid and its dueDate is before today. Done means a vitest test passes for a paid invoice, an unpaid one past due, and one due today.";
+  "Add isOverdue(task, today) in src/overdue.ts: true when the task is not paid and its dueDate is before today. Done means a vitest test passes for a paid task, an unpaid one past due, and one due today.";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

@@ -26,7 +26,7 @@ describe("boot sweep", () => {
   beforeEach(freshStandingTeam);
 
   it("closes turns a restart cut off, runs each of them once more, and keeps approvals", async () => {
-    postUserMessage("researcher", "find invoice formats");
+    postUserMessage("researcher", "find task formats");
     postUserMessage("reviewer", "check the export");
     await settle();
     const done = getState();
@@ -85,7 +85,7 @@ describe("interrupt", () => {
         },
       }),
     );
-    postUserMessage("lead", "export invoices");
+    postUserMessage("lead", "export tasks");
     await new Promise((r) => setTimeout(r, 20));
     expect(buildSnapshot(getState()).activity.coder.state).toBe("working");
     expect(buildSnapshot(getState()).threadState?.coder).toEqual({ status: "working", needsYou: false, closed: false });
@@ -116,7 +116,7 @@ describe("interrupt", () => {
         },
       }),
     );
-    postUserMessage("lead", "export invoices");
+    postUserMessage("lead", "export tasks");
     await new Promise((r) => setTimeout(r, 20));
     expect(buildSnapshot(getState()).activity.reviewer.state).toBe("working");
     expect(buildSnapshot(getState()).activity.coder.state).toBe("waiting");

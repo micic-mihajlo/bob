@@ -14,7 +14,7 @@ import { commentableLines, reviewBody } from "../github";
 import type { ReviewFinding } from "../../types";
 
 const GIT_TIMEOUT = 60_000;
-const repo = { owner: "acme", name: "invoices" };
+const repo = { owner: "acme", name: "tasks" };
 
 describe("BOB_GITHUB setting", () => {
   it("is off unless it says gh or composio", () => {
@@ -24,12 +24,12 @@ describe("BOB_GITHUB setting", () => {
 
   it("defaults to the demo base branch of Bob's repository and falls back to gh without a Composio key", () => {
     const setting = gitHubSetting({ BOB_GITHUB: "composio" });
-    expect(setting).toMatchObject({ on: true, config: { via: "gh", owner: "micic-mihajlo", name: "bob", base: "demo/invoices-main", remote: "https://github.com/micic-mihajlo/bob.git", composio: null } });
+    expect(setting).toMatchObject({ on: true, config: { via: "gh", owner: "micic-mihajlo", name: "bob", base: "demo/self", remote: "https://github.com/micic-mihajlo/bob.git", composio: null } });
   });
 
   it("refuses main of Bob's own repository as the base", () => {
     expect(gitHubSetting({ BOB_GITHUB: "gh", BOB_GITHUB_BASE: "main" })).toEqual({ on: true, error: expect.stringMatching(/never opens or merges demo pull requests against main/) });
-    expect(gitHubSetting({ BOB_GITHUB: "gh", BOB_GITHUB_REPO: "acme/invoices", BOB_GITHUB_BASE: "main" })).toMatchObject({ on: true, config: { base: "main" } });
+    expect(gitHubSetting({ BOB_GITHUB: "gh", BOB_GITHUB_REPO: "acme/tasks", BOB_GITHUB_BASE: "main" })).toMatchObject({ on: true, config: { base: "main" } });
   });
 
   it("uses Composio Connect's MCP server for a consumer key", () => {
@@ -37,40 +37,40 @@ describe("BOB_GITHUB setting", () => {
   });
 
   it("uses Composio when the key is set", () => {
-    const setting = gitHubSetting({ BOB_GITHUB: "composio", COMPOSIO_API_KEY: "ak_test", COMPOSIO_CONNECTED_ACCOUNT_ID: "ca_1", BOB_GITHUB_REPO: "acme/invoices" });
+    const setting = gitHubSetting({ BOB_GITHUB: "composio", COMPOSIO_API_KEY: "ak_test", COMPOSIO_CONNECTED_ACCOUNT_ID: "ca_1", BOB_GITHUB_REPO: "acme/tasks" });
     expect(setting).toMatchObject({ on: true, config: { via: "composio", composio: { kind: "project", apiKey: "ak_test", userId: "default", connectedAccountId: "ca_1", baseUrl: "https://backend.composio.dev" } } });
   });
 });
 
 describe("GitHub operations", () => {
   it("name the Composio GitHub toolkit tool and its documented arguments next to the REST route", () => {
-    expect(ops.createPull(repo, { title: "t", body: "b", head: "demo/x", base: "demo/invoices-main" })).toEqual({
+    expect(ops.createPull(repo, { title: "t", body: "b", head: "demo/x", base: "demo/self" })).toEqual({
       slug: "GITHUB_CREATE_A_PULL_REQUEST",
-      args: { owner: "acme", repo: "invoices", title: "t", body: "b", head: "demo/x", base: "demo/invoices-main" },
+      args: { owner: "acme", repo: "tasks", title: "t", body: "b", head: "demo/x", base: "demo/self" },
       method: "POST",
-      path: "repos/acme/invoices/pulls",
-      body: { title: "t", body: "b", head: "demo/x", base: "demo/invoices-main" },
+      path: "repos/acme/tasks/pulls",
+      body: { title: "t", body: "b", head: "demo/x", base: "demo/self" },
     });
     expect(ops.merge(repo, 7, { sha: "abc", merge_method: "merge", commit_title: "m" })).toMatchObject({
       slug: "GITHUB_MERGE_A_PULL_REQUEST",
-      args: { owner: "acme", repo: "invoices", pull_number: 7, sha: "abc", merge_method: "merge" },
+      args: { owner: "acme", repo: "tasks", pull_number: 7, sha: "abc", merge_method: "merge" },
       method: "PUT",
-      path: "repos/acme/invoices/pulls/7/merge",
+      path: "repos/acme/tasks/pulls/7/merge",
     });
     expect(ops.createReview(repo, 7, { commit_id: "abc", event: "COMMENT", body: "b", comments: [] })).toMatchObject({
       slug: "GITHUB_CREATE_A_REVIEW_FOR_A_PULL_REQUEST",
       args: { pull_number: 7, commit_id: "abc", event: "COMMENT" },
-      path: "repos/acme/invoices/pulls/7/reviews",
+      path: "repos/acme/tasks/pulls/7/reviews",
     });
     expect(ops.addLabels(repo, 7, ["demo"])).toMatchObject({ slug: "GITHUB_ADD_LABELS_TO_AN_ISSUE", args: { issue_number: 7, labels: ["demo"] } });
-    expect(ops.listOpenPulls(repo, "demo/x")).toMatchObject({ args: { head: "acme:demo/x", state: "open" }, path: "repos/acme/invoices/pulls?state=open&head=acme%3Ademo%2Fx" });
+    expect(ops.listOpenPulls(repo, "demo/x")).toMatchObject({ args: { head: "acme:demo/x", state: "open" }, path: "repos/acme/tasks/pulls?state=open&head=acme%3Ademo%2Fx" });
   });
 
   it("send a Composio execute request and unwrap its data", async () => {
-    const fetcher = vi.fn(async () => Response.json({ data: { number: 7, html_url: "https://github.com/acme/invoices/pull/7" }, error: null, successful: true }));
+    const fetcher = vi.fn(async () => Response.json({ data: { number: 7, html_url: "https://github.com/acme/tasks/pull/7" }, error: null, successful: true }));
     const call = composioTransport({ kind: "project", apiKey: "ak_test", userId: "bob", connectedAccountId: "ca_1", baseUrl: "https://backend.composio.dev" }, fetcher as typeof fetch);
     const op = ops.createPull(repo, { title: "t", body: "b", head: "demo/x", base: "main" });
-    await expect(call(op)).resolves.toEqual({ number: 7, html_url: "https://github.com/acme/invoices/pull/7" });
+    await expect(call(op)).resolves.toEqual({ number: 7, html_url: "https://github.com/acme/tasks/pull/7" });
     const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_CREATE_A_PULL_REQUEST");
     expect(init.headers).toMatchObject({ "x-api-key": "ak_test" });
@@ -86,11 +86,11 @@ describe("GitHub operations", () => {
       sent.push({ headers: init.headers as Record<string, string>, body });
       if (body.method === "initialize") return new Response("{}", { headers: { "mcp-session-id": "sess_1" } });
       if (body.method === "notifications/initialized") return new Response(null, { status: 202 });
-      return sse(text({ successful: true, data: { results: [{ tool_slug: "GITHUB_CREATE_A_PULL_REQUEST", index: 0, response: { successful: true, data: { number: 9, html_url: "https://github.com/acme/invoices/pull/9" } } }] } }));
+      return sse(text({ successful: true, data: { results: [{ tool_slug: "GITHUB_CREATE_A_PULL_REQUEST", index: 0, response: { successful: true, data: { number: 9, html_url: "https://github.com/acme/tasks/pull/9" } } }] } }));
     });
     const call = composioConnectTransport({ kind: "connect", apiKey: "ck_test", userId: "default", connectedAccountId: "bob-demo", baseUrl: "https://connect.composio.dev/mcp" }, fetcher as unknown as typeof fetch);
-    const op = ops.createPull(repo, { title: "t", body: "b", head: "demo/x", base: "demo/invoices-main" });
-    await expect(call(op)).resolves.toEqual({ number: 9, html_url: "https://github.com/acme/invoices/pull/9" });
+    const op = ops.createPull(repo, { title: "t", body: "b", head: "demo/x", base: "demo/self" });
+    await expect(call(op)).resolves.toEqual({ number: 9, html_url: "https://github.com/acme/tasks/pull/9" });
     await call(op);
     expect(sent.map((s) => s.body.method)).toEqual(["initialize", "notifications/initialized", "tools/call", "tools/call"]);
     const execute = sent[2];
@@ -146,13 +146,13 @@ describe("review comments", () => {
   it("comments inline where the diff has the line and puts the rest in the body", () => {
     const body = reviewBody(
       { headSha: "abc", patch: PATCH },
-      { verdict: "request_changes", summary: "Checked the tests.", findings: [finding({}), finding({ path: "src/invoices.ts", line: 40, severity: "low", comment: "Rename." })] },
+      { verdict: "request_changes", summary: "Checked the tests.", findings: [finding({}), finding({ path: "src/tasks.ts", line: 40, severity: "low", comment: "Rename." })] },
     );
     expect(body.commit_id).toBe("abc");
     expect(body.event).toBe("COMMENT");
     expect(body.comments).toEqual([{ path: "src/csv.ts", line: 2, side: "RIGHT", body: "**high · bug** (confidence 0.9)\n\nQuote commas." }]);
     expect(body.body).toContain("**Bob review: Changes requested** Checked the tests.");
-    expect(body.body).toContain("`src/invoices.ts:40` **low · bug** (confidence 0.9) Rename.");
+    expect(body.body).toContain("`src/tasks.ts:40` **low · bug** (confidence 0.9) Rename.");
   });
 
   it("includes the preview check of the same head", () => {
@@ -174,7 +174,7 @@ function fakeGitHub(remote: string) {
     if (op.slug === "GITHUB_CREATE_A_PULL_REQUEST") {
       const number = pulls.size + 7;
       pulls.set(number, { head: String(op.args.head), base: String(op.args.base), merged: false });
-      return { number, html_url: `https://github.com/acme/invoices/pull/${number}` };
+      return { number, html_url: `https://github.com/acme/tasks/pull/${number}` };
     }
     if (op.slug === "GITHUB_MERGE_A_PULL_REQUEST") {
       const pull = pulls.get(Number(op.args.pull_number));
@@ -204,10 +204,10 @@ describe("publishing to GitHub", { timeout: GIT_TIMEOUT }, () => {
   beforeEach(() => {
     freshTeam();
     dir = mkdtempSync(path.join(os.tmpdir(), "bob-github-"));
-    remote = path.join(dir, "invoices.git");
+    remote = path.join(dir, "tasks.git");
     git(dir, "init", "--quiet", "--bare", remote);
     vi.stubEnv("BOB_GITHUB", "gh");
-    vi.stubEnv("BOB_GITHUB_REPO", "acme/invoices");
+    vi.stubEnv("BOB_GITHUB_REPO", "acme/tasks");
     vi.stubEnv("BOB_GITHUB_REMOTE", remote);
   });
 
@@ -220,16 +220,16 @@ describe("publishing to GitHub", { timeout: GIT_TIMEOUT }, () => {
 
   it("opens the real pull request, posts the review, merges it on approval, and keeps both mains the same commit", async () => {
     const github = fakeGitHub(remote);
-    postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+    postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
     await settle();
 
     const pr = getState().artifacts.find((a) => a.kind === "pull_request");
     const branch = pr?.pullRequest?.branch ?? "";
-    expect(pr?.pullRequest?.github).toEqual({ repo: "acme/invoices", number: 7, url: "https://github.com/acme/invoices/pull/7", via: "gh", head: `demo/${branch}`, base: "demo/invoices-main", merged: false });
+    expect(pr?.pullRequest?.github).toEqual({ repo: "acme/tasks", number: 7, url: "https://github.com/acme/tasks/pull/7", via: "gh", head: `demo/${branch}`, base: "demo/self", merged: false });
     expect(git(remote, "rev-parse", `refs/heads/demo/${branch}`)).toBe(pr?.pullRequest?.headSha);
     const created = github.calls.find((c) => c.slug === "GITHUB_CREATE_A_PULL_REQUEST");
-    expect(created?.args).toMatchObject({ head: `demo/${branch}`, base: "demo/invoices-main", title: `[demo] ${pr?.title}` });
-    expect(String(created?.args.body)).toMatch(/<!-- bob-trace -->[\s\S]*Asked: "Customers want to export all invoices as CSV/);
+    expect(created?.args).toMatchObject({ head: `demo/${branch}`, base: "demo/self", title: `[demo] ${pr?.title}` });
+    expect(String(created?.args.body)).toMatch(/<!-- bob-trace -->[\s\S]*Asked: "Customers want to export all tasks as CSV/);
     expect(String(created?.args.body)).toMatch(/Opened by Bob for its pull request #1/);
     expect(github.calls.find((c) => c.slug === "GITHUB_ADD_LABELS_TO_AN_ISSUE")?.args).toMatchObject({ issue_number: 7, labels: ["demo"] });
     const review = github.calls.find((c) => c.slug === "GITHUB_CREATE_A_REVIEW_FOR_A_PULL_REQUEST");
@@ -246,7 +246,7 @@ describe("publishing to GitHub", { timeout: GIT_TIMEOUT }, () => {
     expect(github.calls.find((c) => c.slug === "GITHUB_MERGE_A_PULL_REQUEST")?.args).toMatchObject({ pull_number: 7, sha: pr?.pullRequest?.headSha, merge_method: "merge" });
     const lastBody = github.calls.filter((c) => c.slug === "GITHUB_UPDATE_A_PULL_REQUEST").at(-1)?.args.body;
     expect(String(lastBody)).toMatch(/- Review: approve[\s\S]*- Approval: approved by the person/);
-    const githubMain = git(remote, "rev-parse", "refs/heads/demo/invoices-main");
+    const githubMain = git(remote, "rev-parse", "refs/heads/demo/self");
     expect(git(remote, "log", "-1", "--format=%an", githubMain)).toBe("GitHub");
     expect(localMain()).toBe(githubMain);
     expect(getState().roadmap.today[0].status).toBe("done");
@@ -254,7 +254,7 @@ describe("publishing to GitHub", { timeout: GIT_TIMEOUT }, () => {
 
   it("still merges locally when GitHub refuses, then brings GitHub's base along", async () => {
     fakeGitHub(remote);
-    postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+    postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
     await settle();
     setGitHubTransport(async (op) => {
       if (op.slug === "GITHUB_MERGE_A_PULL_REQUEST") throw new Error("gh: Pull Request is not mergeable (HTTP 405)");
@@ -266,18 +266,18 @@ describe("publishing to GitHub", { timeout: GIT_TIMEOUT }, () => {
     const pr = getState().artifacts.find((a) => a.kind === "pull_request")?.pullRequest;
     expect(pr?.merged).toBe(true);
     expect(pr?.github?.merged).toBe(true);
-    expect(git(remote, "rev-parse", "refs/heads/demo/invoices-main")).toBe(localMain());
-    expect(git(remote, "merge-base", "--is-ancestor", pr?.headSha ?? "", "refs/heads/demo/invoices-main")).toBe("");
+    expect(git(remote, "rev-parse", "refs/heads/demo/self")).toBe(localMain());
+    expect(git(remote, "merge-base", "--is-ancestor", pr?.headSha ?? "", "refs/heads/demo/self")).toBe("");
   });
 
   it("records why publishing failed and leaves Bob's own pull request working", async () => {
     vi.stubEnv("BOB_GITHUB_REMOTE", path.join(dir, "missing.git"));
     fakeGitHub(remote);
-    postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+    postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
     await settle();
     const pr = getState().artifacts.find((a) => a.kind === "pull_request")?.pullRequest;
     expect(pr?.github).toBeUndefined();
-    expect(pr?.githubError).toMatch(/could not push to acme\/invoices/);
+    expect(pr?.githubError).toMatch(/could not push to acme\/tasks/);
     expect(getState().approvals.some((a) => a.status === "pending")).toBe(true);
   });
 });

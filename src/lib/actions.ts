@@ -190,7 +190,7 @@ export function setThreadModelByPerson(agentId: AgentId, model: string): ActionR
 }
 
 /**
- * Back to the seed on the same project, or on the invoices sample with sample, with that project's repository and every
+ * Back to the seed on the same project, or on the scripted sample with sample, with that project's repository and every
  * thread's clone removed. With warm, the repository and its dependencies are made again before it answers.
  */
 export async function resetAll(options: { warm?: boolean; sample?: boolean } = {}): Promise<ActionResult<{ deps?: DepsState }>> {

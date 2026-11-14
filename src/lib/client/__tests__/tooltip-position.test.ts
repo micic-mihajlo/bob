@@ -21,11 +21,11 @@ describe("anchoredTooltipPosition", () => {
 
 describe("repeatsShownText", () => {
   it("skips a title the control shows in full", () => {
-    expect(repeatsShownText("invoices-app", " invoices-app ", false)).toBe(true);
+    expect(repeatsShownText("tasks-app", " tasks-app ", false)).toBe(true);
   });
 
   it("keeps a title whose text is cut off or not shown", () => {
-    expect(repeatsShownText("Overdue filter for invoices", "Overdue filter for invoices", true)).toBe(false);
+    expect(repeatsShownText("Overdue filter for tasks", "Overdue filter for tasks", true)).toBe(false);
     expect(repeatsShownText("Close panel", "", false)).toBe(false);
   });
 });

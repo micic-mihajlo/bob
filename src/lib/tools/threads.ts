@@ -163,7 +163,7 @@ export function listThreads(): ToolOutput {
 }
 
 export const messageThreadSchema = z.object({
-  threadId: z.string().min(1).describe("The thread's id or code, such as INV-3."),
+  threadId: z.string().min(1).describe("The thread's id or code, such as TAS-3."),
   text: z.string().min(1).describe("Must stand alone: the thread sees nothing else of your conversation."),
   expectsReply: z.boolean().optional().describe("Defaults to true: the thread's answer comes back to you as a new turn."),
 });
