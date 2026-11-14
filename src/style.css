@@ -1,0 +1,36 @@
+body {
+  margin: 0;
+  font: 15px/1.5 system-ui, sans-serif;
+  color: #1c1c1c;
+  background: #fafafa;
+}
+
+main {
+  max-width: 760px;
+  margin: 48px auto;
+  padding: 0 24px;
+}
+
+#actions {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+th,
+td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e6e6e6;
+  text-align: left;
+}
+
+td.amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
