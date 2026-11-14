@@ -126,7 +126,7 @@ Do not build: group channels, sign-in, multiple users, a marketplace, settings.
 
 | Block | Length | Done when |
 | --- | --- | --- |
-| Keys, deploy, demo repo | 45 min | Empty app is live. HydraDB answers one `CREATE` and one `MATCH`. A tiny invoices app is on GitHub and connected to Vercel |
+| Keys, deploy, demo repo | 45 min | Empty app is live. HydraDB answers one `CREATE` and one `MATCH`. A tiny sample app is on GitHub and connected to Vercel |
 | The spike | 90 min, hard box | A message goes from one agent's thread to another's and the answer comes back |
 | Team and sidebar | 90 min | Three agents exist as records, each with a thread you can open and type into |
 | Mailbox rules | 60 min | Budget, no self-send, no reply to a reply. A deliberate ping-pong stops by itself |
@@ -143,7 +143,7 @@ That is ten hours of work against about fifteen until the freeze. If you fall be
 | Time | What happens |
 | --- | --- |
 | 0:00 | One breath: one agent is a tool, a team needs a foreman, and nobody can see what a swarm is doing or why |
-| 0:15 | Call Bob: "customers want to export invoices". Bob pushes back until it can be tested, then the roadmap fills in |
+| 0:15 | Call Bob: "customers want a CSV export". Bob pushes back until it can be tested, then the roadmap fills in |
 | 0:50 | Bob messages Coder and Reviewer. The sidebar lights up. Open Coder's thread and show the message from Bob and the work in its sandbox |
 | 1:30 | Tell Bob "we need someone to check the security side". Bob creates an agent and it appears in the sidebar |
 | 1:55 | Coder asks Reviewer to look at the PR. Show both threads |

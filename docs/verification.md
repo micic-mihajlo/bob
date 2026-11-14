@@ -8,9 +8,9 @@ Every pull request that changes source code passes a verification gate before th
 
    ```json
    {
-     "acceptance": "a test shows one row per invoice",
+     "acceptance": "a test shows one row per task",
      "propertiesFile": "src/csv.properties.test.ts",
-     "properties": [{ "name": "one row per invoice", "criterion": "one row per invoice" }],
+     "properties": [{ "name": "one row per task", "criterion": "one row per task" }],
      "lean": {
        "file": "verify/Csv.lean",
        "theorems": ["Csv.unescape_escape"],
@@ -34,4 +34,4 @@ Every pull request that changes source code passes a verification gate before th
 
 ## The scripted demo
 
-On the invoices sample, the scripted build thread writes its contract, its properties and a Lean model, and runs `verify_change` before it opens the pull request. Its first properties leave one mutant alive (`dueDate <= today` for overdue invoices, dropped quote escaping for the CSV export); the thread adds the property that kills it and runs the gate again. Each verification takes about four seconds on this machine; the Lean build about one.
+On the tasks-app sample, the scripted build thread writes its contract, its properties and a Lean model, and runs `verify_change` before it opens the pull request. Its first properties leave one mutant alive (`dueDate <= today` for overdue tasks, dropped quote escaping for the CSV export); the thread adds the property that kills it and runs the gate again. Each verification takes about four seconds on this machine; the Lean build about one.

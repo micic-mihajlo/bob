@@ -33,7 +33,7 @@ Open http://localhost:3000.
   Voice            browser speech (BOB_VOICE=elevenlabs for ElevenLabs)
   GitHub PRs       off (BOB_GITHUB=gh turns it on)
   Vercel previews  off (BOB_PREVIEWS=vercel turns it on)
-  Project          invoices-app (invoices template)
+  Project          micic-mihajlo/bob (Bob itself, branch demo/self)
 ```
 
 Other flags: `--prewarm` (see the optional order below), `--scripted` (the fallback below), `--keep` (start without resetting), `--dev` (`next dev` instead of a production build), and `--port 3001`. Logs go to `.data/demo/`.
@@ -49,16 +49,16 @@ The numbers in brackets are the ten checks `pnpm walkthrough` times. Each reques
 | Time | What happens | Steps |
 | --- | --- | --- |
 | before | `pnpm demo`. Nothing runs yet. | 1 |
-| 0:00 | One breath: one agent is a tool, a crew of builders needs a foreman, and nobody can see what a swarm is doing or why. Bob is the foreman, and the Blobs are his lil builders. The invoices project is already open. | 1 |
-| 0:05 | Type "customers want to export invoices as CSV". It gets its own track at Intent. Bob pushes back with one question (about 10 s). Answer it, and the CSV track moves through Spec to Build and a build Blob starts (20 to 32 s). | 2 |
-| 0:35 | While the CSV build runs, type the overdue request (below). Only type it after you've answered Bob's question: a message sent while that question is open is taken as its answer, and the CSV request is lost. It gets a second track. Its build Blob starts about 18 s later, and both build at once, each in its own checkout on its own branch. If Bob asks who it's for (one run in four), answer "For the accountant on the invoices page who chases late payments. Go ahead with your defaults." | 2, 8 |
+| 0:00 | One breath: one agent is a tool, a crew of builders needs a foreman, and nobody can see what a swarm is doing or why. Bob is the foreman, and the Blobs are his lil builders. Bob's own repository is already open. | 1 |
+| 0:05 | Type "Show how long each request has been running on its roadmap card". It gets its own track at Intent. Bob pushes back with one question (about 10 s). Answer it, and the CSV track moves through Spec to Build and a build Blob starts (20 to 32 s). | 2 |
+| 0:35 | While the CSV build runs, type the overdue request (below). Only type it after you've answered Bob's question: a message sent while that question is open is taken as its answer, and the CSV request is lost. It gets a second track. Its build Blob starts about 18 s later, and both build at once, each in its own checkout on its own branch. If Bob asks who it's for (one run in four), answer "For the presenter watching the roadmap during a demo. Go ahead with your defaults." | 2, 8 |
 | 0:55 | Open the CSV build Blob: it reads files, writes code and runs the tests in its own checkout. The run step shows the command, the sandbox mode and the output. | 3 |
 | 1:20 | The first merge card arrives under Needs you, 80 to 106 s in (CSV first in one run, overdue first in two). Show its PR diff and the review Blob's verdict, then approve. It merges, its track moves to Learn and its Blobs close. The other track stays at Build or Ship. | 4, 5, 6 |
 | 1:45 | The second card. Both PRs touch src/page.ts, so when the second one conflicts with the first merge, its build Blob brings in main, the review checks the new head, and the card comes back for that head: about 45 s more, and you approve twice (seen in one run). Approve it, and say how long the whole loop took: both merged at 111, 133 and 147 s. | 6, 7, 8 |
 | 2:25 | Click Why? on the CSV PR. The chain runs through your answer and ends at the sentence you typed. Why? on the overdue PR ends at its own sentence. | 10 |
 | 2:50 | Close: Bob and his Blobs, a crew you can read, steer and audit. | |
 
-The overdue request, to paste: "List overdue invoices: add overdueInvoices(invoices, today) in src/invoices.ts that returns the sent invoices whose due date is before today, oldest due date first, and show how many are overdue in the page summary. Done means a vitest test passes for one overdue, one paid and one not-yet-due invoice."
+The overdue request, to paste: "Show when each pull request was opened as relative time on its card"
 
 If the review asks for changes, the build Blob gets a fix round first. In the one run where that happened, the CSV merge card came about 80 s after the findings, at 168 s in. Fill the wait with step 3 or the Why? on the PR that already merged.
 
