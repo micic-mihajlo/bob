@@ -1,3 +1,4 @@
+import { ordersOf } from "../roadmap";
 import { messageById } from "../state";
 import { ACCEPTANCE } from "./script-intake";
 import { call, resultOf, summarize, type Plan } from "./script-plan";
@@ -62,7 +63,7 @@ export function promotePlan(ctx: TurnContext): Plan | null {
     "Area: the invoices module under src/, next to src/invoices.ts and src/format.ts.",
     "Done means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.",
   ].join("\n");
-  const keep = road.today.filter((w) => w.status !== "done" && w.id !== order.id).map((w) => w.id);
+  const keep = ordersOf(road, ctx.requestId).today.filter((w) => w.status !== "done" && w.id !== order.id).map((w) => w.id);
   return {
     steps: [
       () => [call("set_today", { workOrderIds: [...keep, order.id].slice(-3) })],

@@ -11,7 +11,7 @@ import { call, resultOf, succeeded, type Plan } from "./script-plan";
 import type { CallRecord, InboundItem, TurnContext } from "./types";
 
 /** The work order set_roadmap made for this request, found by its title: backlog orders, such as the inbox's, may come first. */
-const newOrder = (done: CallRecord[], title: string) => (resultOf(done, "set_roadmap")?.workOrders as { id: string; title: string }[] | undefined)?.find((w) => w.title === title);
+const newOrder = (done: CallRecord[], title: string) => (resultOf(done, "set_roadmap")?.workOrders as { id: string; title: string }[] | undefined)?.find((w) => w.title.toLowerCase() === title.trim().toLowerCase());
 
 function buildBrief(intent: IntentDraft, texts: string[], workTitle: string): string {
   return [

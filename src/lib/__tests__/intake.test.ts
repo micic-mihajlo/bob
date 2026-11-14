@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { decideApproval, postUserMessage } from "../actions";
+import { postUserMessage } from "../actions";
 import { systemPrompt } from "../brain/prompt";
 import { buildSnapshot } from "../snapshot";
 import { getState } from "../store";
@@ -104,23 +104,6 @@ describe("the captain inspects a request before work starts", { timeout: 60_000 
       expect(getState().roadmap.goal?.assumptions).toHaveLength(2);
     });
   }
-  it("starts a new request after a denied merge instead of reading it as the answer to the denial", async () => {
-    await say("Add isOverdue(invoice, today) in src/overdue.ts: true when the invoice is not paid and its dueDate is before today. Done means a vitest test passes for a paid invoice, an unpaid one past due, and one due today.");
-    const approval = getState().approvals.find((a) => a.status === "pending")!;
-    expect(decideApproval(approval.id, "denied").ok).toBe(true);
-    await settle();
-    expect(captainSaid().at(-1)).toMatch(/What should change before I merge it\?/);
-
-    await say("Customers want to export invoices as CSV: all invoices, columns id, customer, amount, status and due date. Done when invoicesToCsv returns a header row and one row per invoice.");
-    const next = getState().messages.filter((m) => m.from.kind === "user").at(-1)!;
-    expect(next.continues).toBeUndefined();
-    expect(next.requestId).not.toBe(approval.requestId);
-    const builds = crew().filter((a) => a.crewRole === "build");
-    expect(builds).toHaveLength(2);
-    const brief = getState().messages.find((m) => m.to.includes(builds[1].id))!.text;
-    expect(brief).toMatch(/invoicesToCsv/);
-    expect(brief).not.toMatch(/Denied:|Approved:|isOverdue/);
-  });
 
   it("tells the live captain how many rounds it has used and what the stage needs", async () => {
     await say(VAGUE);

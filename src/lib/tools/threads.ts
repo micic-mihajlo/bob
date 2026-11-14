@@ -30,7 +30,7 @@ function startRefusal(s: State, input: StartInput, requestId: string): string | 
   }
   if (input.model && !isThreadModel(input.model)) return unknownModel(input.model);
   if (input.workOrderId) {
-    if (!s.roadmap.today.some((w) => w.id === input.workOrderId) && !openThreads(s).some((a) => a.workOrderId === input.workOrderId)) {
+    if (!s.roadmap.today.some((w) => w.id === input.workOrderId)) {
       return `Work order ${input.workOrderId} is not in today. Schedule it with set_today, or leave workOrderId out.`;
     }
     const twin = openThreads(s).find((a) => a.crewRole === input.role && a.workOrderId === input.workOrderId);
@@ -93,20 +93,7 @@ function assignBuild(s: State, agent: Agent): State {
   return moved.ok ? { ...s, roadmap: moved.roadmap } : s;
 }
 
-/**
- * A thread for a work order that already has one (a review for its build) belongs to that request, caused
- * by the owner's last report, even when another request's turn starts it.
- */
-function workRequest(s: State, workOrderId: string | undefined, ctx: ToolContext): { requestId: string; causedBy: string | null } {
-  const owner = workOrderId ? s.agents.find((a) => a.kind === "crew" && a.workOrderId === workOrderId) : undefined;
-  const requestId = owner ? threadRequestId(s, owner.id) : null;
-  if (!owner || !requestId || requestId === ctx.requestId) return { requestId: ctx.requestId, causedBy: ctx.causedBy };
-  const report = [...s.messages].reverse().find((m) => m.from.kind === "agent" && m.from.agentId === owner.id && m.requestId === requestId);
-  return { requestId, causedBy: report?.id ?? null };
-}
-
 export async function startThread(input: StartInput, ctx: ToolContext): Promise<ToolOutput> {
-  const work = workRequest(getState(), input.workOrderId, ctx);
   const created = transact<Agent | string>((s) => {
     const refused = startRefusal(s, input, ctx.requestId);
     if (refused) return { state: s, value: refused };
@@ -119,15 +106,10 @@ export async function startThread(input: StartInput, ctx: ToolContext): Promise<
     update((s) => closeThreadState(s, created.id, "the captain after its workspace failed"));
     return fail(`Could not set up ${created.code}'s workspace: ${problem}. Tell the person; do not retry blindly.`);
   }
-<<<<<<< HEAD
   const order = getState().roadmap.today.find((w) => w.id === input.workOrderId);
   const requestId = order?.requestId ?? ctx.requestId;
   await stampThread(getState(), created.id, requestId).catch(() => undefined);
   const source = order?.source;
-=======
-  await stampThread(getState(), created.id, work.requestId).catch(() => undefined);
-  const source = getState().roadmap.today.find((w) => w.id === input.workOrderId)?.source;
->>>>>>> 7521045 (Chaos run: seeded random driver with invariants, and the fixes it found)
   const origin = source ? inboxItem(getState(), source.inboxId)?.messageId : undefined;
   const sent = send({
     from: { kind: "agent", agentId: ctx.agentId },
@@ -135,13 +117,8 @@ export async function startThread(input: StartInput, ctx: ToolContext): Promise<
     text: briefWithAcceptance(getState(), created, input.brief),
     expectsReply: true,
     replyTo: null,
-<<<<<<< HEAD
     causedBy: origin ?? causeIn(getState(), ctx, requestId),
     requestId,
-=======
-    causedBy: origin ?? work.causedBy,
-    requestId: work.requestId,
->>>>>>> 7521045 (Chaos run: seeded random driver with invariants, and the fixes it found)
     ...(source ? { quote: source.quote } : {}),
   });
   if (!sent.ok) {
