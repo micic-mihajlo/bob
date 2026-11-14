@@ -3,11 +3,22 @@ import { findPullRequest, isPullRequest, type PullRequestArtifact } from "../thr
 import type { CrewRole } from "../types";
 import { changeFor } from "./script-changes";
 import { call, resultOf, summarize, type Plan } from "./script-plan";
-import type { TurnContext } from "./types";
+import type { CallRecord, TurnContext } from "./types";
 
 const goalOf = (brief: string) => /^Goal:[ \t]*(.+)$/m.exec(brief)?.[1]?.replace(/\.$/, "") ?? summarize(brief);
 
 const formatted = (status: string, result: string, evidence: string) => `Status: ${status}\nResult: ${result}\nEvidence: ${evidence}`;
+
+const TEST_COMMAND = "npm test";
+const runTests = () => call("run", { command: TEST_COMMAND });
+
+/** What the last test run showed, for the Evidence line. */
+function testsLine(done: CallRecord[]): string {
+  const run = [...done].reverse().find((c) => c.name === "run");
+  if (!run) return "tests not run";
+  if ("error" in run.result) return `${TEST_COMMAND} could not run: ${String(run.result.error)}`;
+  return run.result.passed ? `${TEST_COMMAND} passed` : `${TEST_COMMAND} failed (${String(run.result.note ?? "non-zero exit")})`;
+}
 
 function buildPlan(ctx: TurnContext, brief: string): Plan {
   const change = changeFor(brief);
@@ -17,12 +28,13 @@ function buildPlan(ctx: TurnContext, brief: string): Plan {
     steps: [
       () => [call("read_files", { paths: ["src/invoices.ts"] })],
       () => [call("write_files", { files })],
+      () => [runTests()],
       () => [call("open_pull_request", { ...change.pullRequest, commitMessage: change.commit })],
       (done) => {
         const pr = resultOf(done, "open_pull_request");
         if (!pr) return [];
         const result = `Opened pull request #${pr.number} (id ${pr.pullRequestId}) on branch ${pr.branch}: ${change.pullRequest.title}.`;
-        return [call("report", { text: formatted("done", result, `${files.map((f) => f.path).join(", ")}; read the diff against main`) })];
+        return [call("report", { text: formatted("done", result, `${files.map((f) => f.path).join(", ")}; ${testsLine(done)}; read the diff against main`) })];
       },
     ],
     reply: (done) => {
@@ -77,6 +89,9 @@ export function crewPlan(ctx: TurnContext, role: CrewRole): Plan {
   if (person && !ctx.inbound.some((i) => i.rule === "request")) return { steps: [], reply: () => `I am ${ctx.agent.code}, working on "${ctx.agent.title}". I report to the captain when it is done.` };
   const brief = ctx.inbound.find((i) => i.rule === "request");
   // A reviewer asked again reviews again: the pull request has a new head, and approval needs a review of it.
+  if (brief && role === "build" && ctx.initial.artifacts.some((a) => a.agentId === ctx.agent.id)) {
+    return { steps: [() => [runTests()]], reply: (done) => formatted("partial", "Read the new message and ran the tests again. My pull request stands as it is.", testsLine(done)) };
+  }
   if (brief && role !== "review" && ctx.initial.artifacts.some((a) => a.agentId === ctx.agent.id)) {
     return { steps: [], reply: () => formatted("partial", "Read the new message. My earlier result stands; nothing changed.", "none") };
   }

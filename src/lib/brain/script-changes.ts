@@ -1,4 +1,5 @@
 import { slugify } from "../ids";
+import { summarize } from "./script-plan";
 
 /**
  * What the scripted crew builds for a request, picked by the first matching row. The last row matches
@@ -11,8 +12,11 @@ export interface ScriptedChange {
   commit: string;
   pullRequest: { title: string; body: string };
   finding: { path: string; line: number | null; category: "tests" | "style"; severity: "low"; confidence: number; comment: string };
-  /** The captain's input inspection: a sharp question per missing part, and what it assumes when no answer comes. */
-  intake: Record<IntentPart, { ask: string; assume: string }>;
+  /**
+   * The captain's input inspection for one request: a question per missing part, about this request and
+   * ending in a question mark, and what it assumes when no answer comes.
+   */
+  intake: (request: string) => Record<IntentPart, { ask: string; assume: string }>;
 }
 
 export type IntentPart = "user" | "scope" | "acceptance";
@@ -71,17 +75,17 @@ export const SCRIPTED_CHANGES: readonly ScriptedChange[] = [
       confidence: 0.7,
       comment: "No case for an empty list. It returns the header alone, which is right; a test would keep it that way.",
     },
-    intake: {
-      user: { ask: "Who exports them: your customers from their portal, or your finance team?", assume: "Customers, from the invoices list" },
+    intake: () => ({
+      user: { ask: "Who exports them: your customers, or your finance team?", assume: "Customers" },
       scope: {
-        ask: "Which invoices and which columns go in the file, and where does the button live? I'd say all invoices; id, customer, amount, status, due date; a button above the invoices table.",
+        ask: "I'd put every invoice in the file with id, customer, amount, status and due date. Is that the right set of columns?",
         assume: "All invoices; columns id, customer, amount, status and due date; amounts in dollars",
       },
       acceptance: {
-        ask: "What check proves it works? I'd use: a header row, then one row per invoice with the amount in dollars, covered by a test.",
+        ask: "I'd call it done when a test shows a header row and one row per invoice, amounts in dollars. Is that the check you want?",
         assume: "invoicesToCsv returns a header row and one row per invoice with the amount in dollars, and its test passes",
       },
-    },
+    }),
   },
   {
     match: /[\s\S]*/,
@@ -90,10 +94,13 @@ export const SCRIPTED_CHANGES: readonly ScriptedChange[] = [
     commit: "Record the request in docs",
     pullRequest: { title: "Record the request in docs", body: "Adds a short note under docs/ that restates the request, as a starting point for the change." },
     finding: { path: "docs", line: null, category: "style", severity: "low", confidence: 0.6, comment: "The note could link the work order it came from." },
-    intake: {
-      user: { ask: "Who uses this, by role?", assume: "The person who asked" },
-      scope: { ask: "What exactly is in scope: which records or screens, and where in the app does it live?", assume: "The smallest change that does what the request says" },
-      acceptance: { ask: "What check tells us it's done, as one sentence a test could assert?", assume: "A note in docs/ restates the request, ready to plan the change from" },
+    intake: (request) => {
+      const ask = summarize(request).replace(/^./, (c) => c.toLowerCase());
+      return {
+        user: { ask: `Who needs "${ask}"?`, assume: "The person who asked" },
+        scope: { ask: `I'd keep "${ask}" to the smallest change in src/ that does it. Is that the right scope?`, assume: "The smallest change that does what the request says" },
+        acceptance: { ask: `What should a test check to call "${ask}" done?`, assume: "A note in docs/ restates the request, ready to plan the change from" },
+      };
     },
   },
 ];
