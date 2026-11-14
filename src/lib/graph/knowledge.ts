@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
+import { scheduleCodebaseGraph } from "../codebase/graph";
 import type { State } from "../state";
 import { getConfig, getState } from "../store";
 import { sourceOf, workspaceOptions } from "../thread-workspace";
@@ -290,6 +291,7 @@ export function scheduleKnowledgeIngest(project: Project = getState().project): 
   }
   const pass: Promise<void> = new Promise<void>((resolve) => setTimeout(resolve, 0))
     .then(() => ingest(project))
+    .finally(() => scheduleCodebaseGraph(project))
     .catch((error) => console.warn(`HydraDB knowledge ingest for ${project.id} failed: ${error instanceof Error ? error.message : error}`))
     .finally(() => {
       ingesting.delete(project.id);
