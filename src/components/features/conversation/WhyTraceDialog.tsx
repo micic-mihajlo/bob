@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useBob } from "@/components/features/window/BobContext";
 import { IconButton } from "@/components/ui/Button";
+import { keepTabInside } from "@/components/ui/focus-trap";
 import { fetchWhy } from "@/lib/client/api";
 import { formatElapsed } from "@/lib/client/format";
 import { buildWhyTrace, type WhySpan, type WhyTraceModel } from "@/lib/client/why-trace";
@@ -99,6 +100,7 @@ export function WhyTraceDialog() {
     content.current?.querySelector<HTMLElement>(".trace-name-button, button")?.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") closeWhy();
+      keepTabInside(event, content.current);
     };
     window.addEventListener("keydown", onKey);
     return () => {

@@ -3,6 +3,7 @@
 import { ShieldCheck } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { keepTabInside } from "./focus-trap";
 
 export interface ConfirmDialogProps {
   title: string;
@@ -29,6 +30,7 @@ export function ConfirmDialog({ title, description, icon, children, error, actio
     first?.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
+      keepTabInside(event, content.current);
     };
     window.addEventListener("keydown", onKey);
     return () => {
