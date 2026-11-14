@@ -5,6 +5,7 @@ import { withCaptainFiles } from "./captain-files";
 import { withPullRequestTraces } from "./trace";
 import { globals, type Config } from "./globals";
 import { mirrorCommit } from "./graph/mirror";
+import { withTracks } from "./roadmap";
 import { seedState } from "./seed";
 import type { State } from "./state";
 
@@ -42,12 +43,16 @@ export function loadState(saved: State | null): State {
 }
 
 /** Fills fields added after a state was saved, or held in memory across a hot reload. */
-const withDefaults = (s: State): State => (Array.isArray(s.drive) ? s : { ...s, drive: [] });
+const withDefaults = (s: State): State => {
+  if (Array.isArray(s.drive) && s.roadmap.tracks) return s;
+  const lastAsk = [...s.messages].reverse().find((m) => m.from.kind === "user" && !m.approvalId);
+  return { ...s, drive: s.drive ?? [], roadmap: withTracks(s.roadmap, lastAsk?.requestId ?? null) };
+};
 
 export function getState(): State {
   const g = globals();
   if (!g.state) g.state = loadState(g.config.persist ? readSaved() : null);
-  if (!Array.isArray(g.state.drive)) g.state = withDefaults(g.state);
+  if (!Array.isArray(g.state.drive) || !g.state.roadmap.tracks) g.state = withDefaults(g.state);
   return g.state;
 }
 

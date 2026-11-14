@@ -288,6 +288,8 @@ export interface WorkOrder {
   artifactId: string | null;
   /** Optional: set when the work order came from an inbox item. */
   source?: WorkOrderSource;
+  /** The request whose track the work order belongs to. Its thread, brief and pull request carry this request. */
+  requestId?: RequestId;
 }
 
 export type InboxKind = "meeting" | "feedback" | "error";
@@ -342,18 +344,40 @@ export interface StageGate {
   done: boolean;
 }
 
+export interface Goal {
+  title: string;
+  why: string | null;
+  deadline: string | null;
+  /** The intent's parts the Intent gate inspects: who, what they can do, and the check that proves it. */
+  user?: string | null;
+  behaviour?: string | null;
+  acceptance?: string | null;
+  /** Gaps the captain filled itself, stated so the person can correct them. */
+  assumptions?: string[];
+}
+
+/** One request's way through the five stages, with its own gates. Its work orders are the ones carrying its requestId. */
+export interface Track {
+  requestId: RequestId;
+  /** The message the person typed to start the request. Every change for it traces back here. */
+  messageId: MessageId | null;
+  goal: Goal | null;
+  /** 1-based index into the stages. A track at the last stage, Learn, is finished. */
+  stage: number;
+  stageTitle: string;
+  gates: StageGate[];
+  startedAt: string;
+  updatedAt: string;
+  /** In the snapshot only: what the person typed to start the request. */
+  ask?: string | null;
+}
+
+/**
+ * The project's plan: one track per request, plus the work orders in today and the backlog. `goal`, `stage`,
+ * `stageTitle` and `gates` mirror the focus track (the newest unfinished one), for views that show one track.
+ */
 export interface Roadmap {
-  goal: {
-    title: string;
-    why: string | null;
-    deadline: string | null;
-    /** The intent's parts the Intent gate inspects: who, what they can do, and the check that proves it. */
-    user?: string | null;
-    behaviour?: string | null;
-    acceptance?: string | null;
-    /** Gaps the captain filled itself, stated so the person can correct them. */
-    assumptions?: string[];
-  } | null;
+  goal: Goal | null;
   /** 1-based index into the stages. */
   stage: number;
   stageTitle: string;
@@ -363,6 +387,8 @@ export interface Roadmap {
   today: WorkOrder[];
   /** Optional: planned work not yet scheduled into today. */
   backlog?: WorkOrder[];
+  /** Every request's track, oldest first. Missing on a roadmap saved before tracks existed. */
+  tracks?: Track[];
   updatedAt: string;
 }
 

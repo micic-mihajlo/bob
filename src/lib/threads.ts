@@ -50,6 +50,10 @@ export function threadRequestId(s: State, threadId: AgentId): string | null {
 export const requestAsk = (s: State, requestId: string): string | undefined =>
   s.messages.find((m) => m.requestId === requestId && m.from.kind === "user" && !m.approvalId)?.text;
 
+/** The message the person typed to start a request. */
+export const requestOrigin = (s: State, requestId: string): string | null =>
+  s.messages.find((m) => m.requestId === requestId && m.from.kind === "user" && !m.approvalId)?.id ?? null;
+
 export function closeThreadState(s: State, id: AgentId, by: string): State {
   const at = nowIso();
   const running = runningTurn(s, id);
