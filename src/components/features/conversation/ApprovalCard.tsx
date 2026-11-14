@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { decideApproval } from "@/lib/client/api";
 import { changeTotals, pullRequestForApproval, reasonWithoutFiles } from "@/lib/client/pull-requests";
 import type { Approval } from "@/lib/types";
+import { PreviewButton } from "./PreviewButton";
 
 /** An agent asks the person before it acts. Allow and Deny answer it, or Merge and Don't merge for a pull request; a decided card shows the answer. */
 export function ApprovalCard({ approval }: { approval: Approval }) {
@@ -120,6 +121,7 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
           <Button variant="secondary" className="approval-button" disabled={submitting} onClick={() => void submit("denied")}>
             {submitting ? "Waiting…" : pullRequest ? "Don't merge" : "Deny"}
           </Button>
+          {pullRequest ? <PreviewButton pullRequestId={pullRequest.id} className="approval-button" /> : null}
         </footer>
       ) : null}
     </section>

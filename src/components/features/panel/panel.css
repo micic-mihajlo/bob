@@ -14,6 +14,59 @@
   overflow: hidden;
 }
 
+.bob-preview-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.bob-preview-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: #fff;
+}
+
+.bob-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border, rgba(127, 127, 127, 0.2));
+}
+
+.bob-preview-bar > * {
+  white-space: nowrap;
+}
+
+.bob-preview-number {
+  opacity: 0.6;
+}
+
+.bob-preview-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted-foreground, inherit);
+}
+
+.bob-preview-open svg {
+  width: 12px;
+  height: 12px;
+}
+
+.bob-preview-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+
 .bob-pane-body {
   display: flex;
   min-height: 0;

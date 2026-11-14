@@ -12,6 +12,7 @@ import {
   Minimize2,
   Network,
   PanelRight,
+  Play,
   Plus,
   ScanSearch,
   ShieldCheck,
@@ -32,6 +33,7 @@ import {
   type PanelTab,
   type SidePanelPaneId,
 } from "@/lib/client/panel-tabs";
+import { usePreview } from "@/lib/client/preview";
 import { SidePanelPane } from "./SidePanelPane";
 
 /** The same glyphs as the rest of the window. */
@@ -57,6 +59,8 @@ export function PaneIcon({ pane }: { pane: SidePanelPaneId }) {
       return <ShieldCheck aria-hidden="true" />;
     case "codebase":
       return <Network aria-hidden="true" />;
+    case "preview":
+      return <Play aria-hidden="true" />;
   }
 }
 
@@ -298,14 +302,21 @@ export function SidePanel() {
   const { panelOpen, togglePanel, panelKind, panelTab, setPanelTab, panelMaximized, setPanelMaximized } = useBob();
   const [closed, setClosed] = useState(NONE_CLOSED);
   const [local, setLocal] = useState(NO_LOCAL);
+  const preview = usePreview();
+  const [shownPreview, setShownPreview] = useState(preview.shown);
+  if (preview.shown !== shownPreview) {
+    setShownPreview(preview.shown);
+    setClosed((previous) => ({ ...previous, [panelKind]: previous[panelKind].filter((entry) => entry !== "preview") }));
+    setLocal((previous) => ({ ...previous, [panelKind]: { pane: "preview", over: panelTab } }));
+  }
   if (!panelOpen) return null;
 
-  const available = SIDE_PANEL_PANES[panelKind];
+  const available = preview.view || preview.error ? [...SIDE_PANEL_PANES[panelKind], "preview" as const] : SIDE_PANEL_PANES[panelKind];
   const panes = openPanes(available, closed[panelKind]);
   const chosen = local[panelKind];
   const selected = selectedPane(panes, chosen !== null && chosen.over === panelTab ? chosen.pane : panelTab);
   const select = (pane: SidePanelPaneId) => {
-    if (pane === "verified") {
+    if (pane === "verified" || pane === "preview") {
       setLocal((previous) => ({ ...previous, [panelKind]: { pane, over: panelTab } }));
       return;
     }

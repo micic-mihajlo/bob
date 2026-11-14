@@ -21,6 +21,7 @@ import {
 } from "@/lib/client/pull-requests";
 import type { Artifact } from "@/lib/types";
 import { pullRequestIdOf } from "@/lib/client/why-graph";
+import { PreviewButton } from "./PreviewButton";
 
 function StatusIcon({ state }: { state: PullRequestState }) {
   if (state === "merged") return <GitMerge aria-hidden="true" />;
@@ -136,6 +137,7 @@ function PullRequestCardView({ artifact, animate }: { artifact: PullRequestArtif
           <StatusIcon state={state} />
           {PULL_REQUEST_STATE_LABEL[state]}
         </span>
+        {state !== "merged" && state !== "closed" ? <PreviewButton pullRequestId={artifact.id} /> : null}
         {state === "merged" ? (
           <span className="pr-merged-stamp" data-fresh={mergedOnMount ? undefined : ""} aria-hidden="true">
             Merged!

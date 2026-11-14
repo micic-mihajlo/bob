@@ -10,6 +10,7 @@ import { CrewPane } from "./CrewPane";
 import { DrivePane } from "./DrivePane";
 import { FilesPane } from "./FilesPane";
 import { InboxPane } from "./InboxPane";
+import { PreviewPane } from "./PreviewPane";
 import { ReviewPane } from "./ReviewPane";
 import { VerifiedPane } from "./VerifiedPane";
 
@@ -37,5 +38,7 @@ export function SidePanelPane({ pane, onClose }: { pane: SidePanelPaneId; onClos
       return selectedAgent ? <ReviewPane agent={selectedAgent} onClose={onClose} /> : null;
     case "codebase":
       return <CodebasePane onClose={onClose} />;
+    case "preview":
+      return <PreviewPane />;
   }
 }

@@ -721,4 +721,5 @@ export const API = {
   inboxPromote: "/api/inbox/promote",
   inboxLinearSync: "/api/inbox/linear/sync",
   pullRequestComments: (id: string) => `/api/pull-requests/${id}/comments`,
+  preview: (prId?: string) => (prId ? `/api/preview?prId=${encodeURIComponent(prId)}` : "/api/preview"),
 } as const;

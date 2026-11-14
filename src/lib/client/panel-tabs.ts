@@ -7,7 +7,7 @@ export type PanelTab = "roadmap" | "inbox" | "crew" | "drive" | "activity" | "ch
  * Every pane the new side panel can show. `verified` is not a PanelTab yet, because the old panel
  * maps every PanelTab to a tab of its own; fold it in when the old panel goes.
  */
-export type SidePanelPaneId = PanelTab | "verified";
+export type SidePanelPaneId = PanelTab | "verified" | "preview";
 
 /** What the panel is about: the captain's plan, one crew thread's workspace, or a standing agent. */
 export type PanelKind = "captain" | "crew" | "standing";
@@ -37,6 +37,7 @@ export const PANEL_TAB_LABEL: Readonly<Record<SidePanelPaneId, string>> = {
   files: "Files",
   review: "Review",
   codebase: "Codebase",
+  preview: "Preview",
 };
 
 export function panelKindOf(agent: Agent | undefined, captain: Agent | undefined): PanelKind {
