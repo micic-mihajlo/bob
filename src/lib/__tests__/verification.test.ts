@@ -3,11 +3,15 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { State } from "../state";
-import { getConfig } from "../store";
+import { getConfig, getState, update } from "../store";
+import { toolsFor } from "../tools";
+import { markEquivalent } from "../tools/verify";
+import type { Agent, Artifact } from "../types";
 import type { PullRequestArtifact } from "../threads";
-import { verificationLine, verificationRefusal, verificationStatus, type Verification } from "../verification";
+import { verificationLine, verificationRefusal, verificationStatus, type EquivalentMutant, type Verification } from "../verification";
 import { changedLines, mutantsOf } from "../verify/mutants";
 import { runProof } from "../verify/run";
+import { freshTeam } from "./helpers";
 import type { Workspace } from "../workspace";
 
 const CSV = `export function csvCell(value: string): string {
@@ -50,7 +54,12 @@ const verification = (over: Partial<Verification> = {}): Verification => ({
   ...over,
 });
 
-const stateWith = (verifications: Verification[]) => ({ agents: [{ id: "inv-1", code: "INV-1" }], verifications }) as unknown as State;
+const stateWith = (verifications: Verification[], equivalentMutants: EquivalentMutant[] = []) =>
+  ({ agents: [{ id: "inv-1", code: "INV-1" }], verifications, equivalentMutants }) as unknown as State;
+
+const SURVIVOR = { file: "src/invoices.ts", line: 3, operator: "flipped comparison", before: "return a.id < b.id ? -1 : 1;", after: "return a.id <= b.id ? -1 : 1;", killed: false };
+const withSurvivor = () => verification({ mutation: { ok: false, mutants: [...verification().mutation.mutants.slice(0, 5), SURVIVOR] } });
+const waiver: EquivalentMutant = { pullRequestId: "art_1", file: SURVIVOR.file, before: SURVIVOR.before, after: SURVIVOR.after, reason: "ids are unique, so a and b are never equal", by: "inv-2", at: "2026-11-14T00:00:00Z" };
 
 describe("the verification gate", () => {
   const installDeps = getConfig().installDeps;
@@ -84,6 +93,39 @@ describe("the verification gate", () => {
   it("is off when Bob does not install the project's dependencies", () => {
     getConfig().installDeps = false;
     expect(verificationRefusal(stateWith([]), prOf(["src/csv.ts"]))).toBeNull();
+  });
+});
+
+describe("equivalent mutants", () => {
+  const installDeps = getConfig().installDeps;
+  afterEach(() => {
+    getConfig().installDeps = installDeps;
+  });
+
+  it("count as equivalent, not killed, and let the gate pass once a reviewer marks them", () => {
+    getConfig().installDeps = true;
+    const pr = prOf(["src/invoices.ts"]);
+    expect(verificationLine(withSurvivor())).toBe("4 properties · 1,200 cases · 5/6 mutants killed · proved in Lean");
+    expect(verificationLine(withSurvivor(), [waiver])).toBe("4 properties · 1,200 cases · 5/5 mutants killed · 1 equivalent · proved in Lean");
+    expect(verificationRefusal(stateWith([withSurvivor()]), pr)).toMatch(/fails verification: .*5\/6 mutants killed.*mark_equivalent_mutant/);
+    expect(verificationRefusal(stateWith([withSurvivor()], [waiver]), pr)).toBeNull();
+    expect(verificationRefusal(stateWith([withSurvivor()], [{ ...waiver, after: "return a.id > b.id ? -1 : 1;" }]), pr)).not.toBeNull();
+  });
+
+  it("can be marked by a review thread only, with a one-line reason, for a mutant that really survived", () => {
+    const role = (crewRole: "build" | "review") => toolsFor({ id: "x", kind: "crew", crewRole } as Agent).map((t) => t.name);
+    expect(role("review")).toContain("mark_equivalent_mutant");
+    expect(role("build")).not.toContain("mark_equivalent_mutant");
+    expect(role("build")).toContain("verify_change");
+
+    freshTeam();
+    update((st) => ({ ...st, artifacts: [...st.artifacts, { ...prOf(["src/invoices.ts"]), title: "Sort invoices", detail: "", status: "open", requestId: "req_test", turnId: "turn_test", at: "2026-11-14T00:00:00Z" } as unknown as Artifact], verifications: [withSurvivor()] }));
+    const ctx = { agentId: "inv-2", turnId: "turn_test", requestId: "req_test", causedBy: null };
+    expect(String(markEquivalent({ pullRequestId: "#3", file: "src/invoices.ts", line: 9, reason: "never equal keys here" }, ctx).result.error)).toMatch(/No surviving mutant of #3 at src\/invoices\.ts:9\. Survivors: src\/invoices\.ts:3/);
+    const marked = markEquivalent({ pullRequestId: "#3", file: "src/invoices.ts", line: 3, reason: waiver.reason }, ctx);
+    expect(marked.result).toMatchObject({ passed: true, line: "4 properties · 1,200 cases · 5/5 mutants killed · 1 equivalent · proved in Lean" });
+    expect(getState().equivalentMutants).toEqual([expect.objectContaining({ file: "src/invoices.ts", after: SURVIVOR.after, reason: waiver.reason, by: "inv-2" })]);
+    expect(String(markEquivalent({ pullRequestId: "#3", file: "src/invoices.ts", line: 3, reason: "again, same one" }, ctx).result.error)).toMatch(/Survivors: none/);
   });
 });
 

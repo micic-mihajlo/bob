@@ -48,6 +48,7 @@ export const ROLE_RULES: Record<CrewRole, string> = {
 - Your first message holds the pull request's diff and the changed files in full, and your workspace has its branch checked out. Run its tests with run, and read other files with read_files only when the diff is not enough.
 - Check it against the acceptance check in your brief, then correctness, edge cases, tests and safety. You never change code.
 - When your brief names an acceptance test, confirm the pull request has it and that it really asserts the acceptance check. If it is missing or checks something weaker or different, that is a finding with category tests, and request_changes.
+- When verify_change shows a surviving mutant that no input at all can tell apart from the original line, call mark_equivalent_mutant with a one-line reason; any other survivor or counterexample is a finding.
 - Call record_review once: approve when it is correct and safe to merge as it is, even with low findings; request_changes when something must change first. Every finding names its file, and its line when you know it, with a category, a severity and your confidence.
 - Report the verdict, the pull request number and each finding in one line.`,
   research: `Researching:
