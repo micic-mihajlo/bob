@@ -32,12 +32,12 @@ const roadmap: Roadmap = {
 
 describe("side panel panes", () => {
   it("keeps the tab ids the window rail opens", () => {
-    expect(PANEL_TABS.captain).toEqual(expect.arrayContaining(["roadmap", "crew", "drive"]));
+    expect(PANEL_TABS.captain).toEqual(expect.arrayContaining(["roadmap", "inbox", "crew", "drive"]));
   });
 
   it("lists open panes in tab order and falls back to the first", () => {
     const panes = openPanes(PANEL_TABS.captain, ["crew"]);
-    expect(panes).toEqual(["roadmap", "drive", "activity"]);
+    expect(panes).toEqual(["roadmap", "inbox", "drive", "activity"]);
     expect(selectedPane(panes, "crew")).toBe("roadmap");
     expect(selectedPane(panes, "drive")).toBe("drive");
     expect(selectedPane([], "drive")).toBeNull();
