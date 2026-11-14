@@ -8,6 +8,7 @@ import { ChangesPane } from "./ChangesPane";
 import { CrewPane } from "./CrewPane";
 import { DrivePane } from "./DrivePane";
 import { FilesPane } from "./FilesPane";
+import { InboxPane } from "./InboxPane";
 import { ReviewPane } from "./ReviewPane";
 import { VerifiedPane } from "./VerifiedPane";
 
@@ -17,6 +18,8 @@ export function SidePanelPane({ pane, onClose }: { pane: SidePanelPaneId; onClos
   switch (pane) {
     case "roadmap":
       return <RoadmapPanel onClose={onClose} />;
+    case "inbox":
+      return <InboxPane onClose={onClose} />;
     case "crew":
       return <CrewPane onClose={onClose} />;
     case "drive":

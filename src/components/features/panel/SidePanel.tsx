@@ -1,7 +1,22 @@
 "use client";
 
 import "./panel.css";
-import { Activity, FileDiff, Folder, HardDrive, Map as MapIcon, Maximize2, Minimize2, PanelRight, Plus, ScanSearch, ShieldCheck, Workflow, X } from "lucide-react";
+import {
+  Activity,
+  FileDiff,
+  Folder,
+  HardDrive,
+  Inbox,
+  Map as MapIcon,
+  Maximize2,
+  Minimize2,
+  PanelRight,
+  Plus,
+  ScanSearch,
+  ShieldCheck,
+  Workflow,
+  X,
+} from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
@@ -23,6 +38,8 @@ export function PaneIcon({ pane }: { pane: SidePanelPaneId }) {
   switch (pane) {
     case "roadmap":
       return <MapIcon aria-hidden="true" />;
+    case "inbox":
+      return <Inbox aria-hidden="true" />;
     case "crew":
       return <Workflow aria-hidden="true" />;
     case "drive":
