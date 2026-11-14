@@ -6,6 +6,7 @@ import type { ReplyStatus } from "./reply-format";
 import { relayOwed } from "./relay";
 import { agentById, messageById, type State } from "./state";
 import { addNotice, addThreadItem, patchDelivery, patchTurn, stamp } from "./state-ops";
+import { liveMove } from "./live";
 import { getConfig, getState, transact, update } from "./store";
 import { workspaceContext } from "./thread-workspace";
 import { callTool } from "./tools";
@@ -95,7 +96,8 @@ async function runTurn(t: StartedTurn): Promise<void> {
     if (!built) return finishStopped(t);
     const left = limit - i;
     const ctx = left <= WRAP_UP_AT ? { ...built, input: `${built.input}\n\n${wrapUpNote(left, built.agent.crewRole)}` } : built;
-    const move = await getBrain().next(ctx);
+    const live = liveMove(t.agentId, t.turnId);
+    const move = await getBrain().next(ctx, live).finally(() => live.stop());
     if (!isRunning(t.turnId)) return finishStopped(t);
     const text = move.text?.trim() || null;
     if (move.toolCalls.length === 0) {

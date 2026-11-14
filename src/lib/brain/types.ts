@@ -57,6 +57,16 @@ export interface TurnContext {
   tools: ToolSpec[];
 }
 
+/** Where a brain shows the move it is generating, before the move is done. */
+export interface LiveSink {
+  /** All the text generated so far in this attempt. */
+  text(sofar: string): void;
+  /** The model started writing a tool call. */
+  toolStart(id: string, tool: string): void;
+  /** Drops what this attempt showed, before a retry. */
+  reset(): void;
+}
+
 export interface Brain {
-  next(ctx: TurnContext): Promise<Move>;
+  next(ctx: TurnContext, live?: LiveSink): Promise<Move>;
 }
