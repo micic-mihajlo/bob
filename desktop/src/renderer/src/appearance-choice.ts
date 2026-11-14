@@ -101,7 +101,7 @@ function cachedPreference(): AppAppearancePreference {
  */
 export function syncAppearance(options: { windowGlass?: boolean } = {}): void {
   let preference = cachedPreference();
-  syncColorScheme();
+  let scheme = syncColorScheme(preference.appearance);
   const showGlass = () => {
     if (options.windowGlass)
       document.documentElement.toggleAttribute("data-bob-window-glass", preference.transparentWindow);
@@ -115,6 +115,8 @@ export function syncAppearance(options: { windowGlass?: boolean } = {}): void {
     } catch {
       // Main's value still applies; only the next first paint can show the default.
     }
+    scheme.stop();
+    scheme = syncColorScheme(next.appearance);
     showGlass();
   };
   void appPort()

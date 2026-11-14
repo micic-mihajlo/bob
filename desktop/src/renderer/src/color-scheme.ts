@@ -1,13 +1,24 @@
+import type { AppAppearance } from "@bob/contracts/app-appearance";
+
+const systemLight = () => window.matchMedia("(prefers-color-scheme: light)");
+
 /**
- * Bob has one palette, the black one in `tokens.css`, so every window shows it whatever appearance
- * was saved before. The root attribute stays "dark" for code that reads it through
- * `@bob/ui/document-color-scheme`, such as a Mermaid drawing. Returns the function that removes it.
+ * Puts the root on the light or dark palette in `tokens.css`, following the Appearance setting.
+ * "system" follows the computer and changes with it. Code that cannot read the tokens, such as a
+ * Mermaid drawing, reads the same attribute through `@bob/ui/document-color-scheme`.
  */
-export function syncColorScheme() {
-  document.documentElement.dataset.bobColorScheme = "dark";
+export function syncColorScheme(appearance: AppAppearance = "dark") {
+  const root = document.documentElement;
+  const media = systemLight();
+  const apply = () => {
+    root.dataset.bobColorScheme = appearance === "system" ? (media.matches ? "light" : "dark") : appearance;
+  };
+  apply();
+  media.addEventListener("change", apply);
   return {
     stop() {
-      delete document.documentElement.dataset.bobColorScheme;
+      media.removeEventListener("change", apply);
+      delete root.dataset.bobColorScheme;
     },
   };
 }
