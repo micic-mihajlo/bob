@@ -36,6 +36,15 @@ function closeMerged(s: State, last: MoveRecord | undefined): ToolCallRequest[] 
     .map((threadId) => ({ name: "close_thread", input: { threadId } }));
 }
 
+/** An open pull request whose review never started, as when the crew was full: the captain itself must start it. */
+const reviewOwed = (s: State) =>
+  s.artifacts.some((a) => {
+    if (!isPullRequest(a) || a.pullRequest.merged || reviewsOf(s, a.id).length > 0) return false;
+    const builder = agentById(s, a.agentId);
+    if (!builder || isClosed(builder)) return false;
+    return !s.agents.some((r) => r.crewRole === "review" && !isClosed(r) && !!builder.workOrderId && r.workOrderId === builder.workOrderId);
+  });
+
 /** A review thread reported and its review approves the pull request's current head: leave Build if its gate holds, and ask the person. */
 function askAfterApproval(s: State, t: StartedTurn): ToolCallRequest[] {
   const senders = inbound(s, t).flatMap((m) => (m.from.kind === "agent" ? [agentById(s, m.from.agentId)] : []));
@@ -49,7 +58,7 @@ function askAfterApproval(s: State, t: StartedTurn): ToolCallRequest[] {
       reviewGateRefusal(s, a) === null &&
       !s.approvals.some((x) => x.pullRequestId === a.id && (x.status === "pending" || (x.status === "approved" && x.headSha === a.pullRequest.headSha))),
   );
-  if (ready.length === 0) return [];
+  if (ready.length === 0 || reviewOwed(s)) return [];
   const advance = tracksOf(s.roadmap)
     .filter((t) => t.stage === BUILD_STAGE && ready.some((pr) => pr.requestId === t.requestId) && unmetCriteria(s.roadmap, t.requestId).length === 0)
     .map((t) => ({ name: "advance_stage", input: { requestId: t.requestId } }));
