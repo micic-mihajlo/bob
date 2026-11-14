@@ -18,27 +18,27 @@ const STATUS: Record<ReplyStatus, { label: string; variant: BadgeVariant }> = {
  */
 export function AgentMessageText({ text }: { text: string }) {
   const report = reportView(text);
-  if (!report) return <MarkdownMessageText text={text} />;
+  if (!report) return <MarkdownMessageText body={text} />;
   return (
     <>
-      {report.lead ? <MarkdownMessageText text={report.lead} /> : null}
+      {report.lead ? <MarkdownMessageText body={report.lead} /> : null}
       <div className="bob-report" data-status={report.status}>
         <Badge variant={STATUS[report.status].variant} className="bob-report-status">
           {STATUS[report.status].label}
         </Badge>
-        <MarkdownMessageText text={report.result} />
+        <MarkdownMessageText body={report.result} />
         <dl className="bob-report-facts">
           <div>
             <dt>Evidence</dt>
             <dd>
-              <MarkdownMessageText text={report.evidence} />
+              <MarkdownMessageText body={report.evidence} />
             </dd>
           </div>
           {report.unblock ? (
             <div data-tone="blocked">
               <dt>Unblock</dt>
               <dd>
-                <MarkdownMessageText text={report.unblock} />
+                <MarkdownMessageText body={report.unblock} />
               </dd>
             </div>
           ) : null}
