@@ -394,32 +394,47 @@
 }
 
 /*
- * The way back sits in its own band between the chat and the composer, so no line of the chat
- * hides under it. The band takes its height from the chat while it shows.
+ * The edges of the transcript fade where more of it is past them. The reference keeps these masks
+ * global; Bob's conversation styles carry them for the chat's scroller.
  */
-.scroll-to-latest-band {
-  display: flex;
-  flex: none;
-  justify-content: center;
-  padding-block: var(--bob-space-1) var(--bob-space-2);
+.scroll-fade-top:not(.scroll-fade-bottom) {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--bob-text-primary) 18px,
+    var(--bob-text-primary) 100%
+  );
+  mask-image: linear-gradient(to bottom, transparent 0, var(--bob-text-primary) 18px, var(--bob-text-primary) 100%);
 }
 
-.scroll-to-latest-band .scroll-to-latest {
-  position: static;
-  margin: 0;
-  transform: none;
-  animation: scroll-to-latest-in var(--bob-duration-fast) var(--bob-ease-out);
+.scroll-fade-bottom:not(.scroll-fade-top) {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    var(--bob-text-primary) 0,
+    var(--bob-text-primary) calc(100% - 18px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    var(--bob-text-primary) 0,
+    var(--bob-text-primary) calc(100% - 18px),
+    transparent 100%
+  );
 }
 
-@keyframes scroll-to-latest-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .scroll-to-latest-band .scroll-to-latest {
-    animation: none;
-  }
+.scroll-fade-top.scroll-fade-bottom {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--bob-text-primary) 18px,
+    var(--bob-text-primary) calc(100% - 18px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--bob-text-primary) 18px,
+    var(--bob-text-primary) calc(100% - 18px),
+    transparent 100%
+  );
 }

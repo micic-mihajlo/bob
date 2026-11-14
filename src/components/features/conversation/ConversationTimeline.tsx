@@ -1,13 +1,14 @@
 "use client";
 
-import { X } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useBob } from "@/components/features/window/BobContext";
-import { Button } from "@/components/ui/Button";
+import { cx } from "@/components/ui/classes";
+import { markThreadRead } from "@/lib/client/api";
 import { stillAwaiting } from "@/lib/client/awaiting";
 import { dayMarkerLabel } from "@/lib/client/chat-time";
-import { buildConversationRows, type ConversationRow } from "@/lib/client/conversation-rows";
+import { buildConversationRows, continuesSenderRun, markerRow, rowDrawsTime, senderRunRow, type ConversationRow } from "@/lib/client/conversation-rows";
 import { pendingSteps } from "@/lib/client/live-move";
+import { countableConversationRow, type TimelineRow } from "@/lib/client/new-message-tally";
 import { liveSteps, type LiveTurn } from "@/lib/client/thread-rows";
 import { useNow } from "@/lib/client/use-now";
 import { useStickToBottom } from "@/lib/client/use-stick-to-bottom";
@@ -17,32 +18,39 @@ import { AgentStepsDisclosure } from "./AgentSteps";
 import { ApprovalCard } from "./ApprovalCard";
 import { AgentMessageMarker, NoticeMarker } from "./ChatActionMarker";
 import { ChatMessageRow } from "./ChatMessageRow";
+import { ChatRowBoundary } from "./ChatRowBoundary";
+import { ChatScrollRail, chatScrollSections } from "./ChatScrollRail";
+import { ScrollToLatestButton } from "./MessageNavigation";
 import { ArtifactCard } from "./PullRequestCard";
+import { scrollToUnreadBoundary, UnreadMessagesBanner, UnreadMessagesDivider, unreadMessagesDividerIsVisible } from "./UnreadMessages";
 
-function ScrollToLatestButton({ count, onClick, onDismiss }: { count: number; onClick: () => void; onDismiss: () => void }) {
-  const showCount = count > 0;
-  const countLabel = `${count} new ${count === 1 ? "message" : "messages"}`;
-  return (
-    <div className="scroll-to-latest" data-new-messages={showCount ? "true" : undefined} aria-live="off">
-      <Button
-        variant="ghost"
-        className="scroll-to-latest-button"
-        aria-label={showCount ? `Jump to ${countLabel}` : "Scroll to latest message"}
-        data-cuelume-tap="navigate"
-        onClick={onClick}
-      >
-        <svg aria-hidden="true" viewBox="0 0 24 24">
-          <path d="M12 4v14m-6-6 6 6 6-6" />
-        </svg>
-        {showCount ? <span className="scroll-to-latest-count">{countLabel}</span> : null}
-      </Button>
-      {showCount ? (
-        <Button variant="ghost" className="scroll-to-latest-dismiss" aria-label="Dismiss new message count" data-cuelume-tap="close" onClick={onDismiss}>
-          <X aria-hidden="true" />
-        </Button>
-      ) : null}
-    </div>
-  );
+/** Slack in pixels before an edge counts as reached, absorbing sub-pixel scroll positions. */
+const EDGE_EPSILON = 2;
+
+/** The top and bottom fades of a scroller that has more content past that edge. */
+function scrollFadesOf(element: HTMLElement): { top: boolean; bottom: boolean } {
+  const remaining = element.scrollHeight - element.scrollTop - element.clientHeight;
+  return { top: element.scrollTop > EDGE_EPSILON, bottom: remaining > EDGE_EPSILON };
+}
+
+/**
+ * Opens a chat at its unread divider, with the end of the last read row above it. A long read row
+ * shows only its end, so the divider stays in view.
+ */
+function scrollToUnreadDivider(element: HTMLElement, divider: HTMLElement): void {
+  if (!divider.isConnected) return;
+  const readRow = divider.closest(".virtual-chat-row")?.previousElementSibling;
+  const viewTop = element.getBoundingClientRect().top - element.scrollTop;
+  const dividerTop = divider.getBoundingClientRect().top - viewTop;
+  const readTop = readRow instanceof HTMLElement ? readRow.getBoundingClientRect().top - viewTop : dividerTop;
+  element.scrollTo({ top: Math.max(0, readTop, dividerTop - element.clientHeight / 3) });
+}
+
+/** The first unread row the timeline draws: the thread's unread items are its last ones. */
+function unreadBoundaryRowId(rows: readonly ConversationRow[], thread: ThreadView): string | null {
+  if (thread.unread <= 0) return null;
+  const unread = new Set(thread.items.slice(-thread.unread).map((item) => item.id));
+  return rows.find((row) => unread.has(row.id) && countableConversationRow(row))?.id ?? null;
 }
 
 function RowView({
@@ -62,81 +70,99 @@ function RowView({
   const question = snapshot.answering?.agentId === agent.id ? snapshot.answering.question?.toLowerCase() : undefined;
   switch (row.kind) {
     case "user":
-      return <ChatMessageRow id={row.id} author="user" text={row.item.text} at={row.at} animate={animate} voice={row.item.via === "voice"} />;
+      return (
+        <ChatRowBoundary>
+          <ChatMessageRow id={row.id} author="user" text={row.item.text} at={row.at} animate={animate} voice={row.item.via === "voice"} />
+        </ChatRowBoundary>
+      );
     case "agent":
       return (
         <>
           {row.steps ? (
-            <article data-chat-search-message={`steps-${row.id}`}>
+            <ChatRowBoundary>
               <AgentStepsDisclosure turn={row.steps} />
-            </article>
+            </ChatRowBoundary>
           ) : null}
-          <ChatMessageRow
-            id={row.id}
-            author="agent"
-            name={agent.name}
-            text={row.item.text}
-            at={row.at}
-            animate={animate}
-            asking={question !== undefined && row.item.text.toLowerCase().includes(question)}
-          />
+          <ChatRowBoundary>
+            <ChatMessageRow
+              id={row.id}
+              author="agent"
+              name={agent.name}
+              text={row.item.text}
+              at={row.at}
+              animate={animate}
+              asking={question !== undefined && row.item.text.toLowerCase().includes(question)}
+            />
+          </ChatRowBoundary>
         </>
       );
     case "steps":
       return (
-        <article data-chat-search-message={row.id}>
-          <AgentStepsDisclosure turn={row.steps} />
-        </article>
+        <ChatRowBoundary>
+          <article data-chat-search-message={row.id}>
+            <AgentStepsDisclosure turn={row.steps} />
+          </article>
+        </ChatRowBoundary>
       );
     case "sent":
       return (
-        <article data-chat-search-message={row.id}>
-          <AgentMessageMarker
-            direction="outgoing"
-            expectsReply={row.item.expectsReply}
-            agentIds={row.item.to}
-            text={row.item.text}
-            at={row.at}
-            expanded={expanded}
-            onToggle={onToggle}
-            animate={animate}
-          />
-        </article>
+        <ChatRowBoundary>
+          <article data-chat-search-message={row.id}>
+            <AgentMessageMarker
+              direction="outgoing"
+              expectsReply={row.item.expectsReply}
+              agentIds={row.item.to}
+              text={row.item.text}
+              at={row.at}
+              expanded={expanded}
+              onToggle={onToggle}
+              animate={animate}
+            />
+          </article>
+        </ChatRowBoundary>
       );
     case "received":
       return (
-        <article data-chat-search-message={row.id}>
-          <AgentMessageMarker
-            direction="incoming"
-            expectsReply={!row.item.isReply}
-            agentIds={[row.item.from]}
-            text={row.item.text}
-            at={row.at}
-            expanded={expanded}
-            onToggle={onToggle}
-            animate={animate}
-          />
-        </article>
+        <ChatRowBoundary>
+          <article data-chat-search-message={row.id}>
+            <AgentMessageMarker
+              direction="incoming"
+              expectsReply={!row.item.isReply}
+              agentIds={[row.item.from]}
+              text={row.item.text}
+              at={row.at}
+              expanded={expanded}
+              onToggle={onToggle}
+              animate={animate}
+            />
+          </article>
+        </ChatRowBoundary>
       );
     case "approval": {
       const approval = snapshot.approvals.find((candidate) => candidate.id === row.item.approvalId);
       return approval ? (
-        <article data-chat-search-message={row.id} data-approval-id={approval.id}>
-          <ApprovalCard approval={approval} />
-        </article>
+        <ChatRowBoundary>
+          <article data-chat-search-message={row.id} data-approval-id={approval.id}>
+            <ApprovalCard approval={approval} />
+          </article>
+        </ChatRowBoundary>
       ) : null;
     }
     case "notice":
       return (
-        <article data-chat-search-message={row.id}>
-          <NoticeMarker tone={row.item.tone} text={row.item.text} at={row.at} />
-        </article>
+        <ChatRowBoundary>
+          <article data-chat-search-message={row.id}>
+            <NoticeMarker tone={row.item.tone} text={row.item.text} at={row.at} />
+          </article>
+        </ChatRowBoundary>
       );
     case "artifact":
       return (
-        <article data-chat-search-message={row.id}>
-          <ArtifactCard artifactId={row.artifactId} animate={animate} />
-        </article>
+        <ChatRowBoundary>
+          <article data-chat-search-message={row.id}>
+            <ArtifactCard artifactId={row.artifactId} animate={animate} />
+          </article>
+        </ChatRowBoundary>
       );
   }
 }
@@ -172,9 +198,73 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
   // Rows that were there when the thread opened stand still; rows that arrive later enter.
   const [initialIds] = useState<ReadonlySet<string>>(() => new Set(rows.map((row) => row.id)));
-  const { scrollRef, contentRef, pinned, unseen, onScroll, jumpToNewest, unpin } = useStickToBottom(
-    rows.length + running.length + (live || pendingReply ? 1 : 0) + (streamed ? 1 : 0),
+  /*
+   * An open chat marks its messages read at once, so read state loses the first unread message.
+   * The visit keeps it until the reader opens another chat.
+   */
+  const [unreadBoundaryId] = useState(() => unreadBoundaryRowId(rows, thread));
+  const streamedId = streamed ? `live-${streamed.turnId}` : null;
+  const tallyRows = useMemo<TimelineRow[]>(
+    () => [...rows.map((row) => ({ id: row.id, countable: countableConversationRow(row) })), ...(streamedId ? [{ id: streamedId, countable: true }] : [])],
+    [rows, streamedId],
   );
+  const { scrollRef, contentRef, pinned, unseen, onScroll, jumpToNewest, unpin, clearUnseen } = useStickToBottom(
+    rows.length + running.length + (live || pendingReply ? 1 : 0) + (streamed ? 1 : 0),
+    tallyRows,
+  );
+  const dividerRef = useRef<HTMLDivElement | null>(null);
+  const [unreadDividerVisible, setUnreadDividerVisible] = useState(false);
+  const [markingRead, setMarkingRead] = useState(false);
+  const [fades, setFades] = useState({ top: false, bottom: false });
+
+  const updateUnreadDividerVisibility = useCallback(() => {
+    const element = scrollRef.current;
+    const divider = dividerRef.current;
+    setUnreadDividerVisible(Boolean(element && divider && unreadMessagesDividerIsVisible(element, divider)));
+  }, [scrollRef]);
+
+  const updateScrollFade = useCallback(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    const next = scrollFadesOf(element);
+    setFades((current) => (current.top === next.top && current.bottom === next.bottom ? current : next));
+  }, [scrollRef]);
+
+  /*
+   * A chat with unread messages opens at the divider, so the reader sees where they stopped. It runs
+   * after the follow of the newest row, so it cancels it.
+   */
+  useLayoutEffect(() => {
+    const element = scrollRef.current;
+    const divider = dividerRef.current;
+    if (!element || !divider) return;
+    unpin();
+    scrollToUnreadDivider(element, divider);
+    // Rows that lay out after the first frame move the divider, so the opening settles once more.
+    const frame = requestAnimationFrame(() => scrollToUnreadDivider(element, divider));
+    return () => cancelAnimationFrame(frame);
+    // Mount only: a boundary is where the reader opened the chat.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // The fades and the divider follow every layout change, not only a scroll.
+  useEffect(() => {
+    const element = scrollRef.current;
+    const content = contentRef.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      updateScrollFade();
+      updateUnreadDividerVisibility();
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    if (content) observer.observe(content);
+    const frame = requestAnimationFrame(measure);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [scrollRef, contentRef, updateScrollFade, updateUnreadDividerVisibility]);
 
   // Opening the thread from a needs-you item scrolls to its approval card.
   useEffect(() => {
@@ -195,24 +285,108 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
       return next;
     });
 
+  const markUnreadMessages = async () => {
+    if (markingRead) return;
+    setMarkingRead(true);
+    try {
+      await markThreadRead(agent.id);
+    } finally {
+      setMarkingRead(false);
+    }
+  };
+
+  const jumpToUnreadMessages = () => {
+    const element = scrollRef.current;
+    const divider = dividerRef.current;
+    if (!element || !divider) return;
+    const firstUnreadMessage = divider.nextElementSibling instanceof HTMLElement ? divider.nextElementSibling : divider;
+    unpin();
+    scrollToUnreadBoundary(element, firstUnreadMessage);
+    void markUnreadMessages();
+  };
+
+  // The rail's sections: one per message the person wrote.
+  const sections = useMemo(() => chatScrollSections(rows, (row) => (row.kind === "user" ? row.item.text : undefined)), [rows]);
+  const itemStart = useCallback(
+    (index: number) => {
+      const element = scrollRef.current;
+      const row = contentRef.current?.querySelector(`:scope > .virtual-chat-row[data-index="${index}"]`);
+      if (!element || !row) return undefined;
+      return row.getBoundingClientRect().top - element.getBoundingClientRect().top + element.scrollTop;
+    },
+    [scrollRef, contentRef],
+  );
+  const jumpToSection = (index: number) => {
+    const section = sections[index];
+    const element = scrollRef.current;
+    const top = section ? itemStart(section.row) : undefined;
+    if (!element || top === undefined) return;
+    unpin();
+    element.scrollTo({ top, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  };
+
   const label =
     pending.at(-1)?.label ?? (activity?.state === "working" ? (activity.step ?? running.at(-1)?.label ?? DEFAULT_ACTIVITY_LABEL) : DEFAULT_ACTIVITY_LABEL);
+  /*
+   * A thread with no message yet, and no turn and no reply on its way. The activity line shows the
+   * turn, so it is read here.
+   */
+  const showEmpty = rows.length === 0 && !live && !pendingReply && !streamed;
+  const activityShown = Boolean(live && activity?.state === "working") || pendingReply;
 
   return (
     <>
       <span className="sr-only" role="status" aria-live="polite" aria-atomic="true" />
-      <div className="conversation-scroll" ref={scrollRef} onScroll={onScroll}>
-        {rows.length === 0 && !live ? empty : null}
+      {thread.unread > 0 && unreadBoundaryId !== null && !unreadDividerVisible ? (
+        <UnreadMessagesBanner count={thread.unread} busy={markingRead} onJumpToUnread={jumpToUnreadMessages} onMarkRead={() => void markUnreadMessages()} />
+      ) : null}
+      <div
+        className={cx("conversation-scroll", fades.top && "scroll-fade-top", fades.bottom && "scroll-fade-bottom")}
+        ref={scrollRef}
+        onScroll={() => {
+          onScroll();
+          updateScrollFade();
+          updateUnreadDividerVisibility();
+        }}
+      >
+        <ChatScrollRail scrollRef={scrollRef} sections={sections} itemStart={itemStart} onJump={jumpToSection} />
+        {!pinned ? <ScrollToLatestButton onClick={jumpToNewest} newMessageCount={unseen} onDismiss={clearUnseen} /> : null}
+        {showEmpty ? empty : null}
         <div className="virtual-chat-list virtual-chat-list-static" style={{ height: "auto" }} ref={contentRef}>
           {rows.map((row, index) => {
-            const marker = dayMarkerLabel(rows[index - 1]?.at, row.at);
+            const previous = rows[index - 1];
+            /*
+             * The separator above the row. The first row always carries one, and a later row
+             * carries one when it opens a new day.
+             */
+            const marker = dayMarkerLabel(previous?.at, row.at);
+            const boundary = row.id === unreadBoundaryId;
+            /*
+             * A row that continues a run by the same sender draws no time: the run carries one time at
+             * its top. A row that draws a marker of its own opens a run.
+             */
+            const continuesRun =
+              !boundary &&
+              rowDrawsTime(row) &&
+              continuesSenderRun(previous && senderRunRow(previous), senderRunRow(row), {
+                previousDrawsTime: previous !== undefined && rowDrawsTime(previous),
+                startsDay: marker !== null,
+              });
+            const groupedWithMarker = !boundary && markerRow(row) && previous !== undefined && markerRow(previous);
             return (
-              <div key={row.id} className="virtual-chat-row" data-index={index} style={{ transform: "none" }}>
+              <div
+                key={row.id}
+                className="virtual-chat-row"
+                data-index={index}
+                data-grouped={groupedWithMarker ? "marker" : continuesRun ? "sender" : undefined}
+                style={{ transform: "none" }}
+              >
                 {marker ? (
                   <div className="time-marker">
                     <span>{marker}</span>
                   </div>
                 ) : null}
+                {boundary ? <UnreadMessagesDivider elementRef={dividerRef} /> : null}
                 <RowView
                   row={row}
                   agent={agent}
@@ -224,13 +398,15 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
             );
           })}
           {streamed ? (
-            <div className="virtual-chat-row" style={{ transform: "none" }}>
-              <ChatMessageRow id={`live-${streamed.turnId}`} author="agent" name={agent.name} text={streamed.text} at={streamed.at} animate streaming />
+            <div className="virtual-chat-row" data-index={rows.length} style={{ transform: "none" }}>
+              <ChatRowBoundary>
+                <ChatMessageRow id={`live-${streamed.turnId}`} author="agent" name={agent.name} text={streamed.text} at={streamed.at} animate streaming />
+              </ChatRowBoundary>
             </div>
           ) : null}
         </div>
         <div className="conversation-live">
-          <div className="agent-activity-slot" data-reserved="false">
+          <div className="agent-activity-slot" data-reserved={activityShown ? "true" : "false"}>
             {live && activity?.state === "working" ? (
               <AgentActivityIndicator agent={agent} label={label} since={activity.since} steps={running} />
             ) : pendingReply ? (
@@ -239,11 +415,6 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
           </div>
         </div>
       </div>
-      {!pinned ? (
-        <div className="scroll-to-latest-band">
-          <ScrollToLatestButton count={unseen} onClick={jumpToNewest} onDismiss={jumpToNewest} />
-        </div>
-      ) : null}
     </>
   );
 }

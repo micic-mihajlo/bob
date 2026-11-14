@@ -1,6 +1,7 @@
 "use client";
 
 import { AgentAvatar } from "@/components/features/agents/AgentAvatar";
+import { useReducedMotion } from "@/lib/client/reduced-motion";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import type { Agent } from "@/lib/types";
@@ -71,8 +72,10 @@ export function CaptainChatEmptyState({
 /** Any other chat before its first message: the agent, its line, and what it is for. */
 export function AgentChatEmptyState({ agent }: { agent: Agent }) {
   const description = (agent.description || agent.title).trim();
+  // Less motion: the title word is written from the start.
+  const still = useReducedMotion();
   return (
-    <div className="agent-chat-empty">
+    <div className="agent-chat-empty" data-still={still ? "" : undefined}>
       <div className="agent-chat-empty-pitch">
         <AgentAvatar agent={agent} mood="idle" motion="always" className="agent-chat-empty-avatar" />
         <h2 className="agent-chat-empty-title">
