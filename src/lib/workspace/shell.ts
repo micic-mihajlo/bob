@@ -17,6 +17,8 @@ export interface RunOutput {
   /** Combined stdout and stderr. Over the limit, the head and the tail are kept and the middle dropped. */
   output: string;
   truncated: boolean;
+  /** How the command ran, from sandboxMode(). */
+  sandbox: string;
 }
 
 /**
@@ -59,6 +61,14 @@ export function sandboxAvailable(): boolean {
     sandboxable = probe.status === 0;
   }
   return sandboxable;
+}
+
+/** How `run` executes here, named on every run step. Without namespaces, commands still get the scrubbed env and the project's HOME. */
+export function sandboxMode(): string {
+  if (sandboxAvailable()) return "namespace sandbox";
+  if (process.env.BOB_SANDBOX === "off") return "plain shell (BOB_SANDBOX=off)";
+  if (process.platform !== "linux") return `plain shell (no namespace sandbox on ${process.platform})`;
+  return "plain shell (user namespaces unavailable)";
 }
 
 /**
@@ -145,7 +155,7 @@ export function runCommand(ws: Workspace, command: string, timeoutMs = RUN_TIMEO
       clearTimeout(timer);
       kill();
       const seconds = Math.round((Date.now() - started) / 100) / 10;
-      resolve({ ok: true, command, exitCode, timedOut, seconds, ...clipOutput(text.trim()) });
+      resolve({ ok: true, command, exitCode, timedOut, seconds, ...clipOutput(text.trim()), sandbox: sandboxMode() });
     };
     child.on("error", (error) => {
       text += `\n${error.message}`;

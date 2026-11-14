@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { MAIN_BRANCH, MERGE_IDENTITY } from "./layout";
@@ -91,8 +91,9 @@ async function prepare(project: ProjectLayout): Promise<DepsState> {
 }
 
 /**
- * Gives a thread workspace its node_modules: a hard-linked copy of the project's prepared install when the
- * manifests match, which takes well under a second, or its own install when the branch changed them.
+ * Gives a thread workspace its node_modules: a hard-linked copy (an APFS clone on macOS, whose cp has no -l) of
+ * the project's prepared install when the manifests match, which takes well under a second, or its own install
+ * when the branch changed them. A plain copy is the fallback.
  */
 export async function ensureWorkspaceDeps(ws: Workspace): Promise<Result<{ state: DepsState }>> {
   const wanted = await manifest(ws.root);
@@ -105,11 +106,11 @@ export async function ensureWorkspaceDeps(ws: Workspace): Promise<Result<{ state
   const sharedHash = await readFile(path.join(ws.project.deps, "node_modules", MARKER), "utf8").catch(() => null);
   if (shared.kind === "ready" && sharedHash === wanted.hash) {
     const started = Date.now();
-    try {
-      await exec("cp", ["-al", path.join(ws.project.deps, "node_modules"), target]);
-    } catch {
-      await exec("cp", ["-R", path.join(ws.project.deps, "node_modules"), target]);
-    }
+    const copy = (flag: string) => exec("cp", [flag, path.join(ws.project.deps, "node_modules"), target]);
+    await copy(process.platform === "darwin" ? "-cR" : "-al").catch(async () => {
+      await rm(target, { recursive: true, force: true });
+      await copy("-R");
+    });
     return { ok: true, state: { kind: "ready", command: wanted.command, seconds: (Date.now() - started) / 1000, reused: true } };
   }
   const own = await install(ws, wanted.command);
