@@ -30,6 +30,7 @@ import {
   type ApprovalAutomationPreference,
   type AppSetupState,
   type BitwardenConnectorStatus,
+  type BobCrewThread,
   type BusyMessageModePreference,
   type CentralAuthIssue,
   type CentralAuthState,
@@ -126,6 +127,26 @@ import {
 import { type LicenseState, parseLicenseState } from "@bob/contracts/license";
 import { isPluginSlug } from "@bob/contracts/plugin-links";
 import { isBoolean, isNumber, isOneOf, isString } from "@bob/contracts/runtime-values";
+
+const BOB_CREW_STATUSES = ["working", "waiting", "needs_you", "failed", "idle"] as const;
+
+export function decodeBobCrew(value: unknown): BobCrewThread[] {
+  return decodeList(value, "Bob crew", (thread) => {
+    const { kind, status, at } = thread;
+    if (!isOneOf(["captain", "crew"] as const, kind)) throw new Error("Invalid thread kind.");
+    if (!isOneOf(BOB_CREW_STATUSES, status)) throw new Error("Invalid thread status.");
+    if (at !== null && !isString(at)) throw new Error("Invalid thread time.");
+    return {
+      id: requiredString(thread, "id"),
+      name: requiredString(thread, "name"),
+      kind,
+      hue: requiredNumber(thread, "hue"),
+      status,
+      preview: requiredString(thread, "preview"),
+      at,
+    };
+  });
+}
 
 export function decodeAppInfo(value: unknown): AppInfo {
   const info = decodeRecord(value, "app info");

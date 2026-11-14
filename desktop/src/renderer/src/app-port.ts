@@ -6,6 +6,7 @@ import type { BobDesktopApi } from "@bob/contracts/ipc";
  */
 export interface AppPort {
   getAppInfo: BobDesktopApi["getAppInfo"];
+  getBobCrew: BobDesktopApi["getBobCrew"];
   getAppAppearancePreference: BobDesktopApi["getAppAppearancePreference"];
   getAppInterfaceSizePreference: BobDesktopApi["getAppInterfaceSizePreference"];
   getAppLanguagePreference: BobDesktopApi["getAppLanguagePreference"];

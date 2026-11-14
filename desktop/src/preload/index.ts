@@ -1,6 +1,7 @@
 import {
   type AgentIpcRequest,
   type AttachmentImportEvent,
+  type BobDesktopApi,
   decodeAddedAgent,
   decodeAgentAccessSnapshot,
   decodeAgentAdminSettings,
@@ -25,6 +26,7 @@ import {
   decodeChannelRoutineRuns,
   decodeChannelRoutines,
   decodeChannelSummaries,
+  decodeComposioStatus,
   decodeHermesImportPreview,
   decodeHermesImportResult,
   decodeHostAgentMemoryLimit,
@@ -52,12 +54,10 @@ import {
   decodeProviderRuntimeDownload,
   decodeRegistryEntries,
   decodeRegistryInstallations,
-  decodeComposioStatus,
   decodeRegistryInstallResult,
   decodeRegistryOperations,
   decodeSaveAgentProfileResult,
   decodeWorkspaceDirectory,
-  type BobDesktopApi,
   type EventEndpoint,
   type GroupApi,
   groupApiMethodName,
@@ -128,6 +128,7 @@ import {
   decodeAppLogoColorPreference,
   decodeApprovalAutomationPreference,
   decodeAppSetupState,
+  decodeBobCrew,
   decodeBusyMessageModePreference,
   decodeCentralAuthState,
   decodeChatWindowTargets,
@@ -173,6 +174,7 @@ import {
   decodeVoiceTranscriptionResult,
   decodeVoid,
 } from "./app-decoding";
+import { decodeBobOnboardingResult } from "./bob-decoding";
 import {
   decodeBrowserBounds,
   decodeBrowserControlState,
@@ -220,7 +222,6 @@ import {
   decodeDynamicIslandPreference,
   decodeDynamicIslandPresentation,
 } from "./dynamic-island-decoding";
-import { decodeBobOnboardingResult } from "./bob-decoding";
 import { decodeHostReleaseStatusFromMain } from "./host-release-decoding";
 import { decodeMacAutomationResults } from "./mac-automation-decoding";
 import {
@@ -607,6 +608,7 @@ function selectJoinedServer(server: ServerSummary): ServerSummary {
 const bobApi: BobDesktopApi = {
   ...bridgeGroup(IPC_ENDPOINTS.app, {
     getAppInfo: decodeAppInfo,
+    getBobCrew: decodeBobCrew,
     getSetupState: decodeAppSetupState,
     saveSetup: decodeAppSetupState,
     setupState: decodeAppSetupState,
