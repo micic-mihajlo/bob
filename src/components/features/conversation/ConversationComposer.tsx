@@ -9,6 +9,7 @@ import { cx } from "@/components/ui/classes";
 import { interruptAgent, sendMessage, type SendMode } from "@/lib/client/api";
 import { displayName } from "@/lib/client/crew";
 import { reportView } from "@/lib/client/report-view";
+import { answeringQuote } from "@/lib/client/requests";
 import { oneRowPerAgent } from "@/lib/client/selectors";
 import type { Agent, ThreadView } from "@/lib/types";
 import { QuickActions } from "./AgentChatEmptyState";
@@ -127,6 +128,7 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
   const queueVisible = thread.queued > 0;
   const slotOpen = awaitingVisible || queueVisible;
   const label = `Message ${agent.name}`;
+  const quote = answering ? answeringQuote(answering) : null;
 
   return (
     <div className="composer-wrap">
@@ -145,11 +147,11 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
           </div>
         </div>
         {error ? <ComposerNotice tone="danger" title="Not sent" body={error} onDismiss={() => setError(null)} /> : null}
-        {answering ? (
+        {quote ? (
           <div className="composer-reply-preview composer-answering">
             <div>
               <span>{newRequest ? "Starts a new request" : `Answering ${agent.name}`}</span>
-              <p className="message-reply-quote composer-answering-ask">{newRequest ? `Not an answer to “${answering.ask}”` : answering.ask}</p>
+              <p className="message-reply-quote composer-answering-ask">{newRequest ? `Not an answer to “${quote}”` : quote}</p>
             </div>
             <Button variant="ghost" size="sm" className="composer-answering-toggle" aria-pressed={newRequest} onClick={() => setNewRequest((value) => !value)}>
               New request

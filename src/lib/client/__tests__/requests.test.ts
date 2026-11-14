@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { InboxItem, RequestControl } from "@/lib/types";
-import { requestLabel, requestUsageLine } from "../requests";
+import { answeringQuote, requestLabel, requestUsageLine } from "../requests";
 
 const request: RequestControl = {
   requestId: "req_1",
@@ -52,5 +52,22 @@ describe("requestLabel", () => {
 
   it("keeps a typed request as the person wrote it", () => {
     expect(requestLabel("customers want to export invoices as CSV", [call])).toBe("customers want to export invoices as CSV");
+  });
+});
+
+describe("answeringQuote", () => {
+  it("quotes the sentence that asks, not the context before it", () => {
+    const question = "No one is on a task right now. There are no open crew threads or active work orders. What should we build next?";
+    expect(answeringQuote({ ask: "What is everyone doing?", question })).toBe("What should we build next?");
+  });
+
+  it("takes the first line that asks, without its list marker", () => {
+    const question = "Two quick ones before I plan it.\n- I'd put every invoice in the file. Is that the right set of columns?\n- Who opens it?";
+    expect(answeringQuote({ ask: "Add CSV export", question })).toBe("Is that the right set of columns?");
+  });
+
+  it("falls back to the request when nothing asks", () => {
+    expect(answeringQuote({ ask: "Add CSV export", question: null })).toBe("Add CSV export");
+    expect(answeringQuote({ ask: "Add CSV export", question: "On it." })).toBe("Add CSV export");
   });
 });
