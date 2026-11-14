@@ -68,6 +68,8 @@ export interface Message {
   replyTo: MessageId | null;
   /** Optional: set on the message a person's approval decision creates for the asking agent. */
   approvalId?: string;
+  /** Optional: on a person's answer to the captain's question, the ask it answers. The answer joins that request. */
+  continues?: MessageId;
   at: string;
 }
 
@@ -311,6 +313,8 @@ export interface WhyHop {
   message: Message;
   fromName: string;
   toNames: string[];
+  /** Optional: on a person's answer, the question the captain asked them. */
+  question?: string;
 }
 
 /**

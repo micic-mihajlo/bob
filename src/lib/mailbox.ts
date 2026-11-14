@@ -16,6 +16,7 @@ export interface SendInput {
   causedBy: MessageId | null;
   requestId: RequestId;
   approvalId?: string;
+  continues?: MessageId;
 }
 
 export type SendErrorCode =
@@ -112,6 +113,7 @@ function buildMessage(input: SendInput, to: AgentId[]): Message {
     expectsReply: input.expectsReply,
     replyTo: input.replyTo,
     ...(input.approvalId ? { approvalId: input.approvalId } : {}),
+    ...(input.continues ? { continues: input.continues } : {}),
     at: nowIso(),
   };
 }
