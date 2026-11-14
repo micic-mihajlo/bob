@@ -40,7 +40,7 @@ function sendForCaptain(to: AgentId, text: string, expectsReply: boolean, reques
   const captain = captainOf(s);
   const target = agentById(s, to);
   if (!captain || !target || isClosed(target)) return null;
-  const sent = send({ from: { kind: "agent", agentId: captain.id }, to: [to], text, expectsReply, replyTo: null, causedBy: null, requestId });
+  const sent = send({ from: { kind: "agent", agentId: captain.id }, to: [to], text, expectsReply, replyTo: null, causedBy: null, requestId, automatic: true });
   if (!sent.ok) return null;
   update((x) => addNotice(x, captain.id, "info", `Sent to ${target.name} automatically: ${text.split("\n")[0]}`));
   return to;
