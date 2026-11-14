@@ -49,6 +49,10 @@ export function closeThread(agentId: AgentId): Promise<ActionResult> {
   return post(API.agentClose(agentId), {});
 }
 
+export function setThreadModel(agentId: AgentId, model: string): Promise<ActionResult> {
+  return post(API.agentModel(agentId), { model });
+}
+
 export function decideApproval(approvalId: string, decision: "approved" | "denied"): Promise<ActionResult> {
   return post(API.approval(approvalId), { decision });
 }
