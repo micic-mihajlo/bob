@@ -58,7 +58,6 @@ export const SIDE_PANEL_MODES = {
   question: "question",
   voice: "voice",
   subagent: "subagent",
-  roadmap: "roadmap",
 } as const satisfies Record<SidePanelPane, RightPanelMode>;
 
 function isSidePanelPane(value: string): value is SidePanelPane {

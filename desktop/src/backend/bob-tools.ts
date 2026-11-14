@@ -31,7 +31,6 @@ import {
   renameSectionToolSchema,
 } from "./agent/sidebar-tools";
 import { LOCAL_SKILL_TOOL_DEFINITIONS } from "./agent/skill-tools";
-import { CREATE_WEBHOOK_ROUTINE_TOOL, UPDATE_WEBHOOK_ROUTINE_TOOL } from "./agent/webhook-routine-tool";
 import { START_TASK_TOOL, startTaskToolSchema } from "./agent-tasks/agent-tasks";
 import {
   AWAIT_EVENT_TOOL,
@@ -43,16 +42,6 @@ import {
 } from "./agent-waits/agent-waits";
 import { CHANNEL_TOOL_DEFINITIONS } from "./channel-tools";
 import { MESSAGING_TOOL_DEFINITIONS } from "./messaging/messaging-tools";
-import { ROUTINE_FLOW_TOOL_DEFINITIONS } from "./routine-flows/routine-flow-tools";
-import {
-  ROUTINE_INSTRUCTION_RULE,
-  routineInstructionZodSchema,
-  routineLimitPolicyZodSchema,
-  routineMissedPolicyZodSchema,
-  routineScheduleZodSchema,
-  webhookEventTypeZodSchema,
-  webhookFiltersZodSchema,
-} from "./routine-tool-schema";
 
 interface BobToolDefinition {
   name: string;
@@ -288,7 +277,6 @@ export const BOB_TOOL_DEFINITIONS: readonly BobToolDefinition[] = [
   ...HISTORY_TOOL_DEFINITIONS,
   ...DATA_TOOL_DEFINITIONS,
   ...LOCAL_SKILL_TOOL_DEFINITIONS,
-  ...ROUTINE_FLOW_TOOL_DEFINITIONS,
   ...MCP_SERVER_TOOL_DEFINITIONS,
   {
     name: "list_sites",
@@ -426,98 +414,6 @@ export const BOB_TOOL_DEFINITIONS: readonly BobToolDefinition[] = [
     description:
       "Start a new chat for yourself when this chat is long and its earlier messages no longer matter, or when a routine asks for it. Each message then sends less context. Before you call it, keep what you need: use remember, or write notes to a file in your workspace. The user still sees the earlier messages; you do not. The new chat starts when this turn ends and your queue is empty. When a queued message runs in this chat first, the request ends; call it again if you still need it. It works only in your own chat, and only when the user allows it in your settings.",
     shape: {},
-  },
-  {
-    name: "list_routines",
-    description:
-      "List routines for this agent, or for another local agent when agentId is provided. Use this before updating or deleting a routine. routines has the schedule routines; webhookRoutines has the webhook routines with their event type, filters and URL.",
-    shape: { agentId: z.string().min(1).max(INPUT_LIMITS.identifier).optional() },
-  },
-  {
-    name: "create_routine",
-    description:
-      "Create a scheduled routine for this agent, or for another local agent when agentId is provided. It is active by default. Without a timezone, it uses the timezone of the person whose message this turn answers, or the server timezone when that is unknown. Interval, advanced-every, and custom schedules must not run more often than every 3 minutes. For a one-time reminder or task, use a once schedule: it runs one time and then pauses the routine. When watching a folder for new files and no interval was requested, use a 15 minute interval and keep the folder path plus handling instructions in the routine instruction.",
-    shape: {
-      agentId: z.string().min(1).max(INPUT_LIMITS.identifier).optional(),
-      name: z.string().min(1).max(INPUT_LIMITS.routineName),
-      instruction: routineInstructionZodSchema,
-      schedule: routineScheduleZodSchema.describe(
-        "Routine schedule. Interval, advanced-every, and custom schedules must not run more often than every 3 minutes.",
-      ),
-      active: z.boolean().optional(),
-      timezone: z.string().min(1).max(128).describe("IANA timezone such as Europe/Warsaw.").optional(),
-      limitPolicy: routineLimitPolicyZodSchema.optional(),
-      missedPolicy: routineMissedPolicyZodSchema.optional(),
-    },
-  },
-  {
-    name: CREATE_WEBHOOK_ROUTINE_TOOL,
-    description:
-      "Create a routine that a signed HTTP request starts, for this agent or for another local agent when agentId is provided. Use it when the user wants work to start when something happens in another system. It works only in a turn that a person's message started, not in a routine run or for an agent's message. It is active by default. The result has the webhook URL and the request format. The signing secret is not in the result; the result says where the user gets it. Never ask the user for the secret. A null url means the URL is not ready yet; the Routines settings show it when it is.",
-    shape: {
-      agentId: z.string().min(1).max(INPUT_LIMITS.identifier).optional(),
-      name: z.string().min(1).max(INPUT_LIMITS.routineName),
-      instruction: z
-        .string()
-        .min(1)
-        .max(INPUT_LIMITS.routineInstruction)
-        .describe(
-          `What to do with each request. Bob adds the request body to the run as untrusted data. ${ROUTINE_INSTRUCTION_RULE}`,
-        ),
-      eventType: webhookEventTypeZodSchema.optional(),
-      filters: webhookFiltersZodSchema.optional(),
-      active: z.boolean().optional(),
-      limitPolicy: routineLimitPolicyZodSchema.optional(),
-    },
-  },
-  {
-    name: UPDATE_WEBHOOK_ROUTINE_TOOL,
-    description:
-      "Change a webhook routine of this agent, or of another local agent when agentId is provided: its event type, filters, name, instruction, or pause and resume it. Get its routineId from webhookRoutines of list_routines. Fields you leave out keep their saved values; filters replaces the whole list, and an empty list removes all filters. The URL and the signing secret stay the same. It works only in a turn that a person's message started.",
-    shape: {
-      agentId: z.string().min(1).max(INPUT_LIMITS.identifier).optional(),
-      routineId: z.string().min(1).max(INPUT_LIMITS.identifier),
-      name: z.string().min(1).max(INPUT_LIMITS.routineName).optional(),
-      instruction: z.string().min(1).max(INPUT_LIMITS.routineInstruction).optional(),
-      eventType: webhookEventTypeZodSchema.optional(),
-      filters: webhookFiltersZodSchema.optional(),
-      active: z.boolean().optional(),
-      limitPolicy: routineLimitPolicyZodSchema.optional(),
-    },
-  },
-  {
-    name: "update_routine",
-    description:
-      "Update, pause, or resume an existing routine for this agent, or for another local agent when agentId is provided. Fields you leave out keep their saved values. Replacement schedules must not run more often than every 3 minutes. A one-time routine that already ran resumes only with a new once schedule in the future. The result is the saved routine. For a webhook routine, use update_webhook_routine.",
-    shape: {
-      agentId: z.string().min(1).max(INPUT_LIMITS.identifier).optional(),
-      routineId: z.string().min(1).max(INPUT_LIMITS.identifier),
-      name: z.string().min(1).max(INPUT_LIMITS.routineName).optional(),
-      instruction: routineInstructionZodSchema.optional(),
-      schedule: routineScheduleZodSchema
-        .describe("Routine schedule. Must not run more often than every 3 minutes.")
-        .optional(),
-      active: z.boolean().optional(),
-      limitPolicy: routineLimitPolicyZodSchema.optional(),
-      missedPolicy: routineMissedPolicyZodSchema.optional(),
-    },
-  },
-  {
-    name: "delete_routine",
-    description: "Delete an existing routine for this agent, or for another local agent when agentId is provided.",
-    shape: {
-      agentId: z.string().min(1).max(INPUT_LIMITS.identifier).optional(),
-      routineId: z.string().min(1).max(INPUT_LIMITS.identifier),
-    },
-  },
-  {
-    name: "test_routine",
-    description:
-      "Queue one manual test run of an existing routine for this agent, or for another local agent when agentId is provided.",
-    shape: {
-      agentId: z.string().min(1).max(INPUT_LIMITS.identifier).optional(),
-      routineId: z.string().min(1).max(INPUT_LIMITS.identifier),
-    },
   },
   {
     name: ROUTINE_NO_UPDATE_TOOL,

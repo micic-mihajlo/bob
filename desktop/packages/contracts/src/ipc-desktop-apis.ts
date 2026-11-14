@@ -79,7 +79,6 @@ export type ComposioDesktopApi = GroupApi<IpcEndpoints["composio"]>;
 export type GitHubConnectorDesktopApi = GroupApi<IpcEndpoints["githubConnector"]>;
 export type OnePasswordConnectorDesktopApi = GroupApi<IpcEndpoints["onePasswordConnector"]>;
 export type RoutineFeedDesktopApi = GroupApi<IpcEndpoints["routineFeed"]>;
-export type BobRoadmapDesktopApi = GroupApi<IpcEndpoints["bobRoadmap"]>;
 
 export type HostedServersDesktopApi = GroupApi<IpcEndpoints["hostedServers"]>;
 

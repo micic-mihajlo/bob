@@ -28,7 +28,6 @@ import {
   shell,
 } from "electron";
 import { runCauseEffect } from "../backend/effect-boundary";
-import { bobRoadmapClient } from "../backend/bob-roadmap";
 import { bobUrl } from "../backend/bob-url";
 import { readAppVariant, resolveAppIconPath, resolveLogoColorIconPath } from "./app-icon";
 import { type ApplicationServices, createApplicationServices } from "./application-services";
@@ -70,7 +69,6 @@ import { customProviderIpcHandlers } from "./ipc/custom-provider-handlers";
 import { registerIpcGroups } from "./ipc/define-ipc-group";
 import { dynamicIslandIpcHandlers } from "./ipc/dynamic-island-handlers";
 import { bobOnboardingIpcHandlers } from "./ipc/bob-onboarding-handlers";
-import { bobRoadmapIpcHandlers } from "./ipc/bob-roadmap-handlers";
 import { eventsIpcHandlers } from "./ipc/events-handlers";
 import { ComposioConnect } from "./composio-connect";
 import { composioIpcHandlers } from "./ipc/composio-handlers";
@@ -703,8 +701,7 @@ function registerIpcHandlers({
     ...bitwardenConnectorIpcHandlers({ bitwardenConnector, remoteServers }),
     ...vaultIpcHandlers({ vault, getMainWindow: getDialogParent, translate: language.translate, remoteServers }),
     ...routineFeedIpcHandlers({ routineFeed }),
-    ...bobOnboardingIpcHandlers({ service, host, userDataPath: app.getPath("userData") }),
-    ...bobRoadmapIpcHandlers({ bobRoadmap: bobRoadmapClient }),
+    ...bobOnboardingIpcHandlers({ service, userDataPath: app.getPath("userData") }),
     ...eventsIpcHandlers({ events, remoteServers }),
     ...hostedServerIpcHandlers({ hostedServers }),
     ...customProviderIpcHandlers(customProviderChanges),

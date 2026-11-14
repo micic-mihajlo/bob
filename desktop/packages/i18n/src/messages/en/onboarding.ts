@@ -1,17 +1,6 @@
 import { defineMessages } from "../../message";
 
 export const messages = defineMessages("onboarding", {
-  "onboarding.bob.welcome": "Your founder bob starts today",
-  "onboarding.bob.welcomeDescription":
-    "I'm Bob, your cofounder for getting customers. We'll talk about what you're building and where you are, then I'll lay out your roadmap to the MRR you want and put the first task on your calendar. Type, or just talk.",
-  "onboarding.bob.notificationsDescription":
-    "Bob can send a morning brief at 8:00 and a weekday check-in at 19:30, in your local time. Click a notification to open our chat.",
-  "onboarding.bob.allowNotifications": "Allow notifications",
-  "onboarding.bob.notificationsReady": "Notifications requested",
-  "onboarding.bob.notificationFailed":
-    "Bob couldn't request notifications. You can continue and allow them in Settings later.",
-  "onboarding.bob.meet": "Meet Bob",
-  "onboarding.bob.meeting": "Getting Bob ready…",
   "onboarding.bob.saveFailed": "Bob couldn't finish setup. Please try again.",
   // The saved setup could not be read. Retry, or set up again with no saved state.
   "onboarding.readFailed.title": "Bob could not read your setup.",

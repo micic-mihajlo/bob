@@ -3,7 +3,7 @@ import type { AgentModelId, AgentProviderId, AppSetupState, DesktopPlatform } fr
 import { Button, ErrorReference } from "@bob/ui";
 import { useText } from "@bob/ui/text";
 import { errorReference } from "@bob/user-errors";
-import { createStore, Show } from "solid-js";
+import { createStore, onSettled, Show } from "solid-js";
 import { useAgents } from "../agents/agents-context";
 import type { OnboardingJourney } from "./onboarding-context";
 import { onboardingPort } from "./onboarding-port";
@@ -19,65 +19,43 @@ export interface FirstRunFlowProps extends SetupProviderProps {
 
 interface FirstRunState {
   saving: boolean;
-  requesting: boolean;
-  notificationsAllowed: boolean;
   error: string;
   reference: string | null;
 }
 
 /**
- * Bob's first run: one screen that offers the brief and check-in notifications, then opens the chat
- * with Bob, which asks its first-run questions there, one at a time.
+ * Creates the Bob agent. The bob provider lists its model a moment after launch, so a first attempt
+ * that finds Bob not connected yet tries again for a few seconds before the failure shows.
+ */
+async function completeBobOnboarding(): ReturnType<ReturnType<typeof onboardingPort>["bobOnboarding"]["complete"]> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await onboardingPort().bobOnboarding.complete();
+    } catch (cause) {
+      if (attempt >= 10) throw cause;
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
+  }
+}
+
+/**
+ * Bob's first run has no screens: it makes sure the Bob agent exists, saves the setup, and opens the
+ * agents view on Bob's chat. Only a failure shows here, with a retry.
  */
 export function FirstRunFlow(props: FirstRunFlowProps) {
   const { t, errorMessage } = useText();
   const agents = useAgents();
-  const [state, setState] = createStore<FirstRunState>({
-    saving: false,
-    requesting: false,
-    notificationsAllowed: false,
-    error: "",
-    reference: null,
-  });
-
-  async function allowNotifications(): Promise<void> {
-    if (state.requesting) return;
-    setState((draft) => {
-      draft.requesting = true;
-      draft.error = "";
-    });
-    try {
-      const preference = await onboardingPort().notifications.getPreference();
-      await onboardingPort().notifications.setPreference({ ...preference, desktopNotifications: true });
-      await onboardingPort().notifications.requestPermission();
-      setState((draft) => {
-        draft.notificationsAllowed = true;
-      });
-    } catch (cause) {
-      setState((draft) => {
-        draft.error = errorMessage(cause, t("onboarding.bob.notificationFailed"));
-        draft.reference = errorReference(cause);
-      });
-    } finally {
-      setState((draft) => {
-        draft.requesting = false;
-      });
-    }
-  }
+  const [state, setState] = createStore<FirstRunState>({ saving: false, error: "", reference: null });
 
   async function start(): Promise<void> {
-    if (state.saving || state.requesting) return;
+    if (state.saving) return;
     setState((draft) => {
       draft.saving = true;
       draft.error = "";
       draft.reference = null;
     });
     try {
-      if (!state.notificationsAllowed) {
-        const preference = await onboardingPort().notifications.getPreference();
-        await onboardingPort().notifications.setPreference({ ...preference, desktopNotifications: false });
-      }
-      const result = await onboardingPort().bobOnboarding.complete();
+      const result = await completeBobOnboarding();
       agents.setActiveAgentId(result.agentId);
       agents.setAgentSetupOpen(false);
       agents.setExplicitlyOpenedAgentChatId(result.agentId);
@@ -91,42 +69,23 @@ export function FirstRunFlow(props: FirstRunFlowProps) {
     }
   }
 
+  onSettled(() => void start());
+
   return (
-    <main class="onboarding-screen bob-onboarding">
-      <form
-        class="onboarding-shell"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void start();
-        }}
-      >
-        <section class="onboarding-panel">
-          <h1>{t("onboarding.bob.welcome")}</h1>
-          <p class="onboarding-description">{t("onboarding.bob.welcomeDescription")}</p>
-          <p class="onboarding-description">{t("onboarding.bob.notificationsDescription")}</p>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={state.requesting || state.notificationsAllowed || state.saving}
-            onClick={() => void allowNotifications()}
-          >
-            {state.notificationsAllowed
-              ? t("onboarding.bob.notificationsReady")
-              : t("onboarding.bob.allowNotifications")}
-          </Button>
-        </section>
-        <Show when={state.error}>
+    <Show when={state.error}>
+      <main class="onboarding-screen bob-onboarding">
+        <div class="onboarding-shell">
           <p class="onboarding-error" role="alert">
             {state.error}
             <ErrorReference reference={state.reference} />
           </p>
-        </Show>
-        <div class="onboarding-actions">
-          <Button type="submit" disabled={state.saving || state.requesting}>
-            {state.saving ? t("onboarding.bob.meeting") : t("onboarding.bob.meet")}
-          </Button>
+          <div class="onboarding-actions">
+            <Button type="button" disabled={state.saving} onClick={() => void start()}>
+              {t("common.retry")}
+            </Button>
+          </div>
         </div>
-      </form>
-    </main>
+      </main>
+    </Show>
   );
 }

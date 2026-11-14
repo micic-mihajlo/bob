@@ -34,7 +34,7 @@ const MODEL_OPTION: acp.SessionConfigOption = {
   category: "model",
   type: "select",
   currentValue: "bob",
-  options: [{ value: "bob", name: "Bob", description: "The Bob coach in the cloud" }],
+  options: [{ value: "bob", name: "Bob", description: "The captain of your software factory" }],
 };
 
 // Bob puts its instructions for coding agents in front of a prompt. Bob has a persona of its own.

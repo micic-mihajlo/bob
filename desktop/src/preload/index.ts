@@ -228,7 +228,6 @@ import {
   decodeDynamicIslandPresentation,
 } from "./dynamic-island-decoding";
 import { decodeBobOnboardingResult } from "./bob-decoding";
-import { decodeBobRoadmap } from "./bob-roadmap-decoding";
 import { decodeHostReleaseStatusFromMain } from "./host-release-decoding";
 import { decodeMacAutomationResults } from "./mac-automation-decoding";
 import {
@@ -895,10 +894,6 @@ const bobApi: BobDesktopApi = {
   }),
   bobOnboarding: bridgeGroup(IPC_ENDPOINTS.bobOnboarding, {
     complete: decodeBobOnboardingResult,
-  }),
-  bobRoadmap: bridgeGroup(IPC_ENDPOINTS.bobRoadmap, {
-    get: decodeBobRoadmap,
-    completeTask: decodeBobRoadmap,
   }),
   hostedServers: bridgeGroup(IPC_ENDPOINTS.hostedServers, {
     lifecycle: decodeVoid,

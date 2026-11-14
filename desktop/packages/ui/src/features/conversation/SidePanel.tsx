@@ -5,7 +5,6 @@ import {
   buttonVariants,
   DropdownMenu,
   Folder,
-  MapIcon,
   Maximize2,
   MessageCircleQuestionMark,
   Minimize2,
@@ -26,7 +25,7 @@ import { For, flush, onSettled, Show } from "solid-js";
  * from the composer only, and a subagent from its row in the chat, so the launcher and Add do not
  * list them.
  */
-export type SidePanelPane = "browser" | "files" | "settings" | "question" | "voice" | "subagent" | "roadmap";
+export type SidePanelPane = "browser" | "files" | "settings" | "question" | "voice" | "subagent";
 
 const PANE_LABELS: Record<SidePanelPane, AppTextKey> = {
   browser: "conversation.sidePanel.pane.browser",
@@ -35,7 +34,6 @@ const PANE_LABELS: Record<SidePanelPane, AppTextKey> = {
   question: "conversation.sidePanel.pane.question",
   voice: "conversation.sidePanel.pane.voice",
   subagent: "conversation.sidePanel.pane.subagent",
-  roadmap: "conversation.sidePanel.pane.roadmap",
 };
 
 /** The same glyphs as the rest of the app: the browser is the computer. */
@@ -53,8 +51,6 @@ function PaneIcon(props: { pane: SidePanelPane }): JSX.Element {
       return <AudioLines aria-hidden="true" />;
     case "subagent":
       return <Workflow aria-hidden="true" />;
-    case "roadmap":
-      return <MapIcon aria-hidden="true" />;
   }
 }
 

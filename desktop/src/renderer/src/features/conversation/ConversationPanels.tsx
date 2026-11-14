@@ -37,15 +37,14 @@ import { conversationPort } from "./conversation-port";
 
 /** The voice conversation with the agent that is open when the pane opens. */
 function VoiceConversationPane() {
-  const { props, startVoiceConversation, closeSidePanelPane, activeRightPanel, setActiveRightPanel, sidePanel } =
+  const { props, startVoiceConversation, closeSidePanelPane, activeRightPanel, setActiveRightPanel } =
     useConversationViewScope();
   const agentId = untrack(() => props.agent?.id);
   if (!agentId) return null;
   const conversation = startVoiceConversation(agentId);
-  // The call is full screen while its tab is selected; minimized, it is a dock and the side panel shows
-  // another pane, the roadmap for Bob.
+  // The call is full screen while its tab is selected; minimized, it is a dock.
   const expanded = () => activeRightPanel() === "voice";
-  const minimize = () => setActiveRightPanel(sidePanel().panes.includes("roadmap") ? "roadmap" : "none");
+  const minimize = () => setActiveRightPanel("none");
   return (
     <Show when={props.agent}>
       {(agent) => (
@@ -165,7 +164,6 @@ export function ConversationPanels(panelProps: { onOpenUsage?: ((trigger: HTMLBu
     ...(!props.runtime && props.agent?.threadId && serverHasStorage(props.server) ? (["files"] as const) : []),
     ...(props.agent || channel ? (["settings"] as const) : []),
     ...(props.agent && voiceConversationAvailable() ? (["voice"] as const) : []),
-    ...(props.agent?.provider === "bob" ? (["roadmap"] as const) : []),
   ]);
   /** The subagent in the Subagent pane, from the newest turn that has it. */
   const panelSubagent = createMemo(() => {
@@ -355,12 +353,6 @@ export function ConversationPanels(panelProps: { onOpenUsage?: ((trigger: HTMLBu
         keyed
       >
         <VoiceConversationPane />
-      </Show>
-
-      <Show when={activeRightPanel() === "roadmap" && props.agent?.provider === "bob"}>
-        <Loading>
-          <BobRoadmapPanel busy={agentActivity() !== null} onClose={() => closeSidePanelPane("roadmap")} />
-        </Loading>
       </Show>
 
       <Show when={activeRightPanel() === "subagent"}>
@@ -555,6 +547,5 @@ const AgentSettingsPanel = lazy(loadAgentSettingsPanel);
 const BrowserFullViewAdapter = lazy(() => import("./BrowserFullViewAdapter"));
 const FilePreviewPanel = lazy(() => import("./FilePreviewPanel"));
 const ChatFilesPanel = lazy(() => import("../files/ChatFilesPanel"));
-const BobRoadmapPanel = lazy(() => import("../bob-roadmap/BobRoadmapPanel"));
 
 const BrowserPreviewSidebar = lazy(() => import("./BrowserPreviewSidebar"));

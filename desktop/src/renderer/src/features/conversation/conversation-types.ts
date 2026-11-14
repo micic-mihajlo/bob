@@ -394,9 +394,7 @@ export type RightPanelMode =
   | "files"
   | "question"
   | "voice"
-  | "subagent"
-  /** The Bob roadmap. Only an agent on the `bob` provider has it. */
-  | "roadmap";
+  | "subagent";
 
 export type { SidePanelPane } from "@bob/ui/features/conversation/SidePanel";
 

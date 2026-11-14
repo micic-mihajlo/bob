@@ -266,7 +266,6 @@ import type {
   SetDynamicIslandPreferenceInput,
 } from "./ipc-dynamic-island";
 import type { BobOnboardingResult } from "./ipc-bob-onboarding";
-import type { BobRoadmap } from "./ipc-bob-roadmap";
 import type {
   EventActivity,
   EventRoutine,
@@ -1215,12 +1214,6 @@ export const IPC_ENDPOINTS = {
   bobOnboarding: {
     complete: request<undefined, BobOnboardingResult>()("bob-onboarding:complete"),
   },
-  // The Bob roadmap of this computer's user. Main reads it from the BobAgent Worker at BOB_URL, so the
-  // renderer stays inside its Content Security Policy. `completeTask` takes a task id.
-  bobRoadmap: {
-    get: request<undefined, BobRoadmap>()("bob-roadmap:get"),
-    completeTask: request<string, BobRoadmap>()("bob-roadmap:complete-task"),
-  },
   // Bob servers that the account server runs for this account. `wake` also works for a server
   // that the account is a member of; it answers 404 for a host that is not a hosted server.
   hostedServers: {
@@ -1833,7 +1826,6 @@ export const IPC_GROUP_PATHS = {
   hostedSites: "hostedSites",
   routineFeed: "routineFeed",
   bobOnboarding: "bobOnboarding",
-  bobRoadmap: "bobRoadmap",
   routineFlows: "routineFlows",
   workflows: "workflows",
   routineResults: "routineResults",

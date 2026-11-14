@@ -1402,19 +1402,6 @@ export function createConversationViewScope(props: ConversationProps) {
     },
   );
 
-  // An Bob chat opens with its roadmap beside it. When the user closes or changes the panel, that choice stays.
-  createEffect(
-    () => {
-      const agent = props.agent;
-      if (channel || agent?.provider !== "bob") return null;
-      const agentId = agent.id;
-      return untrack(() => rightPanels()[agentId]) === undefined ? agentId : null;
-    },
-    (agentId) => {
-      if (agentId) setActiveRightPanel("roadmap", agentId);
-    },
-  );
-
   createEffect(
     () => ({
       agentId: props.agent?.id,
