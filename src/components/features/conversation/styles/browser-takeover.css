@@ -732,6 +732,10 @@
   min-width: 0;
 }
 
+.approval-file-list strong {
+  overflow-wrap: break-word;
+}
+
 .approval-file-counts {
   flex: none;
   color: var(--bob-text-muted);

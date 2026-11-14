@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, LoaderCircle, X } from "lucide-react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useBob } from "@/components/features/window/BobContext";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -71,7 +71,18 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
             <ul className="approval-file-list">
               {files.map((file) => (
                 <li key={file.path}>
-                  <strong>{file.path}</strong>
+                  <strong>
+                    {file.path.split("/").map((part, index, parts) => (
+                      <Fragment key={index}>
+                        {part}
+                        {index < parts.length - 1 ? (
+                          <>
+                            /<wbr />
+                          </>
+                        ) : null}
+                      </Fragment>
+                    ))}
+                  </strong>
                   <span className="approval-file-counts">
                     +{file.additions} −{file.deletions}
                   </span>
