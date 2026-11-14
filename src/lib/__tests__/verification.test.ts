@@ -10,7 +10,7 @@ import type { Agent, Artifact } from "../types";
 import type { PullRequestArtifact } from "../threads";
 import { verificationLine, verificationRefusal, verificationStatus, type EquivalentMutant, type Verification } from "../verification";
 import { changedLines, mutantsOf } from "../verify/mutants";
-import { runProof } from "../verify/run";
+import { propertyNames, runProof } from "../verify/run";
 import { freshTeam } from "./helpers";
 import type { Workspace } from "../workspace";
 
@@ -126,6 +126,13 @@ describe("equivalent mutants", () => {
     expect(marked.result).toMatchObject({ passed: true, line: "4 properties · 1,200 cases · 5/5 mutants killed · 1 equivalent · proved in Lean" });
     expect(getState().equivalentMutants).toEqual([expect.objectContaining({ file: "src/invoices.ts", after: SURVIVOR.after, reason: waiver.reason, by: "inv-2" })]);
     expect(String(markEquivalent({ pullRequestId: "#3", file: "src/invoices.ts", line: 3, reason: "again, same one" }, ctx).result.error)).toMatch(/Survivors: none/);
+  });
+});
+
+describe("the contract written for a thread", () => {
+  it("lists every it() and test() in the properties file, in order", () => {
+    const src = 'it("one row per invoice", () => {});\ntest(\'a "quoted" name\', () => {});\nit(`template name`, () => {});\nfit("not this one", () => {});';
+    expect(propertyNames(src)).toEqual(["one row per invoice", 'a "quoted" name', "template name"]);
   });
 });
 

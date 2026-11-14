@@ -60,6 +60,29 @@ export async function contractPathOf(ws: Workspace, workOrderId: string | null):
   return found.length === 1 ? found[0] : expected;
 }
 
+const PROPERTIES_FILE = /\.properties\.test\.[cm]?[jt]sx?$/;
+
+/** The it() and test() names in a properties file, in order. */
+export const propertyNames = (src: string): string[] => [...src.matchAll(/\b(?:it|test)\(\s*(["'`])((?:\\.|(?!\1).)*)\1/g)].map((m) => m[2]);
+
+/**
+ * When the thread wrote a properties file but no contract, the contract is written for it: the work order's
+ * acceptance check, that file, and one entry per it() in it. Returns the properties file used, or null.
+ */
+export async function writeContractFor(ws: Workspace, file: string, acceptance: string): Promise<string | null> {
+  await gitIn(ws, ["add", "--all"]);
+  const changed = await gitIn(ws, ["diff", "--name-only", "--diff-filter=AM", await mergeBase(ws)]);
+  const candidates = changed.stdout.split("\n").filter((f) => PROPERTIES_FILE.test(f));
+  if (candidates.length === 0) return null;
+  const propertiesFile = candidates[0];
+  const names = propertyNames(await readFile(path.join(ws.root, propertiesFile), "utf8").catch(() => ""));
+  if (names.length === 0) return null;
+  const contract: Contract = { acceptance, propertiesFile, properties: names.map((name) => ({ name, criterion: acceptance })) };
+  await mkdir(path.dirname(path.join(ws.root, file)), { recursive: true });
+  await writeFile(path.join(ws.root, file), JSON.stringify(contract, null, 2) + "\n");
+  return propertiesFile;
+}
+
 export async function readContract(ws: Workspace, file: string): Promise<{ ok: true; contract: Contract } | { ok: false; error: string }> {
   const text = await readFile(path.join(ws.root, file), "utf8").catch(() => null);
   if (text === null) return { ok: false, error: `${file} is missing` };
