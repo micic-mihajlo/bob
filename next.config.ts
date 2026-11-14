@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
+  serverExternalPackages: ["@anthropic-ai/claude-agent-sdk"],
   partialPrefetching: true,
   turbopack: {
     rules: {
