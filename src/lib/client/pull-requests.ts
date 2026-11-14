@@ -48,7 +48,7 @@ export function pullRequestState(artifact: PullRequestArtifact, approvals: reado
 }
 
 export const PULL_REQUEST_STATE_LABEL: Record<PullRequestState, string> = {
-  open: "Open",
+  open: "In review",
   approved: "Approved",
   awaiting_merge: "Awaiting merge",
   merged: "Merged",
