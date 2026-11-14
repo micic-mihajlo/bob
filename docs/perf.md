@@ -140,6 +140,45 @@ The red step (writing the test, running it alone, one more model call) cost 5 to
 
 In run 3 the model piped its red run through `tail`, and the pipe hid the exit code. The `run` tool now fails a test command whose output reports failing tests, whatever the exit code. The brief also says to run the file without a pipe.
 
+## Chaos run
+
+`pnpm chaos --seed N --steps M` drives the scripted brain with a seeded random person. `--seeds K` runs K seeds from N, `--jobs J` runs that many at once, and `--out file.json` keeps every seed's events and findings. Each seed is a fresh project in a temp folder (`scripts/chaos-host.chaos.ts` under vitest). It picks weighted events from a mulberry32 RNG:
+
+- new requests, steered or queued
+- answers to pushback, including "go ahead"
+- nudges to running threads
+- Stop
+- approve or deny on merge cards (80/20)
+- a push after approval, which moves the head and forces a merge refusal
+- inbox items and promotes
+- project switches
+- server kill -9 restarts (at most 4 per seed)
+
+On a kill line the driver kills the whole process group and restarts on the same folder.
+
+After every event the host checks the invariants in `src/lib/invariants.ts`:
+
+- **always:** no merge without an approval on the current head; every pull request's Why? roots at a person's sentence; a crew thread gets work for only one request; DIGEST.md matches needs-you.
+- **once quiet** (nothing running, within `CHAOS_STALL_MS`, 20 s by default): no orphan turn or delivery, and every request with an open thread either moves or waits on the person (a card, a question, a denial or a stop). Every inbox item is also triaged, unless the person stopped its triage.
+
+A seed with findings keeps its `.data` folder for diagnosis.
+
+| Run | Seeds | Steps | Events | kill -9 restarts | Findings |
+| --- | --- | --- | --- | --- | --- |
+| Final, at the merged head | 1–300 | 30 | 7,655 | 183 | 0 |
+| After the last rebase | 301–400 | 30 | about 2,550 | 47 | 0 |
+
+The 300 seeds took 82 minutes at `--jobs 2`, 10 to 45 s per seed. Across them, the person made 2,266 requests, gave 1,059 answers, approved 1,050 cards and denied 277, and pushed after an approval 314 times. There were also 796 nudges, 229 stops, 660 inbox items, 367 promotes and 454 project switches. That came to 3,336 pull requests, and 2,938 of them merged.
+
+What earlier runs found, and the fixes:
+
+1. **The scripted captain never triaged an inbox item.** It treated the item as a request, then start_thread was refused during triage. `brain/script-inbox.ts` now records the item's asks with `triage_inbox` and starts nothing. A promote ("Build work order wo_… now") schedules that order and starts its build, with a brief that quotes the source line.
+2. **The scripted captain picked the wrong new work order.** It took the first order that set_roadmap returned, and that could be a backlog or inbox order. It now finds the order by its title, trimmed and case-insensitive, since set_roadmap trims titles.
+3. **A review that never started was never retried** (seed 63). With three threads busy, start_thread refused the review of a fresh pull request. The next captain wake was another review's approving report, and autopilot answered it with a merge card that ends the turn, so the brain never ran. Autopilot now leaves the turn to the captain while an open pull request has no review and no review thread. A refused review start also says so in the reply, instead of claiming a reviewer.
+4. **An evicted work order blocked its review** (seed 12). With four builds in flight, `set_today`'s three-order cap dropped an order whose build was still running, and its review was refused with "not in today". Per-request today, which landed separately, removed this.
+5. **A reply after a denied merge was read as the answer to that denial**, and a review started from another request's turn got that request's id. Main has since fixed both (an answer after a declined merge joins that pull request's request, and a work order carries its request), and the chaos run confirms them.
+6. **Harness findings, not product bugs:** the host never drained a tool's `wake` after a push, which left a delivery queued. Separately, an inbox triage the person had stopped was reported as never triaged.
+
 ## What changed
 
 - **A shell per thread.** `run` executes one bash command in the thread's own checkout, in its own process group. A timeout (120 s by default, at most 600 s) kills the whole group. The command gets an environment built from scratch: no API keys, `HOME` set to the project's own folder, and `node_modules/.bin` on the `PATH`. Output over 12,000 characters keeps its head and tail. The step in the thread shows the command, its output and whether it passed.
