@@ -24,13 +24,13 @@ it("runs a request live until the merge approval", async () => {
   const t0 = Date.now();
   const at = () => Date.now() - t0;
   const rows: Row[] = [];
-  const calls: { agent: string; ms: number; tools: number; inTokens?: number }[] = [];
+  const calls: { agent: string; ms: number; tools: number; names: string[] }[] = [];
   const real = getBrain();
   const timed: Brain = {
     async next(ctx) {
       const start = Date.now();
       const move = await real.next(ctx);
-      calls.push({ agent: ctx.agent.id, ms: Date.now() - start, tools: move.toolCalls.length });
+      calls.push({ agent: ctx.agent.id, ms: Date.now() - start, tools: move.toolCalls.length, names: move.toolCalls.map((c) => c.name) });
       return move;
     },
   };
@@ -64,6 +64,7 @@ it("runs a request live until the merge approval", async () => {
   const briefAt = rows.find((r) => r.agent !== "bob" && r.agent !== "harness" && r.kind === "message_in")?.t ?? null;
   const summary = {
     request: REQUEST,
+    models: { captain: process.env.BOB_MODEL_STRONG, crew: process.env.BOB_MODEL_LIGHT },
     approvalSeconds: approvalAt === null ? null : approvalAt / 1000,
     briefToApprovalSeconds: approvalAt === null || briefAt === null ? null : (approvalAt - briefAt) / 1000,
     totalSeconds: at() / 1000,
