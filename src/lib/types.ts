@@ -310,8 +310,22 @@ export interface Snapshot {
   threadState?: Record<AgentId, ThreadState>;
   /** Everything waiting on the person, newest first. The captain keeps this short. */
   needsYou?: NeedsYouItem[];
-  /** The captain's own notes, readable by the person: DIGEST.md, CREW.md, NOTES.md. */
+  /** The captain's own notes, readable by the person: DIGEST.md, CREW.md, NOTES.md, CHANGELOG.md. */
   drive?: DriveFile[];
+  /** What shipped, for the Learn card, newest first. CHANGELOG.md holds the same notes. */
+  releaseNotes?: ReleaseNote[];
+}
+
+/** What changed for the people who use the product, written when a pull request merges. */
+export interface ReleaseNote {
+  pullRequestId: string;
+  number: number;
+  workOrderId: string | null;
+  /** One or two plain sentences for customers. */
+  text: string;
+  /** "factory" is written in code from the pull request and work order; "model" is the live rewrite of it. */
+  source: "factory" | "model";
+  at: string;
 }
 
 export interface NeedsYouItem {

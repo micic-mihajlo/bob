@@ -3,6 +3,7 @@ import { newId, nowIso } from "../ids";
 import { completeWorkOrder, updateWorkOrder } from "../roadmap";
 import { agentById, type State } from "../state";
 import { patchArtifact } from "../state-ops";
+import { recordReleaseNote } from "../release-notes-live";
 import { getState, transact } from "../store";
 import { threadWorkspace, workspaceOptions } from "../thread-workspace";
 import { findPullRequest, isPullRequest, nextPullRequestNumber, type PullRequestArtifact } from "../threads";
@@ -204,6 +205,7 @@ export async function mergePullRequestTool(input: z.infer<typeof mergeSchema>): 
     const fresh = findPullRequest(x, pr.id);
     return fresh ? markMerged(x, fresh) : { state: x, value: null };
   });
+  recordReleaseNote(pr.id);
   const updating = result && !result.alreadyMerged ? await updateConflictingPullRequests(s.project.id, pr.id) : [];
   const also = updating.length ? ` ${updating.map((u) => `#${u.number}`).join(", ")} now conflicts with main; its build thread was asked to update its branch.` : "";
   const next = `Merged. Close this work order's threads with close_thread.${also}`;

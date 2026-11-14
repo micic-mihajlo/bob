@@ -1,5 +1,6 @@
 import { liveAsks } from "./asks";
 import { brainKind } from "./brain";
+import { releaseNotesOf } from "./release-notes";
 import { messageById, runningTurn, type State } from "./state";
 import { needsYou, threadStateOf, threadStatusOf } from "./thread-status";
 import type { AgentActivity, AgentId, Delivery, Snapshot, ThreadView, WaitingOn } from "./types";
@@ -76,5 +77,6 @@ export function buildSnapshot(s: State): Snapshot {
     threadState: Object.fromEntries(s.agents.map((a) => [a.id, threadStateOf(s, a, needs)])),
     needsYou: needs,
     drive: s.drive ?? [],
+    releaseNotes: releaseNotesOf(s),
   };
 }
