@@ -1,8 +1,9 @@
 import { asData } from "../framing";
-import { unmetCriteria } from "../roadmap";
+import { isFinished, ordersOf, tracksOf, unmetCriteria } from "../roadmap";
 import { PLAYBOOKS } from "../roadmap/playbooks";
 import { STAGES } from "../stages";
 import type { State } from "../state";
+import { requestAsk } from "../threads";
 import type { Agent, Roadmap } from "../types";
 import { MAX_PUSHBACK_ROUNDS, pushbackRounds } from "./intake";
 import { CAPTAIN_RULES, CREW_RULES, ROLE_RULES, STANDING_RULES, SUBAGENT_RULES } from "./instructions";
@@ -16,20 +17,29 @@ function intakeLine(roadmap: Roadmap, rounds: number): string {
   return `Intake: ${rounds} of ${MAX_PUSHBACK_ROUNDS} rounds of questions used for this request. When the request is testable, record it and start the work; otherwise ask about what is missing.`;
 }
 
-function situation(roadmap: Roadmap, rounds: number): string {
+function situation(s: State, rounds: number): string {
+  const roadmap = s.roadmap;
   const stage = STAGES[roadmap.stage - 1];
   const unmet = new Set(unmetCriteria(roadmap));
   const criteria = stage.criteria.map((c) => `- ${c.label}: ${unmet.has(c.label) ? "not met" : "met"}`).join("\n") || "- none: the last stage. A new request is inspected, then recorded with set_goal.";
+  const tracks = tracksOf(roadmap).filter((t) => !isFinished(t));
   const view = {
-    intent: roadmap.goal,
-    stage: `${roadmap.stage} of ${roadmap.totalStages}: ${roadmap.stageTitle}`,
-    today: roadmap.today,
+    tracks: tracks.map((t) => ({
+      requestId: t.requestId,
+      ask: requestAsk(s, t.requestId) ?? null,
+      intent: t.goal,
+      stage: `${t.stage} of ${roadmap.totalStages}: ${t.stageTitle}`,
+      today: ordersOf(roadmap, t.requestId).today,
+      unmetToAdvance: unmetCriteria(roadmap, t.requestId),
+    })),
+    finished: tracksOf(roadmap).filter(isFinished).map((t) => t.goal?.title ?? t.requestId),
     backlog: roadmap.backlog ?? [],
   };
   return [
     `# Where the work is`,
+    `Each request has its own track through the stages, with its own gates and work orders. set_goal, set_roadmap, set_today and advance_stage work on the request the person wrote in this turn, else on this turn's request; give advance_stage a requestId to move another track. One track waiting at Ship never holds another back.`,
     `Live roadmap (data):\n${asData(view)}`,
-    `Stage ${roadmap.stage} of ${roadmap.totalStages}: ${stage.title}. Done when: ${stage.milestone}.`,
+    `Stage ${roadmap.stage} of ${roadmap.totalStages}: ${stage.title}, on the newest unfinished track. Done when: ${stage.milestone}.`,
     `What this stage means:\n${stage.lesson}`,
     `Exit criteria (all must be met before advance_stage):\n${criteria}`,
     `Typical moves in this stage (adapt them):\n${stage.moves.map((m) => `- ${m}`).join("\n")}`,
@@ -56,7 +66,7 @@ export function systemPrompt(agent: Agent, state: State, projectFiles: string[] 
   if (agent.kind === "captain") {
     const playbook = PLAYBOOKS[STAGES[state.roadmap.stage - 1].playbook];
     const rounds = pushbackRounds(state.threads[agent.id] ?? []);
-    return [PERSONA, CAPTAIN_RULES, profileOf(agent), situation(state.roadmap, rounds), projectLine(projectFiles), `# Playbook for this stage\n\n${playbook}`].join("\n\n");
+    return [PERSONA, CAPTAIN_RULES, profileOf(agent), situation(state, rounds), projectLine(projectFiles), `# Playbook for this stage\n\n${playbook}`].join("\n\n");
   }
   if (agent.kind === "subagent") return [SUBAGENT_RULES, profileOf(agent)].join("\n\n");
   if (agent.kind === "crew" && agent.crewRole) return [CREW_RULES, ROLE_RULES[agent.crewRole], profileOf(agent)].join("\n\n");

@@ -13,6 +13,7 @@ import { isThreadModel, unknownModel } from "../models";
 import { THREAD_MODELS, type Agent, type CrewRole } from "../types";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
 import { recordOutgoing } from "./messaging";
+import { causeIn, planningRequest } from "./planning";
 
 export const startThreadSchema = z.object({
   role: z.enum(["build", "review", "research"]).describe("build changes code on its own branch; review checks one pull request; research answers a question from the code."),
@@ -105,8 +106,10 @@ export async function startThread(input: StartInput, ctx: ToolContext): Promise<
     update((s) => closeThreadState(s, created.id, "the captain after its workspace failed"));
     return fail(`Could not set up ${created.code}'s workspace: ${problem}. Tell the person; do not retry blindly.`);
   }
-  await stampThread(getState(), created.id, ctx.requestId).catch(() => undefined);
-  const source = getState().roadmap.today.find((w) => w.id === input.workOrderId)?.source;
+  const order = getState().roadmap.today.find((w) => w.id === input.workOrderId);
+  const requestId = order?.requestId ?? ctx.requestId;
+  await stampThread(getState(), created.id, requestId).catch(() => undefined);
+  const source = order?.source;
   const origin = source ? inboxItem(getState(), source.inboxId)?.messageId : undefined;
   const sent = send({
     from: { kind: "agent", agentId: ctx.agentId },
@@ -114,8 +117,8 @@ export async function startThread(input: StartInput, ctx: ToolContext): Promise<
     text: briefWithAcceptance(getState(), created, input.brief),
     expectsReply: true,
     replyTo: null,
-    causedBy: origin ?? ctx.causedBy,
-    requestId: ctx.requestId,
+    causedBy: origin ?? causeIn(getState(), ctx, requestId),
+    requestId,
     ...(source ? { quote: source.quote } : {}),
   });
   if (!sent.ok) {
@@ -172,10 +175,11 @@ export function messageThread(input: z.infer<typeof messageThreadSchema>, ctx: T
   const thread = findThread(getState(), input.threadId);
   if (!thread) return fail(`No thread ${input.threadId}. Call list_threads for valid ids.`);
   if (isClosed(thread)) return fail(`${thread.name} is closed. Start a new thread with start_thread if the work needs one.`);
-  const otherRequest = requestRefusal(getState(), thread, ctx.requestId);
+  const otherRequest = requestRefusal(getState(), thread, planningRequest(getState(), ctx).requestId);
   if (otherRequest) return fail(otherRequest);
   const expectsReply = input.expectsReply ?? true;
-  const sent = send({ from: { kind: "agent", agentId: ctx.agentId }, to: [thread.id], text: input.text, expectsReply, replyTo: null, causedBy: ctx.causedBy, requestId: ctx.requestId });
+  const requestId = threadRequestId(getState(), thread.id) ?? ctx.requestId;
+  const sent = send({ from: { kind: "agent", agentId: ctx.agentId }, to: [thread.id], text: input.text, expectsReply, replyTo: null, causedBy: causeIn(getState(), ctx, requestId), requestId });
   if (!sent.ok) return fail(sent.error.message);
   update((s) => recordOutgoing(s, ctx, sent.message));
   const next = expectsReply ? "Sent. End your turn now; the answer comes back to you." : "Sent.";

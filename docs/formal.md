@@ -47,11 +47,15 @@ The review loop is also tighter than the budget. A build thread gets at most two
 
 ### Stage order (`formal/BobFormal/Roadmap.lean`)
 
-Mirrors `setGoal`, `setRoadmap`, `setToday`, `updateWorkOrder`, `completeWorkOrder`, `advanceStage` and `unmetCriteria` in `src/lib/roadmap.ts` and `STAGES` in `src/lib/stages.ts`.
+Mirrors `setGoal`, `setRoadmap`, `setToday`, `updateWorkOrder`, `completeWorkOrder`, `advanceStage`, `unmetCriteria` and `trackView` in `src/lib/roadmap.ts` and `STAGES` in `src/lib/stages.ts`.
 
-- `step_shape`: every roadmap call either leaves the stage alone or is an advance by exactly one stage from a stage whose gate holds.
-- `stage_monotone`: the roadmap never moves back a stage.
-- `stages_in_order`: the stages the roadmap has left are exactly 1, 2, ... up to the current one, in order, so no stage is ever skipped.
+Each request has its own track through the five stages, with its own gates and its own work orders. The roadmap is the set of tracks plus the backlog. A finished request's track ends at Learn, and a new request starts its own track at Intent. The model is a track per request, and every call names the request it works on.
+
+- `step_shape`: every roadmap call either leaves a request's stage alone or is an advance of that same request's track by exactly one stage, from a stage whose gate holds.
+- `stage_monotone`: no request's track ever moves back a stage.
+- `tracks_independent`: a call for one request leaves every other request's track exactly as it was.
+- `advance_own_gate`: a request whose own gate holds moves forward, whatever stage any other request is at, so one request waiting at Ship never holds another back.
+- `stages_in_order`: for every request, the stages its track has left are exactly 1, 2, ... up to its current one, in order, so no stage is ever skipped.
 
 ### Traceability (`formal/BobFormal/Trace.lean`)
 
@@ -71,12 +75,12 @@ The first versions of these models found two gaps, each proved as a counterexamp
 
 ## How the proofs stay tied to the code
 
-`formal/conformance/` holds one test file per model. Each checks the constants the model hard-codes (budget 12, hand-off budget 24, five stages, three work orders in today), writes the model's decision function against the real state, and runs 40 seeded random histories through the real functions:
+`formal/conformance/` holds one test file per model. Each checks the constants the model hard-codes (budget 12, hand-off budget 24, five stages, three work orders in a request's today), writes the model's decision function against the real state, and runs 40 seeded random histories through the real functions:
 
 - `mailbox.test.ts`: random sends through `applySend`, about a third of them automatic hand-offs: the model accepts exactly what the code accepts, and the invariant from the proof holds after every step.
 - `handoff.test.ts`: random review and fix cascades through the real `record_review`, `open_pull_request` and `request_approval` tools (10 seeds of 14 steps): the build thread never gets more than two fix rounds or more than one blocked message, no head is sent for review twice, the hand-offs stay within 24, and an approval card appears exactly when the latest review approves the current head.
 - `loop.test.ts`: random teammates on the real turn loop: every cascade settles within 24 deliveries, and every message traces back to the person through `traceWhy`.
-- `roadmap.test.ts`: random roadmap calls: the model's gate matches `unmetCriteria`, only `advanceStage` moves the stage, and only by one.
+- `roadmap.test.ts`: random roadmap calls over three requests: each track's gate in the model matches `unmetCriteria` for that request, only `advanceStage` for a request moves its stage, and only by one, and a call for one request leaves the other tracks as they were.
 - `merge-gate.test.ts`: random approvals, reviews and decisions: merge refuses exactly when the model's gate is shut, and only the person approves.
 
 `formal/theorems.json` lists every theorem with its plain statement. `pnpm verify` writes `formal/last-check.json` with the Lean version, each theorem's axioms and a hash of the Lean sources; `last-check.test.ts` fails when the Lean sources change without a new check being recorded.

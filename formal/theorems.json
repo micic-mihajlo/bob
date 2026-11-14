@@ -67,22 +67,36 @@
       "name": "BobFormal.Roadmap.step_shape",
       "rule": "Stage order",
       "kind": "proof",
-      "mirrors": "advanceStage, unmetCriteria (src/lib/roadmap.ts), STAGES (src/lib/stages.ts)",
-      "statement": "Every roadmap call either leaves the stage alone or is an advance by exactly one stage from a stage whose gate holds."
+      "mirrors": "advanceStage, unmetCriteria, trackView, withTrack (src/lib/roadmap.ts), STAGES (src/lib/stages.ts)",
+      "statement": "Every request has its own track. Every roadmap call either leaves a request's stage alone or is an advance of that same request's track by exactly one stage, from a stage whose gate holds."
     },
     {
       "name": "BobFormal.Roadmap.stage_monotone",
       "rule": "Stage order",
       "kind": "proof",
       "mirrors": "src/lib/roadmap.ts",
-      "statement": "The roadmap never moves back a stage."
+      "statement": "No request's track ever moves back a stage."
+    },
+    {
+      "name": "BobFormal.Roadmap.tracks_independent",
+      "rule": "Stage order",
+      "kind": "proof",
+      "mirrors": "setGoal, setRoadmap, setToday, advanceStage (src/lib/roadmap.ts), planningRequest (src/lib/tools/planning.ts)",
+      "statement": "A roadmap call for one request leaves every other request's track exactly as it was."
+    },
+    {
+      "name": "BobFormal.Roadmap.advance_own_gate",
+      "rule": "Stage order",
+      "kind": "proof",
+      "mirrors": "advanceStage, unmetCriteria, trackView (src/lib/roadmap.ts)",
+      "statement": "A request whose own gate holds moves forward one stage, whatever stage any other request is at, so one request waiting at Ship never holds another back."
     },
     {
       "name": "BobFormal.Roadmap.stages_in_order",
       "rule": "Stage order",
       "kind": "proof",
       "mirrors": "src/lib/roadmap.ts",
-      "statement": "The stages the roadmap has left are exactly 1, 2, ... up to the current one, in order, so no stage is ever skipped."
+      "statement": "For every request, the stages its track has left are exactly 1, 2, ... up to its current one, in order, so no stage is ever skipped."
     },
     {
       "name": "BobFormal.Trace.every_message_traces_to_person",

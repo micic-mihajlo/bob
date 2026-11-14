@@ -1,3 +1,4 @@
+import { trackView } from "../roadmap";
 import { STAGES } from "../stages";
 import type { State } from "../state";
 import { isPullRequest, type PullRequestArtifact } from "../threads";
@@ -24,7 +25,7 @@ function buildBrief(intent: IntentDraft, texts: string[], workTitle: string): st
 }
 
 function requestPlan(ctx: TurnContext): Plan {
-  const road = ctx.initial.roadmap;
+  const road = trackView(ctx.initial.roadmap, ctx.requestId);
   const items = ctx.initial.threads[ctx.agent.id] ?? [];
   const shown = intakeTexts(items);
   const texts = shown.length > 0 ? shown : ctx.inbound.filter((i) => i.rule === "person").map((i) => i.text);
@@ -168,7 +169,7 @@ function reportPlan(ctx: TurnContext): Plan {
         (done) => {
           const calls = ending.flatMap((p) => p.steps.flatMap((step) => step(done)));
           const asks = calls.filter((c) => c.name !== "advance_stage");
-          return calls.length > asks.length && ctx.initial.roadmap.stageTitle === "Build" ? [call("advance_stage", {}), ...asks] : asks;
+          return calls.length > asks.length && trackView(ctx.initial.roadmap, ctx.requestId).stageTitle === "Build" ? [call("advance_stage", {}), ...asks] : asks;
         },
       ],
       reply: (done) => [...rest, ...ending].map((p) => p.reply(done)).join(" "),
@@ -206,7 +207,7 @@ function decisionPlan(ctx: TurnContext, decision: NonNullable<InboundItem["decis
       () => (already ? [] : [call("merge_pull_request", { pullRequestId: pr.id })]),
       (done) => (headMoved(done) ? [again()] : []),
       (done) => (merged(done) ? threads.map((t) => call("close_thread", { threadId: t.id })) : []),
-      (done) => (merged(done) && s.roadmap.stage < STAGES.length ? [call("advance_stage", {})] : []),
+      (done) => (merged(done) && trackView(s.roadmap, pr.requestId).stage < STAGES.length ? [call("advance_stage", { requestId: pr.requestId })] : []),
       (done) => (merged(done) && followUps.some((f) => !(s.roadmap.backlog ?? []).some((w) => w.title === f)) ? [call("set_roadmap", { workOrderTitles: [...backlog, ...followUps] })] : []),
     ],
     reply: (done) =>

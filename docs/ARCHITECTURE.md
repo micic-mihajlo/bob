@@ -12,7 +12,7 @@ Bob is one Next.js 16 app. The UI is React 19 under `src/components/`. The runti
 | Relay | Sends a turn's final text back to whoever asked, as the answer | `relay.ts`, `reply-format.ts` |
 | Brain | Picks the next move: a live model through the Vercel AI Gateway, or a script with the same tools | `brain/model.ts`, `brain/script*.ts`, `brain/prompt.ts` |
 | Tools | What each kind of agent may call, by tool set (`captain`, `build`, `review`, `research`, `subagent`) | `tools/*-defs.ts`, `tools/define.ts` |
-| Roadmap | Goal, five stages with exit criteria, backlog and today's work orders | `roadmap.ts`, `stages.ts`, `tools/planning.ts` |
+| Roadmap | One track per request (its goal, its stage of five, its gates), today's work orders tagged with their request, and the backlog | `roadmap.ts`, `stages.ts`, `tools/planning.ts` |
 | Workspaces | A bare origin per project, one clone per thread, a shared dependency install, the `run` shell | `workspace/`, `thread-workspace.ts` |
 | Pull requests | Open, review, approve, merge, release note | `tools/pull-requests.ts`, `tools/handoff.ts`, `tools/work.ts`, `release-notes*.ts` |
 | Trace | `causedBy` chains, commit trailers, the PR trace block, Why? | `why.ts`, `trace.ts`, `graph/view.ts` |
@@ -97,9 +97,9 @@ The JSON store is the source of truth. State code is synchronous pure functions 
 
 | Gate | Rule | Enforced in |
 | --- | --- | --- |
-| Intent | The roadmap can't leave Intent until the goal names a user, the behaviour they need and an acceptance check. The captain asks at most two rounds of questions, then goes on with stated assumptions. | `advanceStage` in `roadmap.ts` against the criteria in `stages.ts`. The question limit is `MAX_PUSHBACK_ROUNDS` in `brain/intake.ts`. |
-| Stage order | Each stage advances by exactly one, only when its exit criteria hold, and never goes back. | `advanceStage` and `unmetCriteria` in `roadmap.ts` (proved in `formal/BobFormal/Roadmap.lean`) |
-| Work orders | At most three in today. A thread's work order must be in today. One open thread per role and work order. | `setToday` in `roadmap.ts`; `startRefusal` in `tools/threads.ts` |
+| Intent | A request's track can't leave Intent until the goal names a user, the behaviour they need and an acceptance check. The captain asks at most two rounds of questions, then goes on with stated assumptions. | `advanceStage` in `roadmap.ts` against the criteria in `stages.ts`. The question limit is `MAX_PUSHBACK_ROUNDS` in `brain/intake.ts`. |
+| Stage order | Each request's track advances by exactly one stage, only when its own exit criteria hold, and never goes back. A call for one request never moves another's track. | `advanceStage` and `unmetCriteria` in `roadmap.ts` (proved in `formal/BobFormal/Roadmap.lean`) |
+| Work orders | At most three in a request's today. A thread's work order must be in today, and its brief, pull request and turns carry that work order's request. One open thread per role and work order. | `setToday` in `roadmap.ts`; `startRefusal` in `tools/threads.ts` |
 | Inbox | Nothing from the inbox starts on its own: `start_thread` is refused inside an inbox triage request. Every candidate must quote the item exactly. | `startRefusal` in `tools/threads.ts`; `triageInbox` in `inbox.ts` |
 | Workspace | Commands run in the thread's clone with no API keys. On Linux a user and mount namespace makes the system read-only and hides Bob's data, env files and every other workspace. | `shellEnv` and `sandboxScript` in `workspace/shell.ts` |
 | Git | Agents run only allowed git subcommands and options, and reach only origin. Origin refuses force-pushes, branch deletes and any push to `main`, so `main` changes only through an approved merge. | `checkGitArgs` in `workspace/git-policy.ts`; `receive.denyNonFastForwards`, `receive.denyDeletes` and the pre-receive hook in `workspace/setup.ts` |

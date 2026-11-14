@@ -53,7 +53,7 @@ function addApproval(s: State, input: ApprovalInput, ctx: ToolContext, pr: PullR
     id: newId("apr"),
     agentId: ctx.agentId,
     turnId: ctx.turnId,
-    requestId: ctx.requestId,
+    requestId: pr?.requestId ?? ctx.requestId,
     title: input.title,
     detail: pr ? withProtectedNote(s, pr, input.detail) : input.detail,
     status: "pending",

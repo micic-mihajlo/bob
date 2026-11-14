@@ -1,5 +1,5 @@
 import type { MoveRecord, ToolCallRequest } from "./brain/types";
-import { unmetCriteria } from "./roadmap";
+import { tracksOf, unmetCriteria } from "./roadmap";
 import { agentById, isCaptain, isClosed, messageById, type State } from "./state";
 import { isPullRequest, type PullRequestArtifact } from "./threads";
 import { latestReview, reviewGateRefusal, reviewsOf } from "./tools/handoff";
@@ -50,7 +50,9 @@ function askAfterApproval(s: State, t: StartedTurn): ToolCallRequest[] {
       !s.approvals.some((x) => x.pullRequestId === a.id && (x.status === "pending" || (x.status === "approved" && x.headSha === a.pullRequest.headSha))),
   );
   if (ready.length === 0) return [];
-  const advance = s.roadmap.stage === BUILD_STAGE && unmetCriteria(s.roadmap).length === 0 ? [{ name: "advance_stage", input: {} }] : [];
+  const advance = tracksOf(s.roadmap)
+    .filter((t) => t.stage === BUILD_STAGE && ready.some((pr) => pr.requestId === t.requestId) && unmetCriteria(s.roadmap, t.requestId).length === 0)
+    .map((t) => ({ name: "advance_stage", input: { requestId: t.requestId } }));
   return [
     ...advance,
     ...ready.map((pr) => {

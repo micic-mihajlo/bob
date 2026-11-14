@@ -1,3 +1,4 @@
+import { goalOf } from "./roadmap";
 import type { State } from "./state";
 import { findPullRequest } from "./threads";
 import type { Agent, AgentId, ThreadItem } from "./types";
@@ -24,7 +25,8 @@ function workOrderOf(s: State, agent: Agent, brief: string): string | null {
 export function briefWithAcceptance(s: State, agent: Agent, brief: string): string {
   if (agent.kind !== "crew" || (agent.crewRole !== "build" && agent.crewRole !== "review")) return brief;
   const workOrderId = workOrderOf(s, agent, brief);
-  const check = acceptanceIn(brief) ?? s.roadmap.goal?.acceptance ?? null;
+  const order = [...s.roadmap.today, ...(s.roadmap.backlog ?? [])].find((w) => w.id === workOrderId);
+  const check = acceptanceIn(brief) ?? goalOf(s.roadmap, order?.requestId)?.acceptance ?? null;
   if (!workOrderId || !check) return brief;
   const path = acceptanceTestPath(workOrderId);
   if (acceptancePathIn(brief) === path) return brief;

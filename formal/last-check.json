@@ -1,7 +1,7 @@
 {
   "ok": true,
   "lean": "Lean (version 4.35.0, x86_64-unknown-linux-gnu, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
-  "sourceHash": "c4ceeb3449a86aecd41197b7355430a1e9bb9b7e45421afd4bc042cc99666abe",
+  "sourceHash": "8eb41dbd14eeede3146b807b708f712008688f70eeb6a19f501c5e649932e4f9",
   "theorems": [
     {
       "name": "BobFormal.MergeGate.merge_needs_approval",
@@ -79,6 +79,18 @@
       "axioms": [
         "propext",
         "Quot.sound"
+      ]
+    },
+    {
+      "name": "BobFormal.Roadmap.tracks_independent",
+      "axioms": [
+        "propext"
+      ]
+    },
+    {
+      "name": "BobFormal.Roadmap.advance_own_gate",
+      "axioms": [
+        "propext"
       ]
     },
     {
