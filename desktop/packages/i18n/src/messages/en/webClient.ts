@@ -1,12 +1,12 @@
 import { defineMessages } from "../../message";
 
 export const messages = defineMessages("webClient", {
-  "webClient.loading": "Loading Bob…",
-  "webClient.loadingLine.wake": "Waking up the agents…",
-  "webClient.loadingLine.coffee": "Pouring coffee for the agents…",
+  "webClient.loading": "Loading Bob and B(l)obs…",
+  "webClient.loadingLine.wake": "Waking up Bob and his lil builders…",
+  "webClient.loadingLine.coffee": "Pouring coffee for the Blobs…",
   "webClient.loadingLine.tokens": "Counting tokens on fingers…",
   "webClient.loadingLine.prompts": "Untangling the prompts…",
-  "webClient.loadingLine.sleepy": "Asking the sleepy one nicely…",
+  "webClient.loadingLine.sleepy": "Asking the sleepy Blob nicely…",
   "webClient.loadingLine.almost": "Almost there. Probably.",
   "webClient.login.failed": "Sign-in failed.",
   "webClient.login.requestFailed": "The account request failed.",
