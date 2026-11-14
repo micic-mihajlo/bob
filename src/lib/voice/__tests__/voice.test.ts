@@ -113,6 +113,8 @@ describe("speech helpers", () => {
   it("sends the person's own words, falling back to the tool text", () => {
     expect(utteranceFor(["customers want", " to export invoices as CSV "], "users need CSV export")).toBe("customers want to export invoices as CSV");
     expect(utteranceFor([], " export invoices ")).toBe("export invoices");
+    expect(utteranceFor(["Every invoice with the columns i d, customer and a c s v file."], "")).toBe("Every invoice with the columns ID, customer and a CSV file.");
+    expect(utteranceFor(["So I a"], "")).toBe("So I a");
   });
 
   it("reads a markdown reply as plain words", () => {

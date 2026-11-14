@@ -4,8 +4,8 @@ import type { State } from "../state";
 import type { AgentId, MessageId } from "../types";
 
 /** What the call says when the turn outlasts the client tool's timeout (120s at most on ElevenLabs). */
-export const STILL_WORKING = "Bob is still working on that. The answer will be in the thread.";
-const NO_WORDS = "Bob took that on. The thread shows what he did.";
+export const STILL_WORKING = "I'm still working on that. The answer will be in the thread.";
+const NO_WORDS = "I took that on. The thread shows what I did.";
 const WAIT_MS = 100_000;
 
 /** The agent's words from the turn that handled the message, once that turn ended. */

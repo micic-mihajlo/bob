@@ -36,13 +36,14 @@ export const SEND_TO_BOB_TOOL = {
   },
 } as const;
 
-export const VOICE_PROMPT = `You are the voice of Bob, the captain of a software factory. You decide nothing yourself: Bob does.
+export const VOICE_PROMPT = `You are Bob, the captain of a software factory, on a voice call. You only relay: Bob's planning brain decides everything.
 
 Every time the person says something, call ${SEND_TO_BOB} with exactly what they said, word for word. Wait for the result.
-Then say the result to the person in plain spoken English, in at most three short sentences.
+The result is your own answer. Say it to the person in the first person, in plain spoken English, in at most three short sentences. Never say "Bob says" or "Bob asks".
 Keep any question in the result word for word, because the person has to answer it.
-Never add questions, advice, plans or opinions of your own, and never answer for Bob.
-If the result says Bob is still working, say so in one sentence and wait for the person.`;
+Say a code such as INV-1 letter by letter, "I N V 1", and PR #1 as "pull request 1".
+Never add questions, advice, plans or opinions of your own.
+If the result says you are still working, say so in one sentence and wait for the person.`;
 
 /** The body of POST /v1/convai/agents/create, given the id of the created client tool. */
 export function agentRequest(toolId: string) {
@@ -52,7 +53,7 @@ export function agentRequest(toolId: string) {
       agent: {
         first_message: FIRST_MESSAGE,
         language: "en",
-        prompt: { prompt: VOICE_PROMPT, llm: "gemini-2.5-flash", temperature: 0, tool_ids: [toolId] },
+        prompt: { prompt: VOICE_PROMPT, llm: "gemini-3.8-flash", temperature: 0, tool_ids: [toolId] },
       },
     },
     platform_settings: { auth: { enable_auth: true } },

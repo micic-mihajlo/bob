@@ -241,9 +241,14 @@
 .bob-voice-full-caption {
   grid-row: 3;
   align-self: start;
-  max-width: 640px;
-  margin-top: var(--bob-space-6);
+  max-width: 720px;
+  margin: var(--bob-space-6) 0 84px;
   text-align: center;
+}
+
+.bob-voice-full-caption .bob-voice-said {
+  font-size: clamp(18px, 2.2vw, 26px);
+  line-height: 1.3;
 }
 
 .message-voice-mark {
