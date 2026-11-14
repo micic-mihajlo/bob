@@ -7,6 +7,7 @@ import { clip, define, fromResult, type ToolDef } from "./define";
 import { openPullRequestSchema, openPullRequestTool, recordReview, recordReviewSchema } from "./pull-requests";
 import { recordNote, recordNoteSchema, report, reportSchema } from "./report";
 import { PREVIEW_TOOLS } from "../integrations/vercel/check-preview";
+import { startSubagent, startSubagentSchema } from "../subagents";
 
 const READ_ONLY_GIT = ["status", "diff", "log", "show", "fetch", "switch", "checkout"] as const;
 const MAX_BATCH = 20;
@@ -35,7 +36,7 @@ const listFilesDef = define({
   description:
     "List the files in your workspace, your own git checkout of the project. Your first message already shows the file tree, so call this only for a folder it left out. Leaves out .git and ignored files.",
   schema: z.object({ dir: relPath("Folder to list").optional() }),
-  sets: ["build", "review", "research"],
+  sets: ["build", "review", "research", "subagent"],
   label: (i) => (i.dir ? `Listing ${i.dir}` : "Listing the workspace"),
   execute: (i, ctx) => inWorkspace(ctx, (ws) => listFiles(ws, i.dir)),
 });
@@ -48,7 +49,7 @@ const readFilesDef = define({
     offset: z.number().int().min(1).optional(),
     limit: z.number().int().min(1).max(2000).optional(),
   }),
-  sets: ["build", "review", "research"],
+  sets: ["build", "review", "research", "subagent"],
   label: (i) => `Reading ${names(i.paths)}`,
   execute: async (i, ctx) => {
     const ws = await workspaceOf(ctx);
@@ -74,7 +75,7 @@ const writeFilesDef = define({
   schema: z.object({
     files: z.array(z.object({ path: relPath("File to write"), content: z.string().describe("The complete new content") })).min(1).max(MAX_BATCH),
   }),
-  sets: ["build"],
+  sets: ["build", "subagent"],
   label: (i) => `Writing ${names(i.files.map((f) => f.path))}`,
   execute: async (i, ctx) => {
     const ws = await workspaceOf(ctx);
@@ -93,7 +94,7 @@ const editFilesDef = define({
   schema: z.object({
     edits: z.array(z.object({ path: relPath("File to edit"), oldText: z.string().min(1), newText: z.string() })).min(1).max(MAX_BATCH),
   }),
-  sets: ["build"],
+  sets: ["build", "subagent"],
   label: (i) => `Editing ${names([...new Set(i.edits.map((e) => e.path))])}`,
   execute: async (i, ctx) => {
     const ws = await workspaceOf(ctx);
@@ -114,7 +115,7 @@ const runDef = define({
     command: z.string().min(1).describe("A bash command line, run from the workspace root"),
     timeoutSeconds: z.number().int().min(1).max(600).optional(),
   }),
-  sets: ["build", "review", "research"],
+  sets: ["build", "review", "research", "subagent"],
   label: (i) => `Running ${clip(i.command, 70)}`,
   detail: (i, r) => (typeof r.output === "string" ? `$ ${i.command}\n${r.output.slice(-STEP_OUTPUT)}\n${String(r.note ?? "")}`.trim() : undefined),
   execute: async (i, ctx) => {
@@ -145,7 +146,7 @@ const readOnlyGitDef = define({
   name: "git",
   description: `Run one read-only git command in your workspace, arguments without "git". Allowed: ${READ_ONLY_GIT.join(", ")}. Your first message already holds the pull request's diff, and the workspace has its branch checked out, so you rarely need this; use ["show", "<ref>:<path>"] to read a file at another revision.`,
   schema: gitArgs,
-  sets: ["review", "research"],
+  sets: ["review", "research", "subagent"],
   label: (i) => clip(`git ${i.args.join(" ")}`),
   execute: (i, ctx) => inWorkspace(ctx, (ws) => git(ws, i.args, READ_ONLY_GIT)),
 });
@@ -184,6 +185,15 @@ export const CREW_TOOLS: ToolDef[] = [
     sets: ["research"],
     label: (i) => `Recorded a note: ${clip(i.title)}`,
     execute: recordNote,
+  }),
+  define({
+    name: "start_subagent",
+    description:
+      "Hand one focused side task to a subagent: it starts from your prompt alone, works in your workspace (same) or a copy of it (copy, the default), and its final answer comes back to you alone as a new turn. Use it for a separate investigation or check, not for the main change. At most two at once; end your turn after it.",
+    schema: startSubagentSchema,
+    sets: ["build", "research"],
+    label: (i) => `Starting a subagent: ${clip(i.title)}`,
+    execute: startSubagent,
   }),
   define({
     name: "report",

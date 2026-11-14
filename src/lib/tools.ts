@@ -58,6 +58,7 @@ export const REGISTRY: ToolDef[] = [...CAPTAIN_TOOLS, ...SHARED_TOOLS, ...CREW_T
 export function toolsetOf(agent: Agent): Toolset {
   if (agent.kind === "captain") return "captain";
   if (agent.kind === "crew" && agent.crewRole) return agent.crewRole;
+  if (agent.kind === "subagent") return "subagent";
   return "standing";
 }
 
