@@ -69,6 +69,27 @@ button.bob-roadmap-source:focus-visible {
   margin-right: 0;
 }
 
+/* A track's elapsed timer sits in its goal card's header row: the largest type on the card, in the
+   theme's own text and display tokens, so it reads the same in classic, ink and newsprint. */
+.bob-roadmap-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bob-space-2);
+}
+
+.bob-roadmap-timer {
+  flex: none;
+  color: var(--bob-text-primary);
+  font-family: var(--bob-font-display, var(--bob-font-sans));
+  font-size: var(--bob-text-3xl);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--bob-weight-bold);
+  letter-spacing: var(--bob-tracking-display-print, normal);
+  line-height: var(--bob-leading-3xl);
+  white-space: nowrap;
+}
+
 /* The sentence the person typed, which every change for the request traces back to. */
 .bob-roadmap-ask {
   display: -webkit-box;

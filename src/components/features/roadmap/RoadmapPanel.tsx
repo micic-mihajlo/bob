@@ -3,14 +3,14 @@
 import "./roadmap-panel.css";
 import { Check, Map as MapIcon, TriangleAlert } from "lucide-react";
 import { Fragment } from "react";
-import { useBob } from "@/components/features/window/BobContext";
-import { PaneFrame, PaneHeader } from "@/components/features/panel/PaneFrame";
+import { useBob } from "../window/BobContext";
+import { PaneFrame, PaneHeader } from "../panel/PaneFrame";
 import { Badge } from "@/components/ui/Badge";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Progress } from "@/components/ui/Progress";
 import { Card } from "@/components/ui/Surface";
 import { displayName } from "@/lib/client/crew";
-import { formatDeadline } from "@/lib/client/format";
+import { formatDeadline, formatElapsed } from "@/lib/client/format";
 import { requestLabel, requestUsage } from "@/lib/client/requests";
 import {
   forUserLine,
@@ -41,6 +41,11 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
   const { roadmap, releaseNotes = [], requests = [], budgets, inbox = [] } = snapshot;
   const { tracks, backlog } = trackViews(roadmap);
   const started = tracks.some((track) => track.goal !== null) || roadmap.today.length > 0 || (roadmap.backlog?.length ?? 0) > 0;
+  /** How long a track's request has run: its turns' running time, the clock the requests list uses too. */
+  const elapsedOf = (requestId: string) => {
+    const request = requests.find((candidate) => candidate.requestId === requestId);
+    return request ? request.seconds * 1000 : null;
+  };
 
   const meta = (order: WorkOrder) => {
     const owner = order.ownerAgentId ? agentsById.get(order.ownerAgentId) : undefined;
@@ -118,10 +123,14 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                   const progress = trackProgress(track, roadmap.totalStages);
                   const asked = track.ask ? requestLabel(track.ask, inbox) : null;
                   const steps = roadmapSteps(track);
+                  const elapsed = elapsedOf(track.key);
                   return (
                     <Fragment key={track.key}>
                       <Card className="bob-roadmap-card" aria-label={goal?.title ?? "Goal"}>
-                        <p className="bob-roadmap-label">Goal</p>
+                        <div className="bob-roadmap-card-head">
+                          <p className="bob-roadmap-label">Goal</p>
+                          {elapsed !== null ? <p className="bob-roadmap-timer">{formatElapsed(elapsed)}</p> : null}
+                        </div>
                         <h3 className="bob-roadmap-goal">{goal?.title ?? "No goal set yet"}</h3>
                         {asked ? (
                           <p className="bob-roadmap-ask" title={asked}>

@@ -1,0 +1,18 @@
+{
+  "acceptance": "A vitest test on the roadmap panel renders one track card and asserts the elapsed timer element carries the large-timer class and shows the value from formatElapsed (185000ms gives \"3m 05s\").",
+  "propertiesFile": "src/components/features/roadmap/RoadmapPanel.properties.test.ts",
+  "properties": [
+    {
+      "name": "shows formatElapsed of the request's time for any elapsed",
+      "criterion": "A vitest test on the roadmap panel renders one track card and asserts the elapsed timer element carries the large-timer class and shows the value from formatElapsed (185000ms gives \"3m 05s\")."
+    },
+    {
+      "name": "gives every track card its own timer, in track order",
+      "criterion": "A vitest test on the roadmap panel renders one track card and asserts the elapsed timer element carries the large-timer class and shows the value from formatElapsed (185000ms gives \"3m 05s\")."
+    },
+    {
+      "name": "draws no timer when no request matches a track",
+      "criterion": "A vitest test on the roadmap panel renders one track card and asserts the elapsed timer element carries the large-timer class and shows the value from formatElapsed (185000ms gives \"3m 05s\")."
+    }
+  ]
+}
