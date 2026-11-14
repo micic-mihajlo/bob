@@ -166,10 +166,13 @@ function ReviewCardView({ artifact, animate }: { artifact: ReviewArtifact; anima
               <span className="approval-detail-label">
                 {finding.severity} · {finding.category}
               </span>
-              <strong>
-                {finding.path}
-                {finding.line === null ? "" : `:${finding.line}`} {finding.comment}
-              </strong>
+              {finding.path ? (
+                <strong>
+                  {finding.path}
+                  {finding.line === null ? "" : `:${finding.line}`}
+                </strong>
+              ) : null}
+              <p className="approval-detail-text">{finding.comment}</p>
             </div>
           ))}
         </div>
