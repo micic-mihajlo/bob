@@ -10,6 +10,8 @@
  *   pnpm demo --keep          keep the current state instead of resetting it
  *   pnpm demo --dev           next dev instead of a production build
  *   pnpm demo --port 3001
+ *
+ * Build and review crew threads run on the Claude Agent SDK; BOB_ENGINE=loop puts them back on the move loop.
  */
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -80,6 +82,7 @@ if (!(await portFree(PORT))) stop(`port ${PORT} is in use. Stop the other server
 fs.mkdirSync(LOG_DIR, { recursive: true });
 const serverEnv = { ...process.env, PORT: String(PORT) };
 if (opts.scripted) serverEnv.BOB_BRAIN = "script";
+serverEnv.BOB_ENGINE = env.BOB_ENGINE?.trim() || "sdk";
 const next = path.join(ROOT, "node_modules", ".bin", "next");
 
 if (!opts.dev) {
@@ -138,10 +141,11 @@ try {
   const nsSandbox = process.platform === "linux" && env.BOB_SANDBOX !== "off" && spawnSync("unshare", ["--user", "--map-root-user", "--mount", "true"], { stdio: "ignore" }).status === 0;
   const github = env.BOB_GITHUB?.trim().toLowerCase();
   const model = live
-    ? `live: captain ${env.BOB_MODEL_STRONG || "moonshotai/kimi-k3.1-pro"}, crew ${env.BOB_MODEL_LIGHT || "deepseek/deepseek-v4.1-flash"}`
+    ? `live: captain ${env.BOB_MODEL_STRONG || "moonshotai/kimi-k3.1-pro"}, crew ${serverEnv.BOB_ENGINE === "sdk" ? "on the coding agent" : env.BOB_MODEL_LIGHT || "deepseek/deepseek-v4.1-flash"}`
     : `scripted (${opts.scripted ? "--scripted" : fs.existsSync(envFile) ? "no AI_GATEWAY_API_KEY in .env.local" : "no .env.local"})`;
   const rows = [
     ["Model", model],
+    ["Crew engine", !live ? "scripted" : serverEnv.BOB_ENGINE === "sdk" ? "Claude Agent SDK for build and review (BOB_ENGINE=loop for the move loop)" : `move loop (BOB_ENGINE=${serverEnv.BOB_ENGINE})`],
     ["run sandbox", nsSandbox ? "namespace sandbox" : `plain shell (${env.BOB_SANDBOX === "off" ? "BOB_SANDBOX=off" : `no namespace sandbox on ${process.platform}`}); commands still get no API keys`],
     ["HydraDB graph", env.BOB_STORE === "hydra" ? (has("HYDRADB_API_KEY") ? "on" : "BOB_STORE=hydra but no HYDRADB_API_KEY, so JSON only") : "off (BOB_STORE=hydra turns it on)"],
     ["Voice", env.BOB_VOICE === "elevenlabs" ? (has("ELEVENLABS_API_KEY") ? "ElevenLabs" : "BOB_VOICE=elevenlabs but no ELEVENLABS_API_KEY") : "browser speech (BOB_VOICE=elevenlabs for ElevenLabs)"],
