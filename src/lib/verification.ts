@@ -72,10 +72,13 @@ export const gatePassed = (v: Verification, waivers: readonly EquivalentMutant[]
 
 const plural = (n: number, one: string, many: string) => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
 
+/** The skip reason when Lean is set up but cannot run here; the line shows it as is. */
+export const LEAN_SKIPPED_HERE = "Lean proof skipped on this machine";
+
 export function proofLine(p: Proof): string {
   if (p.status === "proved") return "proved in Lean";
   if (p.status === "running") return "Lean proof running";
-  if (p.status === "skipped") return `Lean skipped: ${p.reason}`;
+  if (p.status === "skipped") return p.reason === LEAN_SKIPPED_HERE ? p.reason : `Lean skipped: ${p.reason}`;
   return `not proved in Lean: ${p.reason}`;
 }
 

@@ -9,9 +9,9 @@ import { toolsFor } from "../tools";
 import { markEquivalent } from "../tools/verify";
 import type { Agent, Artifact } from "../types";
 import type { PullRequestArtifact } from "../threads";
-import { verificationLine, verificationRefusal, verificationStatus, type EquivalentMutant, type Verification } from "../verification";
+import { LEAN_SKIPPED_HERE, proofLine, verificationLine, verificationRefusal, verificationStatus, type EquivalentMutant, type Verification } from "../verification";
 import { changedLines, mutantsOf } from "../verify/mutants";
-import { propertyNames, runMutants, runProof, writeHarness } from "../verify/run";
+import { leanCantRun, propertyNames, runMutants, runProof, writeHarness } from "../verify/run";
 import { freshTeam } from "./helpers";
 import type { Workspace } from "../workspace";
 
@@ -205,5 +205,12 @@ describe("the Lean tier", () => {
       for (const [k, v] of Object.entries(env)) if (v === undefined) delete process.env[k];
       else process.env[k] = v;
     }
+  });
+
+  it("shows a calm skip line instead of the raw error when elan cannot run on this machine", () => {
+    expect(leanCantRun("error: could not write settings file: '/home/user/.local/settings.toml'")).toBe(true);
+    expect(leanCantRun("Contract.lean:3:2: error: type mismatch\nerror: build failed")).toBe(false);
+    expect(proofLine({ status: "skipped", reason: LEAN_SKIPPED_HERE })).toBe("Lean proof skipped on this machine");
+    expect(verificationLine(verification({ proof: { status: "skipped", reason: LEAN_SKIPPED_HERE } }))).toBe("4 properties · 1,200 cases · 8/8 mutants killed · Lean proof skipped on this machine");
   });
 });

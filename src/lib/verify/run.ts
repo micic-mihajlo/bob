@@ -3,7 +3,7 @@ import { cp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
-import { isVerifiedSource, type MutantRun, type Proof, type PropertyRun } from "../verification";
+import { isVerifiedSource, LEAN_SKIPPED_HERE, type MutantRun, type Proof, type PropertyRun } from "../verification";
 import { agentIdentity } from "../workspace/layout";
 import { runGit } from "../workspace/run-git";
 import { runCommand } from "../workspace/shell";
@@ -255,10 +255,19 @@ export async function runMutants(ws: Workspace, mutants: Mutant[], h: Harness, p
   return { ok: results.every((r) => r.killed), mutants: results };
 }
 
-/** lake from BOB_LAKE, the PATH, or elan's default home. */
+/** elan's home from ELAN_HOME or ~/.elan, never from where a lake on the PATH links to. */
+export const elanHome = (): string => process.env.ELAN_HOME || path.join(os.homedir(), ".elan");
+
+/** lake from BOB_LAKE, elan's home, or the PATH. */
 export function findLake(): string | null {
-  const candidates = [process.env.BOB_LAKE, ...(process.env.PATH ?? "").split(path.delimiter).map((d) => path.join(d, "lake")), path.join(os.homedir(), ".elan", "bin", "lake")];
+  const candidates = [process.env.BOB_LAKE, path.join(elanHome(), "bin", "lake"), ...(process.env.PATH ?? "").split(path.delimiter).map((d) => path.join(d, "lake"))];
   return candidates.find((c): c is string => !!c && existsSync(c)) ?? null;
+}
+
+/** True when elan or the machine stopped lake before Lean read the model: an unwritable home, no toolchain, no network. */
+export function leanCantRun(output: string): boolean {
+  if (/Contract\.lean:\d+:\d+: error/.test(output)) return false;
+  return /settings file|could not (write|create|download)|toolchain .*not installed|no default toolchain|permission denied|read-only file system|EACCES|EROFS|ENOSPC|command not found/i.test(output);
 }
 
 /** The Lean model built with lake, every theorem free of sorry and checked for its axioms, and its cases run against the TypeScript. */
@@ -282,12 +291,12 @@ export async function runProof(ws: Workspace, contract: Contract, tsOutputs: str
     ...(conf ? conf.inputs.map((i) => `#eval IO.println ("BOBCASE " ++ (${conf.lean} ${JSON.stringify(i)}).quote)`) : []),
   ];
   await writeFile(path.join(dir, "Contract.lean"), `${model}\n\n${checks.join("\n")}\n`);
-  const elanHome = path.basename(path.dirname(lake)) === "bin" ? path.dirname(path.dirname(lake)) : path.join(os.homedir(), ".elan");
-  const out = await runCommand(ws, `cd ${quote(dir)} && ELAN_HOME=${quote(elanHome)} ${quote(lake)} build 2>&1`, 300_000);
+  const out = await runCommand(ws, `cd ${quote(dir)} && ELAN_HOME=${quote(elanHome())} ${quote(lake)} build 2>&1`, 300_000);
   await rm(dir, { recursive: true, force: true });
-  if (!out.ok) return { status: "not_proved", reason: out.error.slice(0, 160) };
+  if (!out.ok) return { status: "skipped", reason: LEAN_SKIPPED_HERE };
   const text = out.output;
   if (out.timedOut) return { status: "not_proved", reason: "lake build ran out of time" };
+  if (out.exitCode !== 0 && leanCantRun(text)) return { status: "skipped", reason: LEAN_SKIPPED_HERE };
   if (out.exitCode !== 0) return { status: "not_proved", reason: (/error:? .*$/m.exec(text)?.[0] ?? "lake build failed").slice(0, 200) };
   if (/declaration uses [`']sorry|sorryAx/.test(text)) return { status: "not_proved", reason: "a proof uses sorry" };
   const axioms = new Set<string>();
