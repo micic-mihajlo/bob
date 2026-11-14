@@ -165,3 +165,46 @@
   mask-image: linear-gradient(90deg, transparent, black 70%);
   pointer-events: none;
 }
+
+/* The call panel (BOB-9's voice.css) in print: a halftone glow behind the face, and the caption as a
+   narration box. Token re-points only; voice.css itself is unchanged. */
+[data-print] .bob-voice-orb {
+  position: relative;
+  isolation: isolate;
+}
+
+[data-print] .bob-voice-orb::before {
+  position: absolute;
+  z-index: -1;
+  inset: -30%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--bob-print-face-dot) 1.6px, transparent 2.1px) 0 0 / 8px 8px;
+  content: "";
+  mask-image: radial-gradient(circle, black 25%, transparent 70%);
+  pointer-events: none;
+}
+
+[data-print] .bob-voice-face::before {
+  display: none;
+}
+
+[data-print] .bob-voice-full-caption {
+  --bob-text-primary: var(--bob-print-on-ink);
+  --bob-text-muted: rgb(11 10 7 / 0.72);
+  --bob-text-dim: rgb(11 10 7 / 0.62);
+  --bob-danger: #8f1209;
+  max-width: min(720px, 100%);
+  border: 1.5px solid var(--bob-print-on-ink);
+  border-radius: 2px;
+  background: var(--bob-print-yellow);
+  box-shadow: 4px 4px 0 var(--bob-print-slab);
+  color: var(--bob-print-on-ink);
+  padding: var(--bob-space-3) var(--bob-space-4);
+  text-align: center;
+}
+
+[data-print] .bob-voice-dock {
+  border: 1.5px solid var(--bob-print-line);
+  background: var(--bob-bg-surface-raised);
+  box-shadow: var(--bob-print-shadow);
+}
