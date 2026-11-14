@@ -218,9 +218,17 @@ function decisionPlan(ctx: TurnContext, decision: NonNullable<InboundItem["decis
   };
 }
 
+/** A report that lands in the same turn as the person's decision is handled after it, not dropped. */
+function withReports(ctx: TurnContext, plan: Plan): Plan {
+  if (!ctx.inbound.some((i) => i.from.kind === "agent")) return plan;
+  const reports = reportPlan(ctx);
+  if (reports.steps.length === 0) return plan;
+  return { steps: [...plan.steps, ...reports.steps], reply: (done) => `${plan.reply(done)} ${reports.reply(done)}` };
+}
+
 export function captainPlan(ctx: TurnContext): Plan {
   const decision = ctx.inbound.find((i) => i.rule === "decision" && i.decision)?.decision;
-  if (decision) return decisionPlan(ctx, decision);
+  if (decision) return withReports(ctx, decisionPlan(ctx, decision));
   const ask = ctx.inbound.find((i) => i.rule === "person");
   if (ask) return requestPlan(ctx);
   return reportPlan(ctx);

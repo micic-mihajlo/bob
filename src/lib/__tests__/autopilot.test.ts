@@ -1,9 +1,11 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { decideApproval, postUserMessage } from "../actions";
+import { autopilotCalls } from "../autopilot";
 import { setBrainOverride } from "../brain";
 import { scriptBrain } from "../brain/script";
 import type { Brain } from "../brain/types";
 import { getState } from "../store";
+import type { StartedTurn } from "../turn-start";
 import { settle } from "../turns";
 import { freshTeam } from "./helpers";
 
@@ -40,6 +42,16 @@ describe("captain steps the rules already fix run without a model call", { timeo
     const approval = getState().approvals.find((a) => a.status === "pending");
     expect(approval?.detail).toMatch(/Merges #1 .* at [0-9a-f]{7} into main\. Files: .*INV-2 approved this head/);
     expect(getState().roadmap.stageTitle).toBe("Ship");
+  });
+
+  it("leaves a turn to the captain when a review's approval arrives with another thread's report", async () => {
+    postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+    await settle();
+    const s = { ...getState(), approvals: [] };
+    const fromCrew = (role: string) => [...s.messages].reverse().find((m) => m.from.kind === "agent" && m.to.includes("bob") && s.agents.find((a) => m.from.kind === "agent" && a.id === m.from.agentId)?.crewRole === role)!;
+    const turn = (ids: string[]) => ({ turnId: "turn_t", agentId: "bob", messageIds: ids, deliveryIds: [] }) as unknown as StartedTurn;
+    expect(autopilotCalls(s, turn([fromCrew("review").id]), []).map((c) => c.name)).toContain("request_approval");
+    expect(autopilotCalls(s, turn([fromCrew("review").id, fromCrew("build").id]), [])).toEqual([]);
   });
 
   it("merges an approved pull request and closes its threads before the captain's first model call", async () => {

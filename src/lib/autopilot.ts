@@ -38,8 +38,9 @@ function closeMerged(s: State, last: MoveRecord | undefined): ToolCallRequest[] 
 
 /** A review thread reported and its review approves the pull request's current head: leave Build if its gate holds, and ask the person. */
 function askAfterApproval(s: State, t: StartedTurn): ToolCallRequest[] {
-  const reviewers = inbound(s, t).flatMap((m) => (m.from.kind === "agent" ? [agentById(s, m.from.agentId)] : [])).filter((a) => a?.crewRole === "review");
-  if (reviewers.length === 0) return [];
+  const senders = inbound(s, t).flatMap((m) => (m.from.kind === "agent" ? [agentById(s, m.from.agentId)] : []));
+  const reviewers = senders.filter((a) => a?.crewRole === "review");
+  if (reviewers.length === 0 || reviewers.length < senders.length) return [];
   const ready = s.artifacts.filter(
     (a): a is PullRequestArtifact =>
       isPullRequest(a) &&
