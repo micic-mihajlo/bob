@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SAMPLE_INVOICES } from "./invoices";
-import { invoiceRows, summary } from "./page";
+import { exportButton, invoiceRows, summary } from "./page";
 
 describe("page", () => {
   it("renders one row per invoice", () => {
@@ -12,6 +12,11 @@ describe("page", () => {
 
   it("escapes customer names", () => {
     expect(invoiceRows([{ ...SAMPLE_INVOICES[0], customer: "<b>A&B</b>" }])).toContain("&lt;b&gt;A&amp;B&lt;/b&gt;");
+  });
+
+  it("offers a CSV download button", () => {
+    expect(exportButton()).toContain('id="export-csv"');
+    expect(exportButton()).toContain("Download CSV");
   });
 
   it("summarises what is owed and how many are overdue", () => {

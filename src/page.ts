@@ -14,6 +14,11 @@ export function invoiceRows(list: readonly Invoice[]): string {
     .join("");
 }
 
+/** The Export control in the actions bar; main.ts wires up the download on click. */
+export function exportButton(): string {
+  return `<button id="export-csv" type="button">Download CSV</button>`;
+}
+
 export function summary(list: readonly Invoice[], today: string): string {
   const owed = outstanding(list);
   const overdue = overdueInvoices(list, today).length;
