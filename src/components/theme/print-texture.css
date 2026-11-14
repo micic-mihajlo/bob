@@ -30,7 +30,7 @@
   --bob-radius-card: 6px;
   --bob-print-halftone: radial-gradient(circle, var(--bob-print-dot) 0.9px, transparent 1.25px) 0 0 / 5px 5px;
   --bob-print-shadow: 3px 3px 0 var(--bob-print-slab);
-  --bob-print-misregister: 1.5px 1px 0 var(--bob-print-plate-magenta), -1px -0.5px 0 var(--bob-print-plate-cyan);
+  --bob-print-misregister: 1px 1px 0 var(--bob-print-plate-magenta), -1px -0.5px 0 var(--bob-print-plate-cyan);
 }
 
 /* Paper grain: two dot grids at prime pitches, so no repeat lines up. A fixed layer above the

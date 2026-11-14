@@ -63,6 +63,11 @@ function AgentStepRow({ step, newest }: { step: StepItem; newest: boolean }) {
         aria-hidden={step.outcome ? undefined : "true"}
       />
       <span className={cx("agent-step-text", newest && "agent-activity-label")}>{step.label}</span>
+      {step.outcome === "ok" && step.label === "Tests passed" ? (
+        <span className="agent-step-pass" aria-hidden="true">
+          Pass
+        </span>
+      ) : null}
       {step.seconds !== undefined && step.seconds >= 0.1 ? (
         <span className="agent-step-duration">{step.seconds < 10 ? step.seconds.toFixed(1) : Math.round(step.seconds)}s</span>
       ) : null}

@@ -57,6 +57,7 @@ function RowView({
   onToggle: () => void;
 }): ReactNode {
   const { snapshot } = useBob();
+  const question = snapshot.answering?.agentId === agent.id ? snapshot.answering.question?.toLowerCase() : undefined;
   switch (row.kind) {
     case "user":
       return <ChatMessageRow id={row.id} author="user" text={row.item.text} at={row.at} animate={animate} voice={row.item.via === "voice"} />;
@@ -68,7 +69,15 @@ function RowView({
               <AgentStepsDisclosure turn={row.steps} />
             </article>
           ) : null}
-          <ChatMessageRow id={row.id} author="agent" name={agent.name} text={row.item.text} at={row.at} animate={animate} />
+          <ChatMessageRow
+            id={row.id}
+            author="agent"
+            name={agent.name}
+            text={row.item.text}
+            at={row.at}
+            animate={animate}
+            asking={question !== undefined && row.item.text.toLowerCase().includes(question)}
+          />
         </>
       );
     case "steps":
