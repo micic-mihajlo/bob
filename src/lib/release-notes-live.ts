@@ -3,6 +3,7 @@ import { brainKind } from "./brain";
 import { nowIso } from "./ids";
 import { LIGHT_MODEL } from "./models";
 import { factoryNote, workOrderOf } from "./release-notes";
+import { goalOf } from "./roadmap";
 import { getState, update } from "./store";
 import { isPullRequest, type PullRequestArtifact } from "./threads";
 import type { ReleaseNote } from "./types";
@@ -33,7 +34,7 @@ async function rewriteReleaseNote(pullRequestId: string): Promise<void> {
       "No jargon, no file or function names, no pull request numbers, no hype. Reply with the note only.",
       `Change: ${pr.title}`,
       `Work order: ${workOrderOf(s, pr as PullRequestArtifact)?.title ?? "none"}`,
-      `Intent: ${s.roadmap.goal?.behaviour ?? s.roadmap.goal?.title ?? "none"}`,
+      `Intent: ${goalOf(s.roadmap, pr.requestId)?.behaviour ?? goalOf(s.roadmap, pr.requestId)?.title ?? "none"}`,
       `Draft: ${note.text}`,
     ].join("\n"),
   });

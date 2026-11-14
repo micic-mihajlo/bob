@@ -42,11 +42,20 @@ export function loadState(saved: State | null): State {
   return { ...swept.state, live: {} };
 }
 
+/**
+ * The request a roadmap saved before tracks belonged to: the one its threads were briefed for, else the newest
+ * request the person typed that is not an answer, an approval or an inbox item.
+ */
+function legacyRequest(s: State): string | null {
+  const owner = [...s.roadmap.today, ...(s.roadmap.backlog ?? [])].map((w) => w.ownerAgentId).find((id): id is string => !!id);
+  const briefed = owner ? s.messages.find((m) => m.to.includes(owner) && m.from.kind === "agent")?.requestId : undefined;
+  return briefed ?? [...s.messages].reverse().find((m) => m.from.kind === "user" && !m.approvalId && !m.inboxId && !m.continues)?.requestId ?? null;
+}
+
 /** Fills fields added after a state was saved, or held in memory across a hot reload. */
 const withDefaults = (s: State): State => {
   if (Array.isArray(s.drive) && s.roadmap.tracks) return s;
-  const lastAsk = [...s.messages].reverse().find((m) => m.from.kind === "user" && !m.approvalId);
-  return { ...s, drive: s.drive ?? [], roadmap: withTracks(s.roadmap, lastAsk?.requestId ?? null) };
+  return { ...s, drive: s.drive ?? [], roadmap: withTracks(s.roadmap, legacyRequest(s)) };
 };
 
 export function getState(): State {

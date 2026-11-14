@@ -4,7 +4,10 @@ import { setBrainOverride } from "../brain";
 import { scriptBrain } from "../brain/script";
 import type { ToolCallRequest } from "../brain/types";
 import { trackOf } from "../roadmap";
-import { getState } from "../store";
+import { getState, loadState, update } from "../store";
+import { patchApproval } from "../state-ops";
+import { needsYou } from "../thread-status";
+import { callTool } from "../tools";
 import { isPullRequest } from "../threads";
 import { settle } from "../turns";
 import { requestControls } from "../usage";
@@ -89,5 +92,28 @@ describe("two requests in demo order", { timeout: 120_000 }, () => {
     expect([...billed].every((id) => overdueThreads.includes(id))).toBe(true);
     const later = requestControls(s, Date.now() + 10 * 60_000).find((c) => c.requestId === first.requestId);
     expect(later?.alerts.some((a) => /has run/.test(a))).toBe(false);
+  });
+
+  it("asks nothing again for a head the person already approved, so the digest counts one thing", async () => {
+    postUserMessage("bob", OVERDUE);
+    await settle();
+    const first = pending()[0];
+    update((s) => patchApproval(s, first.id, { status: "approved" }));
+    const again = await callTool("request_approval", { title: "Merge #1: Overdue invoices", detail: "Again.", pullRequestId: first.pullRequestId }, { agentId: "bob", turnId: "turn_test", requestId: first.requestId, causedBy: null });
+    expect(again.result.approvalId).toBe(first.id);
+    expect(getState().approvals).toHaveLength(1);
+    expect(needsYou(getState()).filter((n) => n.kind === "approval")).toHaveLength(0);
+  });
+
+  it("gives a roadmap saved before tracks to the request its threads were briefed for, not the newest message", async () => {
+    postUserMessage("bob", OVERDUE);
+    await settle();
+    postUserMessage("bob", "What is everyone doing?");
+    await settle();
+    const s = getState();
+    const overdue = s.messages.find((m) => m.text === OVERDUE)!.requestId;
+    const { tracks: _, ...old } = s.roadmap;
+    const saved = { ...s, roadmap: { ...old, today: old.today.map(({ requestId: __, ...w }) => w) } };
+    expect(loadState(saved).roadmap.tracks?.map((t) => t.requestId)).toEqual([overdue]);
   });
 });
