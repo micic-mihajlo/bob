@@ -2145,6 +2145,7 @@ textarea {
   --agent-avatar-outline: var(--bob-bg-surface);
 
   background: var(--bob-bg-surface);
+  box-shadow: var(--bob-shadow-card);
 }
 
 .agent-row-avatar {

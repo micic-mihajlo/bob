@@ -1,7 +1,7 @@
 .composer-wrap {
   position: relative;
   flex: 0 0 auto;
-  padding: 0 var(--bob-space-1-5) var(--bob-space-1-5);
+  padding: 0 var(--bob-space-3) var(--bob-space-3);
 }
 
 .team-typing-dots {
@@ -122,11 +122,11 @@
   min-height: 96px;
   gap: 4px;
   margin: 0 auto;
-  border: 0.5px solid var(--bob-border);
-  border-radius: var(--bob-radius-lg);
+  border: 0.5px solid var(--bob-border-strong);
+  border-radius: var(--bob-radius-card);
   background: var(--bob-bg-surface);
   padding: 10px;
-  box-shadow: none;
+  box-shadow: var(--bob-shadow-card);
   transition:
     border-color var(--bob-duration-hover) var(--bob-ease-out),
     box-shadow var(--bob-duration-hover) var(--bob-ease-out);
@@ -141,8 +141,10 @@
 }
 
 .composer:focus-within {
-  border-color: var(--bob-text-dim);
-  box-shadow: 0 0 0 3px var(--bob-hover);
+  border-color: color-mix(in srgb, var(--bob-accent) 55%, var(--bob-border-strong));
+  box-shadow:
+    0 0 0 3px var(--bob-accent-soft),
+    var(--bob-shadow-card);
 }
 
 .composer:has(.composer-editor-surface[aria-disabled="true"]) {
