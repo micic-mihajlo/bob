@@ -1,3 +1,4 @@
+import "@/components/styles";
 import type { Metadata } from "next";
 import { BlocksLab } from "./BlocksLab";
 
