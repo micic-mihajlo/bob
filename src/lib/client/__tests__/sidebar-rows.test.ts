@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Agent, Snapshot } from "@/lib/types";
-import { sidebarList, sidebarMessageTime } from "../sidebar-rows";
+import { sidebarList, sidebarMessageTime, waitingLine } from "../sidebar-rows";
 
 function agent(id: string, extra: Partial<Agent> = {}): Agent {
   return {
@@ -57,9 +57,7 @@ describe("sidebarList", () => {
     const list = sidebarList(
       snapshot([captain, build], {
         threadState: { "inv-1": { status: "waiting", needsYou: true, closed: false } },
-        needsYou: [
-          { id: "n1", agentId: "bob", kind: "approval", title: "Merge #1", detail: "Approve the merge", approvalId: "a1", at: "" },
-        ],
+        needsYou: [{ id: "n1", agentId: "bob", kind: "approval", title: "Merge #1", detail: "Approve the merge", approvalId: "a1", at: "" }],
       }),
     );
     expect(list.waiting.map((entry) => [entry.agent.id, entry.reason, entry.detail])).toEqual([["bob", "approval", "Merge #1"]]);
@@ -90,5 +88,25 @@ describe("sidebarMessageTime", () => {
   it("shows a date for an earlier day and nothing for no time", () => {
     expect(sidebarMessageTime("2026-08-19T09:42:00.000Z", new Date("2026-11-14T12:00:00.000Z"))).toMatch(/Aug/);
     expect(sidebarMessageTime(undefined)).toBe("");
+  });
+});
+
+describe("waitingLine", () => {
+  it("shows the captain's question instead of the generic title", () => {
+    const detail = "Two quick ones before I plan it.\n- I'd put every invoice in the file. Is that the right set of columns?\n- Who opens it?";
+    expect(waitingLine({ id: "question:t1", title: "Bob asks you something", detail })).toBe(
+      "I'd put every invoice in the file. Is that the right set of columns?",
+    );
+  });
+
+  it("keeps the title for approvals and inbox questions", () => {
+    expect(waitingLine({ id: "a1", title: "Merge #1", detail: "Approve the merge" })).toBe("Merge #1");
+    expect(waitingLine({ id: "inbox:i1:a1", title: "Unclear ask from customer call, Nov 13", detail: "Who chases it?" })).toBe(
+      "Unclear ask from customer call, Nov 13",
+    );
+  });
+
+  it("falls back to the title when no line asks", () => {
+    expect(waitingLine({ id: "question:t1", title: "Bob asks you something", detail: "Tell me more" })).toBe("Bob asks you something");
   });
 });
