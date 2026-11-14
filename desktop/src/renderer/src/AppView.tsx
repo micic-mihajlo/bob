@@ -10,10 +10,14 @@ import { useSetupProviderProps } from "./features/onboarding/setup-provider-prop
 import { useServerScope } from "./features/servers/server-scope";
 import { useServerSelection } from "./features/servers/server-selection";
 import { StartupSplash } from "./features/startup/StartupSplash";
+import { workspacePainted } from "./features/startup/workspace-painted";
 import { WhatsNewOverlay } from "./features/updates/WhatsNewOverlay";
 import { AccountLogin, FirstRunFlow, InitialSetup, LanguageStep } from "./lazy-views";
 import { usePlatform } from "./platform";
 import { WorkspaceShell } from "./WorkspaceShell";
+
+/** How long the splash waits for the workspace's first frame before it leaves anyway. */
+const SPLASH_HOLD_LIMIT_MS = 4000;
 
 /** The placeholder every lazy view below falls back to while its code loads. */
 function LoadingScreen() {
@@ -49,6 +53,14 @@ export function AppAccessGate() {
   const { joinRemoteDuringSetup } = useServerSelection();
   const started = () => setup.setupLoaded() && platform.appInfo() !== null;
   const [splashShown, setSplashShown] = createSignal(true);
+  /* The splash stays until the workspace has painted, so it fades straight into it. Another first
+   * screen, such as sign-in, does not report it, so the splash leaves this long after the start. */
+  const [splashHeldLongEnough, setSplashHeldLongEnough] = createSignal(false);
+  createEffect(started, (ready) => {
+    if (!ready) return;
+    const timer = setTimeout(() => setSplashHeldLongEnough(true), SPLASH_HOLD_LIMIT_MS);
+    return () => clearTimeout(timer);
+  });
   const languageStep = createLanguageStep();
   // Only a settled sign-out: a code in flight or a retry keeps the sign-in screen it belongs to.
   const languageStepShown = () => auth.centralAuth().status === "signed_out" && !languageStep.done();
@@ -148,7 +160,10 @@ export function AppAccessGate() {
       />
       <Show when={splashShown()}>
         {/* Before `appInfo` loads, the build's own mode picks the logo colour. */}
-        <StartupSplash ready={started()} onExited={() => setSplashShown(false)} />
+        <StartupSplash
+          ready={started() && (workspacePainted() || splashHeldLongEnough())}
+          onExited={() => setSplashShown(false)}
+        />
       </Show>
     </>
   );

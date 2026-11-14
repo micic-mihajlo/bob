@@ -7,16 +7,16 @@ import {
   serverWorkspacePhase,
 } from "@bob/ui/features/servers/ServerConnectionNotice";
 import { useText } from "@bob/ui/text";
-import { createEffect, createMemo, Show } from "solid-js";
+import { createEffect, createMemo, onSettled, Show } from "solid-js";
 import { BOB_ONLY, BOB_SINGLE_BOT } from "./bob";
 import { useAccountUsagePolling } from "./features/account/account-usage-polling";
 import { useAgents } from "./features/agents/agents-context";
 import { WorkspaceAgentSetup } from "./features/agents/WorkspaceAgentSetup";
 import { useChannels } from "./features/channels/channels-context";
 import { WorkspaceChannelConversation } from "./features/channels/WorkspaceChannelConversation";
+import { BobFactoryView } from "./features/conversation/BobFactoryView";
 import { useConversation } from "./features/conversation/conversation-context";
 import { useDirectMessages } from "./features/conversation/direct-messages-context";
-import { BobFactoryView } from "./features/conversation/BobFactoryView";
 import { WorkspaceConversation } from "./features/conversation/WorkspaceConversation";
 import { WorkspaceDirectConversation } from "./features/conversation/WorkspaceDirectConversation";
 import { useCustomAgentUsagePolling } from "./features/custom-agents/custom-agent-usage-polling";
@@ -29,6 +29,7 @@ import { followsServerUpdate, ServerUpdateDialogHost } from "./features/servers/
 import { useServers } from "./features/servers/servers-context";
 import { WorkspaceServerRail } from "./features/servers/WorkspaceServerRail";
 import { WorkspaceSidebar } from "./features/sidebar/WorkspaceSidebar";
+import { markWorkspacePainted } from "./features/startup/workspace-painted";
 import { TasksPanel } from "./features/tasks/TasksPanel";
 import { createHostRestartToasts, type HostRestartView } from "./features/updates/host-restart-toast";
 import { useUsage } from "./features/usage/usage-context";
@@ -62,6 +63,7 @@ import { WorkspaceOverlays } from "./WorkspaceOverlays";
  */
 export function WorkspaceShell(props: { account: () => CentralAuthUser }) {
   const platform = usePlatform();
+  onSettled(markWorkspacePainted);
   /** A window that main opened for one chat shows that chat alone, with no rail and no sidebar. */
   const chatWindow = platform.chatWindow !== null;
   const { sourceText, t } = useText();
