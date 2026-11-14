@@ -36,6 +36,8 @@ const OWN_SERVER = !opts.url;
 const TIMEOUT_S = Number(opts.timeout ?? (LIVE ? 900 : 300));
 const STALL_S = Number(opts.stall ?? (LIVE ? 240 : 20));
 const POLL_MS = 300;
+/** The live crew engine, as `pnpm demo` picks it: the coding agent unless BOB_ENGINE says otherwise. */
+const ENGINE = process.env.BOB_ENGINE?.trim() || "sdk";
 const TARGET_S = 120;
 const LOOP_STEPS = 60;
 
@@ -95,8 +97,10 @@ function startServer(): void {
   fs.mkdirSync(OUT, { recursive: true });
   serverLog ??= fs.createWriteStream(path.join(OUT, "server.log"), { flags: "w" });
   const env: NodeJS.ProcessEnv = { ...process.env, PORT: opts.port };
-  if (LIVE) delete env.BOB_BRAIN;
-  else env.BOB_BRAIN = "script";
+  if (LIVE) {
+    delete env.BOB_BRAIN;
+    env.BOB_ENGINE = ENGINE;
+  } else env.BOB_BRAIN = "script";
   if (opts.pace) env.BOB_PACE = opts.pace;
   server = spawn(path.join(ROOT, "node_modules/.bin/next"), ["dev", "--port", String(opts.port)], { cwd: ROOT, env, detached: true, stdio: ["ignore", "pipe", "pipe"] });
   server.stdout?.pipe(serverLog, { end: false });
@@ -615,6 +619,7 @@ async function main(): Promise<void> {
     at: new Date(t0).toISOString(),
     commit,
     brain: LIVE ? "model" : "script",
+    engine: LIVE ? ENGINE : null,
     server: OWN_SERVER ? "own" : BASE,
     stopReason: outcome.stopReason,
     totalSeconds: secs(),
@@ -635,7 +640,7 @@ async function main(): Promise<void> {
   if (restartOutcome) fs.writeFileSync(path.join(OUT, "restart-snapshot.json"), JSON.stringify(restartOutcome.final, null, 2));
   console.log("\n" + table(rows));
   console.log(`\nacceptance changes approved: ${acceptanceChanges.length}${acceptanceChanges.length ? ` (${acceptanceChanges.map((x) => `${x.thread} at ${x.t}s`).join(", ")})` : ""}`);
-  console.log(`\n${report.summary.holds} hold, ${report.summary.partly} partly, ${report.summary.no} no (${report.brain} brain, ${commit}, ${report.totalSeconds}s). JSON: ${path.relative(ROOT, path.join(OUT, "latest.json"))}`);
+  console.log(`\n${report.summary.holds} hold, ${report.summary.partly} partly, ${report.summary.no} no (${report.brain} brain${LIVE ? `, ${ENGINE} engine` : ""}, ${commit}, ${report.totalSeconds}s). JSON: ${path.relative(ROOT, path.join(OUT, "latest.json"))}`);
   process.exitCode = report.summary.no > 0 ? 1 : 0;
 }
 
