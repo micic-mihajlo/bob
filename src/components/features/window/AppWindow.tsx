@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Sidebar } from "@/components/features/sidebar/Sidebar";
+import { TitleTooltips } from "@/components/ui/TitleTooltips";
 import { LEFT_PANEL_DEFAULT, LeftPanelResizer } from "./LeftPanelResizer";
 import { PageRail } from "./PageRail";
 import { SnapshotGate } from "./SnapshotGate";
@@ -14,6 +15,7 @@ export function AppWindow({ children }: { children: ReactNode }) {
   return (
     <SnapshotGate>
       <WindowFrame>{children}</WindowFrame>
+      <TitleTooltips />
     </SnapshotGate>
   );
 }
