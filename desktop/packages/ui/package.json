@@ -458,7 +458,6 @@
     "@bob/brand": "workspace:*",
     "@bob/team-client": "workspace:*",
     "@bob/user-errors": "workspace:*",
-    "@norbert_bodziony/bloub": "catalog:",
     "@speed-highlight/core": "catalog:",
     "katex": "catalog:",
     "marked": "catalog:",

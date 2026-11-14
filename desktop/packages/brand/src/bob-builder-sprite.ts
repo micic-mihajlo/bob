@@ -161,7 +161,16 @@ export function builderPixels(state: BuilderState, size: BuilderSize, frame: 0 |
   return grid;
 }
 
-function rects(grid: string[][]): string {
+/**
+ * The colours of one crew member. Every agent wears the same hard hat and overalls, so the crew reads
+ * as one; an agent with a hue gets a shirt in that hue, and one without wears Bob's own orange check.
+ */
+export function builderPalette(hue: number | null): Record<string, string> {
+  if (hue === null) return BUILDER_PALETTE;
+  return { ...BUILDER_PALETTE, O: `hsl(${hue} 62% 48%)`, o: `hsl(${hue} 72% 68%)` };
+}
+
+function rects(grid: string[][], palette: Record<string, string>): string {
   let out = "";
   grid.forEach((row, y) => {
     let x = 0;
@@ -169,7 +178,7 @@ function rects(grid: string[][]): string {
       const cell = row[x] ?? ".";
       let end = x + 1;
       while (end < row.length && row[end] === cell) end += 1;
-      if (cell !== ".") out += `<rect x="${x}" y="${y}" width="${end - x}" height="1" fill="${BUILDER_PALETTE[cell]}"/>`;
+      if (cell !== ".") out += `<rect x="${x}" y="${y}" width="${end - x}" height="1" fill="${palette[cell]}"/>`;
       x = end;
     }
   });
@@ -181,11 +190,11 @@ function rects(grid: string[][]): string {
  * `builderViewBox(size)`. "working" holds both hammer frames and swaps them every 280 ms; with reduced
  * motion it rests on the first frame.
  */
-export function builderSvgContent(state: BuilderState, size: BuilderSize): string {
-  if (state !== "working") return rects(builderPixels(state, size));
+export function builderSvgContent(state: BuilderState, size: BuilderSize, palette = BUILDER_PALETTE): string {
+  if (state !== "working") return rects(builderPixels(state, size), palette);
   const style =
     "<style>.f1{animation:bob-hammer 560ms steps(1) infinite}.f0{animation:bob-hammer 560ms steps(1) infinite reverse}@keyframes bob-hammer{0%{opacity:1}50%{opacity:0}}@media (prefers-reduced-motion:reduce){.f0,.f1{animation:none}.f1{opacity:0}}</style>";
-  return style + '<g class="f0">' + rects(builderPixels(state, size, 0)) + '</g><g class="f1">' + rects(builderPixels(state, size, 1)) + "</g>";
+  return style + '<g class="f0">' + rects(builderPixels(state, size, 0), palette) + '</g><g class="f1">' + rects(builderPixels(state, size, 1), palette) + "</g>";
 }
 
 export function builderViewBox(size: BuilderSize): string {
@@ -193,10 +202,10 @@ export function builderViewBox(size: BuilderSize): string {
 }
 
 /** The whole SVG markup of Bob in one state, for an <img> data URL or innerHTML. */
-export function builderSvg(state: BuilderState, size: BuilderSize, title = "Bob"): string {
+export function builderSvg(state: BuilderState, size: BuilderSize, title = "Bob", palette = BUILDER_PALETTE): string {
   return (
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + builderViewBox(size) + '" shape-rendering="crispEdges" role="img" aria-label="' + title + '">' +
-    builderSvgContent(state, size) +
+    builderSvgContent(state, size, palette) +
     "</svg>"
   );
 }
