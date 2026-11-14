@@ -33,21 +33,28 @@
       "rule": "Loop termination",
       "kind": "proof",
       "mirrors": "applySend, overBudget, budgetUsed (src/lib/mailbox.ts)",
-      "statement": "In one request, agents start at most 12 deliveries of new work."
+      "statement": "In one request, agents start at most 12 deliveries of new work; automatic hand-offs are counted apart."
+    },
+    {
+      "name": "BobFormal.Mailbox.handoffs_within_budget",
+      "rule": "Loop termination",
+      "kind": "proof",
+      "mirrors": "applySend, overBudget, handoffsUsed (src/lib/mailbox.ts), sendForCaptain (src/lib/tools/handoff.ts)",
+      "statement": "In one request, the runtime's automatic hand-offs (review findings, re-reviews, branch updates) make at most 24 deliveries."
     },
     {
       "name": "BobFormal.Mailbox.deliveries_bounded",
       "rule": "Loop termination",
       "kind": "proof",
       "mirrors": "applySend, answersOwedAsk, markAnswered (src/lib/mailbox.ts)",
-      "statement": "A request sees at most 24 agent deliveries, because every reply must answer one unanswered ask, so every message cascade ends."
+      "statement": "A request sees at most 72 agent deliveries, hand-offs included, because every reply must answer one unanswered ask, so every message cascade ends."
     },
     {
       "name": "BobFormal.Mailbox.agent_messages_bounded",
       "rule": "Loop termination",
       "kind": "proof",
       "mirrors": "applySend (src/lib/mailbox.ts)",
-      "statement": "At most 24 agent messages are accepted in one request; after that every agent send is refused."
+      "statement": "At most 72 agent messages, hand-offs included, are accepted in one request; after that every agent send is refused."
     },
     {
       "name": "BobFormal.Mailbox.ping_pong_stops",

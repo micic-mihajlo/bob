@@ -1,0 +1,229 @@
+{
+ "why": {
+  "request": {
+   "name": "why",
+   "query": "MATCH (m:Message {ext_id: $messageId})-[:CAUSED_BY*0..24]->(hop:Message) RETURN hop.ext_id AS id, hop.label AS label, hop.requestId AS requestId, hop.text AS text, hop.fromKind AS fromKind, hop.fromId AS fromId, hop.fromName AS fromName, hop.to AS to, hop.toNames AS toNames, hop.expectsReply AS expectsReply, hop.replyTo AS replyTo, hop.causedBy AS causedBy, hop.continues AS continues, hop.approvalId AS approvalId, hop.question AS question, hop.at AS at LIMIT 25",
+   "params": {
+    "messageId": "msg_475da28c"
+   }
+  },
+  "response": {
+   "success": true,
+   "data": [
+    {
+     "id": "msg_475da28c",
+     "label": "Goal: CSV export for invoices. Context: the person wrote \"customers want to exp\u2026",
+     "requestId": "req_ca0fb446",
+     "text": "Goal: CSV export for invoices.\nContext: the person wrote \"customers want to export invoices as CSV\" then \"All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.\". User: Customers. Acceptance: Done when the file has one row per invoice..\nArea: the invoices module under src/, next to src/invoices.ts and src/format.ts.\nYou can rely on: the Invoice type in src/invoices.ts and the project's test setup.\nOut of scope: the UI and any change to existing behaviour.\nDone means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.",
+     "fromKind": "agent",
+     "fromId": "bob",
+     "fromName": "Bob",
+     "to": "[\"inv-1\"]",
+     "toNames": "[\"INV-1\"]",
+     "expectsReply": true,
+     "replyTo": null,
+     "causedBy": "msg_10c8c9ff",
+     "continues": null,
+     "approvalId": null,
+     "question": null,
+     "at": "2026-11-14T09:09:54.535Z"
+    },
+    {
+     "id": "msg_10c8c9ff",
+     "label": "All invoices, columns id, customer, amount, status and due date. Done when the \u2026",
+     "requestId": "req_ca0fb446",
+     "text": "All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.",
+     "fromKind": "user",
+     "fromId": "user",
+     "fromName": "You",
+     "to": "[\"bob\"]",
+     "toNames": "[\"Bob\"]",
+     "expectsReply": false,
+     "replyTo": null,
+     "causedBy": null,
+     "continues": "msg_301749d4",
+     "approvalId": null,
+     "question": "Two quick ones before I plan it.\n- Which invoices and which columns go in the file, and where does the button live? I'd say all invoices; id, customer, amount, status, due date; a button above the invoices table.\n- What check proves it works? I'd use: a header row, then one row per invoice with the amount in dollars, covered by a test.",
+     "at": "2026-11-14T09:09:54.218Z"
+    },
+    {
+     "id": "msg_301749d4",
+     "label": "customers want to export invoices as CSV",
+     "requestId": "req_ca0fb446",
+     "text": "customers want to export invoices as CSV",
+     "fromKind": "user",
+     "fromId": "user",
+     "fromName": "You",
+     "to": "[\"bob\"]",
+     "toNames": "[\"Bob\"]",
+     "expectsReply": false,
+     "replyTo": null,
+     "causedBy": null,
+     "continues": null,
+     "approvalId": null,
+     "question": null,
+     "at": "2026-11-14T09:09:54.213Z"
+    }
+   ],
+   "error": null,
+   "meta": {
+    "request_id": "recorded-falkordb",
+    "api_version": "2.0.1"
+   }
+  }
+ },
+ "path": {
+  "request": {
+   "name": "path",
+   "query": "MATCH (pr:PullRequest {ext_id: $prId})-[:BECAUSE_OF]->(m:Message)-[:CAUSED_BY*0..24]->(hop:Message) RETURN pr.label AS prLabel, m.ext_id AS startId, hop.ext_id AS id, hop.label AS label, hop.requestId AS requestId, hop.text AS text, hop.fromKind AS fromKind, hop.fromId AS fromId, hop.fromName AS fromName, hop.to AS to, hop.toNames AS toNames, hop.expectsReply AS expectsReply, hop.replyTo AS replyTo, hop.causedBy AS causedBy, hop.continues AS continues, hop.approvalId AS approvalId, hop.question AS question, hop.at AS at LIMIT 25",
+   "params": {
+    "prId": "art_a30ebb2b"
+   }
+  },
+  "response": {
+   "success": true,
+   "data": [
+    {
+     "prLabel": "#1 Add CSV export for invoices",
+     "startId": "msg_475da28c",
+     "id": "msg_475da28c",
+     "label": "Goal: CSV export for invoices. Context: the person wrote \"customers want to exp\u2026",
+     "requestId": "req_ca0fb446",
+     "text": "Goal: CSV export for invoices.\nContext: the person wrote \"customers want to export invoices as CSV\" then \"All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.\". User: Customers. Acceptance: Done when the file has one row per invoice..\nArea: the invoices module under src/, next to src/invoices.ts and src/format.ts.\nYou can rely on: the Invoice type in src/invoices.ts and the project's test setup.\nOut of scope: the UI and any change to existing behaviour.\nDone means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.",
+     "fromKind": "agent",
+     "fromId": "bob",
+     "fromName": "Bob",
+     "to": "[\"inv-1\"]",
+     "toNames": "[\"INV-1\"]",
+     "expectsReply": true,
+     "replyTo": null,
+     "causedBy": "msg_10c8c9ff",
+     "continues": null,
+     "approvalId": null,
+     "question": null,
+     "at": "2026-11-14T09:09:54.535Z"
+    },
+    {
+     "prLabel": "#1 Add CSV export for invoices",
+     "startId": "msg_475da28c",
+     "id": "msg_10c8c9ff",
+     "label": "All invoices, columns id, customer, amount, status and due date. Done when the \u2026",
+     "requestId": "req_ca0fb446",
+     "text": "All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.",
+     "fromKind": "user",
+     "fromId": "user",
+     "fromName": "You",
+     "to": "[\"bob\"]",
+     "toNames": "[\"Bob\"]",
+     "expectsReply": false,
+     "replyTo": null,
+     "causedBy": null,
+     "continues": "msg_301749d4",
+     "approvalId": null,
+     "question": "Two quick ones before I plan it.\n- Which invoices and which columns go in the file, and where does the button live? I'd say all invoices; id, customer, amount, status, due date; a button above the invoices table.\n- What check proves it works? I'd use: a header row, then one row per invoice with the amount in dollars, covered by a test.",
+     "at": "2026-11-14T09:09:54.218Z"
+    },
+    {
+     "prLabel": "#1 Add CSV export for invoices",
+     "startId": "msg_475da28c",
+     "id": "msg_301749d4",
+     "label": "customers want to export invoices as CSV",
+     "requestId": "req_ca0fb446",
+     "text": "customers want to export invoices as CSV",
+     "fromKind": "user",
+     "fromId": "user",
+     "fromName": "You",
+     "to": "[\"bob\"]",
+     "toNames": "[\"Bob\"]",
+     "expectsReply": false,
+     "replyTo": null,
+     "causedBy": null,
+     "continues": null,
+     "approvalId": null,
+     "question": null,
+     "at": "2026-11-14T09:09:54.213Z"
+    }
+   ],
+   "error": null,
+   "meta": {
+    "request_id": "recorded-falkordb",
+    "api_version": "2.0.1"
+   }
+  }
+ },
+ "around": {
+  "request": {
+   "name": "around",
+   "query": "MATCH (pr:PullRequest {ext_id: $prId})-[r]->(n) RETURN pr.ext_id AS src, type(r) AS rel, n.ext_id AS dst, n.ext_id AS id, n.kind AS kind, n.label AS label LIMIT 50 UNION ALL MATCH (pr:PullRequest {ext_id: $prId})<-[r]-(n) RETURN n.ext_id AS src, type(r) AS rel, pr.ext_id AS dst, n.ext_id AS id, n.kind AS kind, n.label AS label LIMIT 50 UNION ALL MATCH (a:Agent)-[r:RUNS]->(t:Turn)-[:MADE]->(pr:PullRequest {ext_id: $prId}) RETURN a.ext_id AS src, type(r) AS rel, t.ext_id AS dst, a.ext_id AS id, a.kind AS kind, a.label AS label LIMIT 10",
+   "params": {
+    "prId": "art_a30ebb2b"
+   }
+  },
+  "response": {
+   "success": true,
+   "data": [
+    {
+     "src": "art_a30ebb2b",
+     "rel": "BECAUSE_OF",
+     "dst": "msg_475da28c",
+     "id": "msg_475da28c",
+     "kind": "Message",
+     "label": "Goal: CSV export for invoices. Context: the person wrote \"customers want to exp\u2026"
+    },
+    {
+     "src": "art_a30ebb2b",
+     "rel": "GATED_BY",
+     "dst": "apr_0d7d2b40",
+     "id": "apr_0d7d2b40",
+     "kind": "Approval",
+     "label": "Merge #1: Add CSV export for invoices (pending)"
+    },
+    {
+     "src": "turn_3144a93f",
+     "rel": "MADE",
+     "dst": "art_a30ebb2b",
+     "id": "turn_3144a93f",
+     "kind": "Turn",
+     "label": "INV-1 turn"
+    },
+    {
+     "src": "c525c16422c2a3616f1e94c93261d82fcb17d5c7",
+     "rel": "PART_OF",
+     "dst": "art_a30ebb2b",
+     "id": "c525c16422c2a3616f1e94c93261d82fcb17d5c7",
+     "kind": "Commit",
+     "label": "c525c16"
+    },
+    {
+     "src": "art_c1d448fd",
+     "rel": "REVIEWS",
+     "dst": "art_a30ebb2b",
+     "id": "art_c1d448fd",
+     "kind": "Review",
+     "label": "Review: approve"
+    },
+    {
+     "src": "wo_4dbcd128",
+     "rel": "DELIVERED_BY",
+     "dst": "art_a30ebb2b",
+     "id": "wo_4dbcd128",
+     "kind": "WorkOrder",
+     "label": "CSV export for invoices"
+    },
+    {
+     "src": "inv-1",
+     "rel": "RUNS",
+     "dst": "turn_3144a93f",
+     "id": "inv-1",
+     "kind": "Agent",
+     "label": "INV-1 INV-1"
+    }
+   ],
+   "error": null,
+   "meta": {
+    "request_id": "recorded-falkordb",
+    "api_version": "2.0.1"
+   }
+  }
+ }
+}

@@ -1,0 +1,738 @@
+{
+ "project": {
+  "id": "invoices-app",
+  "name": "invoices-app",
+  "repo": null
+ },
+ "agents": [
+  {
+   "id": "bob",
+   "name": "Bob",
+   "title": "Captain: inspects requests, keeps the roadmap and runs the crew",
+   "role": "orchestrator",
+   "kind": "captain",
+   "hue": 28,
+   "model": "moonshotai/kimi-k3.1-pro",
+   "description": "You make each request testable before work starts, turn it into a five-stage roadmap with work orders, brief a crew thread for each work order, pass what one thread needs from another, and ask the person before anything is merged.",
+   "createdAt": "2026-11-14T09:09:54.210Z",
+   "createdBy": {
+    "kind": "seed"
+   }
+  },
+  {
+   "id": "inv-1",
+   "name": "INV-1",
+   "title": "CSV export for invoices",
+   "description": "You make one change in your workspace on your own branch, commit it, read the diff, and open a pull request. You never merge.",
+   "role": "teammate",
+   "kind": "crew",
+   "code": "INV-1",
+   "crewRole": "build",
+   "workOrderId": "wo_4dbcd128",
+   "branch": "inv-1-csv-export-for-invoices",
+   "closedAt": null,
+   "hue": 211,
+   "model": "deepseek/deepseek-v4.1-flash",
+   "createdAt": "2026-11-14T09:09:54.227Z",
+   "createdBy": {
+    "kind": "agent",
+    "agentId": "bob"
+   }
+  },
+  {
+   "id": "inv-2",
+   "name": "INV-2",
+   "title": "Review #1",
+   "description": "You read one pull request's real diff in your workspace and record a verdict with concrete findings. You never change code.",
+   "role": "teammate",
+   "kind": "crew",
+   "code": "INV-2",
+   "crewRole": "review",
+   "workOrderId": "wo_4dbcd128",
+   "branch": null,
+   "closedAt": null,
+   "hue": 152,
+   "model": "deepseek/deepseek-v4.1-flash",
+   "createdAt": "2026-11-14T09:09:54.817Z",
+   "createdBy": {
+    "kind": "agent",
+    "agentId": "bob"
+   }
+  }
+ ],
+ "messages": [
+  {
+   "id": "msg_301749d4",
+   "requestId": "req_ca0fb446",
+   "causedBy": null,
+   "from": {
+    "kind": "user"
+   },
+   "to": [
+    "bob"
+   ],
+   "text": "customers want to export invoices as CSV",
+   "expectsReply": false,
+   "replyTo": null,
+   "at": "2026-11-14T09:09:54.213Z"
+  },
+  {
+   "id": "msg_10c8c9ff",
+   "requestId": "req_ca0fb446",
+   "causedBy": null,
+   "from": {
+    "kind": "user"
+   },
+   "to": [
+    "bob"
+   ],
+   "text": "All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.",
+   "expectsReply": false,
+   "replyTo": null,
+   "continues": "msg_301749d4",
+   "at": "2026-11-14T09:09:54.218Z"
+  },
+  {
+   "id": "msg_475da28c",
+   "requestId": "req_ca0fb446",
+   "causedBy": "msg_10c8c9ff",
+   "from": {
+    "kind": "agent",
+    "agentId": "bob"
+   },
+   "to": [
+    "inv-1"
+   ],
+   "text": "Goal: CSV export for invoices.\nContext: the person wrote \"customers want to export invoices as CSV\" then \"All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.\". User: Customers. Acceptance: Done when the file has one row per invoice..\nArea: the invoices module under src/, next to src/invoices.ts and src/format.ts.\nYou can rely on: the Invoice type in src/invoices.ts and the project's test setup.\nOut of scope: the UI and any change to existing behaviour.\nDone means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.",
+   "expectsReply": true,
+   "replyTo": null,
+   "at": "2026-11-14T09:09:54.535Z"
+  },
+  {
+   "id": "msg_3a8785bd",
+   "requestId": "req_ca0fb446",
+   "causedBy": "msg_475da28c",
+   "from": {
+    "kind": "agent",
+    "agentId": "inv-1"
+   },
+   "to": [
+    "bob"
+   ],
+   "text": "Status: done\nResult: Opened pull request #1 (id art_a30ebb2b) on branch inv-1-csv-export-for-invoices: Add CSV export for invoices.\nEvidence: src/csv.ts, src/csv.test.ts; read the diff against main",
+   "expectsReply": false,
+   "replyTo": "msg_475da28c",
+   "at": "2026-11-14T09:09:54.814Z"
+  },
+  {
+   "id": "msg_e841d3ae",
+   "requestId": "req_ca0fb446",
+   "causedBy": "msg_3a8785bd",
+   "from": {
+    "kind": "agent",
+    "agentId": "bob"
+   },
+   "to": [
+    "inv-2"
+   ],
+   "text": "Review pull request #1 (id art_a30ebb2b) \"Add CSV export for invoices\" on branch inv-1-csv-export-for-invoices.\nChanged files: src/csv.test.ts (+14 -0), src/csv.ts (+13 -0).\nRead it with git fetch origin, then git diff origin/main...origin/inv-1-csv-export-for-invoices.\nCheck: correct output, quoting of odd values, tests that cover the new code, no change to existing behaviour.\nDone means: record_review with your verdict and every finding, then a report with Status / Result / Evidence.",
+   "expectsReply": true,
+   "replyTo": null,
+   "at": "2026-11-14T09:09:54.900Z"
+  },
+  {
+   "id": "msg_78ca830e",
+   "requestId": "req_ca0fb446",
+   "causedBy": "msg_e841d3ae",
+   "from": {
+    "kind": "agent",
+    "agentId": "inv-2"
+   },
+   "to": [
+    "bob"
+   ],
+   "text": "Status: done\nResult: Approved #1 with one low finding: No case for an empty list. It returns the header alone, which is right; a test would keep it that way.\nEvidence: review art_c1d448fd, git diff origin/main...origin/inv-1-csv-export-for-invoices",
+   "expectsReply": false,
+   "replyTo": "msg_e841d3ae",
+   "at": "2026-11-14T09:09:54.999Z"
+  }
+ ],
+ "deliveries": [
+  {
+   "id": "dlv_8a588d85",
+   "messageId": "msg_301749d4",
+   "recipientAgentId": "bob",
+   "status": "completed",
+   "queueOrder": 1,
+   "turnId": "turn_18028ac0",
+   "answered": false
+  },
+  {
+   "id": "dlv_63f317d1",
+   "messageId": "msg_10c8c9ff",
+   "recipientAgentId": "bob",
+   "status": "completed",
+   "queueOrder": 2,
+   "turnId": "turn_6f337d4c",
+   "answered": false
+  },
+  {
+   "id": "dlv_3653a088",
+   "messageId": "msg_475da28c",
+   "recipientAgentId": "inv-1",
+   "status": "completed",
+   "queueOrder": 3,
+   "turnId": "turn_3144a93f",
+   "answered": true
+  },
+  {
+   "id": "dlv_05f02cae",
+   "messageId": "msg_3a8785bd",
+   "recipientAgentId": "bob",
+   "status": "completed",
+   "queueOrder": 4,
+   "turnId": "turn_437b67dd",
+   "answered": false
+  },
+  {
+   "id": "dlv_1d67f856",
+   "messageId": "msg_e841d3ae",
+   "recipientAgentId": "inv-2",
+   "status": "completed",
+   "queueOrder": 5,
+   "turnId": "turn_784c0098",
+   "answered": true
+  },
+  {
+   "id": "dlv_00bc3e96",
+   "messageId": "msg_78ca830e",
+   "recipientAgentId": "bob",
+   "status": "completed",
+   "queueOrder": 6,
+   "turnId": "turn_48c1191c",
+   "answered": false
+  }
+ ],
+ "turns": [
+  {
+   "id": "turn_18028ac0",
+   "agentId": "bob",
+   "requestId": "req_ca0fb446",
+   "messageIds": [
+    "msg_301749d4"
+   ],
+   "status": "completed",
+   "startedAt": "2026-11-14T09:09:54.214Z",
+   "endedAt": "2026-11-14T09:09:54.217Z"
+  },
+  {
+   "id": "turn_6f337d4c",
+   "agentId": "bob",
+   "requestId": "req_ca0fb446",
+   "messageIds": [
+    "msg_10c8c9ff"
+   ],
+   "status": "completed",
+   "startedAt": "2026-11-14T09:09:54.218Z",
+   "endedAt": "2026-11-14T09:09:54.537Z"
+  },
+  {
+   "id": "turn_3144a93f",
+   "agentId": "inv-1",
+   "requestId": "req_ca0fb446",
+   "messageIds": [
+    "msg_475da28c"
+   ],
+   "status": "completed",
+   "startedAt": "2026-11-14T09:09:54.536Z",
+   "endedAt": "2026-11-14T09:09:54.817Z"
+  },
+  {
+   "id": "turn_437b67dd",
+   "agentId": "bob",
+   "requestId": "req_ca0fb446",
+   "messageIds": [
+    "msg_3a8785bd"
+   ],
+   "status": "completed",
+   "startedAt": "2026-11-14T09:09:54.815Z",
+   "endedAt": "2026-11-14T09:09:54.901Z"
+  },
+  {
+   "id": "turn_784c0098",
+   "agentId": "inv-2",
+   "requestId": "req_ca0fb446",
+   "messageIds": [
+    "msg_e841d3ae"
+   ],
+   "status": "completed",
+   "startedAt": "2026-11-14T09:09:54.900Z",
+   "endedAt": "2026-11-14T09:09:54.998Z"
+  },
+  {
+   "id": "turn_48c1191c",
+   "agentId": "bob",
+   "requestId": "req_ca0fb446",
+   "messageIds": [
+    "msg_78ca830e"
+   ],
+   "status": "completed",
+   "startedAt": "2026-11-14T09:09:54.999Z",
+   "endedAt": "2026-11-14T09:09:55.002Z"
+  }
+ ],
+ "threads": {
+  "bob": [
+   {
+    "kind": "user_text",
+    "id": "it_81469703",
+    "at": "2026-11-14T09:09:54.214Z",
+    "text": "customers want to export invoices as CSV"
+   },
+   {
+    "kind": "agent_text",
+    "id": "it_23207496",
+    "at": "2026-11-14T09:09:54.217Z",
+    "turnId": "turn_18028ac0",
+    "text": "Two quick ones before I plan it.\n- Which invoices and which columns go in the file, and where does the button live? I'd say all invoices; id, customer, amount, status, due date; a button above the invoices table.\n- What check proves it works? I'd use: a header row, then one row per invoice with the amount in dollars, covered by a test."
+   },
+   {
+    "kind": "user_text",
+    "id": "it_052e4c75",
+    "at": "2026-11-14T09:09:54.218Z",
+    "text": "All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice."
+   },
+   {
+    "kind": "step",
+    "id": "it_798409f7",
+    "at": "2026-11-14T09:09:54.221Z",
+    "turnId": "turn_6f337d4c",
+    "tool": "set_goal",
+    "label": "Set the goal: CSV export for invoices",
+    "outcome": "ok",
+    "seconds": 0
+   },
+   {
+    "kind": "step",
+    "id": "it_b540ecc6",
+    "at": "2026-11-14T09:09:54.223Z",
+    "turnId": "turn_6f337d4c",
+    "tool": "advance_stage",
+    "label": "Advancing the stage",
+    "outcome": "ok",
+    "seconds": 0
+   },
+   {
+    "kind": "step",
+    "id": "it_959732d1",
+    "at": "2026-11-14T09:09:54.224Z",
+    "turnId": "turn_6f337d4c",
+    "tool": "set_roadmap",
+    "label": "Planned 1 work orders",
+    "outcome": "ok",
+    "seconds": 0
+   },
+   {
+    "kind": "step",
+    "id": "it_5c08c354",
+    "at": "2026-11-14T09:09:54.225Z",
+    "turnId": "turn_6f337d4c",
+    "tool": "set_today",
+    "label": "Scheduled 1 work orders for today",
+    "outcome": "ok",
+    "seconds": 0
+   },
+   {
+    "kind": "step",
+    "id": "it_edb610df",
+    "at": "2026-11-14T09:09:54.225Z",
+    "turnId": "turn_6f337d4c",
+    "tool": "advance_stage",
+    "label": "Advancing the stage",
+    "outcome": "ok",
+    "seconds": 0
+   },
+   {
+    "kind": "step",
+    "id": "it_4363ce26",
+    "at": "2026-11-14T09:09:54.226Z",
+    "turnId": "turn_6f337d4c",
+    "tool": "start_thread",
+    "label": "Starting a build thread: CSV export for invoices",
+    "outcome": "ok",
+    "seconds": 0.3
+   },
+   {
+    "kind": "message_out",
+    "id": "it_2a9002e7",
+    "at": "2026-11-14T09:09:54.535Z",
+    "turnId": "turn_6f337d4c",
+    "messageId": "msg_475da28c",
+    "to": [
+     "inv-1"
+    ],
+    "text": "Goal: CSV export for invoices.\nContext: the person wrote \"customers want to export invoices as CSV\" then \"All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.\". User: Customers. Acceptance: Done when the file has one row per invoice..\nArea: the invoices module under src/, next to src/invoices.ts and src/format.ts.\nYou can rely on: the Invoice type in src/invoices.ts and the project's test setup.\nOut of scope: the UI and any change to existing behaviour.\nDone means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.",
+    "expectsReply": true
+   },
+   {
+    "kind": "agent_text",
+    "id": "it_cc986c1f",
+    "at": "2026-11-14T09:09:54.537Z",
+    "turnId": "turn_6f337d4c",
+    "text": "INV-1 is building \"CSV export for invoices\" on inv-1-csv-export-for-invoices. Done when done when the file has one row per invoice."
+   },
+   {
+    "kind": "message_in",
+    "id": "it_785d0406",
+    "at": "2026-11-14T09:09:54.815Z",
+    "messageId": "msg_3a8785bd",
+    "from": "inv-1",
+    "text": "Status: done\nResult: Opened pull request #1 (id art_a30ebb2b) on branch inv-1-csv-export-for-invoices: Add CSV export for invoices.\nEvidence: src/csv.ts, src/csv.test.ts; read the diff against main",
+    "isReply": true
+   },
+   {
+    "kind": "step",
+    "id": "it_aaff6c67",
+    "at": "2026-11-14T09:09:54.816Z",
+    "turnId": "turn_437b67dd",
+    "tool": "start_thread",
+    "label": "Starting a review thread: Review #1",
+    "outcome": "ok",
+    "seconds": 0.1
+   },
+   {
+    "kind": "message_out",
+    "id": "it_679f2fba",
+    "at": "2026-11-14T09:09:54.900Z",
+    "turnId": "turn_437b67dd",
+    "messageId": "msg_e841d3ae",
+    "to": [
+     "inv-2"
+    ],
+    "text": "Review pull request #1 (id art_a30ebb2b) \"Add CSV export for invoices\" on branch inv-1-csv-export-for-invoices.\nChanged files: src/csv.test.ts (+14 -0), src/csv.ts (+13 -0).\nRead it with git fetch origin, then git diff origin/main...origin/inv-1-csv-export-for-invoices.\nCheck: correct output, quoting of odd values, tests that cover the new code, no change to existing behaviour.\nDone means: record_review with your verdict and every finding, then a report with Status / Result / Evidence.",
+    "expectsReply": true
+   },
+   {
+    "kind": "agent_text",
+    "id": "it_5f94c318",
+    "at": "2026-11-14T09:09:54.901Z",
+    "turnId": "turn_437b67dd",
+    "text": "INV-1 opened #1. INV-2 is reviewing it."
+   },
+   {
+    "kind": "message_in",
+    "id": "it_44f259e6",
+    "at": "2026-11-14T09:09:54.999Z",
+    "messageId": "msg_78ca830e",
+    "from": "inv-2",
+    "text": "Status: done\nResult: Approved #1 with one low finding: No case for an empty list. It returns the header alone, which is right; a test would keep it that way.\nEvidence: review art_c1d448fd, git diff origin/main...origin/inv-1-csv-export-for-invoices",
+    "isReply": true
+   },
+   {
+    "kind": "step",
+    "id": "it_c3c2c4ef",
+    "at": "2026-11-14T09:09:55.000Z",
+    "turnId": "turn_48c1191c",
+    "tool": "advance_stage",
+    "label": "Advancing the stage",
+    "outcome": "ok",
+    "seconds": 0
+   },
+   {
+    "kind": "step",
+    "id": "it_e543dcd8",
+    "at": "2026-11-14T09:09:55.001Z",
+    "turnId": "turn_48c1191c",
+    "tool": "request_approval",
+    "label": "Asking for approval: Merge #1: Add CSV export for invoices",
+    "outcome": "ok",
+    "seconds": 0
+   },
+   {
+    "kind": "approval",
+    "id": "it_892c11cf",
+    "at": "2026-11-14T09:09:55.002Z",
+    "approvalId": "apr_0d7d2b40"
+   }
+  ],
+  "inv-1": [
+   {
+    "kind": "message_in",
+    "id": "it_f55ee949",
+    "at": "2026-11-14T09:09:54.536Z",
+    "messageId": "msg_475da28c",
+    "from": "bob",
+    "text": "Goal: CSV export for invoices.\nContext: the person wrote \"customers want to export invoices as CSV\" then \"All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.\". User: Customers. Acceptance: Done when the file has one row per invoice..\nArea: the invoices module under src/, next to src/invoices.ts and src/format.ts.\nYou can rely on: the Invoice type in src/invoices.ts and the project's test setup.\nOut of scope: the UI and any change to existing behaviour.\nDone means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.",
+    "isReply": false
+   },
+   {
+    "kind": "step",
+    "id": "it_6c10977b",
+    "at": "2026-11-14T09:09:54.567Z",
+    "turnId": "turn_3144a93f",
+    "tool": "read_files",
+    "label": "Reading src/invoices.ts",
+    "outcome": "ok",
+    "seconds": 0
+   },
+   {
+    "kind": "step",
+    "id": "it_58056952",
+    "at": "2026-11-14T09:09:54.570Z",
+    "turnId": "turn_3144a93f",
+    "tool": "write_files",
+    "label": "Writing src/csv.ts, src/csv.test.ts",
+    "outcome": "ok",
+    "seconds": 0
+   },
+   {
+    "kind": "step",
+    "id": "it_99a99359",
+    "at": "2026-11-14T09:09:54.575Z",
+    "turnId": "turn_3144a93f",
+    "tool": "open_pull_request",
+    "label": "Opening a pull request: Add CSV export for invoices",
+    "outcome": "ok",
+    "seconds": 0.2
+   },
+   {
+    "kind": "step",
+    "id": "it_f19577d5",
+    "at": "2026-11-14T09:09:54.814Z",
+    "turnId": "turn_3144a93f",
+    "tool": "report",
+    "label": "Reporting to the captain",
+    "outcome": "ok",
+    "seconds": 0
+   },
+   {
+    "kind": "message_out",
+    "id": "it_b0b18060",
+    "at": "2026-11-14T09:09:54.814Z",
+    "turnId": "turn_3144a93f",
+    "messageId": "msg_3a8785bd",
+    "to": [
+     "bob"
+    ],
+    "text": "Status: done\nResult: Opened pull request #1 (id art_a30ebb2b) on branch inv-1-csv-export-for-invoices: Add CSV export for invoices.\nEvidence: src/csv.ts, src/csv.test.ts; read the diff against main",
+    "expectsReply": false
+   },
+   {
+    "kind": "agent_text",
+    "id": "it_35c60ed7",
+    "at": "2026-11-14T09:09:54.817Z",
+    "turnId": "turn_3144a93f",
+    "text": "Opened #1 on inv-1-csv-export-for-invoices and reported to the captain."
+   }
+  ],
+  "inv-2": [
+   {
+    "kind": "message_in",
+    "id": "it_0ef23b59",
+    "at": "2026-11-14T09:09:54.901Z",
+    "messageId": "msg_e841d3ae",
+    "from": "bob",
+    "text": "Review pull request #1 (id art_a30ebb2b) \"Add CSV export for invoices\" on branch inv-1-csv-export-for-invoices.\nChanged files: src/csv.test.ts (+14 -0), src/csv.ts (+13 -0).\nRead it with git fetch origin, then git diff origin/main...origin/inv-1-csv-export-for-invoices.\nCheck: correct output, quoting of odd values, tests that cover the new code, no change to existing behaviour.\nDone means: record_review with your verdict and every finding, then a report with Status / Result / Evidence.",
+    "isReply": false
+   },
+   {
+    "kind": "step",
+    "id": "it_9e24e040",
+    "at": "2026-11-14T09:09:54.937Z",
+    "turnId": "turn_784c0098",
+    "tool": "git",
+    "label": "git fetch origin",
+    "outcome": "ok",
+    "seconds": 0
+   },
+   {
+    "kind": "step",
+    "id": "it_78a0226f",
+    "at": "2026-11-14T09:09:54.971Z",
+    "turnId": "turn_784c0098",
+    "tool": "git",
+    "label": "git diff origin/main...origin/inv-1-csv-export-for-invoices",
+    "outcome": "ok",
+    "seconds": 0
+   },
+   {
+    "kind": "step",
+    "id": "it_75896f1d",
+    "at": "2026-11-14T09:09:54.996Z",
+    "turnId": "turn_784c0098",
+    "tool": "record_review",
+    "label": "Recorded a review: approve",
+    "outcome": "ok",
+    "seconds": 0
+   },
+   {
+    "kind": "agent_text",
+    "id": "it_0ceeb01c",
+    "at": "2026-11-14T09:09:54.998Z",
+    "turnId": "turn_784c0098",
+    "text": "Status: done\nResult: Approved #1 with one low finding: No case for an empty list. It returns the header alone, which is right; a test would keep it that way.\nEvidence: review art_c1d448fd, git diff origin/main...origin/inv-1-csv-export-for-invoices"
+   }
+  ]
+ },
+ "approvals": [
+  {
+   "id": "apr_0d7d2b40",
+   "agentId": "bob",
+   "turnId": "turn_48c1191c",
+   "requestId": "req_ca0fb446",
+   "title": "Merge #1: Add CSV export for invoices",
+   "detail": "Merges #1 (id art_a30ebb2b) \"Add CSV export for invoices\" on branch inv-1-csv-export-for-invoices into main. Files: src/csv.test.ts (+14 -0), src/csv.ts (+13 -0). Review: approved with 1 finding(s).",
+   "status": "pending",
+   "at": "2026-11-14T09:09:55.002Z",
+   "pullRequestId": "art_a30ebb2b",
+   "headSha": "c525c16422c2a3616f1e94c93261d82fcb17d5c7"
+  }
+ ],
+ "artifacts": [
+  {
+   "id": "art_a30ebb2b",
+   "kind": "pull_request",
+   "title": "Add CSV export for invoices",
+   "detail": "Adds invoicesToCsv in src/csv.ts: a header row, then one row per invoice with the amount in dollars. Cells with a comma, quote or line break are quoted. src/csv.test.ts covers a plain row and a quoted customer name.",
+   "status": "approved",
+   "agentId": "inv-1",
+   "turnId": "turn_3144a93f",
+   "requestId": "req_ca0fb446",
+   "messageId": "msg_475da28c",
+   "at": "2026-11-14T09:09:54.813Z",
+   "pullRequest": {
+    "number": 1,
+    "branch": "inv-1-csv-export-for-invoices",
+    "headSha": "c525c16422c2a3616f1e94c93261d82fcb17d5c7",
+    "files": [
+     {
+      "path": "src/csv.test.ts",
+      "additions": 14,
+      "deletions": 0
+     },
+     {
+      "path": "src/csv.ts",
+      "additions": 13,
+      "deletions": 0
+     }
+    ],
+    "patch": "diff --git a/src/csv.test.ts b/src/csv.test.ts\nnew file mode 100644\nindex 0000000..cf85eb4\n--- /dev/null\n+++ b/src/csv.test.ts\n@@ -0,0 +1,14 @@\n+import { describe, expect, it } from \"vitest\";\n+import { invoicesToCsv } from \"./csv\";\n+\n+describe(\"invoicesToCsv\", () => {\n+  it(\"writes a header and one row per invoice\", () => {\n+    const csv = invoicesToCsv([{ id: \"INV-1\", customer: \"Customer A\", amountCents: 5000, status: \"sent\", dueDate: \"2026-12-01\" }]);\n+    expect(csv).toBe(\"id,customer,amount,status,dueDate\\nINV-1,Customer A,50.00,sent,2026-12-01\");\n+  });\n+\n+  it(\"quotes a customer name that holds a comma\", () => {\n+    const csv = invoicesToCsv([{ id: \"INV-2\", customer: \"Smith, Jones\", amountCents: 1, status: \"draft\", dueDate: \"2026-12-02\" }]);\n+    expect(csv.split(\"\\n\")[1]).toBe('INV-2,\"Smith, Jones\",0.01,draft,2026-12-02');\n+  });\n+});\ndiff --git a/src/csv.ts b/src/csv.ts\nnew file mode 100644\nindex 0000000..2857e5a\n--- /dev/null\n+++ b/src/csv.ts\n@@ -0,0 +1,13 @@\n+import type { Invoice } from \"./invoices\";\n+\n+const HEADER = [\"id\", \"customer\", \"amount\", \"status\", \"dueDate\"];\n+\n+function cell(value: string): string {\n+  return /[\",\\n]/.test(value) ? `\"${value.replace(/\"/g, '\"\"')}\"` : value;\n+}\n+\n+/** One header row, then one row per invoice, amounts in dollars with two decimals. */\n+export function invoicesToCsv(list: readonly Invoice[]): string {\n+  const rows = list.map((i) => [i.id, i.customer, (i.amountCents / 100).toFixed(2), i.status, i.dueDate]);\n+  return [HEADER, ...rows].map((row) => row.map(cell).join(\",\")).join(\"\\n\");\n+}\n",
+    "merged": false
+   }
+  },
+  {
+   "id": "art_c1d448fd",
+   "kind": "review",
+   "title": "Review of #1: Add CSV export for invoices",
+   "detail": "Read the diff and the tests. Correct and safe to merge; one low finding.",
+   "status": "approved",
+   "agentId": "inv-2",
+   "turnId": "turn_784c0098",
+   "requestId": "req_ca0fb446",
+   "messageId": "msg_e841d3ae",
+   "at": "2026-11-14T09:09:54.997Z",
+   "review": {
+    "pullRequestId": "art_a30ebb2b",
+    "verdict": "approve",
+    "findings": [
+     {
+      "path": "src/csv.test.ts",
+      "line": null,
+      "category": "tests",
+      "severity": "low",
+      "confidence": 0.7,
+      "comment": "No case for an empty list. It returns the header alone, which is right; a test would keep it that way."
+     }
+    ],
+    "headSha": "c525c16422c2a3616f1e94c93261d82fcb17d5c7"
+   }
+  }
+ ],
+ "roadmap": {
+  "goal": {
+   "title": "CSV export for invoices",
+   "why": null,
+   "deadline": null,
+   "user": "Customers",
+   "behaviour": "Customers want to export invoices as CSV. All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.",
+   "acceptance": "Done when the file has one row per invoice.",
+   "assumptions": []
+  },
+  "stage": 4,
+  "stageTitle": "Ship",
+  "totalStages": 5,
+  "gates": [
+   {
+    "stage": 1,
+    "title": "The request is testable",
+    "done": true
+   },
+   {
+    "stage": 2,
+    "title": "The work is cut into work orders",
+    "done": true
+   },
+   {
+    "stage": 3,
+    "title": "Every work order has a pull request",
+    "done": true
+   },
+   {
+    "stage": 4,
+    "title": "The change is merged",
+    "done": false
+   },
+   {
+    "stage": 5,
+    "title": "The results are back in the plan",
+    "done": false
+   }
+  ],
+  "today": [
+   {
+    "id": "wo_4dbcd128",
+    "title": "CSV export for invoices",
+    "status": "review",
+    "ownerAgentId": "inv-1",
+    "artifactId": "art_a30ebb2b"
+   }
+  ],
+  "backlog": [],
+  "updatedAt": "2026-11-14T09:09:55.000Z"
+ },
+ "readMarks": {
+  "bob": 0,
+  "inv-1": 0,
+  "inv-2": 0
+ },
+ "relayKeys": [
+  "relay:dlv_1d67f856"
+ ],
+ "actedTurnIds": [
+  "turn_18028ac0",
+  "turn_6f337d4c",
+  "turn_3144a93f",
+  "turn_437b67dd",
+  "turn_784c0098",
+  "turn_48c1191c"
+ ],
+ "requeuedDeliveryIds": [],
+ "drive": [
+  {
+   "name": "DIGEST.md",
+   "content": "1 thing needs you: approve the merge of #1\n",
+   "updatedAt": "2026-11-14T09:09:55.002Z"
+  },
+  {
+   "name": "CREW.md",
+   "content": "| Thread | Role | Status | Branch | PR | Last report |\n| --- | --- | --- | --- | --- | --- |\n| INV-1 | build | idle | inv-1-csv-export-for-invoices | #1 | Opened pull request #1 (id art_a30ebb2b) on branch inv-1-csv-export-for-invoices: Add CSV export fo… |\n| INV-2 | review | idle |  |  | Approved #1 with one low finding: No case for an empty list. It returns the header alone, which is… |\n",
+   "updatedAt": "2026-11-14T09:09:54.999Z"
+  },
+  {
+   "name": "NOTES.md",
+   "content": "## Plan\nIntent: CSV export for invoices, for Customers.\nAcceptance: Done when the file has one row per invoice.\nStage 4 of 5: Ship.\nToday:\n- wo_4dbcd128 CSV export for invoices (review)\nBacklog:\n- none\n",
+   "updatedAt": "2026-11-14T09:09:55.000Z"
+  }
+ ],
+ "rev": 75
+}

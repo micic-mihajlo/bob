@@ -3,6 +3,7 @@ import path from "node:path";
 import { sweepOrphans } from "./boot";
 import { withCaptainFiles } from "./captain-files";
 import { globals, type Config } from "./globals";
+import { mirrorCommit } from "./graph/mirror";
 import { seedState } from "./seed";
 import type { State } from "./state";
 
@@ -69,6 +70,7 @@ function commit(next: State): State {
   const g = globals();
   g.state = { ...withCaptainFiles(next), rev: getState().rev + 1 };
   schedulePersist();
+  mirrorCommit(g.state);
   for (const listener of [...g.listeners]) {
     try {
       listener();
