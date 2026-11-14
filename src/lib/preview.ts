@@ -1,5 +1,5 @@
 import { execFile, spawn, type ChildProcess } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -21,6 +21,8 @@ export interface PreviewView {
   error?: string;
   /** Bob previewing itself, which opens on an empty blank project instead of the Open a project choice. */
   self: boolean;
+  /** The model the self preview runs on, from this Bob's gateway key or Claude connection; null when it runs offline. */
+  model: string | null;
 }
 
 interface Running {
@@ -125,14 +127,21 @@ export async function startPreview(pullRequestId: string): Promise<{ ok: true; p
   const own = await readFile(path.join(process.cwd(), "package.json"), "utf8").then((t) => (JSON.parse(t) as { name?: string }).name, () => undefined);
   const self = pkg.name !== undefined && pkg.name === own;
   const port = await freePort();
+  const dir = path.join(ws.root, ".data");
+  const claude = self
+    ? await mkdir(dir, { recursive: true })
+        .then(() => copyFile(process.env.BOB_CLAUDE_FILE || path.join(process.cwd(), ".data", "claude-connection.json"), path.join(dir, "claude-connection.json")))
+        .then(() => true, () => false)
+    : false;
+  const live = self && (claude || !!process.env.AI_GATEWAY_API_KEY);
   const env: Record<string, string> = {
     ...shellEnv(ws),
     PORT: String(port),
     NEXT_TELEMETRY_DISABLED: "1",
-    ...(self ? { BOB_DURABLE: "off", BOB_BRAIN: "script", BOB_SANDBOX: "off" } : {}),
+    ...(self ? { BOB_DURABLE: "off", BOB_SANDBOX: "off", BOB_BRAIN: live ? "model" : "script" } : {}),
+    ...(self && live ? Object.fromEntries(Object.entries(process.env).filter((e): e is [string, string] => /^(AI_GATEWAY_API_KEY|BOB_MODEL_\w+|BOB_ENGINE)$/.test(e[0]) && !!e[1])) : {}),
   };
   if (self) {
-    const dir = path.join(ws.root, ".data");
     const seed = { ...getState(), rev: 0, turns: [], deliveries: [], approvals: [], live: {} };
     await mkdir(dir, { recursive: true })
       .then(() => writeFile(path.join(dir, "state.json"), JSON.stringify(seed)))
@@ -140,7 +149,7 @@ export async function startPreview(pullRequestId: string): Promise<{ ok: true; p
   }
   const child = spawn("npm", ["run", "dev"], { cwd: ws.root, env: env as NodeJS.ProcessEnv, detached: true, stdio: "ignore" });
   const next: Running = {
-    view: { pullRequestId: pr.id, number: pr.pullRequest.number, sha: head, label: self ? "Bob" : s.project.name, port, status: "starting", self },
+    view: { pullRequestId: pr.id, number: pr.pullRequest.number, sha: head, label: self ? "Bob" : s.project.name, port, status: "starting", self, model: live ? (process.env.BOB_MODEL_STRONG?.split("/").pop() ?? (claude ? "claude" : "model")) : null },
     child,
     unsubscribe: subscribe(() => {
       const status = findPullRequest(getState(), pr.id)?.status;
