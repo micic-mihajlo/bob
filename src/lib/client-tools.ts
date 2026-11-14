@@ -5,7 +5,7 @@ import type { ToolSpec } from "./tools/define";
 /** A tool that lives on the person's computer (a desktop MCP server) and runs there, not on this server. */
 export const ClientToolSchema = z.object({
   name: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/u),
-  description: z.string().max(4000).optional(),
+  description: z.string().optional(),
   parameters: z.record(z.string(), z.unknown()).optional(),
 });
 export type ClientTool = z.infer<typeof ClientToolSchema>;
@@ -29,7 +29,7 @@ export function attachClientTools(agentId: string, tools: ClientTool[], emit: (c
 export function clientToolSpecs(agentId: string): ToolSpec[] {
   return (attached.get(agentId)?.tools ?? []).map((t) => ({
     name: t.name,
-    description: t.description ?? t.name,
+    description: (t.description ?? t.name).slice(0, 4000),
     schema: z.record(z.string(), z.unknown()),
     jsonSchema: { type: "object", ...t.parameters },
   }));

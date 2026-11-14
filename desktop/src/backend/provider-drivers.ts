@@ -1025,7 +1025,15 @@ function bobBridgeClient(
     argv: [join(__dirname, "bob-acp-bridge.js").replace(`app.asar${sep}`, `app.asar.unpacked${sep}`)],
     env: { ELECTRON_RUN_AS_NODE: "1", ...(profileGeneration ? { BOB_SIDE: "1" } : {}) },
     signInMessage: agentProviderDescriptor("bob").signInMessage,
-    ...(profileGeneration ? { profileGeneration: true } : { history: context.history?.("bob") }),
+    ...(profileGeneration
+      ? { profileGeneration: true }
+      : {
+          history: context.history?.("bob"),
+          mcpServers: context.mcpServers,
+          reportMcpDrops: context.reportMcpDrops,
+          mcpToolRuntimes: context.mcpToolRuntimes,
+          mcpEndpoint: context.mcpEndpoint,
+        }),
   });
 }
 
