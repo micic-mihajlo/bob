@@ -1,6 +1,6 @@
 import { liveAsks } from "./asks";
 import { messageById, runningTurn, type State } from "./state";
-import type { Agent, AgentId, NeedsYouItem, ThreadStatus, Turn } from "./types";
+import type { Agent, AgentId, NeedsYouItem, RunStatus, ThreadState, ThreadStatus, Turn } from "./types";
 
 const latestTurn = (s: State, agentId: AgentId): Turn | undefined =>
   s.turns.filter((t) => t.agentId === agentId).reduce<Turn | undefined>((last, t) => (!last || t.startedAt >= last.startedAt ? t : last), undefined);
@@ -62,4 +62,19 @@ export function threadStatusOf(s: State, agent: Agent, needs: NeedsYouItem[]): T
   const queued = s.deliveries.some((d) => d.recipientAgentId === agent.id && d.status === "queued");
   if (queued || liveAsks(s, agent.id).length > 0) return "waiting";
   return "idle";
+}
+
+function runStatusOf(s: State, agent: Agent, mine: NeedsYouItem[]): RunStatus {
+  if (runningTurn(s, agent.id)) return "working";
+  if (mine.some((n) => n.kind === "failed")) return "failed";
+  const queued = s.deliveries.some((d) => d.recipientAgentId === agent.id && d.status === "queued");
+  if (queued || liveAsks(s, agent.id).length > 0 || mine.length > 0) return "waiting";
+  return "idle";
+}
+
+/** Exactly one status, and separately whether the person is needed and whether the thread is closed. */
+export function threadStateOf(s: State, agent: Agent, needs: NeedsYouItem[]): ThreadState {
+  const closed = !!agent.closedAt;
+  const mine = closed ? [] : needs.filter((n) => n.agentId === agent.id);
+  return { status: closed ? "idle" : runStatusOf(s, agent, mine), needsYou: mine.some((n) => n.kind !== "failed"), closed };
 }

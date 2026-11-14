@@ -45,7 +45,20 @@ export interface Agent {
 export type CrewRole = "build" | "review" | "research";
 
 /** Derived per thread for the sidebar header and grouping. */
+/** Old combined status. Kept until the UI reads ThreadState instead. */
 export type ThreadStatus = "working" | "waiting" | "needs_you" | "failed" | "idle" | "closed";
+
+/** What a thread is doing: exactly one of four. */
+export type RunStatus = "working" | "waiting" | "failed" | "idle";
+
+/** A thread's status plus two separate flags: a Waiting thread can also need the person. */
+export interface ThreadState {
+  status: RunStatus;
+  /** Something of this thread waits on the person: an approval or a question. */
+  needsYou: boolean;
+  /** Lifecycle, not a status: a closed thread stays readable and is idle. */
+  closed: boolean;
+}
 
 /** Derived per agent for the sidebar, in priority order: needs_you, working, waiting, idle. */
 export type AgentActivity =
@@ -275,6 +288,8 @@ export interface Snapshot {
   brain: "script" | "model";
   /** Derived status per thread, for grouping the sidebar. */
   threadStatus?: Record<AgentId, ThreadStatus>;
+  /** Status and the needs-you and closed flags per thread. Replaces threadStatus. */
+  threadState?: Record<AgentId, ThreadState>;
   /** Everything waiting on the person, newest first. The captain keeps this short. */
   needsYou?: NeedsYouItem[];
   /** The captain's own notes, readable by the person: DIGEST.md, CREW.md, NOTES.md. */

@@ -86,6 +86,7 @@ describe("interrupt", () => {
     postUserMessage("lead", "export invoices");
     await new Promise((r) => setTimeout(r, 20));
     expect(buildSnapshot(getState()).activity.coder.state).toBe("working");
+    expect(buildSnapshot(getState()).threadState?.coder).toEqual({ status: "working", needsYou: false, closed: false });
 
     const result = stopAgent("lead");
     expect(result.ok && result.stopped.sort()).toEqual(["coder", "lead"]);
