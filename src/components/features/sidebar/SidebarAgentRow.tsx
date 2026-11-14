@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { buttonClass, cx } from "@/components/ui/classes";
 import { threadLine } from "@/lib/client/agent-status";
 import { threadStatusOf } from "@/lib/client/crew";
+import { liveLine } from "@/lib/client/live-move";
 import { sidebarMessageTime, type SidebarAgentState } from "@/lib/client/sidebar-rows";
 import type { Agent } from "@/lib/types";
 import { SidebarAgentIndicator, SidebarWaitChip, sidebarStateLabel } from "./SidebarAgentIndicator";
@@ -28,7 +29,7 @@ export function SidebarAgentRow({ agent, state, waiting = false }: { agent: Agen
   const name = agent.code ?? agent.name;
   const badge = badgeOf(agent);
   const wait = waiting && state?.kind === "waiting" ? state : undefined;
-  const preview = wait?.detail || threadLine(agent, status, snapshot.activity[agent.id], thread, agentsById);
+  const preview = wait?.detail || liveLine(snapshot.live?.[agent.id]) || threadLine(agent, status, snapshot.activity[agent.id], thread, agentsById);
   const active = selectedAgent?.id === agent.id;
   const stateLabel = state ? sidebarStateLabel(state) : "";
   const approvalId = wait?.reason === "approval" ? (snapshot.needsYou?.find((item) => item.agentId === agent.id)?.approvalId ?? null) : null;

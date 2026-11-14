@@ -82,5 +82,6 @@ export function buildSnapshot(s: State): Snapshot {
     releaseNotes: releaseNotesOf(s),
     requests: requestControls(s),
     budgets: policyFor(s.project.id).budgets,
+    live: s.live ?? {},
   };
 }
