@@ -12,6 +12,7 @@ export const messages = defineMessages("app", {
   "app.bobCrew.needs_you": "Needs you",
   "app.bobCrew.failed": "Failed",
   "app.bobCrew.idle": "Idle",
+  "app.bobView.title": "Bob",
   "app.action.unavailable": "Action unavailable",
   "app.error.actionFailed": "The action could not be completed. Try again.",
   "app.errorStatus.queueLoad": "Could not load queued messages",

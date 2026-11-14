@@ -3467,3 +3467,12 @@ textarea {
   border: 0;
   background: var(--bob-bg-canvas);
 }
+
+.bob-factory-view:not([data-loaded]) {
+  visibility: hidden;
+}
+
+/* Behind the hidden frame is the window itself, which can be dark before the theme paints. */
+.app-frame-panes:has(.bob-factory-view:not([data-loaded])) {
+  background: var(--bob-bg-canvas);
+}
