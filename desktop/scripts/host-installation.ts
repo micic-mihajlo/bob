@@ -3,8 +3,8 @@ import { HOST_MANAGER_DIRECTORY } from "../src/main/host-update-files";
 
 export const HOST_TEAM_ID = "ZTRDTUL87R";
 export const HOST_PACKAGE_ID = "app.bob.host";
-export const HOST_DAEMON_PLIST = "/Library/LaunchDaemons/app.bob.host-manager.plist";
-export const HOST_AGENT_PLIST = "/Library/LaunchAgents/app.bob.desktop.relaunch.plist";
+export const HOST_DAEMON_PLIST = "/Library/LaunchDaemons/dev.micic.bob.host-manager.plist";
+export const HOST_AGENT_PLIST = "/Library/LaunchAgents/dev.micic.bob.desktop.relaunch.plist";
 export const HOST_EXECUTABLES = ["host-manager", "bob-host", "create-tenants"] as const;
 export const HOST_FILES = [
   ...HOST_EXECUTABLES.map((name) => `${HOST_MANAGER_DIRECTORY}/${name}`),

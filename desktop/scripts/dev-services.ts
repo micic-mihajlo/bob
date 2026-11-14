@@ -238,7 +238,7 @@ function seedDevelopmentProfile(profile: string, environment: NodeJS.ProcessEnv)
 
 const DEVELOPMENT_OPTIONS = ["--dry-run", "--force", "--shared", "--isolated", "--hosting=test", "--slack"] as const;
 /** The deployed `test` account Worker. It creates real hosted server VMs for the accounts on its allow list. */
-const TEST_ACCOUNT_API_URL = "https://bob-auth-api-test.internal9671.workers.dev";
+const TEST_ACCOUNT_API_URL = "https://auth-api.bob.invalid";
 
 export interface DevelopmentInvocation {
   target: DevelopmentTarget;

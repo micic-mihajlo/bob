@@ -7,7 +7,7 @@ import { flush } from "solid-js";
 import { loadImage, loadSvg, withAlpha } from "../../avatar-canvas";
 
 /*
- * The share card: the image X and other sites show for an `bob.run/agents/<id>` link.
+ * The share card: the image X and other sites show for an `bob.invalid/agents/<id>` link.
  *
  * It is drawn here, at publish time, because this is where the agent's avatar is: a generated Bloub
  * or the photo the owner uploaded. The Worker only checks its size and stores it.

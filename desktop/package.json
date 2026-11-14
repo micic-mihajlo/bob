@@ -4,19 +4,15 @@
   "desktopName": "bob.desktop",
   "version": "0.54.0",
   "description": "Bob, a software factory you run by talking to its captain.",
-  "author": {
-    "name": "Norbert Bodziony",
-    "url": "https://x.com/norbertbodziony"
-  },
   "license": "PolyForm-Noncommercial-1.0.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/stanwith/bob.git"
+    "url": "git+https://github.com/micic-mihajlo/bob.git"
   },
   "bugs": {
-    "url": "https://github.com/stanwith/bob/issues"
+    "url": "https://github.com/micic-mihajlo/bob/issues"
   },
-  "homepage": "https://github.com/stanwith/bob#readme",
+  "homepage": "https://github.com/micic-mihajlo/bob#readme",
   "keywords": [
     "ai-agents",
     "bun",

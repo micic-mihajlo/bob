@@ -58,7 +58,7 @@ for tenant in "$@"; do
 done
 # The operator supplies trusted compiled code. Never compile repository hooks as root.
 [ -f "$HELPER" ] && [ ! -L "$HELPER" ] || exit 1
-for destination in "$ROOT/host-manager" "$ROOT/bob-relaunch.sh" /Library/LaunchAgents/app.bob.desktop.relaunch.plist /Library/LaunchDaemons/app.bob.host-manager.plist; do
+for destination in "$ROOT/host-manager" "$ROOT/bob-relaunch.sh" /Library/LaunchAgents/dev.micic.bob.desktop.relaunch.plist /Library/LaunchDaemons/dev.micic.bob.host-manager.plist; do
   [ ! -e "$destination" ] && [ ! -L "$destination" ] || { echo "Existing installation asset: $destination" >&2; exit 1; }
 done
 install -o root -g wheel -m 755 "$HELPER" "$ROOT/host-manager"
@@ -66,12 +66,12 @@ install -o root -g wheel -m 755 "$ASSETS/bob-relaunch.sh" "$ROOT/bob-relaunch.sh
 # UIDS contains only numbers returned by id above.
 # shellcheck disable=SC2086
 "$ROOT/host-manager" --setup $UIDS
-install -o root -g wheel -m 644 "$ASSETS/app.bob.desktop.relaunch.plist" /Library/LaunchAgents/app.bob.desktop.relaunch.plist
-install -o root -g wheel -m 644 "$ASSETS/app.bob.host-manager.plist" /Library/LaunchDaemons/app.bob.host-manager.plist
-launchctl bootstrap system /Library/LaunchDaemons/app.bob.host-manager.plist
+install -o root -g wheel -m 644 "$ASSETS/dev.micic.bob.desktop.relaunch.plist" /Library/LaunchAgents/dev.micic.bob.desktop.relaunch.plist
+install -o root -g wheel -m 644 "$ASSETS/dev.micic.bob.host-manager.plist" /Library/LaunchDaemons/dev.micic.bob.host-manager.plist
+launchctl bootstrap system /Library/LaunchDaemons/dev.micic.bob.host-manager.plist
 for tenant in "$@"; do
   tenant_uid=$(id -u "$tenant")
-  if ! launchctl bootstrap "gui/$tenant_uid" /Library/LaunchAgents/app.bob.desktop.relaunch.plist; then
+  if ! launchctl bootstrap "gui/$tenant_uid" /Library/LaunchAgents/dev.micic.bob.desktop.relaunch.plist; then
     echo "LaunchAgent for $tenant will load at the next GUI login."
   fi
 done

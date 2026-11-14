@@ -1,4 +1,4 @@
-// Adapted from the reproduction in stanwith/bob#1824.
+// Adapted from the reproduction in micic-mihajlo/bob#1824.
 // A custom ACP agent whose interpreter is only on the user's login-shell PATH, with Bob started
 // the way Finder, the Dock or a login item starts it: PATH=/usr/bin:/bin:/usr/sbin:/sbin.
 // Most ACP adapters are `#!/usr/bin/env node` scripts and Node comes from Homebrew, nvm or mise, so

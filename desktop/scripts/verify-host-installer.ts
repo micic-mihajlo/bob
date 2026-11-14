@@ -92,8 +92,8 @@ export async function verifyHostPayload(expanded: string, version: string): Prom
   for (const [source, destination] of [
     ["bob-host", "/usr/local/bin/bob-host"],
     ["bob-relaunch.sh", `${HOST_MANAGER_DIRECTORY}/bob-relaunch.sh`],
-    ["app.bob.host-manager.plist", "/Library/LaunchDaemons/app.bob.host-manager.plist"],
-    ["app.bob.desktop.relaunch.plist", "/Library/LaunchAgents/app.bob.desktop.relaunch.plist"],
+    ["dev.micic.bob.host-manager.plist", "/Library/LaunchDaemons/dev.micic.bob.host-manager.plist"],
+    ["dev.micic.bob.desktop.relaunch.plist", "/Library/LaunchAgents/dev.micic.bob.desktop.relaunch.plist"],
   ] as const) {
     if (
       (await readFile(join(root, destination), "utf8")) !==

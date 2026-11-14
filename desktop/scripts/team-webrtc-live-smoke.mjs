@@ -4,7 +4,7 @@ app.setName("Bob");
 app.exit(await main());
 
 async function main() {
-  const signalUrl = process.env.BOB_REMOTE_SIGNAL_URL ?? "wss://signal.bob.run/v1/signal";
+  const signalUrl = process.env.BOB_REMOTE_SIGNAL_URL ?? "wss://signal.bob.invalid/v1/signal";
   const hostTicket = process.env.BOB_REMOTE_SMOKE_HOST_TICKET;
   const clientTicket = process.env.BOB_REMOTE_SMOKE_CLIENT_TICKET;
   const iceTransportPolicy = process.env.BOB_REMOTE_SMOKE_ICE_POLICY ?? "all";

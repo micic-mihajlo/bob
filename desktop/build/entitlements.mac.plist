@@ -4,7 +4,7 @@
   <dict>
     <key>com.apple.developer.associated-domains</key>
     <array>
-      <string>applinks:bob.run</string>
+      <string>applinks:bob.invalid</string>
     </array>
     <key>com.apple.developer.team-identifier</key>
     <string>ZTRDTUL87R</string>

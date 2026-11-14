@@ -233,7 +233,7 @@ if (commandLineUserDataDirectory) {
 }
 app.setName("Bob");
 app.enableSandbox();
-if (process.platform === "win32") app.setAppUserModelId("app.bob.desktop");
+if (process.platform === "win32") app.setAppUserModelId("dev.micic.bob.desktop");
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 // A second launch exits at once and must not write into the files of the instance that runs.
 if (hasSingleInstanceLock) {

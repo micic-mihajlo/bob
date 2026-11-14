@@ -73,7 +73,7 @@ const AAVE: MarketplacePluginDetail = {
   installs: 0,
   featured: true,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/aave",
+  shareUrl: "https://bob.invalid/plugins/aave",
 };
 
 const CANVA: MarketplacePluginDetail = {
@@ -114,7 +114,7 @@ const CANVA: MarketplacePluginDetail = {
   installs: 0,
   featured: true,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/canva",
+  shareUrl: "https://bob.invalid/plugins/canva",
 };
 
 const LINEAR: MarketplacePluginDetail = {
@@ -155,7 +155,7 @@ const LINEAR: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/linear",
+  shareUrl: "https://bob.invalid/plugins/linear",
 };
 
 const NOTION: MarketplacePluginDetail = {
@@ -196,7 +196,7 @@ const NOTION: MarketplacePluginDetail = {
   installs: 0,
   featured: true,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/notion",
+  shareUrl: "https://bob.invalid/plugins/notion",
 };
 
 const OBSIDIAN: MarketplacePluginDetail = {
@@ -253,7 +253,7 @@ const OBSIDIAN: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/obsidian",
+  shareUrl: "https://bob.invalid/plugins/obsidian",
 };
 
 const ATLASSIAN: MarketplacePluginDetail = {
@@ -293,7 +293,7 @@ const ATLASSIAN: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/atlassian",
+  shareUrl: "https://bob.invalid/plugins/atlassian",
 };
 
 const TODOIST: MarketplacePluginDetail = {
@@ -333,7 +333,7 @@ const TODOIST: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/todoist",
+  shareUrl: "https://bob.invalid/plugins/todoist",
 };
 
 const TRELLO: MarketplacePluginDetail = {
@@ -373,7 +373,7 @@ const TRELLO: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/trello",
+  shareUrl: "https://bob.invalid/plugins/trello",
 };
 
 const COBRAIN: MarketplacePluginDetail = {
@@ -413,7 +413,7 @@ const COBRAIN: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/cobrain",
+  shareUrl: "https://bob.invalid/plugins/cobrain",
 };
 
 const FIGMA: MarketplacePluginDetail = {
@@ -468,7 +468,7 @@ const FIGMA: MarketplacePluginDetail = {
   installs: 0,
   featured: true,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/figma",
+  shareUrl: "https://bob.invalid/plugins/figma",
 };
 
 const PAPER: MarketplacePluginDetail = {
@@ -504,7 +504,7 @@ const PAPER: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/paper",
+  shareUrl: "https://bob.invalid/plugins/paper",
 };
 
 const APPLE_APPS: MarketplacePluginDetail = {
@@ -544,7 +544,7 @@ const APPLE_APPS: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/apple-apps",
+  shareUrl: "https://bob.invalid/plugins/apple-apps",
 };
 
 const SENTRY: MarketplacePluginDetail = {
@@ -584,7 +584,7 @@ const SENTRY: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/sentry",
+  shareUrl: "https://bob.invalid/plugins/sentry",
 };
 
 const VERCEL: MarketplacePluginDetail = {
@@ -625,7 +625,7 @@ const VERCEL: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/vercel",
+  shareUrl: "https://bob.invalid/plugins/vercel",
 };
 
 const CLOUDFLARE: MarketplacePluginDetail = {
@@ -665,7 +665,7 @@ const CLOUDFLARE: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/cloudflare",
+  shareUrl: "https://bob.invalid/plugins/cloudflare",
 };
 
 const SUPABASE: MarketplacePluginDetail = {
@@ -705,7 +705,7 @@ const SUPABASE: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/supabase",
+  shareUrl: "https://bob.invalid/plugins/supabase",
 };
 
 const NEON: MarketplacePluginDetail = {
@@ -748,7 +748,7 @@ const NEON: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/neon",
+  shareUrl: "https://bob.invalid/plugins/neon",
 };
 
 const PRISMA: MarketplacePluginDetail = {
@@ -788,7 +788,7 @@ const PRISMA: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/prisma",
+  shareUrl: "https://bob.invalid/plugins/prisma",
 };
 
 const NETLIFY: MarketplacePluginDetail = {
@@ -829,7 +829,7 @@ const NETLIFY: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/netlify",
+  shareUrl: "https://bob.invalid/plugins/netlify",
 };
 
 const RAILWAY: MarketplacePluginDetail = {
@@ -869,7 +869,7 @@ const RAILWAY: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/railway",
+  shareUrl: "https://bob.invalid/plugins/railway",
 };
 
 const RENDER: MarketplacePluginDetail = {
@@ -927,7 +927,7 @@ const RENDER: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/render",
+  shareUrl: "https://bob.invalid/plugins/render",
 };
 
 const CONTEXT7: MarketplacePluginDetail = {
@@ -962,7 +962,7 @@ const CONTEXT7: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/context7",
+  shareUrl: "https://bob.invalid/plugins/context7",
 };
 
 const HUGGINGFACE: MarketplacePluginDetail = {
@@ -997,7 +997,7 @@ const HUGGINGFACE: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/huggingface",
+  shareUrl: "https://bob.invalid/plugins/huggingface",
 };
 
 const STRIPE: MarketplacePluginDetail = {
@@ -1037,7 +1037,7 @@ const STRIPE: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/stripe",
+  shareUrl: "https://bob.invalid/plugins/stripe",
 };
 
 const POSTHOG: MarketplacePluginDetail = {
@@ -1095,7 +1095,7 @@ const POSTHOG: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/posthog",
+  shareUrl: "https://bob.invalid/plugins/posthog",
 };
 
 const AIRTABLE: MarketplacePluginDetail = {
@@ -1145,7 +1145,7 @@ const AIRTABLE: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/airtable",
+  shareUrl: "https://bob.invalid/plugins/airtable",
 };
 
 const FIRECRAWL: MarketplacePluginDetail = {
@@ -1203,7 +1203,7 @@ const FIRECRAWL: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/firecrawl",
+  shareUrl: "https://bob.invalid/plugins/firecrawl",
 };
 
 const BRAVE_SEARCH: MarketplacePluginDetail = {
@@ -1255,7 +1255,7 @@ const BRAVE_SEARCH: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/brave-search",
+  shareUrl: "https://bob.invalid/plugins/brave-search",
 };
 
 const RESEND: MarketplacePluginDetail = {
@@ -1307,7 +1307,7 @@ const RESEND: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/resend",
+  shareUrl: "https://bob.invalid/plugins/resend",
 };
 
 const COMPOSIO: MarketplacePluginDetail = {
@@ -1371,7 +1371,7 @@ const COMPOSIO: MarketplacePluginDetail = {
   installs: 0,
   featured: false,
   updatedAt: "2026-09-30T00:00:00.000Z",
-  shareUrl: "https://bob.run/plugins/composio",
+  shareUrl: "https://bob.invalid/plugins/composio",
 };
 
 export const MARKETPLACE_PLUGINS: MarketplacePluginDetail[] = [

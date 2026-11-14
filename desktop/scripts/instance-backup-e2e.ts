@@ -170,7 +170,7 @@ async function main(): Promise<void> {
     const fixtureCopied = run("docker", ["cp", `${fixture}/.`, `${dind}:/fixture`]);
     if (fixtureCopied.status !== 0) throw new Error(`The instance fixture did not copy: ${fixtureCopied.stderr}`);
     must(`mkdir -p /stand-in && cat >/stand-in/Dockerfile <<'EOF'\n${standIn}EOF`);
-    must("docker build --quiet --tag ghcr.io/stanwith/bob:latest /stand-in >/dev/null");
+    must("docker build --quiet --tag ghcr.io/micic-mihajlo/bob:latest /stand-in >/dev/null");
 
     // The layout of `bob-instance create`, without systemd: an ext4 image mounted as /data.
     must(`mkdir -p /srv/bob/main/data /backups
@@ -179,7 +179,7 @@ async function main(): Promise<void> {
       mount -o loop /srv/bob/main/data.img ${data}
       cp -a /fixture/. ${data}/ && chown -R 1000:1000 ${data} && chmod 0700 ${data}
       printf 'BOB_NAME=main\\nERA_CPUS=1\\nERA_MEM=1g\\nERA_DISK=256M\\nERA_BACKUP_DIR=/backups\\nERA_BACKUP_KEEP=2\\nERA_BACKUP_MAX_AGE=24\\n' >/opt/bob-docker/instances/main.env
-      docker run --detach --name bob-main --stop-timeout 20 -v ${data}:/data ghcr.io/stanwith/bob:latest >/dev/null`);
+      docker run --detach --name bob-main --stop-timeout 20 -v ${data}:/data ghcr.io/micic-mihajlo/bob:latest >/dev/null`);
     const dataHash = must(`sha256sum ${data}/.config/Bob/bob.db | cut -d ' ' -f 1`);
 
     let result = instance("backups", "main");
@@ -436,7 +436,7 @@ async function main(): Promise<void> {
       `sed -n 's/^  "bobVersion": "\\(.*\\)",$/\\1/p' /backups/main/${removedBackup}/manifest.json`,
     );
     must(
-      `docker run --detach --name bob-main --stop-timeout 20 -v ${data}:/data ghcr.io/stanwith/bob:latest >/dev/null`,
+      `docker run --detach --name bob-main --stop-timeout 20 -v ${data}:/data ghcr.io/micic-mihajlo/bob:latest >/dev/null`,
     );
     check(
       "a backup without a container has the version of the image",

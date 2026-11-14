@@ -1,9 +1,9 @@
 {
   "name": "Bob by Stan",
-  "url": "https://github.com/stanwith/bob",
+  "url": "https://github.com/micic-mihajlo/bob",
   "description": "Gives Bob agents your repositories, issues and pull requests, through the GitHub MCP server, gh and git. The sign-in stays on the computer that runs Bob.",
   "public": true,
-  "hook_attributes": { "url": "https://github.com/stanwith/bob", "active": false },
+  "hook_attributes": { "url": "https://github.com/micic-mihajlo/bob", "active": false },
   "request_oauth_on_install": false,
   "setup_on_update": false,
   "default_permissions": {

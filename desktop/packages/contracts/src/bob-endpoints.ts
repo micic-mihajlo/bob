@@ -8,35 +8,35 @@
  */
 
 /** The public website: invitations, agent and plugin share links, the web client, changelog and guides. */
-export const BOB_WEBSITE_HOST = "bob.run";
-export const BOB_WEBSITE_ORIGIN = "https://bob.run";
-export const BOB_CHANGELOG_URL = "https://bob.run/changelog";
-export const BOB_GUIDES_URL = "https://bob.run/guides";
+export const BOB_WEBSITE_HOST = "bob.invalid";
+export const BOB_WEBSITE_ORIGIN = "https://bob.invalid";
+export const BOB_CHANGELOG_URL = "https://bob.invalid/changelog";
+export const BOB_GUIDES_URL = "https://bob.invalid/guides";
 
 /** The account service (`apps/auth-api`): sign-in, profiles, servers, invitations, marketplace. */
-export const BOB_ACCOUNT_API_ORIGIN = "https://api.bob.run";
+export const BOB_ACCOUNT_API_ORIGIN = "https://api.bob.invalid";
 
 /** Signal: the WebSocket relay for remote control and the Slack, Telegram and webhook ingress. */
-export const BOB_SIGNAL_ORIGIN = "https://signal.bob.run";
-export const BOB_SIGNAL_URL = "wss://signal.bob.run/v1/signal";
+export const BOB_SIGNAL_ORIGIN = "https://signal.bob.invalid";
+export const BOB_SIGNAL_URL = "wss://signal.bob.invalid/v1/signal";
 
 /** The self-hosted OpenPanel that product analytics and error reports go to. */
-export const BOB_ANALYTICS_API_URL = "https://analytics.bob.run/api";
+export const BOB_ANALYTICS_API_URL = "https://analytics.bob.invalid/api";
 
 /** The status page. */
-export const BOB_STATUS_ORIGIN = "https://status.bob.run";
+export const BOB_STATUS_ORIGIN = "https://status.bob.invalid";
 
 /** A Redirect Rule in the website's Cloudflare zone sends this to the current Discord invite. */
-export const BOB_DISCORD_INVITE_URL = "https://discord.bob.run";
+export const BOB_DISCORD_INVITE_URL = "https://discord.bob.invalid";
 
 /** The address people write to. */
-export const BOB_CONTACT_EMAIL = "hello@bob.run";
+export const BOB_CONTACT_EMAIL = "hello@bob.invalid";
 
 /** A hosted team server answers on `<name>-<8 base32>-host.<this domain>`. */
-export const BOB_TEAM_HOST_DOMAIN = "bob.run";
+export const BOB_TEAM_HOST_DOMAIN = "bob.invalid";
 
 /** Published sites answer on `<label>.<this domain>`. */
 export const BOB_HOSTED_SITE_DOMAIN = "bob.site";
 
 /** The domain of each routine's calendar event UID. Changing it gives every event a new identity. */
-export const BOB_ROUTINE_UID_DOMAIN = "routines.bob.run";
+export const BOB_ROUTINE_UID_DOMAIN = "routines.bob.invalid";

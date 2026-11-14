@@ -403,7 +403,7 @@ export class RemoteTeamDirectoryClient {
 
   /**
    * The account service an invitation names. The public website serves the same Worker as
-   * `api.bob.run`, but an invitation must name `api.bob.run`: the desktop and mobile apps
+   * `api.bob.invalid`, but an invitation must name `api.bob.invalid`: the desktop and mobile apps
    * accept only that address.
    */
   #inviteApiUrl(): string {

@@ -42,7 +42,7 @@ const defaultFolder = join(localAppData, "Programs", "Bob");
 // Missing on a computer where no program was installed for this user.
 const uninstallKey = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall";
 const runKey = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-const loginItemName = "app.bob.desktop";
+const loginItemName = "dev.micic.bob.desktop";
 const reportPath = resolve(".bob-build/windows-home-install-update-e2e.json");
 // An installer that waits for a dialog in a silent run does not exit. This limit makes that a failure.
 const installerLimitMs = 5 * 60_000;

@@ -268,7 +268,7 @@ export function macHostAdminOperations(): HostAdminOperations {
           continue;
         } // Logged-out users load the global Aqua agent at next GUI login.
         try {
-          await hostCommand("/bin/launchctl", ["print", `gui/${tenant.uid}/app.bob.desktop.relaunch`]);
+          await hostCommand("/bin/launchctl", ["print", `gui/${tenant.uid}/dev.micic.bob.desktop.relaunch`]);
         } catch {
           await hostCommand("/bin/launchctl", ["bootstrap", `gui/${tenant.uid}`, HOST_AGENT_PLIST]);
         }
@@ -326,7 +326,7 @@ export function macHostAdminOperations(): HostAdminOperations {
       await verifyNoWriteAcl(join(ROOT, "state.json"));
     },
     verifyDaemon: async () => {
-      const output = await hostCommand("/bin/launchctl", ["print", "system/app.bob.host-manager"]);
+      const output = await hostCommand("/bin/launchctl", ["print", "system/dev.micic.bob.host-manager"]);
       if (!/^\s*state = running\s*$/m.test(output) || !/^\s*pid = \d+\s*$/m.test(output))
         throw new Error("Host daemon is not running.");
     },

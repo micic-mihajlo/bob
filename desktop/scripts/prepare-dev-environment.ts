@@ -221,7 +221,7 @@ export function assertSupportedBunVersion(version: string): void {
   if (version === supportedBunVersion) return;
 
   throw new Error(
-    `Unsupported Bun ${version}. Bob development requires stable Bun ${supportedBunVersion}. Install the exact version with the command in https://github.com/stanwith/bob#development, then retry.`,
+    `Unsupported Bun ${version}. Bob development requires stable Bun ${supportedBunVersion}. Install the exact version with the command in https://github.com/micic-mihajlo/bob#development, then retry.`,
   );
 }
 

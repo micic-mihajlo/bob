@@ -3,7 +3,7 @@
  * the app, and the browser client's entry for it.
  *
  * ```
- * https://bob.run/agents/<id>    the link a person shares and the app copies
+ * https://bob.invalid/agents/<id>    the link a person shares and the app copies
  * bob://agents/<id>              the link the page button opens
  * /app?agent=<id>                    the page's link to the browser client, on the same origin
  * ```
@@ -28,7 +28,7 @@ export function isAgentTemplateId(value: string): boolean {
 }
 
 /**
- * The site a share link names: `bob.run`, or a loopback origin while a developer runs the Account
+ * The site a share link names: `bob.invalid`, or a loopback origin while a developer runs the Account
  * Worker on this computer. Nothing else passes, so a configured address cannot turn the copied link
  * into another site.
  */
@@ -46,7 +46,7 @@ export function isAgentTemplateShareOrigin(origin: string): boolean {
   }
 }
 
-/** The share origin for an Account Worker: the local Worker in development, `bob.run` otherwise. */
+/** The share origin for an Account Worker: the local Worker in development, `bob.invalid` otherwise. */
 export function agentTemplateShareOrigin(apiOrigin: string): string {
   return apiOrigin !== BOB_AGENT_TEMPLATE_ORIGIN && isAgentTemplateShareOrigin(apiOrigin)
     ? apiOrigin
@@ -88,7 +88,7 @@ export function parseAgentTemplateUrl(value: string): string {
     throw new Error("The Bob agent link is invalid.");
   }
 
-  // The origin is compared as one string, so `bob.run.example.com` does not pass.
+  // The origin is compared as one string, so `bob.invalid.example.com` does not pass.
   const canonical =
     url.protocol === "https:" &&
     url.origin === BOB_AGENT_TEMPLATE_ORIGIN &&

@@ -23,7 +23,7 @@ export type AgentImportSkillSource = (typeof AGENT_IMPORT_SKILL_SOURCES)[number]
  * The export skill in Bob's own repository, as Hermes installs it from GitHub with
  * `/skills install`. The path is the skill folder on the default branch.
  */
-export const HERMES_EXPORT_SKILL_ID = "stanwith/bob/resources/agent-import/hermes-agent";
+export const HERMES_EXPORT_SKILL_ID = "micic-mihajlo/bob/resources/agent-import/hermes-agent";
 
 export const AGENT_IMPORT_LIMITS = {
   archiveBytes: 500 * 1024 * 1024,

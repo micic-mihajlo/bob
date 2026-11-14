@@ -1,4 +1,4 @@
-// Adapted from the report in stanwith/bob#2686: "Codex CLI reports 'not found'".
+// Adapted from the report in micic-mihajlo/bob#2686: "Codex CLI reports 'not found'".
 // Bob started the way Finder, the Dock or a login item starts it: PATH=/usr/bin:/bin:/usr/sbin:/sbin.
 // An npm Codex is a `#!/usr/bin/env node` script, so `codex --version` and the app-server process
 // must run with the login shell's folders, or with the folder that Codex was found in.

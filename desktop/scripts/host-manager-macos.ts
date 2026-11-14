@@ -12,7 +12,7 @@ export const SHARED_APP = "/Applications/Bob.app";
 const STAGING = "/Applications/.bob-host-stage";
 const PRIVATE = join(HOST_MANAGER_DIRECTORY, "private");
 const SIGNING_REQUIREMENT =
-  '=anchor apple generic and identifier "app.bob.desktop" and certificate leaf[subject.OU] = "ZTRDTUL87R"';
+  '=anchor apple generic and identifier "dev.micic.bob.desktop" and certificate leaf[subject.OU] = "ZTRDTUL87R"';
 const releaseSchema = z.object({
   tag_name: z.string().regex(/^v?\d+\.\d+\.\d+$/),
   draft: z.literal(false),
@@ -157,7 +157,7 @@ export function macHostOperations(): HostManagerOperations {
       await verifySharedAppParent();
       await verifyBundleTree(SHARED_APP, true);
       await verifySignature(SHARED_APP);
-      const response = await fetch("https://api.github.com/repos/stanwith/bob/releases/latest", {
+      const response = await fetch("https://api.github.com/repos/micic-mihajlo/bob/releases/latest", {
         signal: AbortSignal.timeout(30_000),
         headers: { Accept: "application/vnd.github+json" },
       });
@@ -171,7 +171,7 @@ export function macHostOperations(): HostManagerOperations {
       const dmg = join(PRIVATE, "release.dmg");
       await rm(dmg, { force: true });
       // Asset names and repository are fixed. No tenant supplies a network destination.
-      const url = `https://github.com/stanwith/bob/releases/download/${release.tag_name}/Bob-${version}-arm64.dmg`;
+      const url = `https://github.com/micic-mihajlo/bob/releases/download/${release.tag_name}/Bob-${version}-arm64.dmg`;
       await command(
         "/usr/bin/curl",
         [

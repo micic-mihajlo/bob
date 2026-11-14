@@ -25,7 +25,7 @@ function failure(errorCode: number, description: string): MessagingAdapterError 
   return new MessagingAdapterError({ cause: new TelegramCallError(errorCode, description, null) });
 }
 
-/** The HTTPS origin of a Signal socket URL: `wss://signal.bob.run/v1/signal` gives `https://signal.bob.run`. */
+/** The HTTPS origin of a Signal socket URL: `wss://signal.bob.invalid/v1/signal` gives `https://signal.bob.invalid`. */
 export function signalHttpOrigin(signalUrl: string): string {
   const url = new URL(signalUrl);
   url.protocol = url.protocol === "ws:" ? "http:" : "https:";

@@ -69,11 +69,11 @@ import { stringPayload } from "./validation";
  * `mailto:` address, which `openUrl` refuses; the web client opens the same constant.
  */
 const EXTERNAL_DESTINATIONS: Record<ExternalDestination, string> = {
-  "agent-setup": "https://github.com/stanwith/bob/blob/main/apps/desktop/docs/TROUBLESHOOTING.md",
+  "agent-setup": "https://github.com/micic-mihajlo/bob/blob/main/apps/desktop/docs/TROUBLESHOOTING.md",
   "opencode-install": "https://opencode.ai/docs/",
   "opencode-auth": "https://opencode.ai/auth",
   "claude-install": "https://code.claude.com/docs",
-  feedback: "https://x.com/intent/post?text=Feedback%20for%20Bob%20%40norbertbodziony%3A%20",
+  feedback: "https://github.com/micic-mihajlo/bob/issues/new",
   message: "https://x.com/norbertbodziony",
   changelog: BOB_CHANGELOG_URL,
   guides: BOB_GUIDES_URL,

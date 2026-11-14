@@ -33,7 +33,7 @@ export interface GitHubBotToken {
 }
 
 export interface GitHubBotTokensOptions {
-  /** The origin of the Bob API, such as `https://api.bob.run`. */
+  /** The origin of the Bob API, such as `https://api.bob.invalid`. */
   apiUrl: string;
   fetch: GitHubFetch;
   now: () => number;

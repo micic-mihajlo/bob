@@ -20,7 +20,7 @@ const productionBucket = "bob-skills";
 const owner = {
   id: "bob-production-catalog",
   identityKey: "bob-production-catalog",
-  email: "catalog@bob.run",
+  email: "catalog@bob.invalid",
   name: "Bob",
   avatarUrl: `${BOB_WEBSITE_ORIGIN}/icon-192x192.png`,
 } as const;

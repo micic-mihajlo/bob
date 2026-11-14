@@ -861,7 +861,7 @@ class McpOAuthClientProvider implements OAuthClientProvider {
     const methods = this.#discoveryState?.authorizationServerMetadata?.token_endpoint_auth_methods_supported;
     return {
       client_name: "Bob",
-      client_uri: "https://github.com/stanwith/bob",
+      client_uri: "https://github.com/micic-mihajlo/bob",
       redirect_uris: [this.#options.redirectUrl],
       grant_types: ["authorization_code", "refresh_token"],
       response_types: ["code"],

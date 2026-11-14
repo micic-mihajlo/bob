@@ -99,7 +99,7 @@ interface FixtureIssue {
 }
 
 const issue = (fields: FixtureIssue) => ({
-  html_url: `https://github.com/stanwith/bob/issues/${fields.number}`,
+  html_url: `https://github.com/micic-mihajlo/bob/issues/${fields.number}`,
   state: "open",
   state_reason: null,
   user: MEMBER,
@@ -439,7 +439,7 @@ interface IncidentFixture {
   resolvedAt?: string | null;
 }
 const incident = (fields: IncidentFixture) => ({
-  url: `https://github.com/stanwith/bob/issues/${fields.id}`,
+  url: `https://github.com/micic-mihajlo/bob/issues/${fields.id}`,
   kind: "incident",
   impact: "partial",
   resolvedAt: null,

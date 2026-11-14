@@ -113,7 +113,7 @@ const plist = JSON.parse(run("plutil", ["-convert", "json", "-o", "-", plistPath
 if (!isDynamicRecord(plist)) throw new Error("Info.plist is not a JSON object.");
 expectEqual(plist.CFBundleDisplayName, "Bob", "display name");
 expectEqual(plist.CFBundleExecutable, "Bob", "executable name");
-expectEqual(plist.CFBundleIdentifier, "app.bob.desktop", "bundle identifier");
+expectEqual(plist.CFBundleIdentifier, "dev.micic.bob.desktop", "bundle identifier");
 expectEqual(plist.CFBundleIconFile, "icon.icns", "application icon");
 expectEqual(plist.CFBundleIconName, undefined, "no stale macOS icon catalog");
 expectEqual(plist.LSMinimumSystemVersion, "13.0", "minimum macOS version");

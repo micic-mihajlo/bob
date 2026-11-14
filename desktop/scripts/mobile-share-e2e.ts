@@ -151,7 +151,7 @@ async function main(): Promise<void> {
 
   const cases: ShareCase[] = [
     { name: "text", coldStart: false, text: [{ type: "text", value: "Bob share E2E text" }] },
-    { name: "link", coldStart: false, text: [{ type: "url", value: "https://bob.run/" }] },
+    { name: "link", coldStart: false, text: [{ type: "url", value: "https://bob.invalid/" }] },
     {
       name: "image",
       coldStart: false,

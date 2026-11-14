@@ -1,4 +1,4 @@
-appId: app.bob.desktop
+appId: dev.micic.bob.desktop
 productName: Bob
 copyright: Copyright © 2026 Synthetify Labs spółka z ograniczoną odpowiedzialnością
 protocols:
@@ -19,10 +19,6 @@ electronFuses:
   onlyLoadAppFromAsar: true
   loadBrowserProcessSpecificV8Snapshot: false
   grantFileProtocolExtraPrivileges: false
-publish:
-  provider: github
-  owner: stanwith
-  repo: bob
 files:
   - out/**/*
   - package.json

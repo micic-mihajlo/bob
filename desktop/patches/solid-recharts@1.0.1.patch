@@ -1658,7 +1658,7 @@ index 743fc97ed31e3bacffc6e803dacaeaba6729ae42..5d227de86ed2f1328440ebf2c6ba1452
  //#region src/hooks.ts
  const useXAxis = (xAxisId) => {
  	const isPanorama = useIsPanorama();
-diff --git a/dist/browser/node_modules/csstype/index.d.ts b/Users/norbertbodziony/.bun/install/cache/solid-recharts@1.0.1@@@1/dist/browser/node_modules/csstype/index.d.ts
+diff --git a/dist/browser/node_modules/csstype/index.d.ts b/dist/browser/node_modules/csstype/index.d.ts
 deleted file mode 100644
 index 887c788b30e55b7b506bac5d36df3619abe6ba87..0000000000000000000000000000000000000000
 diff --git a/dist/browser/polar/Pie.d.ts b/dist/browser/polar/Pie.d.ts

@@ -297,7 +297,7 @@ export function decodeHostAgentTemplatePreview(value: unknown): AgentTemplatePre
   };
 }
 
-/** The link is rebuilt from the id on `bob.run` or the local Worker, so a host cannot name another address. */
+/** The link is rebuilt from the id on `bob.invalid` or the local Worker, so a host cannot name another address. */
 export function decodeHostAgentTemplatePublication(value: unknown): AgentTemplatePublication {
   if (
     !isDynamicRecord(value) ||

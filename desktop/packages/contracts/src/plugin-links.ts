@@ -3,7 +3,7 @@
  * in the app, and the browser client's entry for it.
  *
  * ```
- * https://bob.run/plugins/<slug>    the link a person shares and the app copies
+ * https://bob.invalid/plugins/<slug>    the link a person shares and the app copies
  * bob://plugins/<slug>              the link the page button opens
  * /app?plugin=<slug>                    the page's link to the browser client, on the same origin
  * ```
@@ -91,7 +91,7 @@ export function parsePluginUrl(value: string): string {
   }
 
   /* The origin is compared as one string. An `endsWith` or a host expression here is what lets
-     `bob.run.example.com` through. */
+     `bob.invalid.example.com` through. */
   const canonical =
     url.protocol === "https:" && url.origin === BOB_PLUGIN_ORIGIN && url.pathname.startsWith(BOB_PLUGIN_PATH_PREFIX);
   const customScheme = url.protocol === "bob:" && url.hostname === BOB_PLUGIN_HOST;

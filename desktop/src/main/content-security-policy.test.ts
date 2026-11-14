@@ -6,7 +6,7 @@ describe("buildContentSecurityPolicy", () => {
     const policy = buildContentSecurityPolicy(true);
 
     expect(policy).toContain("connect-src 'self' bob-attachment: bob-remote-attachment: ws://127.0.0.1:*");
-    expect(policy).not.toContain("bob.run");
+    expect(policy).not.toContain("bob.invalid");
     expect(policy.split("; ").find((directive) => directive.startsWith("connect-src "))).not.toContain("localhost");
   });
 

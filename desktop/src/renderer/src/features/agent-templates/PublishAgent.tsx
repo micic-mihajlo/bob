@@ -79,7 +79,7 @@ export function createPublishAgent(
     void load(agentId);
   }
 
-  /** The preload rebuilt `shareUrl` from the id, on `bob.run` or, in development, the local Worker. */
+  /** The preload rebuilt `shareUrl` from the id, on `bob.invalid` or, in development, the local Worker. */
   async function copyShareLink(): Promise<boolean> {
     const publication = state.preview?.publication;
     if (!publication) return false;
