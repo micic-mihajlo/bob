@@ -20,7 +20,7 @@ function RailButton({ label, icon: Icon, current = false, onClick }: { label: st
 const CAPTAIN_PAGES: ReadonlyArray<{ tab: PanelTab; label: string; icon: LucideIcon }> = [
   { tab: "roadmap", label: "Roadmap", icon: MapIcon },
   { tab: "inbox", label: "Inbox", icon: Inbox },
-  { tab: "crew", label: "Crew", icon: Users },
+  { tab: "crew", label: "Blobs", icon: Users },
   { tab: "drive", label: "Drive", icon: FolderOpen },
 ];
 

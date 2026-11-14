@@ -19,8 +19,8 @@ const EXIT_LIMIT_MS = 2500;
 const EXIT_ANIMATION = "app-loading-exit";
 
 const STATUS_LINES = [
-  "Waking up the agents…",
-  "Pouring coffee for the agents…",
+  "Waking up the Blobs…",
+  "Pouring coffee for the Blobs…",
   "Counting tokens on fingers…",
   "Untangling the prompts…",
   "Asking the sleepy one nicely…",
@@ -126,7 +126,7 @@ export function AppLoadingScreen({ ready = false, onExited, error = null }: AppL
       aria-busy={ready ? "false" : "true"}
       onAnimationEnd={handleAnimationEnd}
     >
-      <span className="sr-only">{error === null ? "Loading Bob" : `Could not load Bob. ${error}`}</span>
+      <span className="sr-only">{error === null ? "Loading Bob and B(l)obs" : `Could not load Bob and B(l)obs. ${error}`}</span>
       <div className="app-loading-stage">
         <div className="app-loading-row" aria-hidden="true">
           {HOPPERS.map((hopper, index) => (
