@@ -15,7 +15,7 @@ import { WhyTraceDialog } from "./WhyTraceDialog";
 const EMPTY_THREAD: Omit<ThreadView, "agentId"> = { items: [], waitingOn: [], queued: 0, unread: 0 };
 
 function ClosedNotice({ agent }: { agent: Agent }) {
-  return <p className="channel-preview-notice">{agent.code ?? agent.name} is closed. Its history stays readable.</p>;
+  return <p className="channel-preview-notice">{agent.code ?? agent.name} is closed, so it takes no new messages.</p>;
 }
 
 /** One thread's chat, keyed by agent so its scroll, draft focus and open rows start fresh. */
