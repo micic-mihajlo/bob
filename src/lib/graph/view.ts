@@ -1,17 +1,27 @@
 import type { State } from "../state";
 import type { GraphView, GraphViewEdge, GraphViewNode } from "../types";
-import { HOP_COLUMNS, MAX_HOPS, orderHops, type HopRow } from "../why";
-import { hydraConfig, runCypher } from "./hydra";
-import { syncGraph } from "./mirror";
+import { HOP_COLUMNS, MAX_HOPS, orderHops, SYNC_BUDGET_MS, type HopRow } from "../why";
+import { hydraConfig, hydraUp, READ_TIMEOUT_MS, runCypher } from "./hydra";
+import { syncWithin } from "./mirror";
 import { toGraph, USER_ID, type Graph, type GraphEdge } from "./schema";
 
 /** The pull request's Why? path: its message, then CAUSED_BY back to what the person typed. */
 export const PR_PATH_QUERY = `MATCH (pr:PullRequest {ext_id: $prId})-[:BECAUSE_OF]->(m:Message)-[:CAUSED_BY*0..${MAX_HOPS}]->(hop:Message) RETURN pr.label AS prLabel, m.ext_id AS startId, ${HOP_COLUMNS} LIMIT ${MAX_HOPS + 1}`;
 
-/** What touches the pull request: its commit, the turn that made it and that turn's thread, reviews, approvals, work order. */
+/** The edges that can touch a pull request, by direction. Every relationship pattern is typed. */
+const PR_OUT = ["GATED_BY"] as const;
+const PR_IN = ["PART_OF", "MADE", "REVIEWS", "DELIVERED_BY", "RESOLVED_BY", "FOLLOW_UP_OF"] as const;
+
+/** What touches the pull request: its commit, the turn that made it and that turn's thread, reviews, approvals, work order, inbox items. */
 export const PR_AROUND_QUERY = [
-  "MATCH (pr:PullRequest {ext_id: $prId})-[r]->(n) RETURN pr.ext_id AS src, type(r) AS rel, n.ext_id AS dst, n.ext_id AS id, n.kind AS kind, n.label AS label LIMIT 50",
-  "MATCH (pr:PullRequest {ext_id: $prId})<-[r]-(n) RETURN n.ext_id AS src, type(r) AS rel, pr.ext_id AS dst, n.ext_id AS id, n.kind AS kind, n.label AS label LIMIT 50",
+  ...PR_OUT.map(
+    (type) =>
+      `MATCH (pr:PullRequest {ext_id: $prId})-[r:${type}]->(n) RETURN pr.ext_id AS src, type(r) AS rel, n.ext_id AS dst, n.ext_id AS id, n.kind AS kind, n.label AS label LIMIT 20`,
+  ),
+  ...PR_IN.map(
+    (type) =>
+      `MATCH (n)-[r:${type}]->(pr:PullRequest {ext_id: $prId}) RETURN n.ext_id AS src, type(r) AS rel, pr.ext_id AS dst, n.ext_id AS id, n.kind AS kind, n.label AS label LIMIT 20`,
+  ),
   "MATCH (a:Agent)-[r:RUNS]->(t:Turn)-[:MADE]->(pr:PullRequest {ext_id: $prId}) RETURN a.ext_id AS src, type(r) AS rel, t.ext_id AS dst, a.ext_id AS id, a.kind AS kind, a.label AS label LIMIT 10",
 ].join(" UNION ALL ");
 
@@ -93,13 +103,14 @@ async function viewFromHydra(prId: string): Promise<GraphView | null> {
   const c = hydraConfig();
   if (!c) return null;
   const [path, around] = await Promise.all([
-    runCypher<HopRow & { prLabel: string; startId: string }>(c, PR_PATH_QUERY, { prId }),
-    runCypher<AroundRow>(c, PR_AROUND_QUERY, { prId }),
+    runCypher<HopRow & { prLabel: string; startId: string }>(c, PR_PATH_QUERY, { prId }, READ_TIMEOUT_MS),
+    runCypher<AroundRow>(c, PR_AROUND_QUERY, { prId }, READ_TIMEOUT_MS),
   ]);
   if (path.length === 0) return null;
   const out = collector(prId);
   out.node({ id: prId, kind: "PullRequest", label: path[0].prLabel });
   const hops = orderHops(path, path[0].startId);
+  if (hops.length === 0) return null;
   for (const hop of hops) {
     out.node({ id: hop.id, kind: "Message", label: hop.label });
     out.node({ id: hop.fromId, kind: hop.fromKind === "user" ? "User" : "Agent", label: hop.fromName });
@@ -115,11 +126,14 @@ async function viewFromHydra(prId: string): Promise<GraphView | null> {
   return out.view(hops.at(-1)?.id ?? null, "hydra");
 }
 
-/** `GET /api/graph?prId=`: from HydraDB when the graph store is on, otherwise from the state in memory. */
+/**
+ * `GET /api/graph?prId=`: from HydraDB when the graph store is on and answering, otherwise from the state in memory.
+ * Bounded the same way as Why?: the sync budget plus one read timeout at most.
+ */
 export async function graphViewFor(s: State, prId: string): Promise<GraphView | null> {
-  if (hydraConfig()) {
+  if (hydraConfig() && hydraUp()) {
     try {
-      await syncGraph(s);
+      await syncWithin(s, SYNC_BUDGET_MS);
       const fromGraph = await viewFromHydra(prId);
       if (fromGraph) return fromGraph;
     } catch (error) {

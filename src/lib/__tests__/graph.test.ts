@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { postUserMessage } from "../actions";
-import { hydraConfig } from "../graph/hydra";
-import { resetMirror, syncGraph } from "../graph/mirror";
+import { hydraConfig, hydraUp, resetHydraHealth } from "../graph/hydra";
+import { mirrorCommit, resetMirror, syncGraph } from "../graph/mirror";
 import { toGraph } from "../graph/schema";
 import { graphViewFor, PR_AROUND_QUERY, PR_PATH_QUERY, viewFromGraph } from "../graph/view";
 import type { State } from "../state";
@@ -17,14 +17,14 @@ const VAGUE = "customers want to export invoices as CSV";
 const ANSWER = "All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.";
 
 /**
- * Recorded: a state from the CSV walkthrough (ask, one pushback, answer, PR, review, approval), and the rows the
- * Why? and graph queries returned once the mirror's own writes for that state were replayed into a Cypher engine,
- * in HydraDB's response envelope.
+ * Recorded from HydraDB: a state from the CSV walkthrough (ask, one pushback, answer, PR, review, approval) plus a
+ * work order promoted from an inbox call, and the responses api.hydradb.com gave to the Why? and graph queries once
+ * the mirror's own writes for that state were sent to a fresh collection.
  */
 const FIXTURES = path.join(__dirname, "fixtures", "hydra");
 const recordedState = JSON.parse(readFileSync(path.join(FIXTURES, "state.json"), "utf8")) as State;
 type Recorded = { request: { query: string; params: Record<string, string> }; response: unknown };
-const recorded = JSON.parse(readFileSync(path.join(FIXTURES, "recorded.json"), "utf8")) as Record<"why" | "path" | "around", Recorded>;
+const recorded = JSON.parse(readFileSync(path.join(FIXTURES, "recorded.json"), "utf8")) as Record<"why" | "whyInbox" | "path" | "around", Recorded>;
 
 interface Call {
   url: string;
@@ -73,7 +73,9 @@ const sorted = (v: GraphView) => ({
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   resetMirror();
+  resetHydraHealth();
 });
 
 describe("Bob's state as a graph", { timeout: 60_000 }, () => {
@@ -145,6 +147,26 @@ describe("the HydraDB mirror", { timeout: 60_000 }, () => {
     expect(deleted.some((id) => kept.has(id as string))).toBe(false);
   });
 
+  it("mirrors request tracks and inbox items with their links", () => {
+    const g = toGraph(recordedState);
+    const kinds = new Set(g.nodes.map((n) => n.kind));
+    for (const k of ["Track", "InboxItem", "WorkOrder", "PullRequest", "Approval"] as const) expect(kinds).toContain(k);
+    expect(g.nodes.filter((n) => n.kind === "Track")).toHaveLength(recordedState.roadmap.tracks!.length);
+    const types = new Set(g.edges.map((e) => `${e.fromKind}-${e.type}-${e.toKind}`));
+    for (const t of ["Roadmap-HAS-Track", "Track-STARTED_BY-Message", "WorkOrder-PART_OF-Track", "Message-HANDS_IN-InboxItem", "WorkOrder-FROM_INBOX-InboxItem"]) expect(types).toContain(t);
+  });
+
+  it("skips a statement HydraDB rejects and writes the rest", async () => {
+    const calls = fakeHydra((c) =>
+      / MERGE \(n:Track /.test(c.body.query ?? "") ? { status: 400, json: { success: false, data: null, error: { code: "INVALID_INPUT", message: "nope" } } } : ok(),
+    );
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    switchOn();
+    await syncGraph(recordedState);
+    expect(queries(calls).some((c) => / MERGE \(n:InboxItem /.test(c.body.query!))).toBe(true);
+    expect(hydraUp()).toBe(true);
+  });
+
   it("sends a failed batch again on the next sync", async () => {
     const s = await walkthrough();
     let fail = true;
@@ -157,6 +179,8 @@ describe("the HydraDB mirror", { timeout: 60_000 }, () => {
     });
     switchOn();
     await expect(syncGraph(s)).rejects.toThrow("boom");
+    expect(hydraUp()).toBe(false);
+    resetHydraHealth();
     const first = queries(calls)[0].body.query;
     await syncGraph(s);
     expect(queries(calls)[1].body.query).toBe(first);
@@ -170,11 +194,9 @@ describe("Why? from HydraDB", () => {
   function replay(): Call[] {
     return fakeHydra((c) => {
       for (const r of Object.values(recorded)) {
-        if (c.body.query === r.request.query) {
-          expect(c.body.params).toEqual(r.request.params);
-          return { status: 200, json: r.response };
-        }
+        if (c.body.query === r.request.query && JSON.stringify(c.body.params) === JSON.stringify(r.request.params)) return { status: 200, json: r.response };
       }
+      if (!c.body.params?.rows) throw new Error(`no recorded response for ${c.body.query}`);
       return ok();
     });
   }
@@ -189,6 +211,60 @@ describe("Why? from HydraDB", () => {
     expect(answer.hops).toEqual(traceWhy(recordedState, pr.messageId!));
     expect(answer.hops.at(-1)?.message.text).toBe(VAGUE);
     expect(answer.hops.at(-2)?.question).toMatch(/columns/);
+  });
+
+  it("keeps an inbox item's source on the hop where the trace ends", async () => {
+    replay();
+    switchOn();
+    const brief = recorded.whyInbox.request.params.messageId;
+    const answer = await answerWhy(recordedState, brief);
+    expect(answer.source).toBe("hydra");
+    expect(answer.hops).toEqual(traceWhy(recordedState, brief));
+    expect(answer.hops.at(-1)?.source).toMatchObject({ kind: "meeting", label: "customer call, Nov 13" });
+  });
+
+  it("answers from memory when the graph is missing part of the path", async () => {
+    fakeHydra((c) => {
+      if (c.body.query !== WHY_QUERY) return ok();
+      return ok((recorded.why.response as { data: unknown[] }).data.slice(0, -1));
+    });
+    switchOn();
+    expect((await answerWhy(recordedState, pr.messageId!)).source).toBe("memory");
+  });
+
+  it("a hung HydraDB costs one bounded wait, then nothing until it cools off", { timeout: 20_000 }, async () => {
+    const calls = fakeHydra(() => ({ status: 200, json: ok().json }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init: RequestInit) => {
+        calls.push({ url, headers: {}, body: JSON.parse(String(init.body)) });
+        return new Promise((_, reject) => init.signal?.addEventListener("abort", () => reject(init.signal?.reason)));
+      }),
+    );
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    switchOn();
+    const started = Date.now();
+    const answer = await answerWhy(recordedState, pr.messageId!);
+    expect(answer).toEqual({ hops: traceWhy(recordedState, pr.messageId!), source: "memory" });
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(hydraUp()).toBe(false);
+
+    const before = calls.length;
+    const again = Date.now();
+    expect((await answerWhy(recordedState, pr.messageId!)).source).toBe("memory");
+    expect((await graphViewFor(recordedState, pr.id))?.source).toBe("memory");
+    expect(Date.now() - again).toBeLessThan(200);
+    expect(calls.length).toBe(before);
+  });
+
+  it("a commit only schedules the mirror; it never waits on HydraDB", () => {
+    const fetch = vi.fn(() => new Promise(() => undefined));
+    vi.stubGlobal("fetch", fetch);
+    switchOn();
+    const started = Date.now();
+    for (let i = 0; i < 50; i++) mirrorCommit(recordedState);
+    expect(Date.now() - started).toBeLessThan(50);
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("draws the same graph view from HydraDB as from memory", async () => {
