@@ -132,7 +132,7 @@ function AsciiAvatar({ agent, mood = "idle", motion = "hover", followPointer = f
         surface.height = pixels;
       }
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      drawAsciiFace(context, size, live.current.identity, frame);
+      drawAsciiFace(context, size, live.current.identity, frame, true);
     };
     const step = (now: number) => {
       handle = 0;
