@@ -10,9 +10,9 @@ const unwrap = (r: { ok: true; roadmap: Roadmap } | { ok: false; error: string }
 
 const TESTABLE: GoalInput = {
   title: "Ship exports",
-  user: "Accountants on the invoices page",
-  behaviour: "Download every invoice as a CSV file",
-  acceptance: "The file has a header row and one row per invoice",
+  user: "Accountants on the tasks page",
+  behaviour: "Download every task as a CSV file",
+  acceptance: "The file has a header row and one row per task",
 };
 
 const A = { requestId: "req_a", messageId: "msg_a" };
@@ -49,9 +49,9 @@ describe("roadmap rules", () => {
 
   it("keeps an inbox work order when set_roadmap repeats its title, instead of adding a copy without its source", () => {
     const source = { inboxId: "inb_1", kind: "meeting" as const, label: "customer call, Nov 13", quote: "Dana: a CSV export" };
-    const { roadmap, order } = addSourcedOrder(emptyRoadmap(), "Export all invoices as a CSV", source);
-    const planned = unwrap(setRoadmap(roadmap, A, ["export all invoices as a CSV.", "List overdue invoices"]));
-    expect(planned.backlog?.map((w) => w.title)).toEqual(["Export all invoices as a CSV", "List overdue invoices"]);
+    const { roadmap, order } = addSourcedOrder(emptyRoadmap(), "Export all tasks as a CSV", source);
+    const planned = unwrap(setRoadmap(roadmap, A, ["export all tasks as a CSV.", "List overdue tasks"]));
+    expect(planned.backlog?.map((w) => w.title)).toEqual(["Export all tasks as a CSV", "List overdue tasks"]);
     expect(planned.backlog?.[0]).toMatchObject({ id: order.id, source });
     const scheduled = unwrap(setToday(planned, A, [order.id]));
     expect(scheduled.today[0]).toMatchObject({ id: order.id, source, requestId: A.requestId });
@@ -72,9 +72,9 @@ describe("roadmap rules", () => {
     const vague = unwrap(setGoal(emptyRoadmap(), A, { title: "Customers want CSV export" }));
     const refused = advanceStage(vague, A.requestId);
     expect(refused.ok ? null : refused.error).toMatch(/A named user; The behaviour they need; An acceptance check/);
-    const partial = unwrap(setGoal(vague, A, { title: "CSV export", user: "Accountants", behaviour: "Export invoices" }));
+    const partial = unwrap(setGoal(vague, A, { title: "CSV export", user: "Accountants", behaviour: "Export tasks" }));
     expect(advanceStage(partial, A.requestId).ok ? null : "refused").toBe("refused");
-    expect(unwrap(advanceStage(unwrap(setGoal(partial, A, { title: "CSV export", acceptance: "One row per invoice" })), A.requestId)).stageTitle).toBe("Spec");
+    expect(unwrap(advanceStage(unwrap(setGoal(partial, A, { title: "CSV export", acceptance: "One row per task" })), A.requestId)).stageTitle).toBe("Spec");
   });
 
   it("will not advance a stage until its exit criteria hold", () => {
@@ -110,14 +110,14 @@ describe("roadmap rules", () => {
     const ship = atShip(planned(["a"]));
     const [a] = ship.today;
     const learn = unwrap(advanceStage(unwrap(completeWorkOrder(ship, a.id, "art_pr")), A.requestId));
-    const next = unwrap(setGoal(learn, B, { title: "Import invoices", acceptance: "Imported rows match the file" }));
+    const next = unwrap(setGoal(learn, B, { title: "Import tasks", acceptance: "Imported rows match the file" }));
     expect(trackOf(next, A.requestId)).toMatchObject({ stageTitle: "Learn", goal: { title: TESTABLE.title } });
-    expect(trackOf(next, B.requestId)).toMatchObject({ stageTitle: "Intent", messageId: B.messageId, goal: { title: "Import invoices", user: null } });
-    expect(next).toMatchObject({ stageTitle: "Intent", goal: { title: "Import invoices" } });
+    expect(trackOf(next, B.requestId)).toMatchObject({ stageTitle: "Intent", messageId: B.messageId, goal: { title: "Import tasks", user: null } });
+    expect(next).toMatchObject({ stageTitle: "Intent", goal: { title: "Import tasks" } });
   });
 
   it("moves a second request forward while the first waits at Ship, each on its own gates and work orders", () => {
-    const first = atShip(planned(["Overdue invoices"]));
+    const first = atShip(planned(["Overdue tasks"]));
     const both = planned(["CSV export"], { ...TESTABLE, title: "CSV export" }, first, B);
     expect(advanceStage(both, A.requestId).ok).toBe(false);
     const spec = unwrap(advanceStage(both, B.requestId));
@@ -125,7 +125,7 @@ describe("roadmap rules", () => {
     expect(advanceStage(spec, B.requestId).ok).toBe(false);
     const [csv] = own(spec, B);
     const build = unwrap(advanceStage(unwrap(setToday(spec, B, [csv.id])), B.requestId));
-    expect(build.today.map((w) => [w.title, w.requestId])).toEqual([["Overdue invoices", A.requestId], ["CSV export", B.requestId]]);
+    expect(build.today.map((w) => [w.title, w.requestId])).toEqual([["Overdue tasks", A.requestId], ["CSV export", B.requestId]]);
     expect(trackOf(build, A.requestId)?.stageTitle).toBe("Ship");
     expect(trackOf(build, B.requestId)?.stageTitle).toBe("Build");
     expect(setToday(build, B, [build.today[0].id]).ok).toBe(false);
@@ -135,9 +135,9 @@ describe("roadmap rules", () => {
   });
 
   it("keeps each request's planned work when another request plans", () => {
-    const first = planned(["Overdue invoices", "Docs"]);
+    const first = planned(["Overdue tasks", "Docs"]);
     const both = planned(["CSV export"], TESTABLE, first, B);
-    expect(both.backlog?.map((w) => [w.title, w.requestId])).toEqual([["Overdue invoices", A.requestId], ["Docs", A.requestId], ["CSV export", B.requestId]]);
+    expect(both.backlog?.map((w) => [w.title, w.requestId])).toEqual([["Overdue tasks", A.requestId], ["Docs", A.requestId], ["CSV export", B.requestId]]);
   });
 
   it("turns a roadmap saved before tracks into one track at its stage", () => {

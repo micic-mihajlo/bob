@@ -18,9 +18,9 @@ const requestOf = (inboxId: string) => messageById(getState(), inboxItem(getStat
 const asBob = (requestId: string, causedBy: string | null = null) => ({ agentId: "bob", turnId: "turn_test", requestId, causedBy });
 const line = (text: string, start: string) => text.split("\n").find((l) => l.startsWith(start)) ?? "";
 
-const CSV = { quote: line(MEETING.text, "Dana: A CSV export"), ask: "Export all invoices as CSV", user: "the accountant", behaviour: "exports every invoice to a CSV file", acceptance: "a test shows a header row, one row per invoice, and a name with a comma stays quoted" };
-const OVERDUE = { quote: line(MEETING.text, "Dana: Second thing"), ask: "List overdue invoices", user: "finance", behaviour: "sees every sent invoice past its due date", acceptance: "a test shows only sent invoices past their due date" };
-const SLOW = { quote: "Dana: And honestly the invoices page just feels slow and clunky.", ask: "Make the invoices page faster", question: "Which part feels slow: loading the list, searching, or something else?" };
+const CSV = { quote: line(MEETING.text, "Dana: A CSV export"), ask: "Export all tasks as CSV", user: "the accountant", behaviour: "exports every task to a CSV file", acceptance: "a test shows a header row, one row per task, and a name with a comma stays quoted" };
+const OVERDUE = { quote: line(MEETING.text, "Dana: Second thing"), ask: "List overdue tasks", user: "finance", behaviour: "sees every sent task past its due date", acceptance: "a test shows only sent tasks past their due date" };
+const SLOW = { quote: "Dana: And honestly the tasks page just feels slow and clunky.", ask: "Make the tasks page faster", question: "Which part feels slow: loading the list, searching, or something else?" };
 
 describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_000 }, () => {
   beforeEach(() => {
@@ -62,7 +62,7 @@ describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_
     expect(String(started.result.error)).toMatch(/nothing from the inbox starts on its own/);
     expect(getState().agents.filter((a) => a.kind === "crew")).toHaveLength(0);
 
-    await callTool("triage_inbox", { inboxId: added.inboxId, candidates: [{ ...SLOW, user: "the accountant", behaviour: "the invoice list loads in under a second", acceptance: "a test lists 1,000 invoices in under 100 ms" }] }, ctx);
+    await callTool("triage_inbox", { inboxId: added.inboxId, candidates: [{ ...SLOW, user: "the accountant", behaviour: "the task list loads in under a second", acceptance: "a test lists 1,000 tasks in under 100 ms" }] }, ctx);
     expect(getState().roadmap.backlog?.map((w) => w.title)).toEqual([CSV.ask, OVERDUE.ask, SLOW.ask]);
     expect(needsYou(getState()).some((n) => n.title.startsWith("Unclear ask"))).toBe(false);
   });
@@ -107,7 +107,7 @@ describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_
   });
 
   describe("links an error to the shipped pull request it is about, not just the newest one on that file", () => {
-    const pr = (number: number, title: string, patch: string, path = "src/invoices.ts") =>
+    const pr = (number: number, title: string, patch: string, path = "src/tasks.ts") =>
       ({ id: `art_pr${number}`, kind: "pull_request", agentId: "bob", requestId: `req_${number}`, title, detail: "", at: "", pullRequest: { number, branch: `b${number}`, headSha: "abc", files: [{ path, additions: 3, deletions: 0 }], patch, merged: true } }) as unknown as Artifact;
     const followUpOf = (artifacts: Artifact[]) => {
       update((s) => ({ ...s, artifacts: [...s.artifacts, ...artifacts] }));
@@ -117,15 +117,15 @@ describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_
     };
 
     it("prefers the diff that has the function its stack names", () => {
-      expect(followUpOf([pr(1, "#1", "+export function exportInvoices(invoices: Invoice[]) {"), pr(2, "#2", "+export function overdueInvoices(invoices: Invoice[], today: string) {")])).toBe(1);
+      expect(followUpOf([pr(1, "#1", "+export function exportTasks(tasks: Task[]) {"), pr(2, "#2", "+export function overdueTasks(tasks: Task[], today: string) {")])).toBe(1);
     });
 
     it("with no function in common, prefers the title that shares the error's words", () => {
-      expect(followUpOf([pr(1, "Add CSV export to the invoices page", "+function downloadCsv() {"), pr(2, "Add overdueInvoices filter with oldest-due first", "+export function overdueInvoices() {")])).toBe(1);
+      expect(followUpOf([pr(1, "Add CSV export to the tasks page", "+function downloadCsv() {"), pr(2, "Add overdueTasks filter with oldest-due first", "+export function overdueTasks() {")])).toBe(1);
     });
 
     it("finds the pull request it is about even when that one changed other files than the error names", () => {
-      expect(followUpOf([pr(1, "Export all invoices as a correctly quoted CSV file", "+export function toCsv() {", "src/format.ts"), pr(2, "Add overdueInvoices and the Overdue count in the page summary", "+export function overdueInvoices() {")])).toBe(1);
+      expect(followUpOf([pr(1, "Export all tasks as a correctly quoted CSV file", "+export function toCsv() {", "src/format.ts"), pr(2, "Add overdueTasks and the Overdue count in the page summary", "+export function overdueTasks() {")])).toBe(1);
     });
 
     it("links nothing when no pull request changed its files or shares enough of its words", () => {
@@ -134,19 +134,19 @@ describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_
   });
 
   it("tells the triage turn what already shipped, and an ask a merged pull request already does gets no new work order", async () => {
-    const shippedPr = { id: "art_pr1", kind: "pull_request", agentId: "bob", requestId: "req_csv", title: "Add invoice CSV export with a test", detail: "", at: "", pullRequest: { number: 1, branch: "b1", headSha: "abc", files: [{ path: "src/invoices.ts", additions: 3, deletions: 0 }], patch: "+function downloadCsv() {", merged: true } } as unknown as Artifact;
+    const shippedPr = { id: "art_pr1", kind: "pull_request", agentId: "bob", requestId: "req_csv", title: "Add task CSV export with a test", detail: "", at: "", pullRequest: { number: 1, branch: "b1", headSha: "abc", files: [{ path: "src/tasks.ts", additions: 3, deletions: 0 }], patch: "+function downloadCsv() {", merged: true } } as unknown as Artifact;
     update((s) => ({ ...s, artifacts: [...s.artifacts, shippedPr] }));
     const added = addInboxItem(MEETING);
     if (!added.ok) throw new Error(added.error);
     await settle();
     const item = inboxItem(getState(), added.inboxId)!;
-    expect(messageById(getState(), item.messageId)?.text).toMatch(/Already shipped \(data\)[\s\S]*- #1 "Add invoice CSV export with a test"/);
+    expect(messageById(getState(), item.messageId)?.text).toMatch(/Already shipped \(data\)[\s\S]*- #1 "Add task CSV export with a test"/);
     const ctx = asBob(requestOf(added.inboxId));
     const wrong = await callTool("triage_inbox", { inboxId: added.inboxId, candidates: [{ quote: CSV.quote, ask: CSV.ask, shippedIn: 9 }] }, ctx);
     expect(String(wrong.result.error)).toMatch(/No merged pull request #9/);
     const triaged = await callTool("triage_inbox", { inboxId: added.inboxId, candidates: [{ quote: CSV.quote, ask: CSV.ask, shippedIn: 1 }, OVERDUE] }, ctx);
     expect(triaged.result.error).toBeUndefined();
-    expect(String(triaged.result.next)).toMatch(/Already shipped, so not planned again: "Export all invoices as CSV" in #1/);
+    expect(String(triaged.result.next)).toMatch(/Already shipped, so not planned again: "Export all tasks as CSV" in #1/);
     expect((getState().roadmap.backlog ?? []).map((w) => w.title)).toEqual([OVERDUE.ask]);
     const csv = inboxItem(getState(), added.inboxId)?.candidates.find((c) => c.quote === CSV.quote);
     expect(csv?.shippedIn).toEqual({ pullRequestId: "art_pr1", number: 1 });
@@ -154,11 +154,11 @@ describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_
   });
 
   it("Learn: a merge that touches the module an error names resolves it, and a new error about the shipped change reopens it as a follow-up", async () => {
-    const error = addInboxItem({ ...ERROR, text: ERROR.text.replace("src/invoices.ts", "src/csv.ts") });
+    const error = addInboxItem({ ...ERROR, text: ERROR.text.replace("src/tasks.ts", "src/csv.ts") });
     if (!error.ok) throw new Error(error.error);
     await settle();
     setBrainOverride(null);
-    postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+    postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
     await settle();
     const pending = getState().approvals.find((a) => a.status === "pending");
     expect(decideApproval(pending?.id ?? "", "approved").ok).toBe(true);
@@ -170,18 +170,18 @@ describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_
     expect(inboxItem(getState(), error.inboxId)?.resolvedBy).toMatchObject({ pullRequestId: pr?.id, number: 1 });
 
     setBrainOverride(brainFrom({}));
-    const again = addInboxItem({ kind: "error", source: "production error, Nov 15", text: "Error: CSV export crashed on an empty invoice list.\n    at toCsv (src/csv.ts:12:5)" });
+    const again = addInboxItem({ kind: "error", source: "production error, Nov 15", text: "Error: CSV export crashed on an empty task list.\n    at toCsv (src/csv.ts:12:5)" });
     if (!again.ok) throw new Error(again.error);
     await settle();
     expect(inboxItem(getState(), again.inboxId)?.followUpOf).toEqual({ pullRequestId: pr?.id, number: 1 });
     expect(inboxItem(getState(), error.inboxId)?.status).toBe("reopened");
     await callTool(
       "triage_inbox",
-      { inboxId: again.inboxId, candidates: [{ quote: "Error: CSV export crashed on an empty invoice list.", ask: "Export an empty invoice list", user: "the accountant", behaviour: "exports a month with no invoices", acceptance: "a test exports an empty list as just the header row" }] },
+      { inboxId: again.inboxId, candidates: [{ quote: "Error: CSV export crashed on an empty task list.", ask: "Export an empty task list", user: "the accountant", behaviour: "exports a month with no tasks", acceptance: "a test exports an empty list as just the header row" }] },
       asBob(requestOf(again.inboxId)),
     );
     const followUp = getState().roadmap.backlog?.find((w) => w.source?.inboxId === again.inboxId);
-    expect(followUp?.title).toBe("Follow-up to #1: Export an empty invoice list");
+    expect(followUp?.title).toBe("Follow-up to #1: Export an empty task list");
     expect(followUp?.source?.followUpOf).toBe(1);
   });
 });

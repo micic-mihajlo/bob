@@ -12,7 +12,7 @@ import { git, listFiles } from "../workspace";
 import { expectQuiet, freshTeam } from "./helpers";
 
 const REQUEST =
-  "Customers want to export invoices as CSV: all invoices, columns id, customer, amount, status and due date. Done when invoicesToCsv returns a header row and one row per invoice. Keep it small: one work order.";
+  "Users want to export their tasks as CSV: all tasks, columns id, title, hours, status and due date. Done when tasksToCsv returns a header row and one row per task. Keep it small: one work order.";
 const asBob = { agentId: "bob", turnId: "turn_test", requestId: "req_test", causedBy: null };
 const GIT_TIMEOUT = 60_000;
 
@@ -32,13 +32,13 @@ describe("captain and crew, scripted, end to end", { timeout: GIT_TIMEOUT }, () 
   it("builds a real change, reviews it, asks, and merges into main on approval", async () => {
     const s = await toApproval();
     const [build, review] = s.agents.filter((a) => a.kind === "crew");
-    expect([build.code, build.crewRole, build.branch]).toEqual(["INV-1", "build", "inv-1-csv-export-for-invoices"]);
-    expect([review.code, review.crewRole]).toEqual(["INV-2", "review"]);
+    expect([build.code, build.crewRole, build.branch]).toEqual(["TAS-1", "build", "tas-1-csv-export-for-tasks"]);
+    expect([review.code, review.crewRole]).toEqual(["TAS-2", "review"]);
 
     const pr = prOf();
     expect(pr?.pullRequest?.number).toBe(1);
     expect(pr?.pullRequest?.files.map((f) => f.path)).toEqual([expect.stringMatching(/^src\/acceptance\/wo_\w+\.test\.ts$/), "src/csv.properties.test.ts", "src/csv.ts", "verify/Csv.lean", expect.stringMatching(/^verify\/wo_\w+\.json$/)]);
-    expect(pr?.pullRequest?.patch).toContain("invoicesToCsv");
+    expect(pr?.pullRequest?.patch).toContain("tasksToCsv");
     const verdict = s.artifacts.find((a) => a.kind === "review")?.review;
     expect(verdict?.verdict).toBe("approve");
     expect(verdict?.findings.map((f) => f.severity)).toEqual(["low"]);
@@ -49,7 +49,7 @@ describe("captain and crew, scripted, end to end", { timeout: GIT_TIMEOUT }, () 
     expect(snap.needsYou?.map((n) => [n.kind, n.approvalId])).toEqual([["approval", approval?.id]]);
     expect(snap.threadState?.bob).toEqual({ status: "waiting", needsYou: true, closed: false });
     expect(s.drive.find((f) => f.name === "DIGEST.md")?.content).toBe("1 thing needs you: approve the merge of #1\n");
-    expect(snap.threadState?.["inv-1"]).toEqual({ status: "idle", needsYou: false, closed: false });
+    expect(snap.threadState?.["tas-1"]).toEqual({ status: "idle", needsYou: false, closed: false });
     expectQuiet(s);
 
     expect(decideApproval(approval?.id ?? "", "approved").ok).toBe(true);
@@ -58,12 +58,12 @@ describe("captain and crew, scripted, end to end", { timeout: GIT_TIMEOUT }, () 
     expect(after.roadmap.today[0].status).toBe("done");
     expect(after.artifacts.find((a) => a.id === pr?.id)?.pullRequest?.merged).toBe(true);
     expect(after.agents.filter((a) => a.kind === "crew").every((a) => !!a.closedAt)).toBe(true);
-    expect(buildSnapshot(after).threadState?.["inv-1"]).toEqual({ status: "idle", needsYou: false, closed: true });
+    expect(buildSnapshot(after).threadState?.["tas-1"]).toEqual({ status: "idle", needsYou: false, closed: true });
     expect(buildSnapshot(after).threadState?.bob).toEqual({ status: "idle", needsYou: false, closed: false });
     expect(after.drive.find((f) => f.name === "DIGEST.md")?.content).toMatch(/Nothing needs you/);
     expect(after.roadmap.stageTitle).toBe("Learn");
-    expect(after.drive.find((f) => f.name === "NOTES.md")?.content).toMatch(/Acceptance: Done when invoicesToCsv[\s\S]*## Shipped\n- #1 Add CSV export for invoices\. Review: approve, low/);
-    expect(after.drive.find((f) => f.name === "CREW.md")?.content).toMatch(/\| INV-1 \| build \| closed \| inv-1-csv-export-for-invoices \| #1 \(merged\) \| Opened pull request #1/);
+    expect(after.drive.find((f) => f.name === "NOTES.md")?.content).toMatch(/Acceptance: Done when tasksToCsv[\s\S]*## Shipped\n- #1 Add CSV export for tasks\. Review: approve, low/);
+    expect(after.drive.find((f) => f.name === "CREW.md")?.content).toMatch(/\| TAS-1 \| build \| closed \| tas-1-csv-export-for-tasks \| #1 \(merged\) \| Opened pull request #1/);
     expect(after.roadmap.backlog?.map((w) => w.title)).toEqual([`Follow up on #1: ${verdict?.findings[0].comment}`]);
 
     const fresh = await threadWorkspace(after.project, "checker");
@@ -122,13 +122,13 @@ describe("captain and crew, scripted, end to end", { timeout: GIT_TIMEOUT }, () 
 
   it("serves a thread's real files and branch changes, and none for the captain", async () => {
     const s = await toApproval();
-    const dir = await browseWorkspace(s, "inv-1", "src");
+    const dir = await browseWorkspace(s, "tas-1", "src");
     expect(dir.ok && dir.kind === "dir" && dir.entries.map((e) => e.name)).toContain("csv.ts");
-    const file = await browseWorkspace(s, "inv-1", "src/csv.ts");
-    expect(file.ok && file.kind === "file" && file.content).toContain("export function invoicesToCsv");
-    const changes = await workspaceChanges(s, "inv-1");
+    const file = await browseWorkspace(s, "tas-1", "src/csv.ts");
+    expect(file.ok && file.kind === "file" && file.content).toContain("export function tasksToCsv");
+    const changes = await workspaceChanges(s, "tas-1");
     expect(changes.ok && changes.files.map((f) => f.path)).toEqual([expect.stringMatching(/^src\/acceptance\/wo_\w+\.test\.ts$/), "src/csv.properties.test.ts", "src/csv.ts", "verify/Csv.lean", expect.stringMatching(/^verify\/wo_\w+\.json$/)]);
-    expect(changes.ok && changes.patch).toContain("+export function invoicesToCsv");
+    expect(changes.ok && changes.patch).toContain("+export function tasksToCsv");
     expect((await browseWorkspace(s, "bob", "")).ok).toBe(false);
   });
 });
@@ -149,9 +149,9 @@ describe("crew rules", { timeout: GIT_TIMEOUT }, () => {
 
   it("keeps a crew thread from messaging another thread", async () => {
     await toApproval();
-    const sent = send({ from: { kind: "agent", agentId: "inv-1" }, to: ["inv-2"], text: "Look at this", expectsReply: true, replyTo: null, causedBy: null, requestId: "r" });
+    const sent = send({ from: { kind: "agent", agentId: "tas-1" }, to: ["tas-2"], text: "Look at this", expectsReply: true, replyTo: null, causedBy: null, requestId: "r" });
     expect(sent.ok ? null : sent.error.code).toBe("crew_rule");
-    const tool = await callTool("send_message", { recipientAgentIds: ["inv-2"], text: "hi" }, { ...asBob, agentId: "inv-1" });
+    const tool = await callTool("send_message", { recipientAgentIds: ["tas-2"], text: "hi" }, { ...asBob, agentId: "tas-1" });
     expect(String(tool.result.error)).toMatch(/not one of your tools/);
   });
 
@@ -162,10 +162,10 @@ describe("crew rules", { timeout: GIT_TIMEOUT }, () => {
     const start = (role: string, workOrderId?: string) =>
       callTool("start_thread", { role, title: `Work ${workOrderId ?? role}`, brief: "Goal: a small change.", ...(workOrderId ? { workOrderId } : {}) }, asBob);
 
-    expect((await start("build", ids[0])).result.code).toBe("INV-1");
-    expect(String((await start("build", ids[0])).result.error)).toMatch(/INV-1 is already the open build thread/);
-    expect((await start("build", ids[1])).result.code).toBe("INV-2");
-    expect((await start("build", ids[2])).result.code).toBe("INV-3");
+    expect((await start("build", ids[0])).result.code).toBe("TAS-1");
+    expect(String((await start("build", ids[0])).result.error)).toMatch(/TAS-1 is already the open build thread/);
+    expect((await start("build", ids[1])).result.code).toBe("TAS-2");
+    expect((await start("build", ids[2])).result.code).toBe("TAS-3");
     const fourth = await start("research");
     expect(String(fourth.result.error)).toMatch(/3 threads are already working .*close_thread/);
     expect(getState().agents.filter((a) => a.kind === "crew")).toHaveLength(3);

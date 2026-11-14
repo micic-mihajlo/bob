@@ -5,16 +5,16 @@ import { sourceOf } from "../thread-workspace";
 import { hasProject, type Project } from "../types";
 import type { Brain, TurnContext } from "./types";
 
-/** The scripted brain is written for the invoices sample, so the captain and its crew follow it only there. */
+/** The scripted brain is written for a blank TypeScript project, so the captain and its crew follow it only there. */
 export const SCRIPT_ONLY_SAMPLE =
-  "The scripted mode is a sample that only covers the invoices sample project, so this project needs a model key: set AI_GATEWAY_API_KEY in .env.local and restart Bob.";
+  "The scripted mode is a sample that only covers projects made from the blank TypeScript template, so this project needs a model key: set AI_GATEWAY_API_KEY in .env.local and restart Bob.";
 
 /** Leads the captain's first reply to a request on the sample, so nobody takes the script for a model. */
 export const SCRIPTED_SAMPLE_LINE = "Scripted sample.";
 
 function onSample(project: Project): boolean {
   const source = sourceOf(project);
-  return hasProject(project) && source.kind === "template" && source.template === "invoices";
+  return hasProject(project) && source.kind === "template" && source.template === "blank-ts";
 }
 
 /** The captain's first reply to the request a person just typed: no earlier turn of it for this request said anything. */

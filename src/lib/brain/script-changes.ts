@@ -1,5 +1,4 @@
 import { slugify } from "../ids";
-import { TEMPLATE_FILES } from "../workspace/template/files";
 import { summarize } from "./script-plan";
 import { CSV_VERIFICATION, OVERDUE_VERIFICATION, type ScriptedVerification } from "./script-verify";
 
@@ -27,60 +26,77 @@ export interface ScriptedChange {
 
 export type IntentPart = "user" | "scope" | "acceptance";
 
-const CSV_MODULE = `import type { Invoice } from "./invoices";
+const TASKS_MODULE = `/** A task on the list. Estimates are whole minutes; dates are ISO YYYY-MM-DD strings. */
+export interface Task {
+  id: string;
+  title: string;
+  estimateMinutes: number;
+  status: "draft" | "open" | "done";
+  createdDate: string;
+  dueDate: string;
+}
+`;
 
-const HEADER = ["id", "customer", "amount", "status", "dueDate"];
+const CSV_MODULE = `/** A task as the export reads it. Estimates are whole minutes; dates are ISO YYYY-MM-DD strings. */
+export interface Task {
+  id: string;
+  title: string;
+  estimateMinutes: number;
+  status: "draft" | "open" | "done";
+  createdDate: string;
+  dueDate: string;
+}
+
+const HEADER = ["id", "title", "hours", "status", "dueDate"];
 
 export function csvCell(value: string): string {
   return /[",\\n]/.test(value) ? \`"\${value.replace(/"/g, '""')}"\` : value;
 }
 
-/** One header row, then one row per invoice, amounts in dollars with two decimals. */
-export function invoicesToCsv(list: readonly Invoice[]): string {
-  const rows = list.map((i) => [i.id, i.customer, (i.amountCents / 100).toFixed(2), i.status, i.dueDate]);
+/** One header row, then one row per task, estimates in hours with two decimals. */
+export function tasksToCsv(list: readonly Task[]): string {
+  const rows = list.map((t) => [t.id, t.title, (t.estimateMinutes / 60).toFixed(2), t.status, t.dueDate]);
   return [HEADER, ...rows].map((row) => row.map(csvCell).join(",")).join("\\n");
 }
 `;
 
 const CSV_TEST = `import { describe, expect, it } from "vitest";
-import { invoicesToCsv } from "../csv";
+import { tasksToCsv } from "../csv";
 
-describe("invoicesToCsv", () => {
-  it("writes a header and one row per invoice", () => {
-    const csv = invoicesToCsv([{ id: "INV-1", customer: "Customer A", amountCents: 5000, status: "sent", dueDate: "2026-12-01" }]);
-    expect(csv).toBe("id,customer,amount,status,dueDate\\nINV-1,Customer A,50.00,sent,2026-12-01");
+describe("tasksToCsv", () => {
+  it("writes a header and one row per task", () => {
+    const csv = tasksToCsv([{ id: "T-1", title: "Write the docs", estimateMinutes: 90, status: "open", createdDate: "2026-11-01", dueDate: "2026-12-01" }]);
+    expect(csv).toBe("id,title,hours,status,dueDate\\nT-1,Write the docs,1.50,open,2026-12-01");
   });
 
-  it("quotes a customer name that holds a comma", () => {
-    const csv = invoicesToCsv([{ id: "INV-2", customer: "Smith, Jones", amountCents: 1, status: "draft", dueDate: "2026-12-02" }]);
-    expect(csv.split("\\n")[1]).toBe('INV-2,"Smith, Jones",0.01,draft,2026-12-02');
+  it("quotes a title that holds a comma", () => {
+    const csv = tasksToCsv([{ id: "T-2", title: "Plan, then build", estimateMinutes: 1, status: "draft", createdDate: "2026-11-01", dueDate: "2026-12-02" }]);
+    expect(csv.split("\\n")[1]).toBe('T-2,"Plan, then build",0.02,draft,2026-12-02');
   });
 });
 `;
 
 const OVERDUE_FUNCTION = `
-/** The sent invoices whose due date is before today, oldest due date first. */
-export function overdueInvoices(list: readonly Invoice[], today: string): Invoice[] {
-  return list.filter((invoice) => invoice.status === "sent" && invoice.dueDate < today).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+/** The open tasks whose due date is before today, oldest due date first. */
+export function overdueTasks(list: readonly Task[], today: string): Task[] {
+  return list.filter((task) => task.status === "open" && task.dueDate < today).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 }
 `;
 
-const invoicesWithOverdue = () => (TEMPLATE_FILES.find((f) => f.path === "src/invoices.ts")?.content ?? "") + OVERDUE_FUNCTION;
-
 const OVERDUE_TEST = `import { describe, expect, it } from "vitest";
-import { overdueInvoices, type Invoice } from "../invoices";
+import { overdueTasks, type Task } from "../tasks";
 
-const base = { customer: "Customer A", amountCents: 1000, issuedDate: "2026-10-01" };
+const base = { title: "Write the docs", estimateMinutes: 60, createdDate: "2026-10-01" };
 
-describe("overdueInvoices", () => {
-  it("returns the sent invoices due before today, oldest due date first", () => {
-    const list: Invoice[] = [
-      { ...base, id: "INV-1", status: "sent", dueDate: "2026-11-01" },
-      { ...base, id: "INV-2", status: "paid", dueDate: "2026-10-15" },
-      { ...base, id: "INV-3", status: "sent", dueDate: "2026-12-01" },
-      { ...base, id: "INV-4", status: "sent", dueDate: "2026-10-20" },
+describe("overdueTasks", () => {
+  it("returns the open tasks due before today, oldest due date first", () => {
+    const list: Task[] = [
+      { ...base, id: "T-1", status: "open", dueDate: "2026-11-01" },
+      { ...base, id: "T-2", status: "done", dueDate: "2026-10-15" },
+      { ...base, id: "T-3", status: "open", dueDate: "2026-12-01" },
+      { ...base, id: "T-4", status: "open", dueDate: "2026-10-20" },
     ];
-    expect(overdueInvoices(list, "2026-11-14").map((i) => i.id)).toEqual(["INV-4", "INV-1"]);
+    expect(overdueTasks(list, "2026-11-14").map((t) => t.id)).toEqual(["T-4", "T-1"]);
   });
 });
 `;
@@ -102,45 +118,45 @@ const noteFor = (request: string) => `# Request\n\n${request.trim()}\n\nThis not
 
 export const SCRIPTED_CHANGES: readonly ScriptedChange[] = [
   {
-    match: /\boverdueInvoices\b|\boverdue invoices\b/i,
-    workTitle: () => "List overdue invoices",
-    files: () => [{ path: "src/invoices.ts", content: invoicesWithOverdue() }],
+    match: /\boverdueTasks\b|\boverdue tasks\b/i,
+    workTitle: () => "List overdue tasks",
+    files: () => [{ path: "src/tasks.ts", content: TASKS_MODULE + OVERDUE_FUNCTION }],
     acceptance: () => OVERDUE_TEST,
-    commit: "Add overdueInvoices",
+    commit: "Add overdueTasks",
     pullRequest: {
-      title: "List overdue invoices",
-      body: "Adds overdueInvoices(list, today) in src/invoices.ts: the sent invoices whose due date is before today, oldest due date first. The acceptance test covers an overdue, a paid and a not-yet-due invoice. verify/ holds the contract, its fast-check properties and a Lean model of the rule.",
+      title: "List overdue tasks",
+      body: "Adds overdueTasks(list, today) in src/tasks.ts: the open tasks whose due date is before today, oldest due date first. The acceptance test covers an overdue, a done and a not-yet-due task. verify/ holds the contract, its fast-check properties and a Lean model of the rule.",
     },
     finding: {
-      path: "src/invoices.ts",
+      path: "src/tasks.ts",
       line: null,
       category: "tests",
       severity: "low",
       confidence: 0.7,
-      comment: "The page summary does not show the overdue count yet; a follow-up work order can add it.",
+      comment: "Nothing shows the overdue count yet; a follow-up work order can add it.",
     },
     intake: () => ({
-      user: { ask: "Who reads the overdue list: you, or your finance team?", assume: "The finance team" },
+      user: { ask: "Who reads the overdue list: you, or your whole team?", assume: "The whole team" },
       scope: {
-        ask: "I'd count an invoice as overdue when it was sent and its due date is before today, oldest first. Is that the rule?",
-        assume: "Sent invoices whose due date is before today, oldest due date first; drafts and paid invoices never count",
+        ask: "I'd count a task as overdue when it is open and its due date is before today, oldest first. Is that the rule?",
+        assume: "Open tasks whose due date is before today, oldest due date first; drafts and done tasks never count",
       },
       acceptance: {
-        ask: "I'd call it done when a test shows an overdue, a paid and a not-yet-due invoice sorted out right. Is that the check you want?",
-        assume: "overdueInvoices returns only the sent invoices due before today, oldest first, and its test passes",
+        ask: "I'd call it done when a test shows an overdue, a done and a not-yet-due task sorted out right. Is that the check you want?",
+        assume: "overdueTasks returns only the open tasks due before today, oldest first, and its test passes",
       },
     }),
     verification: OVERDUE_VERIFICATION,
   },
   {
     match: /\bcsv\b|\bexport\b/i,
-    workTitle: () => "CSV export for invoices",
+    workTitle: () => "CSV export for tasks",
     files: () => [{ path: "src/csv.ts", content: CSV_MODULE }],
     acceptance: () => CSV_TEST,
-    commit: "Add CSV export for invoices",
+    commit: "Add CSV export for tasks",
     pullRequest: {
-      title: "Add CSV export for invoices",
-      body: "Adds invoicesToCsv in src/csv.ts: a header row, then one row per invoice with the amount in dollars. Cells with a comma, quote or line break are quoted. The acceptance test covers a plain row and a quoted customer name.",
+      title: "Add CSV export for tasks",
+      body: "Adds tasksToCsv in src/csv.ts: a header row, then one row per task with the estimate in hours. Cells with a comma, quote or line break are quoted. The acceptance test covers a plain row and a quoted title.",
     },
     finding: {
       path: "src/csv.ts",
@@ -151,14 +167,14 @@ export const SCRIPTED_CHANGES: readonly ScriptedChange[] = [
       comment: "No case for an empty list. It returns the header alone, which is right; a test would keep it that way.",
     },
     intake: () => ({
-      user: { ask: "Who exports them: your customers, or your finance team?", assume: "Customers" },
+      user: { ask: "Who exports them: you, or the people you share the list with?", assume: "The people the list is shared with" },
       scope: {
-        ask: "I'd put every invoice in the file with id, customer, amount, status and due date. Is that the right set of columns?",
-        assume: "All invoices; columns id, customer, amount, status and due date; amounts in dollars",
+        ask: "I'd put every task in the file with id, title, hours, status and due date. Is that the right set of columns?",
+        assume: "All tasks; columns id, title, hours, status and due date; estimates in hours",
       },
       acceptance: {
-        ask: "I'd call it done when a test shows a header row and one row per invoice, amounts in dollars. Is that the check you want?",
-        assume: "invoicesToCsv returns a header row and one row per invoice with the amount in dollars, and its test passes",
+        ask: "I'd call it done when a test shows a header row and one row per task, estimates in hours. Is that the check you want?",
+        assume: "tasksToCsv returns a header row and one row per task with the estimate in hours, and its test passes",
       },
     }),
     verification: CSV_VERIFICATION,

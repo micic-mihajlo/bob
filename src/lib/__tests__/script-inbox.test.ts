@@ -12,7 +12,7 @@ describe("the scripted captain triages the inbox", { timeout: 60_000 }, () => {
   afterAll(freshTeam);
 
   it("still answers a typed request", async () => {
-    postUserMessage("bob", "Customers want to export invoices as CSV.");
+    postUserMessage("bob", "Users want to export their tasks as CSV.");
     await settle();
     expect(getState().threads.bob?.some((i) => i.kind === "agent_text")).toBe(true);
   });
@@ -25,7 +25,7 @@ describe("the scripted captain triages the inbox", { timeout: 60_000 }, () => {
     const item = s.inbox?.find((i) => i.id === added.inboxId);
     expect(item?.status).toBe("triaged");
     expect(item?.candidates.map((c) => c.verdict)).toEqual(["testable", "testable", "vague"]);
-    expect(item?.candidates[0].quote).toMatch(/A CSV export of all invoices/);
+    expect(item?.candidates[0].quote).toMatch(/A CSV export of all tasks/);
     expect((s.roadmap.backlog ?? []).filter((w) => w.source?.inboxId === added.inboxId)).toHaveLength(2);
     expect(needsYou(s).some((n) => n.kind === "question")).toBe(true);
     expect(s.agents.filter((a) => a.kind === "crew")).toHaveLength(0);

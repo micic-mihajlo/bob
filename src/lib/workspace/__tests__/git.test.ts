@@ -90,7 +90,7 @@ describe("main on a case-insensitive disk", { timeout: GIT_TEST_TIMEOUT }, () =>
     expect((await git(ws, ["push", "origin", "feature:refs/heads/MAIN"])).ok).toBe(false);
     await git(ws, ["fetch", "origin"]);
     const main = await git(ws, ["log", "-1", "--format=%s", "origin/main"]);
-    expect(main).toMatchObject({ ok: true, output: expect.stringContaining("Start the invoices app") });
+    expect(main).toMatchObject({ ok: true, output: expect.stringContaining("Start a blank TypeScript project") });
     expect(mainBefore).toContain("refs/heads/main");
   });
 });

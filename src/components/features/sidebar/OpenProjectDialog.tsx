@@ -11,10 +11,9 @@ import type { ProjectTemplate } from "@/lib/types";
 const FORM_ID = "open-project-form";
 const stayOpen = () => {};
 
-/** The templates a new project can start from, blank first. The invoices app is the sample the demo runs on. */
+/** The templates a new project can start from. */
 export const TEMPLATE_LABELS: Record<ProjectTemplate, string> = {
   "blank-ts": "Blank TypeScript",
-  invoices: "Sample: invoices app",
 };
 
 /** Brings in a repository by URL or local path, or starts a new project from a template. Without onClose it is the first-run choice and stays open. */
@@ -43,7 +42,7 @@ export function OpenProjectDialog({ onClose }: { onClose?: () => void }) {
   return (
     <ConfirmDialog
       title="Open a project"
-      description={`Bring in a repository by URL or path, or start from a template: blank TypeScript, or the invoices sample.${onClose ? " The project you leave keeps its threads." : ""}`}
+      description={`Bring in a repository by URL or path, or start from the blank TypeScript template.${onClose ? " The project you leave keeps its threads." : ""}`}
       icon={<FolderGit2 />}
       error={error}
       onClose={onClose ?? stayOpen}

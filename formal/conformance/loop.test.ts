@@ -30,7 +30,7 @@ describe("the real turn loop conforms to BobFormal.Mailbox and BobFormal.Trace",
     const teammates = s0.agents.filter((a) => a.kind !== "captain").map((a) => a.id);
     const ids = s0.agents.map((a) => a.id);
     setBrainOverride(brainFrom(Object.fromEntries(teammates.map((id) => [id, randomTeammate(rand, ids)]))));
-    const posted = postUserMessage(pick(rand, teammates), "Customers want to export invoices as CSV.");
+    const posted = postUserMessage(pick(rand, teammates), "Users want to export their tasks as CSV.");
     if (!posted.ok) throw new Error(posted.error);
     await settle();
 

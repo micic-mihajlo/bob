@@ -70,7 +70,7 @@ const slug = (text: string) =>
     .replace(/^-+|-+$/g, "")
     .slice(0, 40);
 
-/** "https://github.com/acme/invoices.git" and "/src/invoices" both name the project "invoices". */
+/** "https://github.com/acme/tasks.git" and "/src/tasks" both name the project "tasks". */
 export function projectFor(input: { repo?: string; name?: string }): Project | null {
   const repo = input.repo?.trim() || null;
   const name = input.name?.trim() || (repo ? repo.replace(/\/+$/, "").split(/[/:]/).pop() ?? "" : "");
@@ -88,7 +88,7 @@ function busy(s: State): boolean {
 
 /**
  * Opens a project: a parked one by name, a repository by URL or local path, or a new project from
- * a template (the invoices sample unless another is named). Its shared repository is made once,
+ * a template (blank TypeScript unless another is named). Its shared repository is made once,
  * before the switch, so a bad URL leaves the active project as it was.
  */
 export async function openProject(input: { repo?: string; branch?: string; name?: string; template?: ProjectTemplate }): Promise<ActionResult<{ project: Project }>> {
@@ -101,7 +101,7 @@ export async function openProject(input: { repo?: string; branch?: string; name?
     return { ok: false, error: `Bob is still working in ${current.project.name}. Let its threads finish, or stop them, then switch.` };
   }
   const saved = unpark(wanted.id);
-  const project = saved?.project ?? (wanted.repo ? wanted : { ...wanted, template: input.template ?? "invoices" });
+  const project = saved?.project ?? (wanted.repo ? wanted : { ...wanted, template: input.template ?? "blank-ts" });
   const options = workspaceOptions();
   try {
     await ensureProject(project.id, sourceOf(project), options);

@@ -28,7 +28,7 @@ const BOB = `http://127.0.0.1:${opts.port}`;
 const WORK = fs.mkdtempSync(path.join(os.tmpdir(), "bob-durable-proof-"));
 const BOB_DIR = path.join(WORK, "bob");
 const REQUEST =
-  "Customers want to export invoices as CSV: all invoices, columns id, customer, amount, status and due date. Done when invoicesToCsv returns a header row and one row per invoice.";
+  "Users want to export their tasks as CSV: all tasks, columns id, title, hours, status and due date. Done when tasksToCsv returns a header row and one row per task.";
 const children = new Set();
 const say = (line = "") => console.log(line);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -99,7 +99,7 @@ const call = async (route, body) => {
 };
 const crew = (s) => s.agents.filter((a) => a.kind === "crew");
 const pending = (s) => s.approvals.filter((a) => a.status === "pending");
-const asked = (s) => s.roadmap.tracks.some((t) => t.ask && t.ask.includes("export invoices as CSV"));
+const asked = (s) => s.roadmap.tracks.some((t) => t.ask && t.ask.includes("export tasks as CSV"));
 
 say(`durable proof: starting Bob on the scripted brain with BOB_DURABLE=cloudflare, namespace ${namespace}, in ${BOB_DIR}`);
 let bob = startBob();

@@ -23,23 +23,23 @@ async function teamOfTwo(root: string): Promise<{ a: Workspace; b: Workspace }> 
   return { a, b };
 }
 
-async function commitFormatChange(ws: Workspace, branch: string): Promise<void> {
+async function commitGreetingChange(ws: Workspace, branch: string): Promise<void> {
   await mustGit(ws, ["switch", "--create", branch]);
-  const edited = await editFile(ws, "src/format.ts", "toFixed(2)", "toFixed(2).padStart(10)");
+  const edited = await editFile(ws, "src/index.ts", "Hello, ", "Hello there, ");
   if (!edited.ok) throw new Error(edited.error);
-  await mustGit(ws, ["add", "src/format.ts"]);
-  await mustGit(ws, ["commit", "-m", "Pad amounts"]);
+  await mustGit(ws, ["add", "src/index.ts"]);
+  await mustGit(ws, ["commit", "-m", "Warmer greeting"]);
 }
 
 describe("two agents on one project", { timeout: GIT_TEST_TIMEOUT }, () => {
   it("publishes a branch one agent made so the other can fetch it", async () => {
     const { a, b } = await teamOfTwo(temp.root);
-    await commitFormatChange(a, "pad-amounts");
+    await commitGreetingChange(a, "pad-amounts");
 
     const pr = await openPullRequest(a, { branch: "pad-amounts", title: "Pad amounts", body: "Aligns columns." });
     if (!pr.ok) throw new Error(pr.error);
-    expect(pr.files).toEqual([{ path: "src/format.ts", additions: 1, deletions: 1 }]);
-    expect(pr.patch).toContain("+  return `$${(cents / 100).toFixed(2).padStart(10)}`;");
+    expect(pr.files).toEqual([{ path: "src/index.ts", additions: 1, deletions: 1 }]);
+    expect(pr.patch).toContain("+  return `Hello there, ${name}!`;");
     expect(pr.headSha).toBe((await mustGit(a, ["log", "-1", "--format=%H"])).trim());
 
     await mustGit(b, ["fetch", "origin"]);
@@ -49,7 +49,7 @@ describe("two agents on one project", { timeout: GIT_TEST_TIMEOUT }, () => {
 
   it("publishes the thread's branch again after it was rewritten, as a rebase onto a newer main does", async () => {
     const { a } = await teamOfTwo(temp.root);
-    await commitFormatChange(a, "pad-amounts");
+    await commitGreetingChange(a, "pad-amounts");
     const first = await openPullRequest(a, { branch: "pad-amounts", title: "Pad amounts", body: "" });
     if (!first.ok) throw new Error(first.error);
     await mustGit(a, ["commit", "--amend", "-m", "Pad amounts, reworded"]);
@@ -72,7 +72,7 @@ describe("two agents on one project", { timeout: GIT_TEST_TIMEOUT }, () => {
 describe("mergePullRequest", { timeout: GIT_TEST_TIMEOUT }, () => {
   it("fast-forwards main and reports a second merge as already merged", async () => {
     const { a, b } = await teamOfTwo(temp.root);
-    await commitFormatChange(a, "pad-amounts");
+    await commitGreetingChange(a, "pad-amounts");
     const pr = await openPullRequest(a, { branch: "pad-amounts", title: "Pad amounts", body: "" });
     if (!pr.ok) throw new Error(pr.error);
 
@@ -86,13 +86,13 @@ describe("mergePullRequest", { timeout: GIT_TEST_TIMEOUT }, () => {
     expect((await mustGit(b, ["log", "-1", "--format=%H", "origin/main"])).trim()).toBe(pr.headSha);
 
     await mustGit(b, ["pull", "origin", "main"]);
-    const read = await readFile(b, "src/format.ts");
-    expect(read).toMatchObject({ ok: true, content: expect.stringContaining("padStart(10)") });
+    const read = await readFile(b, "src/index.ts");
+    expect(read).toMatchObject({ ok: true, content: expect.stringContaining("Hello there, ") });
   });
 
   it("makes a merge commit when main moved on, and refuses a conflicting branch", async () => {
     const { a, b } = await teamOfTwo(temp.root);
-    await commitFormatChange(a, "pad-amounts");
+    await commitGreetingChange(a, "pad-amounts");
     await mustGit(b, ["switch", "--create", "notes"]);
     await writeFile(b, "NOTES.md", "notes\n");
     await mustGit(b, ["add", "NOTES.md"]);
@@ -109,11 +109,11 @@ describe("mergePullRequest", { timeout: GIT_TEST_TIMEOUT }, () => {
     expect(await mustGit(b, ["show", "origin/main:NOTES.md"])).toContain("notes");
 
     await mustGit(b, ["switch", "--create", "clash", "notes"]);
-    await editFile(b, "src/format.ts", "toFixed(2)", "toFixed(0)");
-    await mustGit(b, ["commit", "--all", "-m", "Round amounts"]);
+    await editFile(b, "src/index.ts", "Hello, ", "Hi, ");
+    await mustGit(b, ["commit", "--all", "-m", "Shorter greeting"]);
     await openPullRequest(b, { branch: "clash", title: "Round", body: "" });
     const clash = await mergePullRequest("demo", { branch: "clash" }, { root: temp.root });
-    expect(clash).toMatchObject({ ok: false, error: expect.stringContaining("src/format.ts") });
+    expect(clash).toMatchObject({ ok: false, error: expect.stringContaining("src/index.ts") });
   });
 });
 
@@ -138,7 +138,7 @@ describe("setup is idempotent", { timeout: GIT_TEST_TIMEOUT }, () => {
     const { origin } = await ensureProject("demo", { kind: "template" }, options);
     await ensureProject("copy", { kind: "git", url: origin }, options);
     const ws = await ensureWorkspace("copy", "coder", options);
-    expect(await readFile(ws, "src/format.ts")).toMatchObject({ ok: true });
+    expect(await readFile(ws, "src/index.ts")).toMatchObject({ ok: true });
 
     await expect(ensureProject("evil", { kind: "git", url: "ext::sh -c id" }, options)).rejects.toThrow();
     await expect(ensureWorkspace("../demo", "coder", options)).rejects.toThrow();

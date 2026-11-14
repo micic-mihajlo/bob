@@ -9,7 +9,7 @@ import { getState } from "../store";
 import { settle } from "../turns";
 import { freshTeam, gate, say } from "./helpers";
 
-const ASK = "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.";
+const ASK = "Customers want to export all tasks as CSV. Done when a test shows one row per task.";
 const until = async (ok: () => boolean) => {
   for (let i = 0; i < 500 && !ok(); i++) await new Promise((r) => setTimeout(r, 10));
   expect(ok()).toBe(true);

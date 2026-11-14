@@ -35,7 +35,7 @@ export interface Agent {
   parentAgentId?: AgentId;
   /** A subagent works in its parent's workspace ("same") or in its own copy of it ("copy"). */
   workspaceMode?: "same" | "copy";
-  /** Short handle shown everywhere, such as "INV-12". Crew threads only. */
+  /** Short handle shown everywhere, such as "TAS-12". Crew threads only. */
   code?: string;
   crewRole?: CrewRole;
   /** The work order this thread exists for. */
@@ -429,14 +429,14 @@ export interface Roadmap {
   updatedAt: string;
 }
 
-/** The starting point of a project made without a repository: the invoices sample or a blank TypeScript project. */
-export type ProjectTemplate = "invoices" | "blank-ts";
+/** The starting point of a project made without a repository: a blank TypeScript project. */
+export type ProjectTemplate = "blank-ts";
 
 export interface Project {
   id: string;
   name: string;
   repo: string | null;
-  /** Which template a project without a repository was made from. Missing on projects saved before templates: the invoices sample. */
+  /** Which template a project without a repository was made from. Missing on projects saved before templates: blank TypeScript. */
   template?: ProjectTemplate;
   /** The branch of `repo` the project starts from, as its main. The repository's own main when missing. */
   branch?: string;

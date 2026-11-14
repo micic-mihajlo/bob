@@ -14,7 +14,7 @@ import type { Agent, Roadmap, Snapshot, WorkOrder } from "@/lib/types";
 const order = (id: string, status: WorkOrder["status"]): WorkOrder => ({ id, title: id, status, ownerAgentId: null, artifactId: null });
 
 const roadmap: Roadmap = {
-  goal: { title: "Export invoices as CSV", why: null, deadline: null },
+  goal: { title: "Export tasks as CSV", why: null, deadline: null },
   stage: 3,
   stageTitle: "Build",
   totalStages: 5,
@@ -231,7 +231,7 @@ describe("verification groups", () => {
 describe("parseMarkdown tables", () => {
   it("reads a header, a rule and body rows, keeping escaped pipes in a cell", () => {
     const blocks = parseMarkdown(
-      ["## Crew", "", "| Thread | Status | PR |", "| --- | :---: | ---: |", "| INV-1 | Idle | #1 |", "| a \\| b | `x` |  |", "after"].join("\n"),
+      ["## Crew", "", "| Thread | Status | PR |", "| --- | :---: | ---: |", "| TAS-1 | Idle | #1 |", "| a \\| b | `x` |  |", "after"].join("\n"),
     );
     expect(blocks.map((block) => block.kind)).toEqual(["heading", "table", "paragraph"]);
     const table = blocks[1];
@@ -242,7 +242,7 @@ describe("parseMarkdown tables", () => {
       ["PR", "right"],
     ]);
     expect(table.rows.map((row) => row.map((cell) => cell.inline.map((part) => part.text).join("")))).toEqual([
-      ["INV-1", "Idle", "#1"],
+      ["TAS-1", "Idle", "#1"],
       ["a | b", "x", ""],
     ]);
   });
@@ -253,20 +253,20 @@ describe("parseMarkdown tables", () => {
 });
 
 describe("threadStatusOf", () => {
-  const agent = { id: "inv-1", kind: "crew" } as Agent;
-  const snap = (extra: Partial<Snapshot>) => ({ activity: { "inv-1": { state: "working", since: "", step: null } }, ...extra }) as unknown as Snapshot;
+  const agent = { id: "tas-1", kind: "crew" } as Agent;
+  const snap = (extra: Partial<Snapshot>) => ({ activity: { "tas-1": { state: "working", since: "", step: null } }, ...extra }) as unknown as Snapshot;
 
   it("reads threadState, and activity without it", () => {
-    expect(threadStatusOf(snap({ threadState: { "inv-1": { status: "waiting", needsYou: false, closed: false } } }), agent)).toBe("waiting");
-    expect(threadStatusOf(snap({ threadState: { "inv-1": { status: "waiting", needsYou: true, closed: false } } }), agent)).toBe("needs_you");
-    expect(threadStatusOf(snap({ threadState: { "inv-1": { status: "idle", needsYou: false, closed: true } } }), agent)).toBe("closed");
+    expect(threadStatusOf(snap({ threadState: { "tas-1": { status: "waiting", needsYou: false, closed: false } } }), agent)).toBe("waiting");
+    expect(threadStatusOf(snap({ threadState: { "tas-1": { status: "waiting", needsYou: true, closed: false } } }), agent)).toBe("needs_you");
+    expect(threadStatusOf(snap({ threadState: { "tas-1": { status: "idle", needsYou: false, closed: true } } }), agent)).toBe("closed");
     expect(threadStatusOf(snap({}), agent)).toBe("working");
   });
 });
 
 describe("forUserLine", () => {
   it("lowers a leading article and keeps names", () => {
-    expect(forUserLine("An accountant on the invoices page")).toBe("For an accountant on the invoices page");
+    expect(forUserLine("An accountant on the tasks page")).toBe("For an accountant on the tasks page");
     expect(forUserLine("The finance team")).toBe("For the finance team");
     expect(forUserLine("Dana at Northwind")).toBe("For Dana at Northwind");
     expect(forUserLine("Anna")).toBe("For Anna");

@@ -16,7 +16,7 @@ describe("runCommand", { timeout: GIT_TEST_TIMEOUT }, () => {
     expect(ok).toMatchObject({ ok: true, exitCode: 0, timedOut: false });
     if (!ok.ok) return;
     expect(ok.output).toContain(ws.root);
-    expect(ok.output).toContain("invoices.ts");
+    expect(ok.output).toContain("index.ts");
     expect(ok.output).toContain("oops");
     expect(await runCommand(ws, "exit 3")).toMatchObject({ ok: true, exitCode: 3 });
   });

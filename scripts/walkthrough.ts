@@ -59,12 +59,12 @@ const newRequest = (key: string, vague: string, testable: string): Request => ({
 
 const A = newRequest(
   "A",
-  "customers want to export invoices as CSV",
-  "Add invoicesToCsv(invoices) in src/csv.ts: one header row id,customer,amount,status,dueDate, then one row per invoice with the amount in dollars to two decimals, and quote any cell that holds a comma, quote or line break. Done means a vitest test in src/csv.test.ts passes for a plain row and for a customer name with a comma.",
+  "users want to export their tasks as CSV",
+  "Add tasksToCsv(tasks) in src/csv.ts: one header row id,title,hours,status,dueDate, then one row per task with the estimate in hours to two decimals, and quote any cell that holds a comma, quote or line break. Done means a vitest test in src/csv.test.ts passes for a plain row and for a title with a comma.",
 );
 const B = newRequest(
   "B",
-  "Add isOverdue(invoice, today) in src/overdue.ts: true when the invoice is not paid and its dueDate is before today. Done means a vitest test passes for a paid invoice, an unpaid one past due, and one due today.",
+  "Add isOverdue(task, today) in src/overdue.ts: true when the task is not done and its dueDate is before today. Done means a vitest test passes for a done task, an open one past due, and one due today.",
   "Yes, exactly as written: isOverdue in src/overdue.ts with its vitest test.",
 );
 /** The restart check runs on its own, after a reset, so a restart can't muddy results 1-8. */

@@ -4,7 +4,7 @@ import { checkPreview, findPreview, loadPreview } from "../vercel/preview";
 
 const SHA = "0123456789abcdef0123456789abcdef01234567";
 const VERCEL_ENV = { VERCEL_TOKEN: "vt_test", VERCEL_PROJECT_ID: "prj_1", VERCEL_TEAM_ID: "team_1" };
-const page = (status = 200) => new Response("<html><head><title>Invoices</title></head><body></body></html>", { status });
+const page = (status = 200) => new Response("<html><head><title>Tasks</title></head><body></body></html>", { status });
 
 afterEach(() => {
   setGitHubTransport(null);
@@ -13,9 +13,9 @@ afterEach(() => {
 
 describe("finding the preview", () => {
   it("asks Vercel for the newest deployment of the head commit", async () => {
-    const fetcher = vi.fn(async () => Response.json({ deployments: [{ url: "invoices-git-demo-x.vercel.app", readyState: "READY", inspectorUrl: "https://vercel.com/acme/invoices/dpl_1" }] }));
+    const fetcher = vi.fn(async () => Response.json({ deployments: [{ url: "tasks-git-demo-x.vercel.app", readyState: "READY", inspectorUrl: "https://vercel.com/acme/tasks/dpl_1" }] }));
     const found = await findPreview(SHA, VERCEL_ENV, fetcher as typeof fetch);
-    expect(found).toEqual({ url: "https://invoices-git-demo-x.vercel.app", state: "ready", source: "vercel", headSha: SHA, inspectorUrl: "https://vercel.com/acme/invoices/dpl_1" });
+    expect(found).toEqual({ url: "https://tasks-git-demo-x.vercel.app", state: "ready", source: "vercel", headSha: SHA, inspectorUrl: "https://vercel.com/acme/tasks/dpl_1" });
     const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
     const query = new URL(url);
     expect(query.origin + query.pathname).toBe("https://api.vercel.com/v7/deployments");
@@ -32,15 +32,15 @@ describe("finding the preview", () => {
 
   it("reads the URL from the GitHub deployment Vercel's GitHub app records, when there is no Vercel token", async () => {
     vi.stubEnv("BOB_GITHUB", "gh");
-    vi.stubEnv("BOB_GITHUB_REPO", "acme/invoices");
+    vi.stubEnv("BOB_GITHUB_REPO", "acme/tasks");
     const asked: string[] = [];
     setGitHubTransport(async (op) => {
       asked.push(op.path);
       if (op.slug === "GITHUB_LIST_DEPLOYMENTS") return [{ id: 11, environment: "Preview" }];
-      return [{ state: "success", environment_url: "https://invoices-abc.vercel.app", target_url: "https://vercel.com/acme/invoices/abc" }];
+      return [{ state: "success", environment_url: "https://tasks-abc.vercel.app", target_url: "https://vercel.com/acme/tasks/abc" }];
     });
-    expect(await findPreview(SHA, {})).toEqual({ url: "https://invoices-abc.vercel.app", state: "ready", source: "github", headSha: SHA });
-    expect(asked).toEqual([`repos/acme/invoices/deployments?sha=${SHA}`, "repos/acme/invoices/deployments/11/statuses"]);
+    expect(await findPreview(SHA, {})).toEqual({ url: "https://tasks-abc.vercel.app", state: "ready", source: "github", headSha: SHA });
+    expect(asked).toEqual([`repos/acme/tasks/deployments?sha=${SHA}`, "repos/acme/tasks/deployments/11/statuses"]);
   });
 });
 
@@ -54,7 +54,7 @@ describe("checking the preview", () => {
     const sleep = vi.fn(async () => {});
     const preview = await checkPreview({ headSha: SHA }, { env: { ...VERCEL_ENV, VERCEL_AUTOMATION_BYPASS_SECRET: "bypass" }, fetcher: fetcher as unknown as typeof fetch, sleep, intervalMs: 1 });
     expect(sleep).toHaveBeenCalledTimes(2);
-    expect(preview).toMatchObject({ url: "https://p.vercel.app", state: "ready", check: { ok: true, status: 200, detail: 'HTTP 200, title "Invoices", 62 bytes' } });
+    expect(preview).toMatchObject({ url: "https://p.vercel.app", state: "ready", check: { ok: true, status: 200, detail: 'HTTP 200, title "Tasks", 59 bytes' } });
     const pageCall = fetcher.mock.calls.find(([url]) => url === "https://p.vercel.app");
     expect(pageCall?.[1]?.headers).toEqual({ "x-vercel-protection-bypass": "bypass" });
   });

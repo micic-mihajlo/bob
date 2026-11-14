@@ -11,7 +11,7 @@ import { settle } from "../turns";
 import { freshTeam } from "./helpers";
 
 const REQUEST =
-  "Customers want to export invoices as CSV: all invoices, columns id, customer, amount, status and due date. Done when invoicesToCsv returns a header row and one row per invoice.";
+  "Users want to export their tasks as CSV: all tasks, columns id, title, hours, status and due date. Done when tasksToCsv returns a header row and one row per task.";
 
 /** The scripted flow up to the merge card: the build wrote its acceptance test, ran it red, then green. */
 async function builtAndRed() {
@@ -64,7 +64,7 @@ describe("an acceptance test locks once it has run red", { timeout: 60_000 }, ()
     expect(await decide("Edit", path.join(ws.root, own))).toMatch(/is locked/);
     expect(await decide("Write", own)).toMatch(/is locked/);
     expect(await decide("Read", path.join(ws.root, own))).toBe("allow");
-    expect(await decide("Edit", path.join(ws.root, "src/invoices.ts"))).toBe("allow");
+    expect(await decide("Edit", path.join(ws.root, "src/index.ts"))).toBe("allow");
   });
 
   it("makes record_review block on an acceptance test changed after red or already on main", async () => {

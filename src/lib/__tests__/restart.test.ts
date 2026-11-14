@@ -9,7 +9,7 @@ import { settle } from "../turns";
 import { freshTeam } from "./helpers";
 
 const REQUEST =
-  "Customers want to export invoices as CSV: all invoices, columns id, customer, amount, status and due date. Done when invoicesToCsv returns a header row and one row per invoice.";
+  "Users want to export their tasks as CSV: all tasks, columns id, title, hours, status and due date. Done when tasksToCsv returns a header row and one row per task.";
 const TIMEOUT = 60_000;
 const never = new Promise<never>(() => {});
 
@@ -43,10 +43,10 @@ describe("a restart loses nothing and strands nothing", { timeout: TIMEOUT }, ()
   it("runs a build turn again when it was cut off after steps that are safe to repeat, and the request reaches approval", async () => {
     setBrainOverride(dyingAt((ctx) => ctx.agent.crewRole === "build" && ctx.moves.length === 2));
     postUserMessage("bob", REQUEST);
-    await until(() => running("inv-1") && (getState().threads["inv-1"] ?? []).some((i) => i.kind === "step" && i.tool === "write_files"));
+    await until(() => running("tas-1") && (getState().threads["tas-1"] ?? []).some((i) => i.kind === "step" && i.tool === "write_files"));
 
     await restart();
-    expect(notices("inv-1").some((n) => /runs again from it/.test(n))).toBe(true);
+    expect(notices("tas-1").some((n) => /runs again from it/.test(n))).toBe(true);
     expect(pending()).toHaveLength(1);
     expect(getState().artifacts.filter((a) => a.kind === "pull_request")).toHaveLength(1);
     expect(digest()).toBe("1 thing needs you: approve the merge of #1\n");
@@ -57,7 +57,7 @@ describe("a restart loses nothing and strands nothing", { timeout: TIMEOUT }, ()
       dyingAt((ctx) => (ctx.agent.kind === "captain" && ctx.moves.some((m) => m.calls.some((c) => c.name === "start_thread"))) || (ctx.agent.kind === "crew" && ctx.moves.length === 0)),
     );
     postUserMessage("bob", REQUEST);
-    await until(() => running("bob") && running("inv-1") && getState().agents.some((a) => a.id === "inv-1"));
+    await until(() => running("bob") && running("tas-1") && getState().agents.some((a) => a.id === "tas-1"));
 
     await restart();
     expect(notices("bob").some((n) => /back in the queue.*Starting a build thread.*already happened and must not happen twice/.test(n))).toBe(true);
@@ -76,7 +76,7 @@ describe("a restart loses nothing and strands nothing", { timeout: TIMEOUT }, ()
     await until(() => running("bob") && !!getState().artifacts.find((a) => a.kind === "pull_request")?.pullRequest?.merged);
 
     await restart();
-    expect(notices("bob").some((n) => /picks up from where things stand: Merging \S+; Closing INV-1; Closing INV-2 already happened/.test(n))).toBe(true);
+    expect(notices("bob").some((n) => /picks up from where things stand: Merging \S+; Closing TAS-1; Closing TAS-2 already happened/.test(n))).toBe(true);
     expect(getState().roadmap.stageTitle).toBe("Learn");
     expect(getState().agents.filter((a) => a.kind === "crew" && !a.closedAt)).toHaveLength(0);
     expect(getState().turns.filter((t) => t.agentId === "bob").at(-1)?.status).toBe("completed");
@@ -89,7 +89,7 @@ describe("a restart loses nothing and strands nothing", { timeout: TIMEOUT }, ()
     await restart();
     expect(pending().map((a) => a.id)).toEqual([approval.id]);
     expect(digest()).toBe("1 thing needs you: approve the merge of #1\n");
-    expect(getState().drive.find((f) => f.name === "CREW.md")?.content).toMatch(/\| INV-1 \| build \|/);
+    expect(getState().drive.find((f) => f.name === "CREW.md")?.content).toMatch(/\| TAS-1 \| build \|/);
     expect(decideApproval(approval.id, "approved").ok).toBe(true);
     await settle();
     expect(getState().artifacts.find((a) => a.kind === "pull_request")?.pullRequest?.merged).toBe(true);

@@ -33,7 +33,7 @@ export const workspaceOptions = (): WorkspaceOptions => ({ root: getConfig().wor
 /** The project's own repository, or BOB_PROJECT_REPO (a URL or a local path) to bring one in; else the template it was made from. */
 export const sourceOf = (project: Project): ProjectSource => {
   const repo = project.repo || process.env.BOB_PROJECT_REPO;
-  return repo ? { kind: "git", url: repo, ...(project.repo && project.branch ? { branch: project.branch } : {}) } : { kind: "template", template: project.template ?? "invoices" };
+  return repo ? { kind: "git", url: repo, ...(project.repo && project.branch ? { branch: project.branch } : {}) } : { kind: "template", template: project.template ?? "blank-ts" };
 };
 
 /** The thread's own clone, made on first use along with the project's shared repository. */

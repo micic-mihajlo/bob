@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * pnpm demo: checks the machine, builds and starts Bob, resets the invoices sample to a clean seed with its
+ * pnpm demo: checks the machine, builds and starts Bob, resets the scripted sample (tasks-app) to a clean seed with its
  * repository and dependencies already made, and prints what is on and off. Every other project is kept. Plain JavaScript so it can
  * check the Node version before anything else runs.
  *
@@ -38,7 +38,7 @@ const BASE = `http://localhost:${PORT}`;
 const LOG_DIR = path.join(ROOT, ".data", "demo");
 const rel = (file) => path.relative(ROOT, file);
 const PREWARM =
-  "List overdue invoices: add overdueInvoices(invoices, today) in src/invoices.ts that returns the sent invoices whose due date is before today, oldest due date first, and show how many are overdue in the page summary. Done means a vitest test passes for one overdue, one paid and one not-yet-due invoice.";
+  "List overdue tasks: add overdueTasks(tasks, today) in src/tasks.ts that returns the open tasks whose due date is before today, oldest due date first. Done means a vitest test passes for one overdue, one done and one not-yet-due task.";
 
 const SELF_PREWARM =
   "Show when each pull request was opened as relative time on its card: add formatAgo(ms) in src/lib/format-time.ts returning just now under 10 s, then 12s ago, 5m ago, 2h ago, 3d ago. Done when a vitest test passes for 5 s, 12 s, 300 s, 7200 s and 3 days.";
@@ -139,7 +139,7 @@ try {
     if (opts.self) {
       say(`demo: opening Bob's own repository at ${SELF.branch} and preparing it (clone, pnpm install); other projects are kept`);
       await call("/api/projects", { repo: SELF.repo, branch: SELF.branch, name: SELF.name });
-    } else say("demo: resetting the invoices sample and preparing it (repository, dependencies); other projects are kept");
+    } else say("demo: resetting the scripted sample and preparing it (repository, dependencies); other projects are kept");
     const reset = await call("/api/reset", opts.self ? { warm: true } : { warm: true, sample: true });
     const deps = reset.deps ?? { kind: "none" };
     if (deps.kind === "failed") say(`demo: WARNING the project's dependency install failed (${deps.command}); each thread will install its own. ${String(deps.output).slice(-300)}`);
@@ -171,7 +171,7 @@ try {
         : "local file .data/state.json (BOB_DURABLE=cloudflare for a Durable Object)",
     ],
     ["Vercel previews", env.BOB_PREVIEWS?.trim().toLowerCase() === "vercel" ? "on" : "off (BOB_PREVIEWS=vercel turns it on)"],
-    ["Project", `${snapshot.project?.name ?? "?"} (${snapshot.project?.repo ?? "invoices template"})`],
+    ["Project", `${snapshot.project?.name ?? "?"} (${snapshot.project?.repo ?? "blank TypeScript template"})`],
   ];
   say();
   for (const [name, value] of rows) say(`  ${name.padEnd(16)} ${value}`);
@@ -180,7 +180,7 @@ try {
     const captain = snapshot.agents.find((a) => a.kind === "captain") ?? snapshot.agents.find((a) => a.role === "orchestrator");
     if (!captain) throw new Error("no captain in the snapshot");
     await call(`/api/agents/${captain.id}/messages`, { text: opts.self ? SELF_PREWARM : PREWARM });
-    say(`\ndemo: pre-warm request sent to ${captain.name} (${opts.self ? "pull request times" : "overdue invoices"}). It stops at a merge approval under Needs you.`);
+    say(`\ndemo: pre-warm request sent to ${captain.name} (${opts.self ? "pull request times" : "overdue tasks"}). It stops at a merge approval under Needs you.`);
   }
   if (!live && !opts.scripted) say("\ndemo: WARNING the scripted brain is running. Put AI_GATEWAY_API_KEY in .env.local for the live model.");
   say(`\nBob is on at ${BASE}. Ctrl-C stops it. If the model misbehaves mid-demo: Ctrl-C, then pnpm demo --scripted.`);

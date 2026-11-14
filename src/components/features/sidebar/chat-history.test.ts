@@ -6,21 +6,21 @@ const all = () => true;
 describe("chat history", () => {
   it("steps back and forward like a browser tab", () => {
     let history = recordChat(EMPTY_CHAT_HISTORY, "bob", null);
-    history = recordChat(history, "inv-1", null);
-    history = recordChat(history, "inv-2", null);
+    history = recordChat(history, "tas-1", null);
+    history = recordChat(history, "tas-2", null);
     const back = nearestChat(history, -1, all);
-    expect(history.entries[back]).toBe("inv-1");
-    history = recordChat(history, "inv-1", back);
-    expect(history.entries[nearestChat(history, 1, all)]).toBe("inv-2");
-    history = recordChat(history, "inv-3", null);
-    expect(history.entries).toEqual(["bob", "inv-1", "inv-3"]);
+    expect(history.entries[back]).toBe("tas-1");
+    history = recordChat(history, "tas-1", back);
+    expect(history.entries[nearestChat(history, 1, all)]).toBe("tas-2");
+    history = recordChat(history, "tas-3", null);
+    expect(history.entries).toEqual(["bob", "tas-1", "tas-3"]);
     expect(nearestChat(history, 1, all)).toBe(-1);
   });
 
   it("steps over a thread that no longer exists", () => {
     let history = recordChat(EMPTY_CHAT_HISTORY, "bob", null);
     history = recordChat(history, "gone", null);
-    history = recordChat(history, "inv-1", null);
+    history = recordChat(history, "tas-1", null);
     expect(history.entries[nearestChat(history, -1, (id) => id !== "gone")]).toBe("bob");
   });
 

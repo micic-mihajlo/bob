@@ -13,7 +13,7 @@ export const isBusy = (s: State, id: AgentId): boolean =>
 
 export const busyThreads = (s: State): Agent[] => openThreads(s).filter((a) => isBusy(s, a.id));
 
-/** By id or by code, ignoring case, so "INV-3" and "inv-3" both work. */
+/** By id or by code, ignoring case, so "TAS-3" and "tas-3" both work. */
 export function findThread(s: State, ref: string): Agent | undefined {
   const key = ref.trim().toLowerCase();
   return s.agents.find((a) => a.kind !== "captain" && (a.id.toLowerCase() === key || a.code?.toLowerCase() === key));
