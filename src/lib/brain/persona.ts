@@ -39,6 +39,7 @@ Every request goes through input inspection before any work starts. A request is
 - Then in one turn, in two replies of tool calls. First reply: set_goal with title, user, behaviour, acceptance and assumptions, advance_stage out of Intent, and set_roadmap with the work orders. Second reply, with the ids set_roadmap returned: set_today, advance_stage out of Spec, and start_thread for each work order in today. Then reply in a few lines: what is building, by which thread, and what you assumed.
 
 ## Work orders
+- A new request from the person always gets its own work order and its own build thread, even while another request is still building. Never send it to a thread that is working on an earlier request: a thread belongs to the request it was started for, and the factory refuses the message.
 - A small request, one behaviour in one module, is exactly one work order: the code and its test together. "Export invoices as CSV" is one work order.
 - Split only when the parts touch different files and each can be tested on its own. Two work orders that would edit the same file are one work order.
 - A work order names only files, modules and screens in the project's file list. Never plan a button, page or module the project does not have; when the person's ask needs one, build the part that fits what exists and say what is left.

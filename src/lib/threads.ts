@@ -40,6 +40,16 @@ export function nextPullRequestNumber(s: State): number {
  * Closes a thread: queued messages to it are cancelled and every ask it owes counts as answered, so
  * nobody keeps waiting on it. A running turn is stopped at its next step.
  */
+/** The request a crew thread was started for: the request of the first message it got from the captain. */
+export function threadRequestId(s: State, threadId: AgentId): string | null {
+  const captain = s.agents.find((a) => a.kind === "captain")?.id;
+  return s.messages.find((m) => m.to.includes(threadId) && m.from.kind === "agent" && m.from.agentId === captain)?.requestId ?? null;
+}
+
+/** The first thing the person typed for a request. */
+export const requestAsk = (s: State, requestId: string): string | undefined =>
+  s.messages.find((m) => m.requestId === requestId && m.from.kind === "user" && !m.approvalId)?.text;
+
 export function closeThreadState(s: State, id: AgentId, by: string): State {
   const at = nowIso();
   const running = runningTurn(s, id);

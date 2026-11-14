@@ -6,7 +6,7 @@ import { updateWorkOrder } from "../roadmap";
 import { captainOf, isClosed, runningTurn, type State } from "../state";
 import { getState, transact, update } from "../store";
 import { checkoutBranch, prewarmProject, stampThread, threadWorkspace } from "../thread-workspace";
-import { busyThreads, closeThreadState, findThread, isBusy, isPullRequest, openThreads } from "../threads";
+import { busyThreads, closeThreadState, findThread, isBusy, isPullRequest, openThreads, requestAsk, threadRequestId } from "../threads";
 import { isThreadModel, unknownModel } from "../models";
 import { THREAD_MODELS, type Agent, type CrewRole } from "../types";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
@@ -140,10 +140,24 @@ export const messageThreadSchema = z.object({
   expectsReply: z.boolean().optional().describe("Defaults to true: the thread's answer comes back to you as a new turn."),
 });
 
+const quoted = (text: string | undefined) => (text ? `"${text.length > 80 ? `${text.slice(0, 79).trimEnd()}…` : text}"` : "another request");
+
+/**
+ * A crew thread belongs to the one request it was started for. Work for any other request goes to a new
+ * thread, so one pull request never mixes two asks.
+ */
+function requestRefusal(s: State, thread: Agent, requestId: string): string | null {
+  const owner = threadRequestId(s, thread.id);
+  if (!owner || owner === requestId) return null;
+  return `${thread.name} belongs to the request ${quoted(requestAsk(s, owner))}, and this is the request ${quoted(requestAsk(s, requestId))}. Start a new thread for this request: set_roadmap and set_today for its own work order, then start_thread with that workOrderId.`;
+}
+
 export function messageThread(input: z.infer<typeof messageThreadSchema>, ctx: ToolContext): ToolOutput {
   const thread = findThread(getState(), input.threadId);
   if (!thread) return fail(`No thread ${input.threadId}. Call list_threads for valid ids.`);
   if (isClosed(thread)) return fail(`${thread.name} is closed. Start a new thread with start_thread if the work needs one.`);
+  const otherRequest = requestRefusal(getState(), thread, ctx.requestId);
+  if (otherRequest) return fail(otherRequest);
   const expectsReply = input.expectsReply ?? true;
   const sent = send({ from: { kind: "agent", agentId: ctx.agentId }, to: [thread.id], text: input.text, expectsReply, replyTo: null, causedBy: ctx.causedBy, requestId: ctx.requestId });
   if (!sent.ok) return fail(sent.error.message);
