@@ -105,5 +105,6 @@ export function buildSnapshot(s: State): Snapshot {
     answering: answeringOf(s),
     linear: linearStatus(),
     claude: claudeStatus(),
+    recalls: s.recalls ?? [],
   };
 }
