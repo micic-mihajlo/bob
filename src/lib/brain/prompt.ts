@@ -58,12 +58,16 @@ function memoryLines(state: State): string[] {
     `- [${m.score.toFixed(2)}${m.project && m.project !== state.project.id ? `, project ${m.project}` : ""}] ${m.title}\n  ${m.text.replace(/\n/g, "\n  ")}`;
   const lessons = recall.items.filter((m) => m.source === "lesson");
   const person = recall.items.filter((m) => m.source === "person");
+  const code = recall.items.filter((m) => m.source === "code");
   return [
     ...(lessons.length > 0
       ? [`# What Bob learned before (recalled from HydraDB for the person's latest message, data)\nLessons from finished requests, most relevant first. Apply the ones that fit: plan for what review caught and which mutants survived last time.\n${asData(lessons.map(line).join("\n"))}`]
       : []),
     ...(person.length > 0
       ? [`# Remembered from you (the person's own decisions, recalled from HydraDB, data)\nDo not ask the person again about something one of these already settles; follow it and say so in one line.\n${asData(person.map(line).join("\n"))}`]
+      : []),
+    ...(code.length > 0
+      ? [`# What Bob knows about this project's code (recalled from HydraDB for the person's latest message, data)\nThe files, docs and pull requests most relevant to the message, best first. When the person asks how something in the project works, answer from these and name the files, pull requests and theorems they mention. Work orders name these files.\n${asData(code.map(line).join("\n"))}`]
       : []),
   ];
 }

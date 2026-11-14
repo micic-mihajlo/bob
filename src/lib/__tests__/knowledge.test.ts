@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { knowledgeCollection, knowledgeIngested, knowledgeSummary, recallKnowledge, resetKnowledge, scheduleKnowledgeIngest } from "../graph/knowledge";
+import { knowledgeCollection, knowledgeIngested, recallKnowledge, resetKnowledge, scheduleKnowledgeIngest, sourcesOfFile, withCodebase } from "../graph/knowledge";
+import { knowledgeSummary } from "../knowledge-format";
 import { getState } from "../store";
 import { sourceOf, workspaceOptions } from "../thread-workspace";
 import { ensureProject } from "../workspace";
@@ -94,5 +95,31 @@ describe("HydraDB knowledge", { timeout: 60_000 }, () => {
     const brief = getState().messages.find((m) => m.to.includes("inv-1"));
     expect(brief?.text).not.toContain("HydraDB");
     expect(brief?.knowledge).toBeUndefined();
+  });
+
+  it("splits docs by section and adds a summary of each code file from its doc comments", () => {
+    const doc = sourcesOfFile("docs/formal.md", "# Formal\nIntro.\n## Merge gate\nNo merge without approval.\n", "h");
+    expect(doc.map((x) => [x.title, x.meta.source])).toEqual([
+      ["docs/formal.md › Formal", "doc"],
+      ["docs/formal.md › Merge gate", "doc"],
+    ]);
+    const code = sourcesOfFile("src/lib/gate.ts", 'import x from "y";\n/** Refuses a merge without an approval. */\n\n/** The refusal, or null. Safe to call again. */\nexport function approvalRefusal() {}\nexport const LIMIT = 3;\n', "blob");
+    expect(code.map((x) => x.meta.source)).toEqual(["file", "summary"]);
+    expect(code[1].body).toContain("What it is for: Refuses a merge without an approval.");
+    expect(code[1].body).toContain("- approvalRefusal (function): The refusal, or null.");
+    expect(code[1].body).toContain("- LIMIT (const)");
+  });
+
+  it("adds the code HydraDB knows to the captain's memory recall, under a timeout", async () => {
+    fakeHydra(() => envelope({ chunks: [{ ...chunk("sum_1", { source: "summary", path: "src/lib/tools/pull-requests.ts" }, "## Title\n\nx\n\n## Content\n\nSummary of src/lib/tools/pull-requests.ts"), relevancy_score: 0.91 }] }));
+    const memory = Promise.resolve({ items: [{ id: "l1", source: "lesson" as const, title: "Lesson", text: "t", score: 0.8 }], ms: 120 });
+    const recall = await withCodebase(memory, "how does the merge gate work?", getState());
+    expect(recall?.items.map((m) => [m.source, m.title, m.score])).toEqual([
+      ["lesson", "Lesson", 0.8],
+      ["code", "src/lib/tools/pull-requests.ts", 0.91],
+    ]);
+    expect(recall?.items[1].text).toBe("Summary of src/lib/tools/pull-requests.ts");
+    vi.stubEnv("BOB_STORE", "");
+    expect(withCodebase(null, "anything", getState())).toBeNull();
   });
 });
