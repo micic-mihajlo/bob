@@ -4,9 +4,9 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { ensureDatabase, HydraError, hydraConfig, hydraUp, runCypher, type HydraConfig } from "../graph/hydra";
 import { getConfig, getState } from "../store";
-import { sourceOf, workspaceOptions } from "../thread-workspace";
+import { workspaceOptions } from "../thread-workspace";
 import { hasProject, type Project } from "../types";
-import { ensureProject } from "../workspace";
+import { projectLayout, rootOf } from "../workspace";
 import { MAIN_BRANCH } from "../workspace/layout";
 import { extractCodebase, moduleOf, type CodeEdge, type CodeKind, type Extraction, type SourceFile } from "./extract";
 import { projectHistory } from "./history";
@@ -219,7 +219,8 @@ async function write(c: HydraConfig, projectId: string, x: Extraction): Promise<
 
 async function build(project: Project): Promise<void> {
   const started = Date.now();
-  const { origin } = await ensureProject(project.id, sourceOf(project), workspaceOptions());
+  const origin = projectLayout(rootOf(workspaceOptions()), project.id).origin;
+  if (!fs.existsSync(path.join(origin, "HEAD"))) throw new Error("its repository is not ready yet");
   const files = await filesOnMain(origin);
   const prs = await projectHistory(origin, files.find((f) => f.path === "docs/overnight-log.md")?.text ?? "", getState(), project.id);
   const extraction = extractCodebase(files, prs);
