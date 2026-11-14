@@ -750,6 +750,11 @@
   overflow-wrap: anywhere;
 }
 
+.review-card-more {
+  justify-self: start;
+  color: var(--bob-text-muted);
+}
+
 .approval-detail-row strong:has(.pull-request-note) {
   display: flex;
   flex-wrap: wrap;
