@@ -14,8 +14,10 @@
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["ProjectState", "Directory"] },
-    // v2 keys every object by the Bob instance's namespace and starts empty: the v1 objects are deleted.
-    { "tag": "v2", "deleted_classes": ["ProjectState", "Directory"], "new_sqlite_classes": ["ProjectStateV2", "DirectoryV2"] }
+    // v2 keys every object by the Bob instance's namespace in new, empty classes; v3 then deletes the v1 objects,
+    // which Cloudflare allows only once no binding points at them.
+    { "tag": "v2", "new_sqlite_classes": ["ProjectStateV2", "DirectoryV2"] },
+    { "tag": "v3", "deleted_classes": ["ProjectState", "Directory"] }
   ],
   "observability": { "enabled": true }
 }
