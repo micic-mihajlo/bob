@@ -106,7 +106,7 @@ export interface Message {
 
 /** The files and merged pull requests HydraDB recalled for a crew brief, and how long the recall took. */
 export interface KnowledgeContext {
-  files: { path: string; snippet: string }[];
+  files: { path: string; snippet: string; facts?: string[] }[];
   prs: { number: number; title: string; files: string[] }[];
   ms: number;
 }

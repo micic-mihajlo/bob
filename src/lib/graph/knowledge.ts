@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
-import { scheduleCodebaseGraph } from "../codebase/graph";
+import { factsForFiles, scheduleCodebaseGraph, type FileFacts } from "../codebase/graph";
+import { projectHistory } from "../codebase/history";
 import type { State } from "../state";
 import { getConfig, getState } from "../store";
 import { sourceOf, workspaceOptions } from "../thread-workspace";
@@ -89,7 +90,7 @@ async function hydra(c: HydraConfig, method: "POST" | "DELETE", route: string, b
     return envelope.data;
   } catch (error) {
     const timedOut = error instanceof Error && error.name === "TimeoutError";
-    if (!timedOut && !(error instanceof HydraError && error.status === 400)) downUntil = Date.now() + COOL_OFF_MS;
+    if (!timedOut && !(error instanceof HydraError && (error.status === 400 || error.status === 429))) downUntil = Date.now() + COOL_OFF_MS;
     if (error instanceof HydraError) throw error;
     throw new HydraError(timedOut ? `no answer within ${timeoutMs} ms` : String(error), 0);
   }
@@ -231,6 +232,32 @@ export function mergedPullRequests(s: State): KnowledgeSource[] {
   });
 }
 
+/** The project's pull requests from main's history and the overnight log, so recall finds the PRs that shaped the code. */
+function historySources(history: Awaited<ReturnType<typeof projectHistory>>): KnowledgeSource[] {
+  return history.flatMap((pr) => {
+    if (pr.source === "bob") return [];
+    const body = [`Pull request #${pr.number}: ${pr.title} (merged)`, pr.body.trim() && `Description: ${pr.body.trim().slice(0, 6_000)}`, `Files changed: ${pr.files.join(", ") || "unknown"}`]
+      .filter(Boolean)
+      .join("\n");
+    return [{ id: `gh_${pr.number}`, title: `PR #${pr.number}: ${pr.title}`, kind: "custom" as const, body, hash: sha(body), meta: { source: "pr", pr: String(pr.number), files: pr.files.join(",").slice(0, 900) } }];
+  });
+}
+
+/** HydraDB takes about 1,000 ingested items a minute; past that it answers 429 with a wait, which a batch honours and retries. */
+async function sendBatch(c: HydraConfig, form: FormData): Promise<void> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await hydra(c, "POST", "/context/ingest", form, INGEST_TIMEOUT_MS);
+      return;
+    } catch (error) {
+      const limited = error instanceof HydraError && (error.status === 429 || /rate limit/i.test(error.message));
+      if (!limited || attempt >= 40) throw error;
+      const seconds = Number(/retry in (\d+)/i.exec(error.message)?.[1]) || 2;
+      await new Promise((resolve) => setTimeout(resolve, Math.min(seconds, 30) * 1_000 + 250));
+    }
+  }
+}
+
 async function ingest(project: Project): Promise<void> {
   const c = hydraConfig();
   if (!c || Date.now() < downUntil) return;
@@ -238,7 +265,9 @@ async function ingest(project: Project): Promise<void> {
   const files = await filesOnMain(origin);
   pathsOnMain.set(project.id, new Set(files.filter((f) => f.meta.source !== "module").map((f) => f.meta.path)));
   const s = getState();
-  const sources = [...files, ...(s.project.id === project.id ? mergedPullRequests(s) : [])];
+  const logText = await run("git", [`--git-dir=${origin}`, "show", `${MAIN_BRANCH}:docs/overnight-log.md`], { maxBuffer: 8 * 1024 * 1024 }).then((r) => r.stdout, () => "");
+  const history = await projectHistory(origin, logText, s, project.id).catch(() => []);
+  const sources = [...files, ...historySources(history), ...(s.project.id === project.id ? mergedPullRequests(s) : [])];
   const ledger = readLedger(project.id);
   const changed = sources.filter((x) => ledger.sent[x.id] !== x.hash);
   const collection = knowledgeCollection(project.id);
@@ -264,12 +293,12 @@ async function ingest(project: Project): Promise<void> {
         })),
       ),
     );
-    await hydra(c, "POST", "/context/ingest", form, INGEST_TIMEOUT_MS);
+    await sendBatch(c, form);
     for (const x of batch) ledger.sent[x.id] = x.hash;
     writeLedger(project.id, ledger);
   }
   const live = new Set(sources.map((x) => x.id));
-  const gone = Object.keys(ledger.sent).filter((id) => !live.has(id) && /^(file|doc|sum|mod)_/.test(id));
+  const gone = Object.keys(ledger.sent).filter((id) => !live.has(id) && /^(file|doc|sum|mod|gh)_/.test(id));
   if (gone.length > 0) {
     await hydra(c, "DELETE", "/context", { type: "knowledge", database: c.database, collection, ids: gone }, INGEST_TIMEOUT_MS).catch(() => undefined);
     for (const id of gone) delete ledger.sent[id];
@@ -340,6 +369,8 @@ export interface KnowledgeHit {
   snippet: string;
   /** The chunk's text without HydraDB's title header. */
   text: string;
+  /** On a pull request: the files it changed. */
+  files: string[];
 }
 
 const KINDS: Record<string, KnowledgeHit["kind"]> = { file: "file", doc: "doc", pr: "pr", summary: "summary", module: "summary" };
@@ -371,7 +402,8 @@ async function queryKnowledge(s: State, query: string, timeoutMs: number, max = 
       if (kind === "pr" && chunk.id.startsWith("pr_") && !merged.has(chunk.id)) return [];
       if (filePath && onMain && meta.source !== "module" && !onMain.has(filePath)) return [];
       const text = (chunk.chunk_content ?? "").replace(/^## Title\n\n[^\n]*\n\n## Content\n\n/, "");
-      return [{ id: chunk.id, kind, title: chunk.source_title ?? filePath ?? chunk.id, path: filePath, score: chunk.relevancy_score ?? 0, snippet: snippet(text), text }];
+      const files = typeof meta.files === "string" && meta.files ? meta.files.split(",") : [];
+      return [{ id: chunk.id, kind, title: chunk.source_title ?? filePath ?? chunk.id, path: filePath, score: chunk.relevancy_score ?? 0, snippet: snippet(text), text, files }];
     });
     return { hits, ms: Date.now() - started };
   } catch (error) {
@@ -381,10 +413,10 @@ async function queryKnowledge(s: State, query: string, timeoutMs: number, max = 
 }
 
 /** The codebase search box: ranked hits with scores and the time HydraDB took. */
-export async function searchKnowledge(s: State, query: string): Promise<{ ms: number; source: "hydra" | "off"; hits: Omit<KnowledgeHit, "text">[] }> {
+export async function searchKnowledge(s: State, query: string): Promise<{ ms: number; source: "hydra" | "off"; hits: Omit<KnowledgeHit, "text" | "files">[] }> {
   const found = await queryKnowledge(s, query, 3_000, 10);
   if (!found) return { ms: 0, source: "off", hits: [] };
-  return { ms: found.ms, source: "hydra", hits: found.hits.map(({ text: _text, ...hit }) => hit) };
+  return { ms: found.ms, source: "hydra", hits: found.hits.map(({ text: _text, files: _files, ...hit }) => hit) };
 }
 
 /**
@@ -402,7 +434,7 @@ export async function recallKnowledge(s: State, query: string, timeoutMs = RECAL
       const n = Number(/\d+/.exec(hit.id)?.[0]);
       if (prs.some((x) => x.number === n) || prs.length >= SHOWN_PRS) continue;
       const pr = s.artifacts.filter(isPullRequest).find((a) => a.pullRequest.number === n && hit.id === `pr_${n}`);
-      prs.push(pr ? { number: n, title: pr.title, files: pr.pullRequest.files.map((f) => f.path).slice(0, 6) } : { number: n, title: hit.title.replace(/^PR #\d+: /, ""), files: [] });
+      prs.push(pr ? { number: n, title: pr.title, files: pr.pullRequest.files.map((f) => f.path).slice(0, 6) } : { number: n, title: hit.title.replace(/^PR #\d+: /, ""), files: hit.files.slice(0, 6) });
       continue;
     }
     if (!hit.path || hit.title.endsWith("(module)") || files.some((f) => f.path === hit.path) || files.length >= SHOWN_FILES) continue;
@@ -413,14 +445,19 @@ export async function recallKnowledge(s: State, query: string, timeoutMs = RECAL
 
 /** What the captain sees about the code for the person's message: the top hits with their text, under a short timeout. */
 export async function recallCodebase(s: State, text: string, timeoutMs = CAPTAIN_TIMEOUT_MS): Promise<{ items: RecalledMemory[]; ms: number } | null> {
+  const started = Date.now();
   const found = await queryKnowledge(s, text, timeoutMs, 8);
   if (!found) return null;
   const seen = new Set<string>();
-  const items = found.hits
-    .filter((hit) => !seen.has(hit.id) && !!seen.add(hit.id))
-    .slice(0, 5)
-    .map((hit): RecalledMemory => ({ id: `code_${hit.id}`, source: "code", title: hit.title, text: hit.text.slice(0, 900), score: hit.score }));
-  return items.length > 0 ? { items, ms: found.ms } : null;
+  const top = found.hits.filter((hit) => !seen.has(hit.id) && !!seen.add(hit.id)).slice(0, 5);
+  const paths = [...new Set(top.flatMap((hit) => (hit.path && hit.kind !== "doc" && !hit.title.endsWith("(module)") ? [hit.path] : [])))].slice(0, 3);
+  const facts = paths.length > 0 ? await factsForFiles(s.project.id, paths, Math.max(150, timeoutMs - found.ms)) : null;
+  const items = top.map((hit): RecalledMemory => {
+    const fact = hit.kind === "file" || hit.kind === "summary" ? facts?.find((f) => f.path === hit.path) : undefined;
+    const extra = fact ? factLines(fact).map((l) => `\n${l}`).join("") : "";
+    return { id: `code_${hit.id}`, source: "code", title: hit.title, text: `${hit.text.slice(0, 900)}${extra}`, score: hit.score };
+  });
+  return items.length > 0 ? { items, ms: Date.now() - started } : null;
 }
 
 /** The memory recall for the person's message to the captain, with what HydraDB knows about the project's code added. */
@@ -433,10 +470,42 @@ export function withCodebase(memory: Promise<{ items: RecalledMemory[]; ms: numb
   });
 }
 
+/** What the graph says about a file, a line each: the tests that cover it, the theorems that prove it, the PRs that changed it. */
+export function factLines(f: FileFacts): string[] {
+  return [
+    f.tests.length > 0 && `tests: ${f.tests.map((t) => t.path).join(", ")}`,
+    ...f.theorems.map((t) => `proved by ${t.name} (${t.symbol}): ${t.statement}`),
+    f.prs.length > 0 && `changed by ${f.prs.map((p) => `#${p.number} ${p.title}`).join("; ")}`,
+    ...f.prs.flatMap((p) => p.findings.slice(0, 2).map((x) => `review of #${p.number} caught: ${x}`)),
+  ].filter((l): l is string => !!l);
+}
+
+/** The recall plus what the graph knows about its top files, within the brief's budget. */
+export async function recallForBrief(s: State, query: string): Promise<KnowledgeContext | null> {
+  const started = Date.now();
+  const k = await recallKnowledge(s, query);
+  if (!k) return null;
+  const facts = await factsForFiles(s.project.id, k.files.slice(0, 3).map((f) => f.path), Math.max(200, RECALL_TIMEOUT_MS + 400 - (Date.now() - started)));
+  return { ...k, files: k.files.map((f) => ({ ...f, facts: facts?.find((x) => x.path === f.path) ? factLines(facts.find((x) => x.path === f.path)!) : undefined })) };
+}
+
+/**
+ * For a review brief: the past pull requests that touched the files under review and what their reviews caught, from
+ * the graph. Null when HydraDB is off, slow, or has no history for those files.
+ */
+export async function reviewHistory(s: State, files: string[], current: number): Promise<string | null> {
+  const facts = await factsForFiles(s.project.id, files.slice(0, 8));
+  if (!facts) return null;
+  const prs = [...new Map(facts.flatMap((f) => f.prs.filter((p) => !(p.bob && p.number === current)).map((p) => [`${p.bob}${p.number}`, { ...p, path: f.path }] as const))).values()].slice(0, 6);
+  if (prs.length === 0) return null;
+  const lines = prs.map((p) => `- #${p.number} ${p.title} (touched ${p.path})${p.findings.length ? `; its review caught: ${p.findings.slice(0, 3).join(" | ")}` : ""}`);
+  return `Past PRs that touched these files, from HydraDB (check this change does not repeat what their reviews caught):\n${lines.join("\n")}`;
+}
+
 /** The brief's section: where the thread starts reading instead of searching. */
 export function knowledgeSection(k: KnowledgeContext): string {
   const lines = [
-    ...k.files.map((f) => `- ${f.path}${f.snippet ? `: ${f.snippet}` : ""}`),
+    ...k.files.map((f) => `- ${f.path}${f.snippet ? `: ${f.snippet}` : ""}${(f.facts ?? []).map((l) => `\n  ${l}`).join("")}`),
     ...k.prs.map((p) => `- PR #${p.number} "${p.title}" (merged)${p.files.length ? `, changed ${p.files.join(", ")}` : ""}`),
   ];
   return `Relevant code and history from HydraDB (start by reading these instead of searching):\n${lines.join("\n")}`;
