@@ -2,7 +2,7 @@
 
 import { useConversation, useConversationClientTool } from "@elevenlabs/react";
 import { useEffect, useRef, useState } from "react";
-import { SEND_TO_BOB, speakable, utteranceFor } from "@/lib/voice/speech";
+import { joinSpelled, SEND_TO_BOB, speakable, utteranceFor } from "@/lib/voice/speech";
 import type { AgentId } from "@/lib/types";
 import { voiceSession, voiceTurn } from "./api";
 import { quiet, SAMPLE_MS } from "./use-mic-levels";
@@ -29,7 +29,7 @@ export function useElevenLabsCall(agentId: AgentId): VoiceCallState {
       if (role === "user") {
         heardSinceSend.current.push(message);
         setHeard(message);
-      } else setSaid(message);
+      } else setSaid(joinSpelled(message.replace(/\[[a-z -]+\]\s*/gi, "")));
     },
     onModeChange: ({ mode }) => {
       if (!thinking.current) setPhase(mode === "speaking" ? "speaking" : "listening");
