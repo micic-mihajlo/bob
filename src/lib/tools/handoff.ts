@@ -82,9 +82,12 @@ export function askForReReview(pr: PullRequestArtifact): AgentId | null {
   return sendForCaptain(last.agentId, text, true, pr.requestId);
 }
 
-/** A pull request that conflicts with main goes back to its build thread to bring its branch up to date. */
+/**
+ * A pull request that conflicts with main goes back to its build thread to bring its branch up to date. It expects
+ * a reply, so a turn that ends without updating the branch still answers the captain, as blocked.
+ */
 export function askToUpdateBranch(pr: PullRequestArtifact, conflicts: string[]): AgentId | null {
   const files = conflicts.length ? ` in ${conflicts.join(", ")}` : "";
-  const text = `Pull request #${pr.pullRequest.number} (id ${pr.id}) conflicts with main${files}, because another change merged first. Run git fetch origin and git merge origin/main on your branch, resolve the conflicts so both changes keep working, run the tests, then call open_pull_request again. The review runs again by itself on your new head.`;
-  return sendForCaptain(pr.agentId, text, false, pr.requestId);
+  const text = `Pull request #${pr.pullRequest.number} (id ${pr.id}) conflicts with main${files}, because another change merged first. Run git fetch origin and git merge origin/main on your branch, resolve the conflicts so both changes keep working, run the tests, then call open_pull_request again and report the new head. The review runs again by itself on your new head. If you cannot resolve them, report with Status: blocked.`;
+  return sendForCaptain(pr.agentId, text, true, pr.requestId);
 }

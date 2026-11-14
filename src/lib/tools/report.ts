@@ -8,6 +8,7 @@ import { getState, update } from "../store";
 import type { Artifact, Delivery } from "../types";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
 import { recordOutgoing } from "./messaging";
+import { conflictLeft } from "./pull-requests";
 
 export const reportSchema = z.object({
   text: z.string().min(1).describe("Status: done|partial|blocked, Result, Evidence, and Unblock when blocked, one per line."),
@@ -21,9 +22,11 @@ function owedToCaptain(s: State, ctx: ToolContext, captainId: string): Delivery 
   });
 }
 
-export function report(input: z.infer<typeof reportSchema>, ctx: ToolContext): ToolOutput {
+export async function report(input: z.infer<typeof reportSchema>, ctx: ToolContext): Promise<ToolOutput> {
   if (!isFormattedReply(input.text)) return fail(`${REPLY_FORMAT_HELP} Rewrite the report in that shape and call report again.`);
   const s = getState();
+  const left = /^Status:[ \t]*done\b/m.test(input.text) ? await conflictLeft(s, ctx.turnId) : null;
+  if (left) return fail(`${left} Run git fetch origin and git merge origin/main, resolve the conflicts, run the tests and call open_pull_request, then report. If you cannot, report with Status: blocked.`);
   const captain = captainOf(s);
   if (!captain) return fail("There is no captain to report to.");
   const owed = owedToCaptain(s, ctx, captain.id);
