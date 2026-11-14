@@ -2,7 +2,7 @@
 
 /* The footer island says which brain runs the agents, and whether the window is live. */
 .sidebar-update-island .account-update-island {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
 .sidebar-brain-sync {

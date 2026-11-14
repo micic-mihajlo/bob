@@ -9,6 +9,7 @@ import type { Agent } from "@/lib/types";
 import { NewAgentDialog } from "./NewAgentDialog";
 import { ProjectMenu } from "./ProjectMenu";
 import { SidebarAgentRow } from "./SidebarAgentRow";
+import { ThemeToggle } from "./ThemeToggle";
 import { PlusIcon, SearchIcon, SidebarToggleIcon } from "./SidebarIcons";
 
 const SYNC: Record<SyncState, { label: string; title: string }> = {
@@ -122,6 +123,7 @@ export function Sidebar({ compact = false, onExpand }: { compact?: boolean; onEx
           <span className="sidebar-brain-sync" data-sync={sync} title={SYNC[sync].title}>
             {SYNC[sync].label}
           </span>
+          <ThemeToggle />
         </div>
       </div>
 
