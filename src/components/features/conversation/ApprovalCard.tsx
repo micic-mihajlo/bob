@@ -6,7 +6,7 @@ import { useBob } from "@/components/features/window/BobContext";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { decideApproval } from "@/lib/client/api";
-import { changeTotals, pullRequestForApproval } from "@/lib/client/pull-requests";
+import { changeTotals, pullRequestForApproval, reasonWithoutFiles } from "@/lib/client/pull-requests";
 import type { Approval } from "@/lib/types";
 
 /** An agent asks the person before it acts. Allow and Deny answer it; a decided card shows the answer. */
@@ -16,6 +16,8 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
   const [error, setError] = useState<string | null>(null);
   const pullRequest = pullRequestForApproval(snapshot.artifacts, approval);
   const totals = pullRequest ? changeTotals(pullRequest.pullRequest.files) : null;
+  const files = pullRequest?.pullRequest.files ?? [];
+  const reason = files.length > 0 ? reasonWithoutFiles(approval.detail) : approval.detail;
   const pending = approval.status === "pending";
 
   const submit = async (decision: "approved" | "denied") => {
@@ -53,7 +55,7 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
           </Badge>
         )}
       </header>
-      {approval.detail ? <p className="approval-reason">{approval.detail}</p> : null}
+      {reason ? <p className="approval-reason">{reason}</p> : null}
       <div className="approval-card-content">
         {pullRequest && totals ? (
           <div className="approval-detail-row">
@@ -61,6 +63,21 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
               Pull request #{pullRequest.pullRequest.number} · +{totals.additions} −{totals.deletions}
             </span>
             <strong>{pullRequest.pullRequest.branch}</strong>
+          </div>
+        ) : null}
+        {files.length > 0 ? (
+          <div className="approval-detail-row">
+            <span className="approval-detail-label">Files</span>
+            <ul className="approval-file-list">
+              {files.map((file) => (
+                <li key={file.path}>
+                  <strong>{file.path}</strong>
+                  <span className="approval-file-counts">
+                    +{file.additions} −{file.deletions}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         ) : null}
       </div>
