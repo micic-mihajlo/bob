@@ -76,27 +76,29 @@ function captainNotes(current: string): string {
 /** The plan from the roadmap, what shipped with its review, then the captain's own notes. */
 export function notesFile(s: State, current: string): string {
   const r = s.roadmap;
-  const orders = (list: typeof r.today) => (list.length > 0 ? list.map((w) => `- ${w.id} ${w.title} (${w.status})`) : ["- none"]);
+  const orders = (list: typeof r.today, indent = "") => (list.length > 0 ? list.map((w) => `${indent}- ${w.id} ${w.title} (${w.status})`) : [`${indent}- none`]);
+  const sentence = (text: string) => text.trim().replace(/[.;]+$/, "");
+  const lowerFirst = (text: string) => (/^[A-Z][a-z]/.test(text) ? text.charAt(0).toLowerCase() + text.slice(1) : text);
   const track = (t: Track) => {
     const g = t.goal;
     return [
-      g ? `Intent: ${g.title}${g.user ? `, for ${g.user}` : ""}.` : `Intent: not recorded yet for ${t.requestId}.`,
-      ...(g?.acceptance ? [`Acceptance: ${g.acceptance}`] : []),
-      ...(g?.assumptions?.length ? [`Assumed: ${g.assumptions.join("; ")}`] : []),
-      `Stage ${t.stage} of ${r.totalStages}: ${t.stageTitle}.`,
-      "Today:",
-      ...orders(ordersOf(r, t.requestId).today),
-    ];
+      g ? `- Intent: ${g.title}${g.user ? `, for ${lowerFirst(g.user)}` : ""}.` : `- Intent: not recorded yet for ${t.requestId}.`,
+      ...(g?.acceptance ? [`- Acceptance: ${g.acceptance}`] : []),
+      ...(g?.assumptions?.length ? [`- Assumed: ${g.assumptions.map(sentence).join("; ")}.`] : []),
+      `- Stage ${t.stage} of ${r.totalStages}: ${t.stageTitle}.`,
+      "- Today:",
+      ...orders(ordersOf(r, t.requestId).today, "  "),
+    ].join("\n");
   };
   const tracks = tracksOf(r);
-  const plan = [PLAN, ...(tracks.length > 0 ? tracks.flatMap(track) : ["Intent: none yet."]), "Backlog:", ...orders(r.backlog ?? [])];
+  const plan = [PLAN, ...(tracks.length > 0 ? tracks.map(track) : ["Intent: none yet."]), ["Backlog:", ...orders(r.backlog ?? [])].join("\n")];
   const shipped = s.artifacts.filter((a) => isPullRequest(a) && a.pullRequest.merged).map((a) => {
     const review = [...s.artifacts].reverse().find((x) => x.review?.pullRequestId === a.id)?.review;
     const findings = review?.findings.map((f) => `${f.severity} (${f.path}): ${f.comment}`).join("; ");
     return `- #${a.pullRequest?.number} ${a.title}. Review: ${review ? review.verdict : "none"}${findings ? `, ${findings}` : ""}.`;
   });
   const notes = captainNotes(current);
-  return [plan.join("\n"), ...(shipped.length > 0 ? [["## Shipped", ...shipped].join("\n")] : []), ...(notes ? [`## Notes\n${notes}`] : [])].join("\n\n") + "\n";
+  return [...plan, ...(shipped.length > 0 ? [["## Shipped", ...shipped].join("\n")] : []), ...(notes ? [`## Notes\n${notes}`] : [])].join("\n\n") + "\n";
 }
 
 /**

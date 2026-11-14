@@ -12,14 +12,14 @@ describe("the captain's files are kept in code", () => {
   it("starts with nothing needing the person and no crew", () => {
     expect(file("DIGEST.md")).toBe("Nothing needs you right now.\n");
     expect(file("CREW.md")).toBe("No crew threads yet.\n");
-    expect(file("NOTES.md")).toMatch(/^## Plan\nIntent: none yet\./);
+    expect(file("NOTES.md")).toMatch(/^## Plan\n\nIntent: none yet\./);
   });
 
   it("rewrites the plan on each change and keeps what the captain wrote as its notes", async () => {
     await callTool("write_drive", { name: "NOTES.md", content: "Customers mean accountants here." }, asBob);
-    await callTool("set_goal", { title: "CSV export", user: "Accountants", behaviour: "Export invoices", acceptance: "One row per invoice" }, asBob);
+    await callTool("set_goal", { title: "CSV export", user: "Accountants", behaviour: "Export invoices", acceptance: "One row per invoice", assumptions: ["All invoices.", "Columns as listed"] }, asBob);
     const notes = file("NOTES.md");
-    expect(notes).toMatch(/Intent: CSV export, for Accountants\.\nAcceptance: One row per invoice/);
+    expect(notes).toMatch(/\n\n- Intent: CSV export, for accountants\.\n- Acceptance: One row per invoice\n- Assumed: All invoices; Columns as listed\.\n- Stage \d of \d: \w+\.\n- Today:\n {2}- none\n\nBacklog:/);
     expect(notes).toMatch(/## Notes\nCustomers mean accountants here\.\n$/);
     await callTool("set_roadmap", { workOrderTitles: ["Add invoicesToCsv"] }, asBob);
     expect(file("NOTES.md")).toMatch(/Backlog:\n- wo_\w+ Add invoicesToCsv \(open\)[\s\S]*## Notes\nCustomers mean accountants here\./);
