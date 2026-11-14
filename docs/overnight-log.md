@@ -2,7 +2,8 @@
 
 ## Read this first
 
-- **What works end to end.** A one-sentence ask gets a pushback question. Then come a per-request roadmap track, a build thread on the Claude Agent SDK that writes a locked acceptance test (red, then green), a verification gate (properties, mutants, Lean), a PR, a review, your approval, the merge, and Why? back to your sentence. HydraDB, ElevenLabs voice, Composio GitHub and Linear have each run live.
+- **What works end to end.** A one-sentence ask gets a pushback question. Then come a per-request roadmap track, a build thread on the Claude Agent SDK that writes a locked acceptance test (red, then green), a verification gate (properties, mutants, Lean), a PR, a review, your approval, the merge, and Why? back to your sentence. HydraDB, ElevenLabs voice, Composio GitHub and Linear have each run live. Bob's state can also live in a Cloudflare Durable Object per project (#224).
+- **Live model.** Live runs now use deepseek/deepseek-v4.1-flash for the captain and the crew. The measured times below had the captain on kimi-k3.1-pro.
 - **Measured speed.** On the move loop, 10/10 back-to-back live runs reached the approval card with a p90 of 81 s. The DEMO.md order took 111-147 s with both PRs merged. On the coding agent with the verification gate, the CSV request took 100-118 s to approval (BOB-5, eight live runs).
 - **Tonight's walkthrough on main f17240b.** The scripted run holds 10/10. The live run is blocked: the AI Gateway key is over its $40 budget (see Needs).
 - **Demo video**, final cut (2:48): https://api.capy.ai/pr-assets/v_AUjZ2l2OGi8snfhM5tC8z7DD2xkOGDwUBikwjErwpro.mp4. Earlier 2:35 cut: https://api.capy.ai/pr-assets/v_H9A1bttisENyHKFhgBSYqgc7oR08Ft6ip0O_BnO4feU.mp4
@@ -224,6 +225,8 @@ The `[demo]` PRs against `demo/invoices-main` are left out: #46, #49, #51, #174,
 | #221 | 5a4859d | Live gate: verify_change writes the contract, and the gate is advisory with a live model |
 | #222 | 8c903ab | Sidebar foot: connection only when it isn't live, a real theme control; one Scripted chip in the header |
 | #223 | f17240b | Walkthrough approves acceptance-change cards and counts them |
+| #224 | dfea678 | Add Cloudflare Worker with a Durable Object per project for Bob state |
+| #225 | 7cff383 | Overnight log and DEMO.md: engine, lock, gate, sponsors; live walkthrough on the demo's engine |
 
 ## Tried and didn't work
 
@@ -260,7 +263,7 @@ Latest scripted run, main f17240b: 10/10 in 78 s, with 0 acceptance changes appr
 
 ## Needs Mihajlo's decision
 
-- **Raise the AI Gateway budget now.** The key hit its $40.00 limit at 19:44 UTC, so every live captain and crew call fails, and the live demo can't run. Raise it under AI Gateway → Budgets & Spend in the Vercel team, or put a key with budget in `.env.local`. `pnpm demo --scripted` still works.
+- **Raise the AI Gateway budget now.** The key hit its $40.00 limit at 19:44 UTC, so every live captain and crew call fails, and the live demo can't run. Raise it under AI Gateway → Budgets & Spend in the Vercel team, or put a key with budget in `.env.local`. `pnpm demo --scripted` still works. Once it's raised, live runs use deepseek/deepseek-v4.1-flash for the captain and the crew, as `secrets/bob.env.local` now sets.
 - **Sponsor keys.** All four integrations have run live tonight on keys added during the night. Where Bob runs, set:
   - HydraDB: `BOB_STORE=hydra` and `HYDRADB_API_KEY`. The key in the drive expires in about 3 days.
   - ElevenLabs: `BOB_VOICE=elevenlabs` and `ELEVENLABS_API_KEY`. Set `ELEVENLABS_AGENT_ID=agent_8901m7dfr1pzet1vjhk3n0cnedgp`, or the first call makes a new agent.
