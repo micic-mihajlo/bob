@@ -7,7 +7,7 @@
 :root[data-theme="ink"] {
   --bob-print-line: rgb(242 235 218 / 0.3);
   --bob-print-slab: rgb(242 235 218 / 0.1);
-  --bob-print-dot: rgb(242 235 218 / 0.16);
+  --bob-print-dot: rgb(242 235 218 / 0.12);
   --bob-print-face-dot: rgb(242 235 218 / 0.28);
   --bob-print-grain: rgb(242 235 218 / 0.028);
   --bob-print-plate-cyan: rgb(51 214 245 / 0.55);
@@ -18,7 +18,7 @@
 :root[data-theme="newsprint"] {
   --bob-print-line: rgb(20 18 14 / 0.82);
   --bob-print-slab: rgb(20 18 14 / 0.85);
-  --bob-print-dot: rgb(20 18 14 / 0.16);
+  --bob-print-dot: rgb(20 18 14 / 0.1);
   --bob-print-face-dot: rgb(20 18 14 / 0.3);
   --bob-print-grain: rgb(20 18 14 / 0.035);
   --bob-print-plate-cyan: rgb(0 137 168 / 0.5);

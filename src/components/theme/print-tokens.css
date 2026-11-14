@@ -5,7 +5,8 @@
  *
  * Neutrals are warm: ink black and newsprint off-white. Three process inks carry status and nothing
  * else: cyan is working, magenta needs you, yellow is shipped. Text tokens hold WCAG AA on the canvas
- * and on surfaces in both themes (muted is 5.3:1 on ink and 5.4:1 on newsprint).
+ * and on surfaces in both themes, also over the halftone dots and the grain at their densest: muted
+ * text is 7.0:1 on an ink surface (4.6:1 on a dot core) and 6.4:1 on newsprint (4.6:1 on a dot core).
  */
 
 :root[data-theme="ink"] {
@@ -35,7 +36,7 @@
   --bob-bg-native-sidebar: #14130f;
   --bob-bg-sheet: #14130f;
   --bob-bg-grouped: #1e1c18;
-  --bob-text-grouped-secondary: #8d887d;
+  --bob-text-grouped-secondary: #aaa599;
   --bob-border-grouped: #2e2c27;
   --bob-bg-chrome-glass: rgb(12 11 8 / 0.96);
   --bob-border-chrome-glass: rgb(247 240 222 / 0.08);
@@ -75,12 +76,12 @@
   --bob-action: #ebe4d3;
   --bob-action-foreground: #14130f;
   --bob-text-secondary: #bfb9ab;
-  --bob-text-muted: #8d887d;
+  --bob-text-muted: #aaa599;
   --bob-text-dim: #6e6b61;
   --bob-text-readable: rgb(236 229 212 / 0.56);
   --bob-text-muted-on-light: rgb(12 11 8 / 0.58);
   --bob-text-dim-on-light: rgb(12 11 8 / 0.4);
-  --bob-text-placeholder: #8d887d;
+  --bob-text-placeholder: #aaa599;
   --bob-text-on-accent: #14130f;
   --bob-accent: #ebe4d3;
   --bob-accent-hover: #f7f0de;
@@ -104,7 +105,7 @@
   --bob-file-default: #d1cbbb;
   --bob-file-default-soft: rgb(247 240 222 / 0.1);
   --bob-data-table-border: #2e2c27;
-  --bob-data-table-header-text: #8d887d;
+  --bob-data-table-header-text: #aaa599;
   --bob-data-table-text: #ebe4d3;
   --bob-data-table-outer-border: rgb(247 240 222 / 0);
   --bob-data-table-ring: rgb(247 240 222 / 0.1);
@@ -177,7 +178,7 @@
   --bob-bg-native-sidebar: #f0eada;
   --bob-bg-sheet: #f0eada;
   --bob-bg-grouped: #f7f3e8;
-  --bob-text-grouped-secondary: #625e56;
+  --bob-text-grouped-secondary: #57534b;
   --bob-border-grouped: #bab4a6;
   --bob-bg-chrome-glass: rgb(242 235 218 / 0.96);
   --bob-border-chrome-glass: rgb(20 18 14 / 0.08);
@@ -221,12 +222,12 @@
   --bob-action: #1c1a16;
   --bob-action-foreground: #f0eada;
   --bob-text-secondary: #3c3932;
-  --bob-text-muted: #625e56;
+  --bob-text-muted: #57534b;
   --bob-text-dim: #7b776d;
   --bob-text-readable: rgb(20 18 14 / 0.56);
   --bob-text-muted-on-light: rgb(242 235 218 / 0.58);
   --bob-text-dim-on-light: rgb(242 235 218 / 0.4);
-  --bob-text-placeholder: #625e56;
+  --bob-text-placeholder: #57534b;
   --bob-text-on-accent: #f0eada;
   --bob-accent: #1c1a16;
   --bob-accent-hover: #14120e;
@@ -250,7 +251,7 @@
   --bob-file-default: #2e2c26;
   --bob-file-default-soft: rgb(20 18 14 / 0.1);
   --bob-data-table-border: #bab4a6;
-  --bob-data-table-header-text: #625e56;
+  --bob-data-table-header-text: #57534b;
   --bob-data-table-text: #1c1a16;
   --bob-data-table-outer-border: rgb(20 18 14 / 0);
   --bob-data-table-ring: rgb(20 18 14 / 0.1);
