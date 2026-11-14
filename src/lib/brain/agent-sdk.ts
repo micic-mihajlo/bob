@@ -287,6 +287,7 @@ export async function runSdkTurn(
         }
       } else if (m.type === "result") {
         recordUsage(built.requestId, model, { inputTokens: m.usage.input_tokens, outputTokens: m.usage.output_tokens });
+        if (m.subtype === "success" && m.is_error) throw new Error(`The coding agent stopped on a model error: ${m.result.trim().slice(0, 300)}`);
         if (m.subtype === "success" && input.pending > 0) continue;
         if (m.subtype === "success") outcome = { kind: "answered", text: answer ?? (m.result.trim() || null) };
         else if (m.subtype === "error_max_turns") outcome = { kind: "step_limit" };
