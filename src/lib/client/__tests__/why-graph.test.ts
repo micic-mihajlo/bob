@@ -90,6 +90,46 @@ describe("buildPathGraph", () => {
     expect(graph.columns[1].nodes.map((n) => n.label)).toEqual(["Approved at 78fda36", "Waiting for you at ec90559"]);
   });
 
+  it("shows the newest review and gate when a new head was reviewed again, and counts the reviews", () => {
+    const review = (id: string, at: string, headSha: string) => ({
+      id,
+      kind: "review" as const,
+      title: "Review of #1",
+      detail: "",
+      status: "approved" as const,
+      agentId: "inv-2",
+      turnId: "t",
+      requestId: "r",
+      messageId: null,
+      at,
+      review: { pullRequestId: "art_pr", verdict: "approve" as const, findings: [], headSha },
+    });
+    const approval = (id: string, at: string, headSha: string) => ({
+      id,
+      agentId: "bob",
+      turnId: "t",
+      requestId: "r",
+      title: "Merge #1",
+      detail: "",
+      status: "approved" as const,
+      at,
+      pullRequestId: "art_pr",
+      headSha,
+    });
+    const view = {
+      ...VIEW,
+      edges: [...VIEW.edges, { from: "art_review_2", to: "art_pr", type: "REVIEWS" }, { from: "art_pr", to: "apr_2", type: "GATED_BY" }],
+    };
+    const graph = buildPathGraph(view, {
+      approvals: [approval("apr_2", "2026-11-14T15:46:00Z", "bd57690aa"), approval("apr_1", "2026-11-14T15:45:00Z", "4906e54aa")],
+      artifacts: [review("art_review", "2026-11-14T15:44:00Z", "4906e54aa"), review("art_review_2", "2026-11-14T15:45:30Z", "bd57690aa")],
+    });
+    expect(graph.columns[1].nodes.map((n) => `${n.title}: ${n.label}`)).toEqual([
+      "Review ×2: Approved at bd57690",
+      "Merge gate: Approved at bd57690",
+    ]);
+  });
+
   it("stops on a cycle", () => {
     const graph = buildPathGraph({ ...VIEW, rootMessageId: null, edges: [...VIEW.edges.filter((e) => e.type !== "CONTINUES"), { from: "msg_answer", to: "msg_brief", type: "CONTINUES" }] });
     expect(graph.columns.filter((c) => c.nodes[0].kind === "message")).toHaveLength(2);
