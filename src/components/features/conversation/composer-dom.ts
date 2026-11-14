@@ -55,6 +55,7 @@ function serializeNode(node: Node): string {
   if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? "";
   if (!(node instanceof HTMLElement)) return "";
   if (isTrailingPlaceholder(node)) return "";
+  if (node.dataset.serialized !== undefined) return node.dataset.serialized;
   const mentionId = node.dataset.mentionId;
   const mentionName = node.dataset.mentionName;
   if (mentionId && mentionName) return `@[${mentionName}](agent:${mentionId})`;
@@ -256,7 +257,7 @@ export function mentionTokenAtCaretBoundary(
 function closestMentionToken(node: Node, editor: HTMLDivElement): HTMLElement | null {
   const element = node instanceof HTMLElement ? node : node.parentElement;
   const token =
-    element?.closest<HTMLElement>("[data-mention-id]") ?? null;
+    element?.closest<HTMLElement>("[data-mention-id], [data-serialized]") ?? null;
   return token && editor.contains(token) ? token : null;
 }
 

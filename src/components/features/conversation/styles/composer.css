@@ -1009,3 +1009,36 @@
   left: 0;
 }
 
+/* A pasted link or block. A block opens for editing on click, so it takes the pointer and a hover. */
+.composer-paste-token[data-block-language] {
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.composer-paste-token[data-block-language]:hover {
+  background: var(--bob-border-strong);
+}
+
+.composer-paste-token-meta {
+  color: var(--bob-text-muted);
+  font-weight: 450;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Only a chip that was just pasted arrives with motion; a draft that is restored shows at rest. */
+.composer-chip-enter {
+  animation: composer-chip-enter 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes composer-chip-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .composer-chip-enter {
+    animation: none;
+  }
+}

@@ -30,7 +30,8 @@ import {
   type PickerFrame,
   type PickerOption,
 } from "./composer-picker";
-import { createMentionToken, renderEditorValue, truncateComposerValue } from "./composer-tokens";
+import { classifyPaste, type PasteChip } from "./composer-paste";
+import { createMentionToken, createPasteToken, renderEditorValue, truncateComposerValue } from "./composer-tokens";
 
 const MESSAGE_TEXT_LIMIT = 100_000;
 const EDGE_EPSILON = 2;
@@ -372,7 +373,48 @@ export function ComposerEditor(props: ComposerEditorProps) {
     if (!editor || disabled) return;
     const text = event.clipboardData.getData("text/plain").replace(/\r\n?/g, "\n").slice(0, MESSAGE_TEXT_LIMIT);
     if (!text) return;
-    insertPlainText(editor, text);
+    // The fence and the text already in the draft count toward the limit, so a long paste is cut before it becomes a block.
+    const room = MESSAGE_TEXT_LIMIT - serializeEditor(editor).length - 32;
+    const chip = classifyPaste(text.slice(0, Math.max(0, room)));
+    if (chip) insertChip(editor, chip);
+    else insertPlainText(editor, text);
+    emitValue();
+    updateMention();
+  }
+
+  /* A block sits on its own lines so the draft stays valid Markdown; a link reads inline. The chip is
+   * one DOM node however long the paste, so typing after a large paste stays as fast as before it. */
+  function insertChip(editor: HTMLDivElement, chip: PasteChip) {
+    ensureEditorSelection();
+    const selection = window.getSelection();
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    if (!selection || !range) return;
+    range.deleteContents();
+    const before = editorText(editor).slice(0, readEditorSelection(editor)?.focus ?? 0);
+    const token = createPasteToken(chip);
+    token.classList.add("composer-chip-enter");
+    const after = document.createTextNode(chip.kind === "block" ? "\n" : " ");
+    range.insertNode(after);
+    range.insertNode(token);
+    if (chip.kind === "block" && before && !before.endsWith("\n")) range.insertNode(document.createTextNode("\n"));
+    let rest = after.nextSibling;
+    while (rest instanceof Text && !rest.data) rest = rest.nextSibling;
+    // A newline that ends the editor needs a line box, as `insertPlainText` gives one; without it the next key replaces the newline.
+    if (chip.kind === "block" && !rest) editor.append(document.createElement("br"));
+    range.setStartAfter(after);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  /* Opens a block chip back into its fenced text, as one undoable edit. */
+  function expandBlock(editor: HTMLDivElement, token: HTMLElement) {
+    const range = document.createRange();
+    range.selectNode(token);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    insertPlainText(editor, token.dataset.serialized ?? "");
     emitValue();
     updateMention();
   }
@@ -489,7 +531,12 @@ export function ComposerEditor(props: ComposerEditorProps) {
           emitValue();
           updateMention();
         }}
-        onClick={updateMention}
+        onClick={(event) => {
+          const editor = editorRef.current;
+          const block = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-block-language]") : null;
+          if (editor && block && editor.contains(block) && !disabled) expandBlock(editor, block);
+          else updateMention();
+        }}
         onKeyDown={handleKeyDown}
         onCompositionStart={() => {
           composing.current = true;
