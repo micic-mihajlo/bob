@@ -36,3 +36,23 @@ export function overdue(invoices: readonly Invoice[], today: string): Invoice[] 
 export function totalCents(list: readonly Invoice[]): number {
   return list.reduce((sum, invoice) => sum + invoice.amountCents, 0);
 }
+
+const CSV_HEADER = "id,customer,amount,status,dueDate";
+
+/** Quote a CSV cell when it holds a comma, a double quote or a line break. */
+function csvCell(value: string): string {
+  return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+/**
+ * The invoices as CSV: one header row, then one row per invoice in list order.
+ * Amounts are stored in integer cents and written as dollars with two decimals.
+ */
+export function invoicesToCsv(list: readonly Invoice[]): string {
+  const rows = list.map((invoice) =>
+    [invoice.id, invoice.customer, (invoice.amountCents / 100).toFixed(2), invoice.status, invoice.dueDate]
+      .map(csvCell)
+      .join(","),
+  );
+  return [CSV_HEADER, ...rows].join("\n");
+}
