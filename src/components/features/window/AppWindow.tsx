@@ -33,9 +33,7 @@ function WindowFrame({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("resize", measure);
   }, []);
   const tooNarrow = windowWidth !== null && windowWidth - width < CONVERSATION_MIN_WIDTH;
-  useEffect(() => {
-    if (!tooNarrow) setExpanded(false);
-  }, [tooNarrow]);
+  if (expanded && !tooNarrow) setExpanded(false);
   const compact = tooNarrow && !expanded;
   return (
     <div className="app-window">

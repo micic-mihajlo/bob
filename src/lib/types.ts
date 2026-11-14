@@ -117,6 +117,17 @@ export interface Turn {
   endedAt: string | null;
 }
 
+/**
+ * What a turn's model is generating right now: its text so far and the tool calls it has started to write.
+ * The turn clears it when the move ends, and the move's real text and steps take its place.
+ */
+export interface LiveMove {
+  turnId: TurnId;
+  text: string;
+  tools: { id: string; tool: string }[];
+  at: string;
+}
+
 /** What one agent's thread shows, oldest first. */
 export type ThreadItem =
   | { kind: "user_text"; id: string; text: string; at: string; via?: "voice" }
@@ -206,6 +217,38 @@ export interface PullRequestData {
   /** Unified diff against main, capped. */
   patch: string;
   merged: boolean;
+  /** The real pull request on GitHub, when BOB_GITHUB publishes it. */
+  github?: GitHubPullRequest;
+  /** Why the last publish to GitHub failed, cleared when one succeeds. */
+  githubError?: string;
+  /** The preview deployment built for this head, once a review checked it (BOB_PREVIEWS=vercel). */
+  preview?: PreviewDeployment;
+}
+
+export interface GitHubPullRequest {
+  /** owner/name */
+  repo: string;
+  number: number;
+  url: string;
+  via: "gh" | "composio";
+  /** The GitHub branch the change lives on. */
+  head: string;
+  /** The GitHub branch it merges into. */
+  base: string;
+  merged: boolean;
+  /** The last review or merge step that failed on GitHub, if any. */
+  error?: string;
+}
+
+export interface PreviewDeployment {
+  url: string | null;
+  state: "building" | "ready" | "error" | "missing";
+  source: "vercel" | "github";
+  /** The head the deployment was built from. */
+  headSha: string;
+  /** Vercel's page for the deployment, when known. */
+  inspectorUrl?: string;
+  check?: { ok: boolean; status: number | null; detail: string; at: string };
 }
 
 export interface ReviewFinding {

@@ -38,7 +38,7 @@ export function loadState(saved: State | null): State {
   if (!saved) return seedState();
   const swept = sweepOrphans(withDefaults(saved));
   globals().pendingBoot = swept.orphanTurnIds;
-  return swept.state;
+  return { ...swept.state, live: {} };
 }
 
 /** Fills fields added after a state was saved, or held in memory across a hot reload. */
