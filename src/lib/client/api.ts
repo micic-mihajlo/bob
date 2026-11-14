@@ -33,8 +33,9 @@ async function post(url: string, body: unknown): Promise<Record<string, unknown>
 /** "steer" lands in the running turn at its next step; "queue", the server's default, runs after it. */
 export type SendMode = "steer" | "queue";
 
-export function sendMessage(agentId: AgentId, text: string, mode?: SendMode): Promise<ActionResult> {
-  return post(API.agentMessages(agentId), mode === undefined ? { text } : { text, mode });
+/** `newRequest` files the message as a request of its own while the captain's question is open, not as its answer. */
+export function sendMessage(agentId: AgentId, text: string, mode?: SendMode, newRequest = false): Promise<ActionResult> {
+  return post(API.agentMessages(agentId), { text, ...(mode === undefined ? {} : { mode }), ...(newRequest ? { newRequest } : {}) });
 }
 
 export function interruptAgent(agentId: AgentId): Promise<ActionResult> {
