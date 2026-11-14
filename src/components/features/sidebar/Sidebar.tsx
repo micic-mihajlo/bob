@@ -106,6 +106,11 @@ export function Sidebar({ compact = false, onExpand }: { compact?: boolean; onEx
           {sections.map((section) => (
             <SidebarSection key={section.id} section={section} list={list} searching={needle !== ""} />
           ))}
+          {needle !== "" && waiting.length === 0 && sections.length === 0 ? (
+            <p className="sidebar-search-empty" role="status">
+              No thread matches “{query.trim()}”
+            </p>
+          ) : null}
         </div>
       </nav>
 
