@@ -1,3 +1,4 @@
+import { autopilotCalls } from "./autopilot";
 import { brainKind, getBrain } from "./brain";
 import type { CallRecord, MoveRecord, ToolCallRequest } from "./brain/types";
 import { globals } from "./globals";
@@ -92,6 +93,12 @@ async function runTurn(t: StartedTurn): Promise<void> {
   let final: string | null = STEP_LIMIT_TEXT;
   const limit = maxMoves(t.agentId);
   const started = Date.now();
+  for (let calls = autopilotCalls(getState(), t, moves); calls.length > 0; calls = autopilotCalls(getState(), t, moves)) {
+    const executed = await executeMove(t, calls);
+    if (!executed) return finishStopped(t);
+    moves.push({ text: null, calls: executed.calls });
+    if (executed.endTurn) return finishTurn(t, null);
+  }
   for (let i = 0; i < limit; i++) {
     if (Date.now() - started > MAX_TURN_MS) {
       final = TIME_LIMIT_TEXT;
