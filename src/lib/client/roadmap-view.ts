@@ -23,8 +23,8 @@ export interface TrackView {
 }
 
 /**
- * The tracks to show, one per request still moving (or the newest one when every request is
- * finished), and the backlog no shown track owns. A roadmap saved before tracks shows as one track.
+ * The tracks to show, one per request still moving (or the one that finished last when every request
+ * is finished), and the backlog no shown track owns. A roadmap saved before tracks shows as one track.
  */
 export function trackViews(roadmap: Roadmap): { tracks: TrackView[]; backlog: WorkOrder[] } {
   const backlog = roadmap.backlog ?? [];
@@ -34,7 +34,7 @@ export function trackViews(roadmap: Roadmap): { tracks: TrackView[]; backlog: Wo
     return { tracks: [{ key: "roadmap", ask: null, goal, stage, stageTitle, gates, today, backlog }], backlog: [] };
   }
   const active = tracks.filter((track) => track.stage < roadmap.totalStages);
-  const shown = active.length > 0 ? active : tracks.slice(-1);
+  const shown = active.length > 0 ? active : [tracks.reduce((last, track) => (track.updatedAt >= last.updatedAt ? track : last))];
   const owns = (requestId: RequestId) => (order: WorkOrder) => order.requestId === requestId;
   return {
     tracks: shown.map((track) => ({
