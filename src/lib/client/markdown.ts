@@ -5,13 +5,17 @@ export interface ListItem {
   inline: readonly Inline[];
   /** Set for "- [ ]" and "- [x]" items. */
   checked: boolean | null;
+  /** Items indented under this one ("  - wo_1 ..."), one level deep. */
+  sublist: ListBlock | null;
 }
+
+export type ListBlock = { kind: "list"; ordered: boolean; items: readonly ListItem[] };
 
 export type Block =
   | { kind: "heading"; level: 1 | 2 | 3; inline: readonly Inline[] }
   | { kind: "paragraph"; inline: readonly Inline[] }
   | { kind: "quote"; inline: readonly Inline[] }
-  | { kind: "list"; ordered: boolean; items: readonly ListItem[] }
+  | ListBlock
   | { kind: "code"; text: string }
   | { kind: "rule" }
   | { kind: "table"; header: readonly TableCell[]; rows: readonly (readonly TableCell[])[] };
@@ -42,11 +46,18 @@ const CHECK = /^\[([ xX])\]\s+(.*)$/;
 
 function listItem(text: string): ListItem {
   const check = CHECK.exec(text);
-  return check ? { inline: parseInline(check[2] ?? ""), checked: check[1] !== " " } : { inline: parseInline(text), checked: null };
+  return check
+    ? { inline: parseInline(check[2] ?? ""), checked: check[1] !== " ", sublist: null }
+    : { inline: parseInline(text), checked: null, sublist: null };
 }
 
-function appendListItem(blocks: readonly Block[], ordered: boolean, text: string): Block[] {
+function appendListItem(blocks: readonly Block[], ordered: boolean, text: string, indented: boolean): Block[] {
   const last = blocks.at(-1);
+  const parent = last?.kind === "list" ? last.items.at(-1) : undefined;
+  if (indented && last?.kind === "list" && parent) {
+    const sublist: ListBlock = { kind: "list", ordered: parent.sublist?.ordered ?? ordered, items: [...(parent.sublist?.items ?? []), listItem(text)] };
+    return [...blocks.slice(0, -1), { ...last, items: [...last.items.slice(0, -1), { ...parent, sublist }] }];
+  }
   if (last?.kind === "list" && last.ordered === ordered) {
     return [...blocks.slice(0, -1), { ...last, items: [...last.items, listItem(text)] }];
   }
@@ -117,10 +128,11 @@ function lineStep(state: State, line: string): State {
   if (trimmed.startsWith(">")) {
     return { ...state, blocks: [...state.blocks, { kind: "quote", inline: parseInline(trimmed.replace(/^>\s?/, "")) }], inParagraph: false };
   }
+  const indented = /^(?: {2}|\t)/.test(line);
   const bullet = BULLET.exec(line);
-  if (bullet) return { ...state, blocks: appendListItem(state.blocks, false, bullet[1] ?? ""), inParagraph: false };
+  if (bullet) return { ...state, blocks: appendListItem(state.blocks, false, bullet[1] ?? "", indented), inParagraph: false };
   const numbered = NUMBERED.exec(line);
-  if (numbered) return { ...state, blocks: appendListItem(state.blocks, true, numbered[1] ?? ""), inParagraph: false };
+  if (numbered) return { ...state, blocks: appendListItem(state.blocks, true, numbered[1] ?? "", indented), inParagraph: false };
   return { ...state, blocks: appendParagraph(state.blocks, trimmed, state.inParagraph), inParagraph: true };
 }
 

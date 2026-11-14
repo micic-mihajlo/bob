@@ -74,6 +74,7 @@ function MarkdownBlock({ block }: { block: Block }) {
             <li key={index} className={item.checked === null ? undefined : "message-markdown-task"}>
               {item.checked === null ? null : <input type="checkbox" className="message-markdown-checkbox" checked={item.checked} disabled readOnly />}
               <InlineText parts={item.inline} />
+              {item.sublist ? <MarkdownBlock block={item.sublist} /> : null}
             </li>
           ))}
         </List>
