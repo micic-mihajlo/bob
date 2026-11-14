@@ -11,6 +11,7 @@ import type { AgentId, Project, RequestId, WorkspaceChanges, WorkspaceListing } 
 import {
   branchChanges,
   defaultRoot,
+  depsSettled,
   ensureProject,
   ensureWorkspace,
   git,
@@ -210,7 +211,9 @@ export async function checkoutBranch(ws: Workspace, branch: string): Promise<{ o
 
 /** Removes every clone and the shared repository, so a reset starts from the template again. */
 export async function removeProjectWorkspaces(projectId: string): Promise<void> {
-  await rm(projectLayout(rootOf(workspaceOptions()), projectId).dir, { recursive: true, force: true });
+  const layout = projectLayout(rootOf(workspaceOptions()), projectId);
+  await depsSettled(layout);
+  await rm(layout.dir, { recursive: true, force: true });
 }
 
 function crewOnly(s: State, agentId: string): string | null {
