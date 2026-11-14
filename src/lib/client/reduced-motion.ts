@@ -17,3 +17,7 @@ export function useReducedMotion(): boolean {
     () => true,
   );
 }
+
+export function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia(QUERY).matches;
+}
