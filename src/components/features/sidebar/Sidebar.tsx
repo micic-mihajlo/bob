@@ -98,7 +98,7 @@ export function Sidebar({ compact = false, onExpand }: { compact?: boolean; onEx
             </section>
           ) : null}
           {sections.map((section) => (
-            <SidebarSection key={section.id} section={section} list={list} />
+            <SidebarSection key={section.id} section={section} list={list} searching={needle !== ""} />
           ))}
         </div>
       </nav>
@@ -123,9 +123,10 @@ export function Sidebar({ compact = false, onExpand }: { compact?: boolean; onEx
   );
 }
 
-/** One section. The first, which holds the captain, has no heading; the rest fold like the reference's. */
-function SidebarSection({ section, list }: { section: SidebarSectionModel; list: SidebarListModel }) {
-  const [collapsed, setCollapsed] = useState(section.collapsedByDefault);
+/** One section. The first, which holds the captain, has no heading; the rest fold like the reference's, and open while a search matches them. */
+function SidebarSection({ section, list, searching }: { section: SidebarSectionModel; list: SidebarListModel; searching: boolean }) {
+  const [userCollapsed, setCollapsed] = useState(section.collapsedByDefault);
+  const collapsed = userCollapsed && !searching;
   const bodyId = `sidebar-section-body-${section.id}`;
   const folded = section.name !== null && collapsed;
   const counted = section.collapsedByDefault;
