@@ -14,6 +14,8 @@ pnpm dev
 
 Open http://localhost:3000 and type a request to Bob.
 
+For a demo, `pnpm demo` checks the machine, resets Bob to a warm seed and starts it; see `docs/DEMO.md`.
+
 ## Agents and models
 
 Without a key the agents decide from a script. The mailbox, the tools, the turn loop and the roadmap rules are the real ones either way; only the decision-maker changes.
