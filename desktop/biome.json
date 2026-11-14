@@ -38,8 +38,7 @@
       "!!Shared",
       "!!.worktrees",
       "!!.agents",
-      "!src/renderer/src/vendor",
-      "!marketplace/production-catalog/bundles"
+      "!src/renderer/src/vendor"
     ]
   },
   "formatter": {
