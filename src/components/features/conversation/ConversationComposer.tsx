@@ -47,6 +47,9 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
   const [stoppedTurn, setStoppedTurn] = useState<string | null>(null);
   const stopping = turnSince !== null && stoppedTurn === turnSince;
   const [awaitingDismissed, setAwaitingDismissed] = useState<string | null>(null);
+  // While the captain's question is open, a message answers it unless the person marks it a new request.
+  const answering = snapshot.answering?.agentId === agent.id ? snapshot.answering : null;
+  const [newRequest, setNewRequest] = useState(false);
 
   // The editor is not controlled by React: it takes the draft only when the draft changed elsewhere,
   // as after a send or a quick action, so typing keeps its caret.
@@ -67,12 +70,13 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
     if (message === "" || submitting) return false;
     setSubmitting(true);
     setError(null);
-    const result = await sendMessage(agent.id, message, mode);
+    const result = await sendMessage(agent.id, message, mode, answering !== null && newRequest);
     setSubmitting(false);
     if (!result.ok) {
       setError(result.error);
       return false;
     }
+    setNewRequest(false);
     return true;
   };
 
@@ -141,6 +145,17 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
           </div>
         </div>
         {error ? <ComposerNotice tone="danger" title="Not sent" body={error} onDismiss={() => setError(null)} /> : null}
+        {answering ? (
+          <div className="composer-reply-preview composer-answering">
+            <div>
+              <span>{newRequest ? "Starts a new request" : `Answering ${agent.name}`}</span>
+              <p className="message-reply-quote composer-answering-ask">{newRequest ? `Not an answer to “${answering.ask}”` : answering.ask}</p>
+            </div>
+            <Button variant="ghost" size="sm" className="composer-answering-toggle" aria-pressed={newRequest} onClick={() => setNewRequest((value) => !value)}>
+              New request
+            </Button>
+          </div>
+        ) : null}
       </div>
       <div
         className="composer"

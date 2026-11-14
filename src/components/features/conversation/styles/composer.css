@@ -114,6 +114,28 @@
   color: var(--bob-text-secondary);
 }
 
+/* While the captain's question is open: what the next message answers, and the switch to a new request. */
+.composer-answering-ask {
+  display: -webkit-box;
+  max-height: none;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.composer-reply-preview > .composer-answering-toggle {
+  width: auto;
+  height: var(--bob-control-sm);
+  padding: 0 var(--bob-space-2);
+  border-radius: var(--bob-radius-md);
+  font-size: var(--bob-text-sm);
+  white-space: nowrap;
+}
+
+.composer-reply-preview > .composer-answering-toggle[aria-pressed="true"] {
+  background: var(--bob-bg-control-active);
+  color: var(--bob-text-primary);
+}
+
 .composer {
   position: relative;
   z-index: 11;
