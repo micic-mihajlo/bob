@@ -1,4 +1,5 @@
 import { Fragment, useMemo } from "react";
+import { CodeBlock } from "@/components/features/files/CodeBlock";
 import { parseMarkdown, type Block, type Inline } from "@/lib/client/markdown";
 
 function InlineText({ parts }: { parts: readonly Inline[] }) {
@@ -12,33 +13,6 @@ function InlineText({ parts }: { parts: readonly Inline[] }) {
         return <Fragment key={index}>{part.text}</Fragment>;
       })}
     </>
-  );
-}
-
-function CodeBlock({ text }: { text: string }) {
-  const lines = text.split("\n");
-  return (
-    <section className="message-code-block" aria-label="Text code block">
-      <header className="message-code-header">
-        <div className="message-code-heading">
-          <span className="message-code-language">Text</span>
-        </div>
-      </header>
-      <pre className="message-code-scroll" tabIndex={0}>
-        <code>
-          {lines.map((line, index) => (
-            <span key={index} className="message-code-line">
-              <span className="message-code-line-number" aria-hidden="true">
-                {index + 1}
-              </span>
-              <span className="message-code-line-source">
-                <span>{line}</span>
-              </span>
-            </span>
-          ))}
-        </code>
-      </pre>
-    </section>
   );
 }
 
@@ -81,7 +55,7 @@ function MarkdownBlock({ block }: { block: Block }) {
       );
     }
     case "code":
-      return <CodeBlock text={block.text} />;
+      return <CodeBlock code={block.text} language="Text" />;
     case "rule":
       return <hr />;
   }
