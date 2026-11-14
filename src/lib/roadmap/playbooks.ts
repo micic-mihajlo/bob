@@ -24,8 +24,9 @@ const CUT_WORK_ORDERS = `# Cut the intent into work orders
 Use this in Spec. A work order is one change a thread can finish alone and a reviewer can read in a few minutes.
 
 ## Step 1: One pull request each
-- Split by what can merge on its own: the data function and its test, then the button that calls it.
-- A small request is one work order. Don't split for show.
+- A small request, one behaviour in one module, is exactly one work order: the code and its test in one pull request.
+- Split only when the parts touch different files and each can be tested on its own. Parts that would edit the same file stay one work order.
+- Name only files and modules in the project's file list. A button or page the project doesn't have is not a work order; say it's missing instead.
 - Title: a verb and a thing. "Add invoicesToCsv with a test", not "CSV work".
 
 ## Step 2: Today and the backlog
