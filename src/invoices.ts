@@ -36,3 +36,8 @@ export function overdue(invoices: readonly Invoice[], today: string): Invoice[] 
 export function totalCents(list: readonly Invoice[]): number {
   return list.reduce((sum, invoice) => sum + invoice.amountCents, 0);
 }
+
+/** The sent invoices whose due date is before today, oldest due date first. */
+export function overdueInvoices(list: readonly Invoice[], today: string): Invoice[] {
+  return list.filter((invoice) => invoice.status === "sent" && invoice.dueDate < today).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+}

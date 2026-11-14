@@ -1,0 +1,30 @@
+{
+  "acceptance": "Done means a vitest test passes for one overdue, one paid and one not-yet-due invoice.",
+  "propertiesFile": "src/overdue.properties.test.ts",
+  "properties": [
+    {
+      "name": "only sent invoices come back",
+      "criterion": "returns the sent invoices"
+    },
+    {
+      "name": "oldest due date first",
+      "criterion": "oldest due date first"
+    },
+    {
+      "name": "every sent invoice past its due date comes back",
+      "criterion": "whose due date is before today"
+    },
+    {
+      "name": "an invoice due today is not overdue yet",
+      "criterion": "before today"
+    }
+  ],
+  "lean": {
+    "file": "verify/Overdue.lean",
+    "theorems": [
+      "Overdue.overdue_sound",
+      "Overdue.overdue_complete",
+      "Overdue.due_today_not_overdue"
+    ]
+  }
+}
