@@ -2,14 +2,14 @@ import { z } from "zod";
 import { briefWithAcceptance } from "../acceptance";
 import { branchName, MAX_BUSY_THREADS, nextThreadCode, ROLE_TEMPLATES, threadHue } from "../crew";
 import { nowIso } from "../ids";
-import { knowledgeSection, recallKnowledge, warmKnowledge } from "../graph/knowledge";
+import { knowledgeSection, recallForBrief, reviewHistory, warmKnowledge } from "../graph/knowledge";
 import { inboxItem, isInboxRequest } from "../inbox";
 import { send } from "../mailbox";
 import { updateWorkOrder } from "../roadmap";
 import { agentById, captainOf, isClosed, runningTurn, type State } from "../state";
 import { getState, transact, update } from "../store";
 import { checkoutBranch, prewarmProject, stampThread, threadWorkspace } from "../thread-workspace";
-import { busyThreads, closeThreadState, closeWhenIdle, findThread, isBusy, isPullRequest, openThreads, requestAsk, threadRequestId } from "../threads";
+import { busyThreads, closeThreadState, closeWhenIdle, findPullRequest, findThread, isBusy, isPullRequest, openThreads, requestAsk, threadRequestId } from "../threads";
 import { isThreadModel, unknownModel } from "../models";
 import { THREAD_MODELS, type Agent, type CrewRole } from "../types";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
@@ -114,11 +114,15 @@ export async function startThread(input: StartInput, ctx: ToolContext): Promise<
   const origin = source ? inboxItem(getState(), source.inboxId)?.messageId : undefined;
   const brief = briefWithAcceptance(getState(), created, input.brief);
   warmKnowledge(getState().project);
-  const knowledge = created.crewRole === "research" ? null : await recallKnowledge(getState(), [order?.title, input.title, input.brief].filter(Boolean).join("\n"));
+  const reviewed = created.crewRole === "review" ? findPullRequest(getState(), /\bart_[a-z0-9]+\b/.exec(input.brief)?.[0] ?? /#(\d+)/.exec(input.brief)?.[1] ?? "") : undefined;
+  const [knowledge, history] = await Promise.all([
+    created.crewRole === "research" ? null : recallForBrief(getState(), [order?.title, input.title, input.brief].filter(Boolean).join("\n")),
+    reviewed ? reviewHistory(getState(), reviewed.pullRequest.files.map((f) => f.path), reviewed.pullRequest.number) : null,
+  ]);
   const sent = send({
     from: { kind: "agent", agentId: ctx.agentId },
     to: [created.id],
-    text: knowledge ? `${brief.trim()}\n\n${knowledgeSection(knowledge)}` : brief,
+    text: [brief.trim(), knowledge && knowledgeSection(knowledge), history].filter(Boolean).join("\n\n"),
     ...(knowledge ? { knowledge } : {}),
     expectsReply: true,
     replyTo: null,
