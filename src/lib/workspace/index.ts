@@ -3,7 +3,7 @@ export { listFiles, readFile, writeFile, editFile } from "./files";
 export { git } from "./git";
 export { runCommand } from "./shell";
 export { ensureWorkspaceDeps, prepareProjectDeps } from "./deps";
-export { openPullRequest, mergePullRequest, branchChanges } from "./pull-request";
+export { openPullRequest, mergePullRequest, branchChanges, conflictsWithMain } from "./pull-request";
 export { projectLayout, rootOf } from "./layout";
 export { workspaceTools, createWorkspaceTools } from "./tools";
 export { defaultRoot } from "./layout";

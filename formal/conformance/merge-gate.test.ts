@@ -8,7 +8,7 @@ import type { PullRequestArtifact } from "@/lib/threads";
 import { callTool } from "@/lib/tools";
 import { mergePullRequestTool, recordReview } from "@/lib/tools/pull-requests";
 import { requestApproval } from "@/lib/tools/work";
-import { settle } from "@/lib/turns";
+import { drain, settle } from "@/lib/turns";
 import { pick, SEEDS, seeded } from "./random";
 
 const GIT_TIMEOUT = 60_000;
@@ -90,6 +90,7 @@ describe("merge gate conforms to BobFormal.MergeGate", () => {
       await callTool("git", { args: ["add", "src/unreviewed.ts"] }, asBuild);
       await callTool("git", { args: ["commit", "-m", "Add a file nobody reviewed"] }, asBuild);
       const reopened = await callTool("open_pull_request", { title: pr.title, body: pr.detail }, asBuild);
+      reopened.wake?.forEach(drain);
       expect(reopened.result.pullRequestId).toBe(pr.id);
 
       expect(decideApproval(approval.id, "approved").ok).toBe(true);
