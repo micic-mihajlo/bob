@@ -47,7 +47,6 @@ describe("captain and crew, scripted, end to end", { timeout: GIT_TIMEOUT }, () 
     const approval = s.approvals.find((a) => a.status === "pending");
     expect(approval?.pullRequestId).toBe(pr?.id);
     expect(snap.needsYou?.map((n) => [n.kind, n.approvalId])).toEqual([["approval", approval?.id]]);
-    expect(snap.threadStatus?.bob).toBe("needs_you");
     expect(snap.threadState?.bob).toEqual({ status: "waiting", needsYou: true, closed: false });
     expect(s.drive.find((f) => f.name === "DIGEST.md")?.content).toBe("1 thing needs you: approve the merge of #1\n");
     expect(snap.threadState?.["inv-1"]).toEqual({ status: "idle", needsYou: false, closed: false });
@@ -59,7 +58,6 @@ describe("captain and crew, scripted, end to end", { timeout: GIT_TIMEOUT }, () 
     expect(after.roadmap.today[0].status).toBe("done");
     expect(after.artifacts.find((a) => a.id === pr?.id)?.pullRequest?.merged).toBe(true);
     expect(after.agents.filter((a) => a.kind === "crew").every((a) => !!a.closedAt)).toBe(true);
-    expect(buildSnapshot(after).threadStatus?.["inv-1"]).toBe("closed");
     expect(buildSnapshot(after).threadState?.["inv-1"]).toEqual({ status: "idle", needsYou: false, closed: true });
     expect(buildSnapshot(after).threadState?.bob).toEqual({ status: "idle", needsYou: false, closed: false });
     expect(after.drive.find((f) => f.name === "DIGEST.md")?.content).toMatch(/Nothing needs you/);
