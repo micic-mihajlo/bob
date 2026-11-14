@@ -2,6 +2,7 @@
 .why-graph {
   display: grid;
   flex: 0 0 auto;
+  container-type: inline-size;
   gap: var(--bob-space-2);
   border-bottom: 1px solid var(--bob-border);
   padding: var(--bob-space-3) var(--bob-space-4);
@@ -145,6 +146,26 @@
   color: var(--bob-text-muted);
   font-size: var(--bob-text-sm);
   white-space: nowrap;
+}
+
+@container (max-width: 900px) {
+  .why-graph-column {
+    min-width: 84px;
+  }
+
+  .why-graph-column:last-child {
+    min-width: 120px;
+  }
+
+  .why-graph-link {
+    flex-shrink: 1;
+    padding-inline: var(--bob-space-1) var(--bob-space-1-5);
+  }
+
+  .why-graph-link-label {
+    text-align: center;
+    white-space: normal;
+  }
 }
 
 @keyframes why-graph-in {
