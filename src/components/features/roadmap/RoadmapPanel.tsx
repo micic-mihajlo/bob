@@ -27,6 +27,7 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
   const progress = workOrderProgress(roadmap);
   const steps = roadmapSteps(roadmap);
   const planned = [...roadmap.today, ...(roadmap.backlog ?? [])];
+  const started = goal !== null || planned.length > 0;
 
   const meta = (order: WorkOrder) => {
     const owner = order.ownerAgentId ? agentsById.get(order.ownerAgentId) : undefined;
@@ -47,51 +48,66 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
           </div>
         ) : (
           <>
-            <Card className="bob-roadmap-card">
-              <p className="bob-roadmap-label">Goal</p>
-              <h3 className="bob-roadmap-goal">{goal?.title ?? "No goal set yet"}</h3>
-              {goal?.why ? <p className="bob-roadmap-muted">{goal.why}</p> : null}
-              {goal?.user ? <p className="bob-roadmap-muted">For {goal.user}</p> : null}
-              {goal?.behaviour ? <p className="bob-roadmap-muted">{goal.behaviour}</p> : null}
-              {goal?.acceptance ? <p className="bob-roadmap-muted">{goal.acceptance}</p> : null}
-              {goal?.deadline ? <p className="bob-roadmap-muted">By {formatDeadline(goal.deadline)}</p> : null}
-              <Progress
-                className="bob-roadmap-progress"
-                value={progress.done}
-                minValue={0}
-                maxValue={Math.max(progress.total, 1)}
-                aria-label="Work orders done toward the goal"
-              />
-              <p className="bob-roadmap-earned">
-                {progress.done} of {progress.total} work orders done
-              </p>
-            </Card>
+            {!started ? (
+              <Card className="bob-roadmap-card">
+                <p className="bob-roadmap-label">Goal</p>
+                <h3 className="bob-roadmap-goal">Nothing planned yet</h3>
+                <p className="bob-roadmap-muted">
+                  Tell Bob what you want built. Bob asks until the request can be tested, then sets the goal, cuts it into work orders and starts a thread for
+                  each.
+                </p>
+              </Card>
+            ) : null}
 
-            <Card className="bob-roadmap-card">
-              <h3 className="bob-roadmap-label">Today</h3>
-              <ul className="bob-roadmap-list">
-                {roadmap.today.length === 0 ? <li className="bob-roadmap-muted">No work orders for today yet.</li> : null}
-                {roadmap.today.slice(0, 3).map((order) => {
-                  const done = order.status === "done";
-                  const owner = order.ownerAgentId ? agentsById.get(order.ownerAgentId) : undefined;
-                  return (
-                    <li key={order.id} className="bob-roadmap-task" data-done={done ? "true" : undefined}>
-                      <Checkbox id={`bob-roadmap-task-${order.id}`} checked={done} disabled readOnly aria-label={WORK_ORDER_STATUS_LABEL[order.status]} />
-                      <button
-                        type="button"
-                        className="bob-roadmap-task-title"
-                        disabled={owner === undefined}
-                        title={owner ? `Open ${displayName(owner)}` : undefined}
-                        onClick={() => openOwner(order)}
-                      >
-                        {order.title}
-                      </button>
-                      <span className="bob-roadmap-task-meta">{meta(order)}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </Card>
+            {started ? (
+              <Card className="bob-roadmap-card">
+                <p className="bob-roadmap-label">Goal</p>
+                <h3 className="bob-roadmap-goal">{goal?.title ?? "No goal set yet"}</h3>
+                {goal?.why ? <p className="bob-roadmap-muted">{goal.why}</p> : null}
+                {goal?.user ? <p className="bob-roadmap-muted">For {goal.user}</p> : null}
+                {goal?.behaviour ? <p className="bob-roadmap-muted">{goal.behaviour}</p> : null}
+                {goal?.acceptance ? <p className="bob-roadmap-muted">{goal.acceptance}</p> : null}
+                {goal?.deadline ? <p className="bob-roadmap-muted">By {formatDeadline(goal.deadline)}</p> : null}
+                <Progress
+                  className="bob-roadmap-progress"
+                  value={progress.done}
+                  minValue={0}
+                  maxValue={Math.max(progress.total, 1)}
+                  aria-label="Work orders done toward the goal"
+                />
+                <p className="bob-roadmap-earned">
+                  {progress.done} of {progress.total} work orders done
+                </p>
+              </Card>
+            ) : null}
+
+            {started ? (
+              <Card className="bob-roadmap-card">
+                <h3 className="bob-roadmap-label">Today</h3>
+                <ul className="bob-roadmap-list">
+                  {roadmap.today.length === 0 ? <li className="bob-roadmap-muted">No work orders for today yet.</li> : null}
+                  {roadmap.today.slice(0, 3).map((order) => {
+                    const done = order.status === "done";
+                    const owner = order.ownerAgentId ? agentsById.get(order.ownerAgentId) : undefined;
+                    return (
+                      <li key={order.id} className="bob-roadmap-task" data-done={done ? "true" : undefined}>
+                        <Checkbox id={`bob-roadmap-task-${order.id}`} checked={done} disabled readOnly aria-label={WORK_ORDER_STATUS_LABEL[order.status]} />
+                        <button
+                          type="button"
+                          className="bob-roadmap-task-title"
+                          disabled={owner === undefined}
+                          title={owner ? `Open ${displayName(owner)}` : undefined}
+                          onClick={() => openOwner(order)}
+                        >
+                          {order.title}
+                        </button>
+                        <span className="bob-roadmap-task-meta">{meta(order)}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Card>
+            ) : null}
 
             {steps.length > 0 ? (
               <Card className="bob-roadmap-card">
