@@ -348,6 +348,31 @@ export interface WhyHop {
   question?: string;
 }
 
+/** One node of a pull request's graph view. `kind` is the graph label: User, Agent, Message, Turn, PullRequest, Commit, Review, Approval, WorkOrder. */
+export interface GraphViewNode {
+  id: string;
+  kind: string;
+  label: string;
+}
+
+/** A directed edge, such as SENT, CAUSED_BY, CONTINUES (an answer back to the ask), BECAUSE_OF, MADE, RUNS, REVIEWS, GATED_BY. */
+export interface GraphViewEdge {
+  from: string;
+  to: string;
+  type: string;
+}
+
+/** `GET /api/graph?prId=` answers this: the pull request's Why? path back to what the person typed, and what touches the PR. */
+export interface GraphView {
+  prId: string;
+  /** The message the person typed that the path ends at. */
+  rootMessageId: string | null;
+  /** "hydra" when the path came from HydraDB, "memory" when the graph store is off. */
+  source: "hydra" | "memory";
+  nodes: GraphViewNode[];
+  edges: GraphViewEdge[];
+}
+
 /** The models a Vercel Token Pass key can call, so the ones a crew thread can be set to. */
 export const THREAD_MODELS = [
   "moonshotai/kimi-k3.1-pro",
@@ -371,7 +396,8 @@ export const THREAD_MODELS = [
  * POST /api/agents/:id/interrupt          {}                                stop that agent's running turn
  * POST /api/agents/:id/read               {}                                mark that thread read
  * POST /api/approvals/:id                 { decision: "approved" | "denied" }
- * GET  /api/why?messageId=...             -> { hops: WhyHop[] }
+ * GET  /api/why?messageId=...             -> { hops: WhyHop[], source: "hydra" | "memory" }
+ * GET  /api/graph?prId=...                -> GraphView                      a pull request's Why? path as nodes and edges
  * GET  /api/agents/:id/files?path=...     -> WorkspaceListing               browse that thread's workspace
  * GET  /api/agents/:id/changes            -> WorkspaceChanges               that thread's branch against main
  * POST /api/agents/:id/close              {}                                close a crew thread
@@ -391,6 +417,7 @@ export const API = {
   agentClose: (id: AgentId) => `/api/agents/${id}/close`,
   agentModel: (id: AgentId) => `/api/agents/${id}/model`,
   why: (messageId: MessageId) => `/api/why?messageId=${encodeURIComponent(messageId)}`,
+  graph: (prId: string) => `/api/graph?prId=${encodeURIComponent(prId)}`,
   reset: "/api/reset",
   projects: "/api/projects",
   verification: "/api/verification",
