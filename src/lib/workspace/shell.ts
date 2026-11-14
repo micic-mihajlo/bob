@@ -24,12 +24,14 @@ export interface RunOutput {
 /**
  * Built from nothing, like git's: the server's environment holds API keys and the command must never see them.
  * HOME is the project's own, so the host user's dotfiles never apply; package caches stay the host's for speed.
+ * PATH drops every other node_modules/.bin, such as Bob's own that pnpm adds, so a project without its own
+ * vitest fails plainly instead of running Bob's.
  */
 export function shellEnv(ws: Workspace): Record<string, string> {
   const identity = agentIdentity(ws.agentId);
   const bin = path.join(ws.root, "node_modules", ".bin");
   return {
-    PATH: [bin, process.env.PATH ?? "/usr/local/bin:/usr/bin:/bin"].join(path.delimiter),
+    PATH: [bin, ...(process.env.PATH ?? "/usr/local/bin:/usr/bin:/bin").split(path.delimiter).filter((p) => !/[\\/]node_modules[\\/]\.bin[\\/]?$/.test(p))].join(path.delimiter),
     HOME: ws.project.home,
     LANG: process.env.LANG ?? "C.UTF-8",
     TERM: "dumb",
