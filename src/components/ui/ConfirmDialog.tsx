@@ -1,14 +1,21 @@
 "use client";
 
-import { ShieldCheck } from "lucide-react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { ShieldCheck, Trash2, TriangleAlert } from "lucide-react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { Alert, AlertContent, AlertDescription, AlertIcon } from "./Alert";
 import { keepTabInside } from "./focus-trap";
+
+export type ConfirmDialogTone = "destructive" | "default";
 
 export interface ConfirmDialogProps {
   title: string;
   description?: ReactNode;
+  /** Replaces the tone icon, for example with an agent avatar. */
+  media?: ReactNode;
+  /** Replaces the tone icon in the same frame. */
   icon?: ReactNode;
+  tone?: ConfirmDialogTone;
   /** The form or detail under the description. */
   children?: ReactNode;
   error?: string | null;
@@ -21,8 +28,10 @@ export interface ConfirmDialogProps {
  * The reference UI's standard dialog: an icon beside a left-aligned title and description, the body
  * below, and the actions on a footer. Escape and a click on the overlay close it.
  */
-export function ConfirmDialog({ title, description, icon, children, error, actions, onClose }: ConfirmDialogProps) {
+export function ConfirmDialog({ title, description, media, icon, tone = "default", children, error, actions, onClose }: ConfirmDialogProps) {
   const content = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
 
   useEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -41,19 +50,34 @@ export function ConfirmDialog({ title, description, icon, children, error, actio
 
   return createPortal(
     <div className="ui-dialog-overlay ui-confirm-dialog-overlay" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div ref={content} role="dialog" aria-modal="true" aria-label={title} className="ui-dialog-content ui-confirm-dialog" data-tone="default">
+      <div ref={content} role="alertdialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={description ? descriptionId : undefined} className="ui-dialog-content ui-confirm-dialog" data-tone={tone}>
         <div className="ui-confirm-dialog-main">
-          <span className="ui-confirm-dialog-icon" aria-hidden="true">
-            {icon ?? <ShieldCheck />}
-          </span>
+          {media ? (
+            <div className="ui-confirm-dialog-media">{media}</div>
+          ) : (
+            <span className="ui-confirm-dialog-icon" aria-hidden="true">
+              {icon ?? (tone === "destructive" ? <Trash2 /> : <ShieldCheck />)}
+            </span>
+          )}
           <div className="ui-confirm-dialog-content">
-            <h2 className="ui-confirm-dialog-title">{title}</h2>
-            {description ? <p className="ui-confirm-dialog-description">{description}</p> : null}
+            <h2 id={titleId} className="ui-confirm-dialog-title">
+              {title}
+            </h2>
+            {description ? (
+              <p id={descriptionId} className="ui-confirm-dialog-description">
+                {description}
+              </p>
+            ) : null}
             {children ? <div className="ui-confirm-dialog-body">{children}</div> : null}
             {error ? (
-              <p className="ui-confirm-dialog-error" role="alert">
-                {error}
-              </p>
+              <Alert tone="danger" role="alert" className="ui-confirm-dialog-error">
+                <AlertIcon>
+                  <TriangleAlert />
+                </AlertIcon>
+                <AlertContent>
+                  <AlertDescription>{error}</AlertDescription>
+                </AlertContent>
+              </Alert>
             ) : null}
           </div>
         </div>
