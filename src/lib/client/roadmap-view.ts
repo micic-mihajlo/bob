@@ -28,6 +28,11 @@ export function workOrderProgress(roadmap: Roadmap): { done: number; total: numb
   return { done: orders.filter((order) => order.status === "done").length, total: orders.length };
 }
 
+/** "For an accountant": the goal's user after "For", with a leading article in lower case. */
+export function forUserLine(user: string): string {
+  return `For ${user.replace(/^(A|An|The)\b/, (article) => article.toLowerCase())}`;
+}
+
 export function hasPlan(roadmap: Roadmap): boolean {
   return roadmap.goal !== null || roadmap.today.length > 0 || roadmap.gates.length > 0 || (roadmap.backlog?.length ?? 0) > 0;
 }

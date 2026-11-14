@@ -7,7 +7,7 @@ import { fileBadge, fileReferenceTone } from "../file-reference";
 import { fileDayLabel, fileTypeCounts, groupFilesByDay, queryFiles } from "../files-view";
 import { parseMarkdown } from "../markdown";
 import { openPanes, paneAfterClose, PANEL_TABS, selectedPane } from "../panel-tabs";
-import { currentStep, hasPlan, roadmapSteps, workOrderProgress } from "../roadmap-view";
+import { currentStep, forUserLine, hasPlan, roadmapSteps, workOrderProgress } from "../roadmap-view";
 import { groupTheorems } from "../verification";
 import type { Agent, Roadmap, Snapshot, WorkOrder } from "@/lib/types";
 
@@ -112,7 +112,10 @@ describe("file list view", () => {
     expect(fileDayLabel(at(14), now)).toBe("Today");
     expect(fileDayLabel(at(13), now)).toBe("Yesterday");
     const groups = groupFilesByDay([{ at: at(12) }, { at: at(14) }, { at: at(14) }], now);
-    expect(groups.map((group) => [group.label, group.files.length])).toEqual([["Today", 2], ["Nov 12", 1]]);
+    expect(groups.map((group) => [group.label, group.files.length])).toEqual([
+      ["Today", 2],
+      ["Nov 12", 1],
+    ]);
   });
 });
 
@@ -160,7 +163,9 @@ describe("verification groups", () => {
 
 describe("parseMarkdown tables", () => {
   it("reads a header, a rule and body rows, keeping escaped pipes in a cell", () => {
-    const blocks = parseMarkdown(["## Crew", "", "| Thread | Status | PR |", "| --- | :---: | ---: |", "| INV-1 | Idle | #1 |", "| a \\| b | `x` |  |", "after"].join("\n"));
+    const blocks = parseMarkdown(
+      ["## Crew", "", "| Thread | Status | PR |", "| --- | :---: | ---: |", "| INV-1 | Idle | #1 |", "| a \\| b | `x` |  |", "after"].join("\n"),
+    );
     expect(blocks.map((block) => block.kind)).toEqual(["heading", "table", "paragraph"]);
     const table = blocks[1];
     if (table?.kind !== "table") throw new Error("no table");
@@ -189,5 +194,14 @@ describe("threadStatusOf", () => {
     expect(threadStatusOf(snap({ threadState: { "inv-1": { status: "waiting", needsYou: true, closed: false } } }), agent)).toBe("needs_you");
     expect(threadStatusOf(snap({ threadState: { "inv-1": { status: "idle", needsYou: false, closed: true } } }), agent)).toBe("closed");
     expect(threadStatusOf(snap({}), agent)).toBe("working");
+  });
+});
+
+describe("forUserLine", () => {
+  it("lowers a leading article and keeps names", () => {
+    expect(forUserLine("An accountant on the invoices page")).toBe("For an accountant on the invoices page");
+    expect(forUserLine("The finance team")).toBe("For the finance team");
+    expect(forUserLine("Dana at Northwind")).toBe("For Dana at Northwind");
+    expect(forUserLine("Anna")).toBe("For Anna");
   });
 });
