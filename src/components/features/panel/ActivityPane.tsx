@@ -8,6 +8,7 @@ import type { BadgeVariant } from "@/components/ui/classes";
 import { nameOf } from "@/lib/client/crew";
 import { formatClock } from "@/lib/client/format";
 import type { FileReferenceTone } from "@/lib/client/file-reference";
+import { isPullRequest, PULL_REQUEST_STATE_LABEL, pullRequestState, type PullRequestState } from "@/lib/client/pull-requests";
 import type { Artifact } from "@/lib/types";
 import { PaneFrame } from "./PaneFrame";
 import { Activity } from "lucide-react";
@@ -19,17 +20,23 @@ const KIND: Record<Artifact["kind"], { badge: string; tone: FileReferenceTone; l
   note: { badge: "NOTE", tone: "default", label: "Note" },
 };
 
-const STATUS: Record<Artifact["status"], { label: string; variant: BadgeVariant }> = {
-  open: { label: "Open", variant: "info-light" },
-  approved: { label: "Approved", variant: "warning-light" },
-  merged: { label: "Merged", variant: "success-light" },
-  closed: { label: "Closed", variant: "secondary" },
+const STATUS_VARIANT: Record<PullRequestState, BadgeVariant> = {
+  open: "info-light",
+  approved: "success-light",
+  awaiting_merge: "warning-light",
+  merged: "success-light",
+  closed: "secondary",
 };
 
 /** Everything the team made, newest first, as the reference's file rows. Why? traces a row back. */
 export function ActivityPane({ onClose }: { onClose: () => void }) {
   const { snapshot, agentsById, selectAgent, openWhy } = useBob();
   const artifacts = [...snapshot.artifacts].sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+  // A pull request reads the same here as on its card: waiting at the merge gate is not "Approved".
+  const statusOf = (artifact: Artifact) => {
+    const state = isPullRequest(artifact) ? pullRequestState(artifact, snapshot.approvals) : artifact.status;
+    return { label: PULL_REQUEST_STATE_LABEL[state], variant: STATUS_VARIANT[state] };
+  };
 
   return (
     <PaneFrame className="conversation-files-panel bob-activity-panel" label="Activity">
@@ -57,7 +64,7 @@ export function ActivityPane({ onClose }: { onClose: () => void }) {
               badge: KIND[artifact.kind].badge,
               tone: KIND[artifact.kind].tone,
               meta: [`${KIND[artifact.kind].label} by ${nameOf(agentsById, artifact.agentId)}`, formatClock(artifact.at)].filter(Boolean),
-              status: STATUS[artifact.pullRequest?.merged ? "merged" : artifact.status],
+              status: statusOf(artifact),
               actionLabel: `Open the thread of ${artifact.title}`,
               disabled: !agentsById.has(artifact.agentId),
               onOpen: () => selectAgent(artifact.agentId),

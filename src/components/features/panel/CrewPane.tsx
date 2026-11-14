@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import { crewInOrder, displayName, THREAD_STATUS_LABEL, threadStatusOf } from "@/lib/client/crew";
-import { pullRequestsBy, reviewsForThread, VERDICT_LABEL } from "@/lib/client/pull-requests";
+import { PULL_REQUEST_STATE_LABEL, pullRequestState, pullRequestsBy, reviewsForThread, VERDICT_LABEL } from "@/lib/client/pull-requests";
 import type { Agent, CrewRole, ThreadStatus } from "@/lib/types";
 import { PaneFrame, PaneHeader } from "./PaneFrame";
 
@@ -46,7 +46,7 @@ function CrewRow({ agent }: { agent: Agent }) {
       agent.crewRole ? ROLE_LABEL[agent.crewRole] : null,
       agent.branch,
       pullRequest ? `#${pullRequest.pullRequest.number}` : null,
-      review ? VERDICT_LABEL[review.review.verdict] : null,
+      pullRequest ? PULL_REQUEST_STATE_LABEL[pullRequestState(pullRequest, snapshot.approvals)] : review ? VERDICT_LABEL[review.review.verdict] : null,
     ]
       .filter(Boolean)
       .join(" · ");
