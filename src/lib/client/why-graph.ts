@@ -31,7 +31,7 @@ const LINK: Record<string, string> = { CAUSED_BY: "because of", CONTINUES: "answ
 const GATE_STATUS: Record<Approval["status"], string> = { pending: "Waiting for you", approved: "Approved", denied: "Denied" };
 const VERDICT: Record<NonNullable<Artifact["review"]>["verdict"], string> = { approve: "Approved", request_changes: "Changes requested" };
 
-/** What the live snapshot knows: the gate's reviews and approvals, to tell repeated ones apart, and the inbox a path can start from. */
+/** What the live snapshot knows: the gate's reviews and approvals, to pick the newest of repeated ones, and the inbox a path can start from. */
 export interface GateFacts {
   approvals: readonly Approval[];
   artifacts: readonly Artifact[];
@@ -41,6 +41,13 @@ export interface GateFacts {
 const ORIGIN_TITLE = { typed: "You wrote", inbox: "From the inbox", build: "You pressed Build this" } as const;
 
 const atHead = (word: string, sha: string | undefined) => (sha ? `${word} at ${sha.slice(0, 7)}` : word);
+
+/** The newest item by time; with no times, the last one, as the graph lists them in order. */
+const latest = <T>(items: readonly T[], at: (item: T) => string | undefined): T | undefined =>
+  items.reduce<T | undefined>(
+    (best, item) => (best === undefined || (Date.parse(at(item) ?? "") || 0) >= (Date.parse(at(best) ?? "") || 0) ? item : best),
+    undefined,
+  );
 
 /**
  * A pull request's Why? path, left to right: the PR, the review and approval that gate it, the
@@ -54,18 +61,21 @@ export function buildPathGraph(view: GraphView, facts: GateFacts = { approvals: 
   const pr = byId.get(view.prId);
   if (pr) columns.push({ link: null, nodes: [{ id: pr.id, kind: "pull_request", title: "Pull request", label: pr.label }] });
 
-  const gate: PathNode[] = [
-    ...edge("REVIEWS", "to", view.prId).map((e) => {
-      const review = facts.artifacts.find((artifact) => artifact.id === e.from)?.review;
-      const label = review ? atHead(VERDICT[review.verdict], review.headSha) : (byId.get(e.from)?.label.replace(/^Review:\s*/, "") ?? "");
-      return { id: e.from, kind: "review" as const, title: "Review", label };
-    }),
-    ...edge("GATED_BY", "from", view.prId).map((e) => {
-      const approval = facts.approvals.find((candidate) => candidate.id === e.to);
-      const label = approval ? atHead(GATE_STATUS[approval.status], approval.headSha) : (byId.get(e.to)?.label ?? "");
-      return { id: e.to, kind: "approval" as const, title: "Merge gate", label };
-    }),
-  ];
+  const reviews = edge("REVIEWS", "to", view.prId).map((e) => ({ id: e.from, artifact: facts.artifacts.find((artifact) => artifact.id === e.from) }));
+  const gates = edge("GATED_BY", "from", view.prId).map((e) => ({ id: e.to, approval: facts.approvals.find((candidate) => candidate.id === e.to) }));
+  const review = latest(reviews, (r) => r.artifact?.at);
+  const approval = latest(gates, (g) => g.approval?.at);
+  const gate: PathNode[] = [];
+  if (review) {
+    const found = review.artifact?.review;
+    const label = found ? atHead(VERDICT[found.verdict], found.headSha) : (byId.get(review.id)?.label.replace(/^Review:\s*/, "") ?? "");
+    gate.push({ id: review.id, kind: "review", title: reviews.length > 1 ? `Review ×${reviews.length}` : "Review", label });
+  }
+  if (approval) {
+    const found = approval.approval;
+    const label = found ? atHead(GATE_STATUS[found.status], found.headSha) : (byId.get(approval.id)?.label ?? "");
+    gate.push({ id: approval.id, kind: "approval", title: "Merge gate", label });
+  }
   if (gate.length > 0) columns.push({ link: "gated by", nodes: gate });
 
   const turns = edge("MADE", "to", view.prId).map((e) => {
