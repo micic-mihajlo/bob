@@ -1,0 +1,491 @@
+/*
+ * Bob's palette: black, with a white glow as the accent. It follows design/app-ui/README.md and
+ * the landing page (apps/web/src/app/globals.css). Neutrals are pure grey, and no accent has a
+ * hue: blue, navy and purple are not used. The chapter hues (teal, amber, lavender) and the live
+ * red are small marks only. Bob has one theme, this one.
+ *
+ * Every --bob-* token in the product is written here, once. The desktop
+ * renderer, the public web app and the mobile app all @import this file; none of
+ * them declares a token of its own. That was not true until recently - the same
+ * names lived in three files that no single commit had ever touched together, so
+ * the web palette was a frozen snapshot of a desktop palette that had moved on by
+ * two hundred tokens, and a token added for one surface was simply absent on the
+ * other two. Keep this file the only declaration site.
+ *
+ * Mobile layers tokens-native.css on top of this file. It changes values only and
+ * declares no new token.
+ */
+
+/* ───────────── Bob palette: copy this block as it is ─────────────
+ * The phone web client (apps/cloud/web) keeps its own copy of these values, because it does not
+ * import this package. Copy the whole block; the values are literal, so the copy needs nothing
+ * else. Desktop styles use these tokens for the Bob surfaces (glass, dialog, orb, chapter marks)
+ * and the --bob-* tokens below for everything else. */
+:root {
+  /* Surfaces, darkest first. */
+  --bob-bg: #000000;
+  --bob-panel: #0a0a0a;
+  --bob-raised: #141414;
+  --bob-raised-2: #1a1a1a;
+  /* Text. Ink is 17.7:1 on a panel, mute 5.9:1 (AA). Faint is 2.6:1: use it for marks and
+     disabled text, never for text the user must read. */
+  --bob-ink: #f2f2f2;
+  --bob-mute: rgb(242 242 242 / 0.56);
+  --bob-faint: rgb(242 242 242 / 0.32);
+  --bob-hair: rgb(255 255 255 / 0.08);
+  /* The accent: a white glow. The send button and the selected state are white with black ink. */
+  --bob-glow: #ffffff;
+  --bob-on-glow: #000000;
+  /* Chapter hues, as small marks only. */
+  --bob-teal: #6fe3d2;
+  --bob-amber: #ffc58a;
+  --bob-lavender: #b4a2ff;
+  --bob-live: #ff5f57;
+  /* Liquid glass: the composer, primary buttons and the bot card. */
+  --bob-glass: linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.015) 55%, rgb(255 255 255 / 0.045));
+  --bob-glass-edge:
+    inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 -1px 1px rgb(255 255 255 / 0.06),
+    inset 0 0 0 1px rgb(255 255 255 / 0.07), 0 0 24px -10px rgb(255 255 255 / 0.18), 0 14px 40px -14px rgb(0 0 0 / 0.9);
+  --bob-glass-edge-hover:
+    inset 0 1px 0 rgb(255 255 255 / 0.4), inset 0 -1px 1px rgb(255 255 255 / 0.08),
+    inset 0 0 0 1px rgb(255 255 255 / 0.1), 0 0 36px -6px rgb(255 255 255 / 0.22), 0 14px 40px -14px rgb(0 0 0 / 0.9);
+  /* Dialogs, as .dlg on the landing page. */
+  --bob-dialog: linear-gradient(180deg, rgb(22 22 22 / 0.74), rgb(6 6 6 / 0.8));
+  --bob-dialog-edge:
+    inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 0 0 1px rgb(255 255 255 / 0.07),
+    0 40px 120px -20px rgb(0 0 0 / 0.95), 0 0 90px -24px rgb(255 255 255 / 0.12);
+  --bob-backdrop: rgb(0 0 0 / 0.62);
+  /* The bot: this orb with two black pill eyes. */
+  --bob-orb: radial-gradient(70% 70% at 32% 28%, #ffffff 0%, #e4e4e4 16%, #8c8c8c 50%, #161616 100%);
+  --bob-orb-eye: #000000;
+  /* Type: Geist and Geist Mono only. Display text is Geist 400 with tight tracking; labels,
+     numbers, times and chapter numerals are uppercase Geist Mono with wide tracking. */
+  --bob-font: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --bob-mono: "Geist Mono Variable", ui-monospace, monospace;
+  --bob-tracking-display: -0.045em;
+  --bob-tracking-title: -0.02em;
+  --bob-tracking-label: 0.12em;
+  /* Motion: one ease-out, and nothing longer than 300ms in the app. */
+  --bob-ease: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+:root {
+  --bob-provider-current: currentcolor;
+  /* Main screen canvas and drawer, used by the native app. The desktop also uses the sidebar, the
+     sheet (its menus) and the grouped tokens. */
+  --bob-bg-native-canvas: #000000;
+  --bob-bg-native-sidebar: #0a0a0a;
+  /* Grouped sheet surfaces, used by the native app. */
+  --bob-bg-sheet: #0a0a0a;
+  --bob-bg-grouped: #141414;
+  --bob-text-grouped-secondary: #8c8c8c;
+  --bob-border-grouped: #262626;
+  --bob-radius-grouped: 16px;
+  /* The milky chrome of the native app where it has no Liquid Glass: the search field and bar buttons. */
+  --bob-bg-chrome-glass: rgba(20, 20, 20, 0.96);
+  --bob-border-chrome-glass: rgba(255, 255, 255, 0.08);
+  /* The fill of that chrome over a real blur, lighter than the solid glass. */
+  --bob-bg-chrome-blur: rgba(10, 10, 10, 0.62);
+
+  /* Neutral color system. Keep UI colors here, not in components. */
+  --bob-bg-canvas: #0a0a0a;
+  /* The window frame around the page card, darker than the card, so the card comes forward. */
+  --bob-bg-frame: #000000;
+  /* A rail inside a menu, a step darker than the menu sheet. */
+  --bob-bg-sheet-inset: #050505;
+  --bob-bg-canvas-clear: rgba(10, 10, 10, 0);
+  --bob-bg-sidebar: #0a0a0a;
+  --bob-marketplace-detail-bg: #050505;
+  --bob-bg-surface: #141414;
+  --bob-bg-surface-raised: #1a1a1a;
+  --bob-bg-control: #141414;
+  --bob-bg-control-hover: #1a1a1a;
+  --bob-bg-control-active: #222222;
+  --bob-tabs-bar-bg: #141414;
+  --bob-tabs-pill-bg: #222222;
+  --bob-bg-overlay: rgba(10, 10, 10, 0.92);
+  --bob-dialog-overlay: rgba(0, 0, 0, 0.62);
+  --bob-dialog-ring: rgba(255, 255, 255, 0.08);
+  --bob-bg-glass: rgba(20, 20, 20, 0.76);
+
+  /* Translucent glass surfaces: the landing page, and the browser dock and previews of the desktop. */
+  --bob-glass-surface: rgba(255, 255, 255, 0.06);
+  --bob-glass-surface-hover: rgba(255, 255, 255, 0.1);
+  --bob-glass-border: rgba(255, 255, 255, 0.14);
+  --bob-glass-highlight: rgba(255, 255, 255, 0.12);
+  --bob-glass-shadow: rgba(0, 0, 0, 0.5);
+  --bob-hero-grid-line: rgba(255, 255, 255, 0.055);
+
+  /* The landing price figure, and nothing else: a dark glass "$0" lit by one soft
+     iridescent band. These are a material, not aliases of the neutral palette -
+     the body sits a shade either side of the canvas so the glyph reads as a solid
+     object, and the band is the only warm/cool pair on the page. */
+  --bob-price-metal-high: #4c4c4c;
+  --bob-price-metal-core: #1f1f1f;
+  --bob-price-metal-low: #343434;
+  --bob-price-sheen-cool: rgba(150, 196, 255, 0.92);
+  --bob-price-sheen-light: rgba(240, 244, 250, 0.98);
+  --bob-price-sheen-warm: rgba(255, 184, 132, 0.94);
+  /* The band has to fade out through its own hue. Fading to --bob-transparent
+     would interpolate towards transparent *black* and leave a dirty grey halo
+     above and below the light. */
+  --bob-price-sheen-cool-soft: rgba(150, 196, 255, 0.26);
+  --bob-price-sheen-warm-soft: rgba(255, 184, 132, 0.28);
+  --bob-price-sheen-cool-clear: rgba(150, 196, 255, 0);
+  --bob-price-sheen-warm-clear: rgba(255, 184, 132, 0);
+  --bob-price-rim: rgba(255, 255, 255, 0.28);
+  --bob-price-rim-under: rgba(255, 255, 255, 0.1);
+  --bob-price-glow: rgba(180, 200, 255, 0.22);
+  --bob-bg-host-inset: #050505;
+  --bob-bg-notch: #000000;
+  --bob-mask-solid: #000000;
+  --bob-transparent: rgba(0, 0, 0, 0);
+  --bob-drawer-scrim: #000000;
+  --bob-scroll-edge-overlay: rgba(0, 0, 0, 0.72);
+  --bob-queue-surface: var(--bob-bg-surface);
+  --bob-queue-border: var(--bob-border-strong);
+  --bob-queue-text: var(--bob-text-primary);
+  --bob-queue-action: var(--bob-text-muted);
+  --bob-border: rgba(255, 255, 255, 0.06);
+  --bob-border-strong: rgba(255, 255, 255, 0.08);
+  --bob-image-outline: rgba(255, 255, 255, 0.1);
+  /* Focus is the white glow: a thin ring, never a halo. It keeps 3:1 against every surface it sits on. */
+  --bob-border-focus: rgba(255, 255, 255, 0.85);
+  --bob-text-primary: #f2f2f2;
+  --bob-text-on-light: #0a0a0a;
+  --bob-surface-light: #f2f2f2;
+  /* Not a duplicate of surface-light/text-on-light: tokens-native.css swaps this pair
+     between the mobile light and dark themes, so it is the high-contrast button that
+     inverts with the theme. Only mobile's uniwind mapping reads it. */
+  --bob-action: #f2f2f2;
+  --bob-action-foreground: #0a0a0a;
+  --bob-qr-background: #ffffff;
+  /* Ink on paper that is always light, in both themes: a QR code, the onboarding drawing of a
+     computer, the profile image that is shared. The on-light tokens above turn dark in the light
+     theme, because there they are the inverted element; these never change. */
+  --bob-paper: #f5f5f5;
+  --bob-paper-text: #0a0a0a;
+  --bob-paper-text-muted: rgba(10, 10, 10, 0.56);
+  --bob-paper-text-dim: rgba(10, 10, 10, 0.38);
+  --bob-paper-border: rgba(10, 10, 10, 0.14);
+  --bob-onboarding-desktop-mist: #ececec;
+  --bob-onboarding-desktop-blue: #a3a3a3;
+  --bob-onboarding-desktop-indigo: #5c5c5c;
+  /* The dither tiles of the sound theme picker: a back and an ink color for each sound theme. */
+  --bob-sound-warm-back: #d95926;
+  --bob-sound-warm-ink: #f2c46b;
+  --bob-sound-mech-back: #1f1f1f;
+  --bob-sound-mech-ink: #dbe9ff;
+  --bob-sound-bubble-back: #5b5fe0;
+  --bob-sound-bubble-ink: #8bdee8;
+  --bob-sound-press-back: #ff1e5e;
+  --bob-sound-press-ink: #ffd8a8;
+  --bob-sound-off-back: #212121;
+  --bob-sound-off-ink: #4c4c4c;
+  --bob-onboarding-window: #f3f5f8;
+  --bob-text-secondary: #c2c2c2;
+  --bob-text-muted: #8c8c8c;
+  --bob-text-dim: #6b6b6b;
+  --bob-text-readable: rgba(242, 242, 242, 0.56);
+  --bob-text-muted-on-light: rgba(10, 10, 10, 0.58);
+  --bob-text-dim-on-light: rgba(10, 10, 10, 0.4);
+  --bob-download-card-muted: rgba(20, 20, 20, 0.68);
+  --bob-download-card-chip: rgba(20, 20, 20, 0.1);
+  --bob-download-card-border: rgba(20, 20, 20, 0.16);
+  --bob-download-card-focus: rgba(242, 242, 242, 0.86);
+  --bob-text-placeholder: #8c8c8c;
+  --bob-text-on-accent: #0a0a0a;
+  --bob-text-on-status: #07130c;
+  /* Bob's accent is a white glow, with no hue. The fill takes near-black text at 16.5:1;
+     accent-text is the white that links, headings and selected rows use, 17.7:1 on the canvas. */
+  --bob-accent: #f2f2f2;
+  --bob-accent-hover: #ffffff;
+  --bob-accent-text: #f2f2f2;
+  --bob-accent-soft: rgba(255, 255, 255, 0.08);
+  --bob-accent-strong: rgba(255, 255, 255, 0.16);
+  --bob-settings-text-muted: rgba(242, 242, 242, 0.6);
+  --bob-provider-codex: var(--bob-text-primary);
+  --bob-provider-claude: #d97757;
+  --bob-provider-grok: var(--bob-text-primary);
+  /* The Gemini brand colour that Simple Icons gives. */
+  --bob-provider-antigravity: #8e75b2;
+  /* A chart series needs a colour of its own: the logo colours above give codex and grok the
+     same white, which no reader can tell apart in two overlaid areas. Codex keeps a light grey,
+     because Bob has no accent hue; claude (orange) and grok (teal) keep their hues, so the three
+     differ in lightness as well as hue. */
+  --bob-chart-series-codex: #e6e6e6;
+  --bob-chart-series-claude: var(--bob-provider-claude);
+  --bob-chart-series-grok: #6bc7d9;
+  --bob-chart-series-other: var(--bob-text-muted);
+  /* The storage bar: five hues in this fixed order, then neutral app data. Validated with
+     node scripts/validate_palette.js "#3987e5,#d95926,#199e70,#9085e9,#c98500" --mode dark --surface "#1a1a1a"
+     and again on #212121. */
+  --bob-chart-storage-workspaces: #3987e5;
+  --bob-chart-storage-files: #d95926;
+  --bob-chart-storage-chats: #199e70;
+  --bob-chart-storage-downloads: #9085e9;
+  --bob-chart-storage-runtimes: #c98500;
+  --bob-chart-storage-app: var(--bob-text-dim);
+  --bob-logo-production: #e4e4e4;
+  --bob-logo-eye: #000000;
+  /* The eyes of the release logo. The logo color setting changes it with `--bob-logo-production`;
+     a dev or preview logo keeps `--bob-logo-eye`. */
+  --bob-logo-production-eye: var(--bob-logo-eye);
+  /* The build colors of the logo match the app icons in `build/icon-*.png`, so the Dock, the app
+     and the Dynamic Island show one color for each build. They are brand colors, not status
+     colors: a change to warning or success does not change them. */
+  --bob-logo-dev: #e3b866;
+  --bob-logo-preview: #61c985;
+  --bob-unread-surface: #f2f2f2;
+  --bob-unread-text: #0a0a0a;
+  /* The last hue that had not been retuned with the rest. #61c985 was OKLCH chroma
+     0.139 while accent, warning and danger now average 0.205, so green was the one
+     family member that still read as a disabled tint beside them. Matching 0.205 is
+     not possible: sRGB tops out at 0.195 along this hue, and that ceiling value
+     (#00d271) is a neon with no headroom, which every renderer clips differently.
+     0.180 is the usable step, and lightness is held at the old 0.756 so contrast on
+     the canvas is unchanged at 8.5:1 and no text legibility moves. */
+  --bob-success: #31cf76;
+  /* Status text sits on neutral surfaces; status fills have separate contrast needs. */
+  --bob-success-text: #31cf76;
+  --bob-warning-text: #ff9412;
+  --bob-danger-text: #ff6069;
+  --bob-success-soft: rgba(49, 207, 118, 0.12);
+  --bob-success-wash: rgba(49, 207, 118, 0.045);
+  /* Both warning marks in the reference measure hue 33 at full saturation (#ff9917 on
+     the triangle, #ff9412 on the heading). The palette's #e3b866 was a desaturated gold
+     at hue 39, which reads as a disabled state rather than as something needing attention. */
+  --bob-warning: #ff9412;
+  --bob-warning-soft: rgba(255, 148, 18, 0.12);
+  --bob-question-option: #e6e6e6;
+  --bob-question-option-soft: rgba(255, 255, 255, 0.08);
+  --bob-question-option-hover: rgba(255, 255, 255, 0.12);
+  --bob-question-option-pressed: rgba(255, 255, 255, 0.16);
+  --bob-island-identity-name: var(--bob-text-primary);
+  --bob-question-badge-text: #e6e6e6;
+  --bob-question-badge-soft: rgba(255, 255, 255, 0.1);
+  --bob-message-badge-text: #e6e6e6;
+  --bob-message-badge-soft: rgba(255, 255, 255, 0.1);
+  /* The "new thing is available" pill. It is deliberately not --bob-accent: an
+     announcement is not an action. */
+  --bob-badge-new: #ff1e5e;
+  --bob-badge-new-soft: rgba(255, 30, 94, 0.16);
+  /* The moving border of an offer, such as the hosted server offer: teal, blue, then pink. */
+  --bob-beam-teal: var(--bob-file-teal);
+  --bob-beam-blue: var(--bob-accent-text);
+  --bob-beam-pink: var(--bob-file-pink);
+  --bob-approval-badge-soft: rgba(255, 148, 18, 0.18);
+  /* One red. The palette carried four families - danger (#e47d75), danger-strong
+     (#ff4058), settings-danger (#eb4145) and button-destructive (oklch, #ff6467) -
+     all between hue 352 and 359, i.e. the same red at four saturations, and the
+     settings family existed only to re-override button-destructive inside one modal.
+     #fd2f3b is the reference's count badge. The five steps below are roles, not
+     shades: solid fill, its hover, tinted fill, its hover, ring, border. */
+  --bob-danger: #fd2f3b;
+  --bob-danger-hover: #fd5d67;
+  --bob-danger-soft: rgba(253, 47, 59, 0.16);
+  --bob-danger-soft-hover: rgba(253, 47, 59, 0.28);
+  --bob-danger-focus: rgba(253, 47, 59, 0.4);
+  --bob-danger-border: rgba(253, 47, 59, 0.5);
+  /* Literal values: the mobile themes repeat these in tokens-native.css, where var() resolves to
+   * nothing. They equal warning, question-option, success, danger and accent-text. */
+  --bob-file-blue: #74b9ff;
+  --bob-file-blue-soft: rgba(116, 185, 255, 0.14);
+  --bob-file-yellow: #ff9412;
+  --bob-file-yellow-soft: rgba(255, 148, 18, 0.12);
+  --bob-file-orange: #f0a06a;
+  --bob-file-orange-soft: rgba(240, 160, 106, 0.14);
+  --bob-file-teal: #6bc7d9;
+  --bob-file-teal-soft: rgba(107, 199, 217, 0.14);
+  --bob-file-green: #31cf76;
+  --bob-file-green-soft: rgba(49, 207, 118, 0.12);
+  --bob-file-red: #fd2f3b;
+  --bob-file-red-soft: rgba(253, 47, 59, 0.16);
+  --bob-file-pink: #d98ac9;
+  --bob-file-pink-soft: rgba(217, 138, 201, 0.14);
+  --bob-file-default: #d6d6d6;
+  --bob-file-default-soft: rgba(255, 255, 255, 0.1);
+  --bob-data-table-border: #262626;
+  --bob-data-table-header-text: #8c8c8c;
+  --bob-data-table-text: #f2f2f2;
+  --bob-data-table-outer-border: rgba(255, 255, 255, 0);
+  --bob-data-table-ring: rgba(255, 255, 255, 0.1);
+  --bob-shadow-popover-ambient: rgba(0, 0, 0, 0.24);
+  --bob-shadow-dialog: rgba(0, 0, 0, 0.6);
+  --bob-shadow-menu: rgba(0, 0, 0, 0.56);
+  --bob-shadow-dynamic-island: rgba(0, 0, 0, 0.6);
+  --bob-shadow-ring: rgba(255, 255, 255, 0.04);
+  --bob-border-on-light: rgba(10, 10, 10, 0.14);
+  --bob-hover: rgba(255, 255, 255, 0.06);
+  --bob-font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --bob-font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  /* Six steps, one line-height each, named for the step it pairs with. The scale had
+   * sixteen sizes and eight line-heights, four of them a single call site, which is how
+   * an 11px size ended up paired with a 26px line-height. scripts/ui-foundation-check.ts
+   * holds "untokenized font-size" at zero, so a size that is not here has nowhere to go. */
+  --bob-text-sm: 12px;
+  --bob-text-md: 13px;
+  --bob-text-lg: 14px;
+  --bob-text-xl: 16px;
+  --bob-text-2xl: 18px;
+  --bob-text-3xl: 24px;
+  --bob-leading-sm: 16px;
+  --bob-leading-md: 18px;
+  --bob-leading-lg: 20px;
+  --bob-leading-xl: 22px;
+  --bob-leading-2xl: 24px;
+  --bob-leading-3xl: 30px;
+
+  /* Not scale steps, and named for their surface so they do not read as one. Three
+   * full-bleed screens (login wordmark, first-run setup, onboarding) and the public
+   * landing page carry type above 24px; .landing-hero-logo is sized in em off
+   * --bob-text-hero, so that token is layout, not just type. */
+  --bob-text-display: 32px;
+  --bob-text-usage-total: clamp(2rem, 5cqi, 3.5rem);
+  --bob-leading-display: 38px;
+  --bob-text-hero: clamp(3rem, 8vw, 6.5rem);
+
+  /* Glyphs, not copy: a file-extension string inside a fixed 16-24px chip. Below the
+   * scale's floor because the container is fixed, not because the text is small. Outside
+   * the text-* namespace so text-* means exactly the six steps above. */
+  --bob-glyph-xs: 7px;
+  --bob-glyph-sm: 8px;
+
+  --bob-weight-regular: 400;
+  --bob-weight-medium: 500;
+  --bob-weight-semibold: 600;
+  --bob-weight-bold: 700;
+  --bob-tracking-tight: -0.1px;
+  --bob-tracking-normal: 0;
+  --bob-tracking-wide: 0.02em;
+  --bob-space-0-5: 2px;
+  --bob-space-1: 4px;
+  --bob-space-1-5: 6px;
+  --bob-space-2: 8px;
+  --bob-space-3: 12px;
+  --bob-space-4: 16px;
+  --bob-space-6: 24px;
+  --bob-space-8: 32px;
+  --bob-scrollbar-size: 8px;
+  --bob-radius-xs: 4px;
+  --bob-radius-sm: 6px;
+  --bob-radius-md: 8px;
+  --bob-radius-lg: 12px;
+  --bob-radius-card: 14px;
+  --bob-radius-xl: 20px;
+  --bob-radius-bubble: 22px;
+  --bob-radius-bubble-inset: calc(var(--bob-radius-bubble) - var(--bob-space-3) - 1px);
+  --bob-radius-modal: 30px;
+  --bob-radius-media-preview: calc(var(--bob-radius-lg) - 1px);
+  --bob-radius-pill: 999px;
+  --bob-radius-logo: 20%;
+  --bob-control-xs: 24px;
+  --bob-control-sm: 28px;
+  --bob-control-md: 32px;
+  --bob-control-lg: 36px;
+  --bob-control-xl: 40px;
+  /* The switch follows the same compact pill proportions across desktop and web.
+   * Keep its geometry named so the motion code can measure the same inset and travel
+   * that CSS paints. */
+  --bob-switch-width: 36px;
+  --bob-switch-height: 20px;
+  --bob-switch-thumb: 16px;
+  --bob-switch-inset: 2px;
+  --bob-switch-sm-width: 24px;
+  --bob-switch-sm-height: 14px;
+  --bob-switch-sm-thumb: 12px;
+  --bob-switch-sm-inset: 1px;
+  /* Unitless on purpose. Lucide icons carry viewBox="0 0 24 24", so CSS stroke-width
+   * resolves in user units, not px: a literal 1px paints 1 * (16/24) = 0.67 device px at
+   * the 16px default size and reads blurry. 1.5 user units is the 1px the design asks for.
+   *
+   * Which is also why three kinds of SVG keep a weight of their own rather than reading
+   * this: the hand-written icons under src/renderer/src/features draw on a 16- or 20-unit
+   * viewBox, so the same number paints a different device weight there; the onboarding
+   * computer is a drawing, not an icon; and the checkbox tick would come out at 0.75
+   * device px inside its 12px box. Every lucide icon in the renderer reads this token. */
+  --bob-icon-stroke: 1.5;
+  --bob-icon-xs: 12px;
+  --bob-icon-sm: 14px;
+  --bob-icon-md: 16px;
+  --bob-icon-lg: 20px;
+  --bob-chat-entry-gap: var(--bob-space-3);
+  --bob-chat-marker-gap: var(--bob-space-1);
+  --bob-chat-marker-height: var(--bob-control-xs);
+  --bob-chat-marker-avatar: var(--bob-icon-md);
+  /* Keep container-relative calculations at the CSS use site for native consumers. */
+  --bob-chat-marker-width: 680px;
+  --bob-duration-fast: 120ms;
+  --bob-duration-hover: 0ms;
+  --bob-duration-dialog: 100ms;
+  --bob-duration-normal: 160ms;
+  --bob-duration-slow: 200ms;
+  --bob-duration-overlay: 240ms;
+  --bob-duration-toast-enter: 340ms;
+  --bob-duration-toast-exit: 220ms;
+  --bob-duration-island-content: 340ms;
+  --bob-duration-island-content-exit: 220ms;
+  --bob-agent-activity-exit-delay: 500ms;
+  /* A loading indicator waits this long, so a fast answer replaces it before it shows. */
+  --bob-loading-indicator-delay: 400ms;
+  --bob-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --bob-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --bob-shadow-raised: 0 12px 32px var(--bob-shadow-popover-ambient);
+  --bob-shadow-card: 0 0 0 transparent;
+  --bob-shadow-overlay: 0 12px 32px rgba(0, 0, 0, 0.6);
+  --bob-focus-ring: 0 0 0 1px var(--bob-border-focus);
+  --bob-layer-dropdown: 40;
+  --bob-layer-popover: 60;
+  --bob-layer-dialog: 100;
+  /* A dialog that opens other surfaces over itself, such as the marketplace. Its own menus take
+     one above it, and a dialog it opens takes two, so the order is stated once here instead of
+     being re-derived by arithmetic at each surface - where a tie is decided by insertion order,
+     and the surface opened last wins only by accident. */
+  --bob-layer-dialog-host: calc(var(--bob-layer-dialog) + var(--bob-layer-popover));
+  --bob-layer-toast: 120;
+  /* A tooltip names the control under the pointer. It shows above every other layer, also above
+     a dialog or a menu that holds the control. */
+  --bob-layer-tooltip: 240;
+}
+
+/* Every surface that paints a provider - the picker mark, the update toast and its progress bar,
+   the usage icon, the account picker, the landing page - used to carry one rule per provider per
+   surface, so a new provider meant ten new rules across five stylesheets before it had a colour.
+   These rules are the only place a provider id meets its colour; a surface writes
+   `data-provider` on the element and reads `--bob-provider-current`. A provider with no rule
+   here falls back to the current text colour rather than to another provider's brand. */
+[data-provider] {
+  --bob-provider-current: currentcolor;
+}
+
+[data-provider="codex"] {
+  --bob-provider-current: var(--bob-provider-codex);
+}
+
+[data-provider="claude"] {
+  --bob-provider-current: var(--bob-provider-claude);
+}
+
+[data-provider="grok"] {
+  --bob-provider-current: var(--bob-provider-grok);
+}
+
+[data-provider="opencode"] {
+  --bob-provider-current: var(--bob-text-primary);
+}
+
+[data-provider="antigravity"] {
+  --bob-provider-current: var(--bob-provider-antigravity);
+}
+
+[data-provider="cursor"] {
+  --bob-provider-current: var(--bob-text-primary);
+}
+
+[data-provider="cline"] {
+  --bob-provider-current: var(--bob-text-primary);
+}
+
+[data-provider="acp"] {
+  --bob-provider-current: var(--bob-text-primary);
+}

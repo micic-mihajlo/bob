@@ -1,0 +1,13 @@
+/* The quick actions of the Bob chat: above the composer, and centered in its empty state. */
+.bob-quick-actions {
+  padding: 0 var(--bob-space-2) var(--bob-space-2);
+}
+
+.bob-quick-actions-centered {
+  justify-content: center;
+  padding: var(--bob-space-4) 0 0;
+}
+
+form.bob-quick-actions {
+  max-width: 600px;
+}

@@ -1,0 +1,7 @@
+/* The fonts come from next/font in the root layout; the tokens name them through its variables. */
+:root {
+  --bob-font: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --bob-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --bob-font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --bob-font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
