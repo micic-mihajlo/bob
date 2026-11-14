@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { PULL_REQUEST_STATE_LABEL, pullRequestState, type PullRequestArtifact } from "../pull-requests";
-import type { Approval } from "@/lib/types";
+import { PULL_REQUEST_STATE_LABEL, previewStatus, pullRequestState, type PullRequestArtifact } from "../pull-requests";
+import type { Approval, PreviewDeployment, PullRequestData } from "@/lib/types";
 
 const pullRequest = (status: PullRequestArtifact["status"], merged = false): PullRequestArtifact => ({
   id: "pr-1",
@@ -61,5 +61,34 @@ describe("pull request state", () => {
 
   it("is closed when closed", () => {
     expect(pullRequestState(pullRequest("closed"), [approval("pending")])).toBe("closed");
+  });
+});
+
+describe("previewStatus", () => {
+  const data = (preview?: PreviewDeployment): PullRequestData => ({ number: 1, branch: "inv-1/csv", headSha: "abc1234", files: [], patch: "", merged: false, preview });
+  const deployment = (overrides: Partial<PreviewDeployment> = {}): PreviewDeployment => ({
+    url: "https://invoices-abc.vercel.app",
+    state: "ready",
+    source: "vercel",
+    headSha: "abc1234",
+    ...overrides,
+  });
+
+  it("is nothing without a preview", () => {
+    expect(previewStatus(data())).toBeNull();
+  });
+
+  it("reads the check once a review ran it", () => {
+    expect(previewStatus(data(deployment({ check: { ok: true, status: 200, detail: "", at: "" } })))).toEqual({ label: "Check passed (200)", tone: "passed" });
+    expect(previewStatus(data(deployment({ check: { ok: false, status: null, detail: "timeout", at: "" } })))).toEqual({ label: "Check failed", tone: "failed" });
+  });
+
+  it("calls a preview of another head stale, whatever its check said", () => {
+    expect(previewStatus(data(deployment({ headSha: "0ld0000", check: { ok: true, status: 200, detail: "", at: "" } })))?.tone).toBe("stale");
+  });
+
+  it("reads the deployment state before any check", () => {
+    expect(previewStatus(data(deployment({ state: "building", url: null })))?.label).toBe("Building");
+    expect(previewStatus(data(deployment({ state: "error" })))?.tone).toBe("failed");
   });
 });

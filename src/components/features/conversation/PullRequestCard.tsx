@@ -10,6 +10,7 @@ import {
   isPullRequest,
   isReview,
   PULL_REQUEST_STATE_LABEL,
+  previewStatus,
   pullRequestState,
   reviewsOf,
   VERDICT_LABEL,
@@ -51,6 +52,8 @@ function PullRequestBody({ artifact }: { artifact: PullRequestArtifact }) {
   const totals = changeTotals(artifact.pullRequest.files);
   const review = reviewsOf(snapshot.artifacts, artifact.id)[0];
   const reviewer = review ? agentsById.get(review.agentId) : undefined;
+  const { github, githubError, preview } = artifact.pullRequest;
+  const previewLine = previewStatus(artifact.pullRequest);
   return (
     <div className="approval-card-content">
       <div className="approval-detail-row">
@@ -67,6 +70,39 @@ function PullRequestBody({ artifact }: { artifact: PullRequestArtifact }) {
             {review.review.findings.length > 0
               ? ` · ${review.review.findings.length} ${review.review.findings.length === 1 ? "finding" : "findings"}`
               : ""}
+          </strong>
+        </div>
+      ) : null}
+      {github || githubError ? (
+        <div className="approval-detail-row">
+          <span className="approval-detail-label">GitHub</span>
+          {github ? (
+            <strong>
+              <a className="pull-request-link" href={github.url} target="_blank" rel="noreferrer">
+                {github.repo}#{github.number}
+              </a>
+              {github.error ? <span className="pull-request-note" data-tone="failed">{github.error}</span> : null}
+            </strong>
+          ) : (
+            <strong className="pull-request-note" data-tone="failed">
+              Not published: {githubError}
+            </strong>
+          )}
+        </div>
+      ) : null}
+      {preview && previewLine ? (
+        <div className="approval-detail-row">
+          <span className="approval-detail-label">Preview</span>
+          <strong>
+            {preview.url ? (
+              <a className="pull-request-link" href={preview.url} target="_blank" rel="noreferrer">
+                {preview.url.replace(/^https?:\/\//, "")}
+              </a>
+            ) : null}
+            <span className="pull-request-note" data-tone={previewLine.tone}>
+              {previewLine.tone === "passed" ? <Check aria-hidden="true" /> : previewLine.tone === "failed" ? <X aria-hidden="true" /> : null}
+              {previewLine.label}
+            </span>
           </strong>
         </div>
       ) : null}
