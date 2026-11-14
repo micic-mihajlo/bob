@@ -42,6 +42,9 @@ describe("review and fix loop", { timeout: GIT_TIMEOUT }, () => {
     const changes = await callTool("record_review", { pullRequestId: "#1", verdict: "request_changes", findings: [finding] }, as("inv-2"));
     expect(changes.wake).toContain("inv-1");
     expect(inbox("inv-1").at(-1)?.text).toMatch(/fix round 1 of 2[\s\S]*src\/csv\.ts:3[\s\S]*Quote fields/);
+    expect(inbox("inv-1").at(-1)?.text).toMatch(/\(id art_\w+\), fix round 1 of 2:\n/);
+    const sentNotice = getState().threads.bob.findLast((i) => i.kind === "notice" && i.text.startsWith("Sent to"));
+    expect(sentNotice?.kind === "notice" && sentNotice.text).toMatch(/^Sent to INV-1 automatically: Review by INV-2 requests changes on pull request #1, fix round 1 of 2$/);
     expect(String((await callTool("request_approval", { title: "Merge #1", detail: "x", pullRequestId: "#1" }, asBob)).result.error)).toMatch(/requests changes/);
 
     await callTool("write_files", { files: [{ path: "src/csv.ts", content: "export const fixed = true;\n" }] }, as("inv-1"));

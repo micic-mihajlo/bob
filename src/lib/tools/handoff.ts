@@ -44,7 +44,8 @@ function sendForCaptain(to: AgentId, text: string, expectsReply: boolean, reques
   if (!captain || !target || isClosed(target)) return null;
   const sent = send({ from: { kind: "agent", agentId: captain.id }, to: [to], text, expectsReply, replyTo: null, causedBy: null, requestId, automatic: true });
   if (!sent.ok) return null;
-  update((x) => addNotice(x, captain.id, "info", `Sent to ${target.name} automatically: ${text.split("\n")[0]}`));
+  const summary = text.split("\n")[0].replace(/ \(id [^)]*\)/g, "").replace(/:\s*$/, "");
+  update((x) => addNotice(x, captain.id, "info", `Sent to ${target.name} automatically: ${summary}`));
   return to;
 }
 
