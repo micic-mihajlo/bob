@@ -1,7 +1,7 @@
 "use client";
 
 import { ScanSearch } from "lucide-react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { Badge } from "@/components/ui/Badge";
 import type { BadgeVariant } from "@/components/ui/classes";
 import { Card } from "@/components/ui/Surface";

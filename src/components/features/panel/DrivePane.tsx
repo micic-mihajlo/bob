@@ -2,7 +2,7 @@
 
 import { Folder, X } from "lucide-react";
 import { useState } from "react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { FileList } from "@/components/features/files/FileList";
 import { FilePreviewPanel, FileSourceText } from "@/components/features/files/FilePreviewPanel";
 import { MarkdownFilePreview } from "@/components/features/files/MarkdownFilePreview";

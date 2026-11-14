@@ -5,21 +5,18 @@ import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import type { Agent } from "@/lib/types";
 
-/** The reference's quick actions, as Bob's captain answers them. */
+/** The captain's quick actions, in the reference's chips. */
 export const QUICK_ACTIONS = [
-  {
-    label: "Plan my day",
-    message: "Plan my day: pick my tasks for today from my roadmap, small enough for the time I have, and tell me which one to do first.",
-  },
-  { label: "I did it", message: "I did it: I finished my current task. Mark it done and tell me what's next." },
+  { label: "What is everyone doing?", message: "What is everyone doing?" },
+  { label: "Ship it", message: "Ship it" },
 ] as const;
 
-export const STUCK_LABEL = "I'm stuck";
-export const STUCK_PREFILL = "I'm stuck on: ";
+export const STUCK_LABEL = "Change of plan";
+export const STUCK_PREFILL = "Change of plan: ";
 
 /**
  * Chips for a person who does not know what to type: each sends a whole message to the captain,
- * except "I'm stuck", which starts the sentence in the composer.
+ * except "Change of plan", which starts the sentence in the composer.
  */
 export function QuickActions({
   className,

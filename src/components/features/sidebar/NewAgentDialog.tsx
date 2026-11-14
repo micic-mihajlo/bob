@@ -2,7 +2,7 @@
 
 import { Bot } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createAgent } from "@/lib/client/api";

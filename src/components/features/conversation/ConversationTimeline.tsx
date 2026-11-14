@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
 import { dayMarkerLabel } from "@/lib/client/chat-time";
 import { buildConversationRows, type ConversationRow } from "@/lib/client/conversation-rows";

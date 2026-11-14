@@ -3,7 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import type { CSSProperties } from "react";
 import { AgentAvatar } from "@/components/features/agents/AgentAvatar";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import { formatChatTimestamp } from "@/lib/client/chat-time";

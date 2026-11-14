@@ -2,7 +2,7 @@
 
 import { ArrowUp, LoaderCircle, Plus } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import { interruptAgent, sendMessage, type SendMode } from "@/lib/client/api";

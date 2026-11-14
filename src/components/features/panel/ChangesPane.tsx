@@ -2,7 +2,7 @@
 
 import { FileDiff, GitBranch, GitPullRequest, HelpCircle, TriangleAlert } from "lucide-react";
 import { useCallback } from "react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { CodeBlock, type CodeLine } from "@/components/features/files/CodeBlock";
 import { FileList } from "@/components/features/files/FileList";
 import { FilePreviewPanel } from "@/components/features/files/FilePreviewPanel";

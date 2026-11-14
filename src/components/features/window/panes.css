@@ -1,7 +1,4 @@
-/*
- * Lab only, until the window shell carries them: the reference's pane column rules, copied from its
- * app-loading-screen.css and usage.css. Without them the conversation grows past the window.
- */
+/* The pane column: the panes fill the frame beside the sidebar and scroll inside it. */
 .server-connection-content {
   position: relative;
   min-height: 0;

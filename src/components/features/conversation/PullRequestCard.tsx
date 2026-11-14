@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronRight, GitMerge, GitPullRequest, LoaderCircle, MessageSquareText, X } from "lucide-react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import { displayName } from "@/lib/client/crew";

@@ -2,7 +2,7 @@
 
 import { ChevronRight, CircleAlert, CircleCheck, Clock, LoaderCircle, Minus, Users, X } from "lucide-react";
 import { useState } from "react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { AgentAvatar } from "@/components/features/agents/AgentAvatar";
 import { agentMood } from "@/components/features/agents/agent-mood";
 import { Badge } from "@/components/ui/Badge";

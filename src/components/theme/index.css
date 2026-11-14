@@ -16,4 +16,5 @@
 @import "../features/files/files.css";
 @import "../features/window/page-rail.css";
 @import "../features/window/window.css";
+@import "../features/window/panes.css";
 @import "./reference-chip.css";

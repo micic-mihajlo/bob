@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { FilePreviewPanel, FileSourceText, FolderEntries } from "@/components/features/files/FilePreviewPanel";
 import { MarkdownFilePreview } from "@/components/features/files/MarkdownFilePreview";
 import { Spinner } from "@/components/ui/Surface";

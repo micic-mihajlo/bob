@@ -41,7 +41,7 @@ describe("sidebarList", () => {
     const list = sidebarList(
       snapshot([captain, build, review], {
         activity: { "inv-1": { state: "working", since: "", step: null } },
-        threadStatus: { "inv-1": "working", "inv-2": "closed" },
+        threadState: { "inv-1": { status: "working", needsYou: false, closed: false }, "inv-2": { status: "idle", needsYou: false, closed: true } },
       }),
     );
     expect(list.sections.map((section) => [section.id, section.name, section.agents.map((a) => a.id)])).toEqual([
@@ -56,7 +56,7 @@ describe("sidebarList", () => {
   it("moves a thread that needs the person into Needs you only", () => {
     const list = sidebarList(
       snapshot([captain, build], {
-        threadStatus: { "inv-1": "needs_you" },
+        threadState: { "inv-1": { status: "waiting", needsYou: true, closed: false } },
         needsYou: [
           { id: "n1", agentId: "bob", kind: "approval", title: "Merge #1", detail: "Approve the merge", approvalId: "a1", at: "" },
         ],
@@ -70,7 +70,7 @@ describe("sidebarList", () => {
   it("marks unread replies and failures", () => {
     const list = sidebarList(
       snapshot([captain, build], {
-        threadStatus: { "inv-1": "failed" },
+        threadState: { "inv-1": { status: "failed", needsYou: false, closed: false } },
         threads: { bob: { agentId: "bob", items: [], waitingOn: [], queued: 0, unread: 2 } },
       }),
     );

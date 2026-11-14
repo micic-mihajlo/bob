@@ -2,7 +2,7 @@
 
 import "./roadmap-panel.css";
 import { Check, Map as MapIcon } from "lucide-react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { PaneFrame, PaneHeader } from "@/components/features/panel/PaneFrame";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Progress } from "@/components/ui/Progress";
