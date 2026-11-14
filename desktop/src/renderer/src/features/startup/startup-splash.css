@@ -1,7 +1,6 @@
 /*
- * The desktop startup splash, the landing site's loading screen: a rotating beam finds the glass Eye
- * of Ra (`glass-mark.ts`) on the Bob background. When the app is ready and the mark is revealed, it
- * fades out.
+ * The desktop startup splash: Bob the builder, the name and one line on the app's own background, and
+ * the Blobs popping in one by one. It is short and quiet, and it fades as soon as the app is ready.
  */
 
 .startup-splash {
@@ -10,31 +9,85 @@
   inset: 0;
   display: grid;
   place-items: center;
-  background: var(--bob-bg);
-  color: var(--bob-ink);
+  background: var(--bob-bg-canvas);
+  color: var(--bob-text-primary);
   -webkit-app-region: drag;
 }
 
-.startup-splash-mark {
-  width: min(56vw, 420px);
+.startup-splash-stage {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: var(--bob-space-2);
 }
 
-.startup-splash-mark > canvas {
-  display: block;
-  width: 100%;
+.startup-splash-bob {
+  width: 96px;
+  height: 96px;
+  margin-bottom: var(--bob-space-2);
+  image-rendering: pixelated;
 }
 
-.startup-splash-mark > svg {
+.startup-splash-bob > svg,
+.startup-splash-blob > svg {
   display: block;
   width: 100%;
-  padding: 14%;
+  height: 100%;
+}
+
+.startup-splash-title {
+  margin: 0;
+  font-family: var(--bob-font-sans);
+  font-size: 20px;
+  font-weight: var(--bob-weight-semibold);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.startup-splash-line {
+  margin: 0;
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-md);
+  line-height: 1.4;
+}
+
+.startup-splash-crew {
+  display: flex;
+  gap: var(--bob-space-2);
+  margin-top: var(--bob-space-4);
+}
+
+.startup-splash-blob {
+  width: 28px;
+  height: 28px;
+  opacity: 0;
+  animation: startup-splash-pop 220ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  animation-delay: calc(240ms + var(--startup-splash-index) * 90ms);
+}
+
+@keyframes startup-splash-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .startup-splash-blob {
+    opacity: 1;
+    animation: none;
+  }
 }
 
 /* The fade also runs with reduced motion: its animationend removes the splash. */
 .startup-splash[data-phase="exit"] {
   pointer-events: none;
   -webkit-app-region: no-drag;
-  animation: startup-splash-exit var(--bob-duration-overlay) var(--bob-ease-in-out) forwards;
+  animation: startup-splash-exit 200ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
 
 @keyframes startup-splash-exit {
