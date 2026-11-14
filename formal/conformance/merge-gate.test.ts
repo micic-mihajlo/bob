@@ -14,7 +14,8 @@ import { pick, SEEDS, seeded } from "./random";
 const GIT_TIMEOUT = 60_000;
 
 /** BobFormal.MergeGate.gateOpen */
-const gateOpen = (s: State, prId: string) => s.approvals.some((a) => a.pullRequestId === prId && a.status === "approved");
+const gateOpen = (s: State, pr: PullRequestArtifact) =>
+  s.approvals.some((a) => a.pullRequestId === pr.id && a.status === "approved" && a.headSha === pr.pullRequest.headSha);
 
 function fakePullRequest(n: number): PullRequestArtifact {
   return {
@@ -60,9 +61,9 @@ describe("merge gate conforms to BobFormal.MergeGate", () => {
           await settle();
         }
       }
-      if (choice === 3 && !gateOpen(s, pr.id)) {
+      if (choice === 3 && !gateOpen(s, pr)) {
         const out = await mergePullRequestTool({ pullRequestId: pr.id });
-        expect(String(out.result.error)).toMatch(/approval first|not decided/);
+        expect(String(out.result.error)).toMatch(/approval first|not decided|changed after/);
         expect(getState().artifacts.find((a) => a.id === pr.id)?.pullRequest?.merged).toBe(false);
       }
       const now = getState();
@@ -71,7 +72,7 @@ describe("merge gate conforms to BobFormal.MergeGate", () => {
   });
 
   it(
-    "known gap (approval_does_not_pin_head): a head pushed after the person was asked is what merges",
+    "head_swap_refused: a head pushed after the person was asked does not merge until they approve it",
     { timeout: GIT_TIMEOUT },
     async () => {
       freshTeam();
@@ -82,7 +83,7 @@ describe("merge gate conforms to BobFormal.MergeGate", () => {
       const approval = s.approvals.find((a) => a.status === "pending");
       const build = s.agents.find((a) => a.kind === "crew" && a.crewRole === "build");
       if (!pr || !approval || !build) throw new Error("the scripted flow did not reach the approval");
-      const shownHead = pr.pullRequest.headSha;
+      expect(approval.headSha).toBe(pr.pullRequest.headSha);
 
       const asBuild = { agentId: build.id, turnId: "turn_formal", requestId: pr.requestId, causedBy: pr.messageId };
       await callTool("write_file", { path: "src/unreviewed.ts", content: "export const unreviewed = true;\n" }, asBuild);
@@ -93,10 +94,19 @@ describe("merge gate conforms to BobFormal.MergeGate", () => {
 
       expect(decideApproval(approval.id, "approved").ok).toBe(true);
       await settle();
-      const merged = getState().artifacts.find((a): a is PullRequestArtifact => a.id === pr.id);
-      expect(merged?.pullRequest.merged).toBe(true);
-      expect(merged?.pullRequest.headSha).not.toBe(shownHead);
-      expect(merged?.pullRequest.files.map((f) => f.path)).toContain("src/unreviewed.ts");
+      const moved = () => getState().artifacts.find((a): a is PullRequestArtifact => a.id === pr.id);
+      expect(moved()?.pullRequest.merged).toBe(false);
+      const refused = await mergePullRequestTool({ pullRequestId: pr.id });
+      expect(String(refused.result.error)).toMatch(/changed after the person approved it/);
+
+      const asBob = { agentId: "bob", turnId: "turn_formal", requestId: pr.requestId, causedBy: pr.messageId };
+      const asked = await callTool("request_approval", { title: `Merge #${pr.pullRequest.number} again`, detail: "Adds src/unreviewed.ts.", pullRequestId: pr.id }, asBob);
+      const again = getState().approvals.find((x) => x.id === asked.result.approvalId);
+      expect(again?.headSha).toBe(moved()?.pullRequest.headSha);
+      expect(decideApproval(String(asked.result.approvalId), "approved").ok).toBe(true);
+      await settle();
+      expect((await mergePullRequestTool({ pullRequestId: pr.id })).result.merged).toBe(true);
+      expect(moved()?.pullRequest.merged).toBe(true);
     },
   );
 });

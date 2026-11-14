@@ -4,8 +4,8 @@
       "name": "BobFormal.MergeGate.merge_needs_approval",
       "rule": "Merge gate",
       "kind": "proof",
-      "mirrors": "mergePullRequestTool, approvalRefusal (src/lib/tools/pull-requests.ts)",
-      "statement": "No pull request is merged unless an approval for that exact pull request is approved."
+      "mirrors": "mergePullRequestTool, approvalRefusal (src/lib/tools/pull-requests.ts), requestApproval (src/lib/tools/work.ts)",
+      "statement": "No pull request is merged unless an approval for that exact pull request, given at the exact head that merged, is approved."
     },
     {
       "name": "BobFormal.MergeGate.approved_by_person",
@@ -22,11 +22,11 @@
       "statement": "Every merged pull request has an approval for it that a person approved somewhere in the history."
     },
     {
-      "name": "BobFormal.MergeGate.approval_does_not_pin_head",
+      "name": "BobFormal.MergeGate.head_swap_refused",
       "rule": "Merge gate",
-      "kind": "gap",
+      "kind": "proof",
       "mirrors": "approvalRefusal, upsertPullRequest (src/lib/tools/pull-requests.ts)",
-      "statement": "Known gap: the approval is not tied to a head, so commits pushed after the person was asked are what gets merged."
+      "statement": "If the build thread pushes new commits after the person approved, the merge is refused until the person approves the new head."
     },
     {
       "name": "BobFormal.Mailbox.first_sends_within_budget",

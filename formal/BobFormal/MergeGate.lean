@@ -13,8 +13,8 @@ What each definition mirrors:
 - `Ev.decide`: `decideApproval` in `src/lib/actions.ts`, reached only from the person's
   route `src/app/api/approvals/[id]/route.ts`. No agent tool calls it.
 - `Ev.merge`: `mergePullRequestTool` with `approvalRefusal` and `markMerged`.
-- `Approval.headShown` is a ghost field: the head the pull request had when the person was asked.
-  Bob does not store it; the model keeps it only to state the head property.
+- `Approval.headSha`: `Approval.headSha` in `src/lib/types.ts`, the head the pull request had when
+  `requestApproval` asked the person.
 -/
 namespace BobFormal.MergeGate
 
@@ -34,7 +34,7 @@ structure Approval where
   id : Nat
   pr : Nat
   status : Status
-  headShown : Nat
+  headSha : Nat
   deriving DecidableEq, Repr
 
 structure St where
@@ -56,9 +56,10 @@ def init : St := ⟨[], [], []⟩
 
 def findPR (s : St) (p : Nat) : Option PR := s.prs.find? (·.id == p)
 
-/-- Mirrors `approvalRefusal` returning null: some approval for this exact pull request is approved. -/
-def gateOpen (s : St) (p : Nat) : Bool :=
-  s.approvals.any (fun a => a.pr == p && a.status == .approved)
+/-- Mirrors `approvalRefusal` returning null: an approval for this exact pull request at this exact
+head is approved. -/
+def gateOpen (s : St) (p head : Nat) : Bool :=
+  s.approvals.any (fun a => a.pr == p && a.status == .approved && a.headSha == head)
 
 def apply (s : St) : Ev → St
   | .openPR p h =>
@@ -82,7 +83,7 @@ def apply (s : St) : Ev → St
     match findPR s p with
     | none => s
     | some pr =>
-      if !gateOpen s p then s
+      if !gateOpen s p pr.head then s
       else if pr.merged then s
       else { s with
         prs := s.prs.map (fun x => if x.id == p then { x with merged := true } else x),
@@ -95,38 +96,39 @@ inductive Reach : List Ev → St → Prop where
 
 /-- Approved approvals stay approved: `decideApproval` only decides pending ones. -/
 theorem approved_stays (s : St) (e : Ev) (a : Approval) (ha : a ∈ s.approvals) (hs : a.status = .approved) :
-    ∃ b ∈ (apply s e).approvals, b.id = a.id ∧ b.pr = a.pr ∧ b.status = .approved := by
+    ∃ b ∈ (apply s e).approvals, b.id = a.id ∧ b.pr = a.pr ∧ b.headSha = a.headSha ∧ b.status = .approved := by
   cases e with
   | openPR p h =>
     simp only [apply]
     split
-    · exact ⟨a, ha, rfl, rfl, hs⟩
-    · split <;> exact ⟨a, ha, rfl, rfl, hs⟩
-  | review => exact ⟨a, ha, rfl, rfl, hs⟩
+    · exact ⟨a, ha, rfl, rfl, rfl, hs⟩
+    · split <;> exact ⟨a, ha, rfl, rfl, rfl, hs⟩
+  | review => exact ⟨a, ha, rfl, rfl, rfl, hs⟩
   | requestApproval x p =>
     simp only [apply]
     split
-    · exact ⟨a, ha, rfl, rfl, hs⟩
+    · exact ⟨a, ha, rfl, rfl, rfl, hs⟩
     · split
-      · exact ⟨a, ha, rfl, rfl, hs⟩
-      · exact ⟨a, List.mem_cons_of_mem _ ha, rfl, rfl, hs⟩
+      · exact ⟨a, ha, rfl, rfl, rfl, hs⟩
+      · exact ⟨a, List.mem_cons_of_mem _ ha, rfl, rfl, rfl, hs⟩
   | decide x yes =>
-    refine ⟨a, ?_, rfl, rfl, hs⟩
+    refine ⟨a, ?_, rfl, rfl, rfl, hs⟩
     simp only [apply, List.mem_map]
     exact ⟨a, ha, by simp [hs]⟩
   | merge p =>
     simp only [apply]
     split
-    · exact ⟨a, ha, rfl, rfl, hs⟩
+    · exact ⟨a, ha, rfl, rfl, rfl, hs⟩
     · split
-      · exact ⟨a, ha, rfl, rfl, hs⟩
+      · exact ⟨a, ha, rfl, rfl, rfl, hs⟩
       · split
-        · exact ⟨a, ha, rfl, rfl, hs⟩
-        · exact ⟨a, ha, rfl, rfl, hs⟩
+        · exact ⟨a, ha, rfl, rfl, rfl, hs⟩
+        · exact ⟨a, ha, rfl, rfl, rfl, hs⟩
 
-/-- The gate invariant: every merge so far has an approved approval for that exact pull request. -/
+/-- The gate invariant: every merge so far has an approved approval for that exact pull request at
+the head that merged. -/
 def GateInv (s : St) : Prop :=
-  ∀ m ∈ s.merges, ∃ a ∈ s.approvals, a.pr = m.1 ∧ a.status = .approved
+  ∀ m ∈ s.merges, ∃ a ∈ s.approvals, a.pr = m.1 ∧ a.headSha = m.2 ∧ a.status = .approved
 
 theorem merge_approvals (s : St) (p : Nat) : (apply s (.merge p)).approvals = s.approvals := by
   simp only [apply]
@@ -154,18 +156,18 @@ theorem merges_other (s : St) (e : Ev) (he : ∀ p, e ≠ .merge p) : (apply s e
 
 theorem gate_step (s : St) (e : Ev) (h : GateInv s) : GateInv (apply s e) := by
   intro m hm
-  have keep : m ∈ s.merges → ∃ a ∈ (apply s e).approvals, a.pr = m.1 ∧ a.status = .approved := by
+  have keep : m ∈ s.merges → ∃ a ∈ (apply s e).approvals, a.pr = m.1 ∧ a.headSha = m.2 ∧ a.status = .approved := by
     intro hm'
-    obtain ⟨a, ha, hp, hs⟩ := h m hm'
-    obtain ⟨b, hb, _, hbp, hbs⟩ := approved_stays s e a ha hs
-    exact ⟨b, hb, hbp.trans hp, hbs⟩
+    obtain ⟨a, ha, hp, hh, hs⟩ := h m hm'
+    obtain ⟨b, hb, _, hbp, hbh, hbs⟩ := approved_stays s e a ha hs
+    exact ⟨b, hb, hbp.trans hp, hbh.trans hh, hbs⟩
   cases e with
   | merge p =>
     rw [merge_approvals]
     cases hf : findPR s p with
     | none => simp only [apply, hf] at hm; exact h m hm
     | some pr =>
-      by_cases hg : gateOpen s p = true
+      by_cases hg : gateOpen s p pr.head = true
       · by_cases hmg : pr.merged = true
         · simp only [apply, hf, hg, hmg] at hm; exact h m hm
         · simp only [apply, hf, hg, hmg] at hm
@@ -173,8 +175,8 @@ theorem gate_step (s : St) (e : Ev) (h : GateInv s) : GateInv (apply s e) := by
           rcases hm with hm | rfl
           · exact h m hm
           · simp only [gateOpen, List.any_eq_true, Bool.and_eq_true, beq_iff_eq] at hg
-            obtain ⟨a, ha, hp, hs⟩ := hg
-            exact ⟨a, ha, hp, hs⟩
+            obtain ⟨a, ha, ⟨hp, hs⟩, hh⟩ := hg
+            exact ⟨a, ha, hp, hh, hs⟩
       · simp only [apply, hf, hg] at hm; simp at hm; exact h m hm
   | openPR p h' => exact keep (by rwa [merges_other _ _ (by intro q; simp)] at hm)
   | review => exact keep hm
@@ -182,7 +184,7 @@ theorem gate_step (s : St) (e : Ev) (h : GateInv s) : GateInv (apply s e) := by
   | decide x yes => exact keep hm
 
 /-- **Merge gate safety.** In every reachable state, each pull request that was merged has an
-approval for that exact pull request that is approved. -/
+approved approval for that exact pull request, given at the exact head that merged. -/
 theorem merge_needs_approval (evs : List Ev) (s : St) (h : Reach evs s) : GateInv s := by
   induction h with
   | init => intro m hm; simp [init] at hm
@@ -242,10 +244,10 @@ theorem approved_by_person (evs : List Ev) (s : St) (h : Reach evs s) : PersonIn
 theorem merge_traces_to_person (evs : List Ev) (s : St) (h : Reach evs s) :
     ∀ m ∈ s.merges, ∃ a ∈ s.approvals, a.pr = m.1 ∧ Ev.decide a.id true ∈ evs := by
   intro m hm
-  obtain ⟨a, ha, hp, hs⟩ := merge_needs_approval evs s h m hm
+  obtain ⟨a, ha, hp, _, hs⟩ := merge_needs_approval evs s h m hm
   exact ⟨a, ha, hp, approved_by_person evs s h a ha hs⟩
 
-/-! ## Counterexample: the approval does not pin the head -/
+/-! ## The head swap that used to merge unseen commits -/
 
 /-- Open #1 at head 10, ask, the person approves, the build thread re-opens #1 at head 11, merge. -/
 def headSwap : List Ev :=
@@ -264,11 +266,9 @@ theorem reach_append (evs pre : List Ev) (s : St) (h : Reach pre s) :
 theorem reach_foldl (evs : List Ev) : Reach evs (runEvs evs) := by
   simpa [runEvs] using reach_append evs [] init Reach.init
 
-/-- **Known gap.** A reachable history merges head 11 of #1 although the only approval for #1 was
-shown head 10. `approvalRefusal` checks the pull request id, not its head, and
-`upsertPullRequest` moves the head of an approved pull request without resetting its approval. -/
-theorem approval_does_not_pin_head :
-    ∃ evs s, Reach evs s ∧ (1, 11) ∈ s.merges ∧ ∀ a ∈ s.approvals, a.pr = 1 → a.headShown ≠ 11 :=
-  ⟨headSwap, runEvs headSwap, reach_foldl headSwap, by decide, by decide⟩
+/-- **The approval pins the head.** Open #1 at head 10, ask, the person approves, the build thread
+re-opens #1 at head 11, merge: the merge is refused, because the approval was given at head 10. -/
+theorem head_swap_refused : (runEvs headSwap).merges = [] ∧ Reach headSwap (runEvs headSwap) :=
+  ⟨by decide, reach_foldl headSwap⟩
 
 end BobFormal.MergeGate

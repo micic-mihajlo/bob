@@ -133,8 +133,12 @@ function markMerged(s: State, pr: PullRequestArtifact): { state: State; value: s
 
 function approvalRefusal(s: State, pr: PullRequestArtifact): string | null {
   const approvals = s.approvals.filter((a) => a.pullRequestId === pr.id);
-  if (approvals.some((a) => a.status === "approved")) return null;
+  const approved = approvals.filter((a) => a.status === "approved");
+  if (approved.some((a) => a.headSha === pr.pullRequest.headSha)) return null;
   const n = `#${pr.pullRequest.number}`;
+  if (approved.length > 0) {
+    return `${n} changed after the person approved it, so that approval no longer covers it. Call request_approval again with pullRequestId "${pr.id}", say what changed, and end your turn.`;
+  }
   if (approvals.some((a) => a.status === "pending")) return `The person has not decided on merging ${n} yet. End your turn and wait for the decision.`;
   return `Merging ${n} needs the person's approval first. Call request_approval with pullRequestId "${pr.id}", tell the person what will be merged, and end your turn.`;
 }

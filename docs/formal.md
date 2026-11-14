@@ -24,7 +24,8 @@ Each Lean file names the TypeScript function every definition mirrors. Refusals 
 
 Mirrors `openPullRequestTool`, `recordReview` and `mergePullRequestTool` in `src/lib/tools/pull-requests.ts`, `requestApproval` in `src/lib/tools/work.ts` and `decideApproval` in `src/lib/actions.ts`.
 
-- `merge_needs_approval`: no pull request is merged unless an approval for that exact pull request is approved.
+- `merge_needs_approval`: no pull request is merged unless an approval for that exact pull request, given at the exact head that merged, is approved.
+- `head_swap_refused`: if the build thread pushes new commits after the person approved, the merge is refused until the person approves the new head.
 - `approved_by_person`: an approval only becomes approved through the person's decision; no agent call can approve one.
 - `merge_traces_to_person`: every merged pull request has an approval for it that a person approved somewhere in the history.
 
@@ -55,12 +56,12 @@ Mirrors `traceWhy` in `src/lib/why.ts`, the person's sends in `src/lib/actions.t
 
 The mailbox itself does not check `causedBy`; the proof relies on every caller passing a message that already exists. The loop conformance test checks that on the real turn loop.
 
-## Known gaps the proofs found
+## Gaps the proofs found
 
-Both are proved as theorems and reproduced against the real code by a conformance test named after the theorem. Neither is fixed here.
+The first versions of these models found two gaps, each proved as a theorem and reproduced against the real code by a test named after it.
 
-- `approval_does_not_pin_head`: the approval records the pull request, not its head. `approvalRefusal` only checks the id, and `upsertPullRequest` moves the head of an approved pull request in place. Counterexample: open #1 at head A, ask, the person approves, the build thread commits and calls `open_pull_request` again (head B), merge: head B is merged without anyone seeing it. A fix would store the head on the approval and refuse a merge when the head moved.
-- `send_message_replies_unbounded`: replies are exempt from the budget, and `route` in `src/lib/tools/messaging.ts` only checks that the replied-to message was sent to you. Two teammates a person added can answer each other's replies forever (the test sends 40 in one request). Captain and crew threads cannot do this, since they reply only through the relay and `report`. A fix would only allow a reply to an unanswered ask, as the relay already does.
+- Fixed: the approval used to record the pull request but not its head, so commits the build thread pushed and re-opened after the person was asked were what merged. Approvals now store `headSha` when `requestApproval` creates them, and `approvalRefusal` refuses the merge once the head has moved, asking for a new approval. `head_swap_refused` and `merge_needs_approval` prove the fixed rule.
+- Open: `send_message_replies_unbounded`: replies are exempt from the budget, and `route` in `src/lib/tools/messaging.ts` only checks that the replied-to message was sent to you. Two teammates a person added can answer each other's replies forever (the test sends 40 in one request). Captain and crew threads cannot do this, since they reply only through the relay and `report`.
 
 ## How the proofs stay tied to the code
 
