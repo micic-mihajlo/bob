@@ -23,9 +23,13 @@ const view = (r: RoadmapResult): ToolOutput =>
     : fail(r.error);
 
 export const setGoalSchema = z.object({
-  title: z.string().min(1),
+  title: z.string().min(1).describe("The intent in a few words, such as CSV export for invoices."),
   why: z.string().optional(),
   deadline: z.string().optional(),
+  user: z.string().optional().describe("Who needs it, by role: an accountant on the invoices page."),
+  behaviour: z.string().optional().describe("What they can do afterwards that they cannot today, and where in the app."),
+  acceptance: z.string().optional().describe("One check a test could assert that proves it works."),
+  assumptions: z.array(z.string()).optional().describe("Gaps you filled yourself, each stated in one line."),
 });
 export const setGoalTool = (i: z.infer<typeof setGoalSchema>) => view(change((r) => setGoal(r, i)));
 

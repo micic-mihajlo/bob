@@ -40,14 +40,42 @@ export interface GoalInput {
   title: string;
   why?: string | null;
   deadline?: string | null;
+  /** Who needs it, by role. */
+  user?: string | null;
+  /** What they can do afterwards, and where. */
+  behaviour?: string | null;
+  /** One check a test could assert. */
+  acceptance?: string | null;
+  /** Gaps the captain filled itself, stated so the person can correct them. */
+  assumptions?: string[];
 }
 
-/** Sets or renames the goal. Stage, today and backlog are kept, so setting it twice loses no progress. */
+const clean = (value: string | null | undefined) => value?.trim() || null;
+
+/**
+ * Records the request's intent. Mid-cycle it renames or sharpens the intent and keeps stage, today and
+ * backlog, so setting it twice loses no progress. From the last stage it starts the next cycle at
+ * Intent: the new intent must pass inspection again, finished work leaves today, and the backlog stays.
+ */
 export function setGoal(r: Roadmap, input: GoalInput, at: string = nowIso()): RoadmapResult {
   const title = input.title.trim();
   if (!title) return fail("A goal needs a title. Call set_goal again with a short title.");
-  const goal = { title, why: input.why ?? null, deadline: input.deadline ?? null };
-  return finalize({ ...r, goal }, at);
+  const nextCycle = r.stage >= STAGES.length;
+  const prior = nextCycle ? null : r.goal;
+  const pick = (key: "why" | "deadline" | "user" | "behaviour" | "acceptance") =>
+    input[key] !== undefined ? clean(input[key]) : (prior?.[key] ?? null);
+  const assumptions = (input.assumptions ?? prior?.assumptions ?? []).map((a) => a.trim()).filter(Boolean);
+  const goal = {
+    title,
+    why: pick("why"),
+    deadline: pick("deadline"),
+    user: pick("user"),
+    behaviour: pick("behaviour"),
+    acceptance: pick("acceptance"),
+    assumptions,
+  };
+  if (!nextCycle) return finalize({ ...r, goal }, at);
+  return finalize({ ...r, goal, stage: 1, today: r.today.filter((w) => w.status !== "done") }, at);
 }
 
 const newOrder = (title: string): WorkOrder => ({

@@ -209,7 +209,17 @@ export interface StageGate {
 }
 
 export interface Roadmap {
-  goal: { title: string; why: string | null; deadline: string | null } | null;
+  goal: {
+    title: string;
+    why: string | null;
+    deadline: string | null;
+    /** The intent's parts the Intent gate inspects: who, what they can do, and the check that proves it. */
+    user?: string | null;
+    behaviour?: string | null;
+    acceptance?: string | null;
+    /** Gaps the captain filled itself, stated so the person can correct them. */
+    assumptions?: string[];
+  } | null;
   /** 1-based index into the stages. */
   stage: number;
   stageTitle: string;

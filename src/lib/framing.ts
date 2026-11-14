@@ -13,19 +13,20 @@ export type Audience = "captain" | "crew" | "standing";
 const RULES: Record<Audience, Record<AgentRule, string>> = {
   standing: {
     request:
-      "Rule: this is a request. Do the work, then answer once with send_message, replyToMessageId set to this message id and expectsReply false. If you end your turn without replying, your final text is sent back as the answer.",
-    info: "Rule: this is information only. Use it in your work and send nothing back.",
+      "Rule: this is a request. Do the work, then answer once with send_message, replyToMessageId set to this message id and expectsReply false, as Status / Result / Evidence. If you end your turn without replying, your final text is sent back as the answer.",
+    info: "Rule: the sender does not want an answer; this passes information to you. Use it if it changes your work. Send no reply, acknowledgement or result for it.",
     reply:
-      "Rule: this answers something you asked. Tell the person or carry on with the work. Message again only with new information or a new request, never to acknowledge.",
+      "Rule: this replies to something you asked. Give the result to the person, starting with who sent it. When it reports blocked work, do not repeat that work: give the blocker and its Unblock line. Message again only with a new request or new information that unblocks it, never to acknowledge.",
   },
   captain: {
     request: "Rule: an agent asks you for something. Decide by your rules, then end your turn; your final text is sent back as the answer.",
-    info: "Rule: this is a report from a crew thread. Decide the next step by your rules. Never message a thread only to acknowledge.",
-    reply: "Rule: this is a crew thread's report on what you asked. Decide the next step by your rules. Never message a thread only to acknowledge.",
+    info: "Rule: this is a report from a crew thread. Check that it answers its brief, then decide the next step by your rules. Never message a thread only to acknowledge.",
+    reply:
+      "Rule: this is a crew thread's report on what you asked. Check that it answers the brief; when a key part is missing, ask one focused follow-up. When it reports blocked work, do not redo it: give it what its Unblock line asks for, or tell the person. Otherwise decide the next step by your rules. Never message a thread only to acknowledge.",
   },
   crew: {
     request:
-      "Rule: this is work from the captain. Do it in your workspace, check it, then call report once at the end. If you end your turn without report, your final text goes to the captain as your report.",
+      "Rule: this is work from the captain. Do it in your workspace, check it, then call report once at the end as Status / Result / Evidence. If you end your turn without report, your final text goes to the captain as your report.",
     info: "Rule: this is information from the captain. Use it in your work; report only if it changes your result.",
     reply: "Rule: this answers something you asked the captain. Carry on with the work.",
   },

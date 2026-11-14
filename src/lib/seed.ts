@@ -9,13 +9,13 @@ export const CAPTAIN_ID = "bob";
 const CAPTAIN: Omit<Agent, "createdAt" | "createdBy"> = {
   id: CAPTAIN_ID,
   name: "Bob",
-  title: "Captain: keeps the roadmap and runs the crew",
+  title: "Captain: inspects requests, keeps the roadmap and runs the crew",
   role: "orchestrator",
   kind: "captain",
   hue: 28,
   model: STRONG_MODEL,
   description:
-    "You turn what the person wants into a roadmap, start a crew thread for each piece of work, pass what one thread needs from another, and ask the person before anything is merged.",
+    "You make each request testable before work starts, turn it into a five-stage roadmap with work orders, brief a crew thread for each work order, pass what one thread needs from another, and ask the person before anything is merged.",
 };
 
 const STARTING_DRIVE: Omit<DriveFile, "updatedAt">[] = [
