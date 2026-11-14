@@ -7,6 +7,7 @@ import { buttonClass, cx } from "@/components/ui/classes";
 import { sidebarList, type SidebarSectionModel, type SidebarAgentState } from "@/lib/client/sidebar-rows";
 import type { Agent, AgentId } from "@/lib/types";
 import { NewAgentDialog } from "./NewAgentDialog";
+import { ProjectMenu } from "./ProjectMenu";
 import { SidebarAgentRow } from "./SidebarAgentRow";
 import { PlusIcon, SearchIcon } from "./SidebarIcons";
 
@@ -26,17 +27,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
   return (
     <aside id="agent-sidebar" aria-label="Agent navigation" className={cx("sidebar panel-edge", compact && "sidebar-compact")}>
       <div className="window-drag sidebar-topbar">
-        <button
-          type="button"
-          className={buttonClass({ variant: "ghost", size: "sm", className: "sidebar-server-name no-drag" })}
-          data-slot="button"
-          data-variant="ghost"
-          data-size="sm"
-          title={snapshot.project.repo ?? snapshot.project.name}
-          aria-label={`Project ${snapshot.project.name}`}
-        >
-          <span className="sidebar-server-name-label">{snapshot.project.name}</span>
-        </button>
+        <ProjectMenu />
         <div className="sidebar-topbar-actions">
           <button
             type="button"

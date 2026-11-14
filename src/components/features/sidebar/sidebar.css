@@ -29,3 +29,33 @@
   display: grid;
   gap: var(--bob-space-3);
 }
+
+/* The project menu opens under the project name, as the reference's server menu does. */
+.sidebar-project-menu {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  margin-right: auto;
+}
+
+.sidebar-project-menu > .sidebar-server-name {
+  margin-right: 0;
+}
+
+.sidebar-project-menu-content {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  transform-origin: top left;
+}
+
+.sidebar-project-menu-content > button {
+  width: 100%;
+}
+
+.sidebar-project-menu-error {
+  margin: var(--bob-space-1) var(--ui-menu-inset);
+  color: var(--bob-danger-text);
+  font-size: var(--bob-text-sm);
+}

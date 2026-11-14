@@ -392,5 +392,6 @@ export const API = {
   agentModel: (id: AgentId) => `/api/agents/${id}/model`,
   why: (messageId: MessageId) => `/api/why?messageId=${encodeURIComponent(messageId)}`,
   reset: "/api/reset",
+  projects: "/api/projects",
   verification: "/api/verification",
 } as const;

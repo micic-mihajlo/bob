@@ -1,4 +1,4 @@
-import { API, type AgentId, type MessageId, type WhyHop } from "@/lib/types";
+import { API, type AgentId, type MessageId, type Project, type WhyHop } from "@/lib/types";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -69,4 +69,19 @@ export async function fetchWhy(messageId: MessageId, signal: AbortSignal): Promi
   const payload: unknown = await response.json();
   if (!isRecord(payload) || !Array.isArray(payload.hops)) throw new Error("The trace was not in the expected shape.");
   return payload.hops as WhyHop[];
+}
+
+/** Opens a parked project by name, brings in a repository, or starts one from the template. */
+export function openProject(input: { repo?: string; name?: string }): Promise<ActionResult> {
+  return post(API.projects, input);
+}
+
+export async function listProjects(): Promise<Project[] | null> {
+  try {
+    const response = await fetch(API.projects, { cache: "no-store" });
+    const payload: unknown = await response.json();
+    return isRecord(payload) && Array.isArray(payload.projects) ? (payload.projects as Project[]) : null;
+  } catch {
+    return null;
+  }
 }
