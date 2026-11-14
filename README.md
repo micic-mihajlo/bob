@@ -20,6 +20,14 @@ Without a key the agents decide from a script. The mailbox, the tools, the turn 
 
 To use a live model, create `.env.local` with `AI_GATEWAY_API_KEY` set and restart. The sidebar footer shows which one is active.
 
+```
+AI_GATEWAY_API_KEY=...
+BOB_MODEL_STRONG=moonshotai/kimi-k3.1-pro
+BOB_MODEL_LIGHT=deepseek/deepseek-v4.1-flash
+```
+
+`BOB_MODEL_STRONG` is the captain's model and `BOB_MODEL_LIGHT` is every crew thread's. A Vercel Token Pass key can only call Token Pass models: `moonshotai/kimi-k3.1-pro`, `moonshotai/kimi-k3`, `moonshotai/kimi-k3-fast`, `zai/glm-5.3-fast`, `zai/glm-5.3-flash`, `deepseek/deepseek-v4.1-flash` and `deepseek/deepseek-v4.1-flash-fast`. After changing models, `POST /api/reset` reseeds the team so stored threads pick them up.
+
 ## How it works
 
 | Piece | Where |
