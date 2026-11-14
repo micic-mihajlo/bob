@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/Button";
 import { decideApproval } from "@/lib/client/api";
 import { changeTotals, pullRequestForApproval, reasonWithoutFiles } from "@/lib/client/pull-requests";
 import type { Approval } from "@/lib/types";
-import { proofLine } from "@/lib/verification";
 import { PreviewButton } from "./PreviewButton";
 
 /** An agent asks the person before it acts. Allow and Deny answer it, or Merge and Don't merge for a pull request; a decided card shows the answer. */
@@ -94,7 +93,7 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
         ) : pullRequest?.pullRequest.proof && pullRequest.pullRequest.counts ? (
           <div className="approval-detail-row approval-proof">
             <span className="approval-detail-label">Verification</span>
-            <strong>{proofLine(pullRequest.pullRequest.proof)}</strong>
+            <strong>{pullRequest.pullRequest.proof.status === "running" ? "Lean proof running" : `not proved: ${pullRequest.pullRequest.proof.reason}`}</strong>
             <span className="approval-proof-counts">{pullRequest.pullRequest.counts}</span>
           </div>
         ) : pullRequest?.pullRequest.verification ? (
