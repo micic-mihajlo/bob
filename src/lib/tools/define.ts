@@ -6,6 +6,8 @@ export interface ToolSpec {
   name: string;
   description: string;
   schema: z.ZodType;
+  /** The model sees this JSON Schema in place of `schema`, for tools that arrive from outside (the desktop's MCP servers). */
+  jsonSchema?: Record<string, unknown>;
 }
 
 export interface ToolDef extends ToolSpec {
