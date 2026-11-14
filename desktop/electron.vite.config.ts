@@ -10,14 +10,7 @@ export default defineConfig({
     // Workspace sources ship as TypeScript and must be bundled for the packaged app.
     plugins: [
       externalizeDepsPlugin({
-        exclude: [
-          "@bob/brand",
-          "@bob/contracts",
-          "@bob/i18n",
-          "@bob/logging",
-          "@bob/team-client",
-          "@bob/user-errors",
-        ],
+        exclude: ["@bob/brand", "@bob/contracts", "@bob/i18n", "@bob/logging", "@bob/team-client", "@bob/user-errors"],
       }),
     ],
     build: {
@@ -56,8 +49,13 @@ export default defineConfig({
     plugins: [solidPlugin(), tailwindcss({ optimize: false })],
     resolve: {
       dedupe: ["solid-js", "@solidjs/web"],
+      alias: { "@bob/web-ascii-face": resolve("../src/components/features/agents/ascii-face.ts") },
     },
-    ...(rendererPort ? { server: { port: rendererPort, strictPort: true } } : {}),
+    // Blob avatars draw with the web app's own sprite code, from the repository root's `src`.
+    server: {
+      fs: { allow: [resolve("..")] },
+      ...(rendererPort ? { port: rendererPort, strictPort: true } : {}),
+    },
     build: {
       rollupOptions: {
         input: {

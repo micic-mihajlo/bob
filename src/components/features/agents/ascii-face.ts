@@ -1,3 +1,4 @@
+import { BUILDER_PALETTE, builderPixels } from "./builder-sprite";
 import type { AvatarMood } from "./agent-mood";
 import { avatarProfile, type SupportedAvatarSilhouetteId } from "./avatar-profile";
 
@@ -212,6 +213,7 @@ export function drawAsciiFace(
   size: number,
   identity: AsciiFaceIdentity,
   frame: AsciiFaceFrame,
+  hat = false,
 ): void {
   const columns = asciiFaceColumns(size);
   const cell = size / columns;
@@ -242,10 +244,16 @@ export function drawAsciiFace(
   // A dim tile under each glyph, so a small head reads as a solid shape and not as loose dots.
   const tile = Math.min(0.4, Math.max(0.12, 0.5 - columns / 120));
   let paint = "";
+  let top = columns;
+  let left = columns;
+  let right = -1;
   for (let row = 0; row < columns; row += 1) {
     for (let column = 0; column < columns; column += 1) {
       const sample = scene.sample(column, row, columns);
       if (!sample.hit) continue;
+      top = Math.min(top, row);
+      left = Math.min(left, column);
+      right = Math.max(right, column);
       const x = column * cell;
       const y = row * cell;
       if (sample.feature) {
@@ -287,6 +295,20 @@ export function drawAsciiFace(
       const glyph = hotCells[index + 2] === 0 ? "█" : scene.scanGlyph(x, y);
       context.fillText(glyph, x + cell / 2, y + cell / 2);
     }
+  }
+
+  // The crew's hard hat: the builder's own hat pixels, as wide as the head, its brim on the crown.
+  if (hat && right >= left) {
+    const pixel = ((right - left + 1) * cell) / 14;
+    const x0 = ((left + right + 1) / 2) * cell - 8 * pixel;
+    const brim = (top + 1.5) * cell;
+    HARD_HAT.forEach((line, row) =>
+      line.forEach((key, column) => {
+        if (key === ".") return;
+        context.fillStyle = paint = BUILDER_PALETTE[key] ?? INK;
+        context.fillRect(x0 + column * pixel, brim - (HARD_HAT.length - row) * pixel, Math.ceil(pixel), Math.ceil(pixel));
+      }),
+    );
   }
 
   // Sparks: glyphs that orbit a working or speaking head, bright in front of it and dim behind.
@@ -577,6 +599,7 @@ function hash(value: string): number {
 }
 
 const INK = "#000000";
+const HARD_HAT = builderPixels("idle", "small").slice(1, 7);
 
 interface Paints {
   /** Per ramp, the color of each of its glyphs. */
