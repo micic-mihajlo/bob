@@ -139,6 +139,7 @@ export function decodeAppInfo(value: unknown): AppInfo {
     version: requiredString(info, "version"),
     platform,
     variant,
+    ...(isString(info.bobUrl) ? { bobUrl: info.bobUrl } : {}),
     ...(analyticsCaptureUrl === undefined ? {} : { analyticsCaptureUrl }),
   };
 }

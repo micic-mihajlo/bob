@@ -16,6 +16,7 @@ import { useChannels } from "./features/channels/channels-context";
 import { WorkspaceChannelConversation } from "./features/channels/WorkspaceChannelConversation";
 import { useConversation } from "./features/conversation/conversation-context";
 import { useDirectMessages } from "./features/conversation/direct-messages-context";
+import { BobFactoryView } from "./features/conversation/BobFactoryView";
 import { WorkspaceConversation } from "./features/conversation/WorkspaceConversation";
 import { WorkspaceDirectConversation } from "./features/conversation/WorkspaceDirectConversation";
 import { useCustomAgentUsagePolling } from "./features/custom-agents/custom-agent-usage-polling";
@@ -310,7 +311,9 @@ export function WorkspaceShell(props: { account: () => CentralAuthUser }) {
             <Show when={activeDirectMember()}>{(member) => <WorkspaceDirectConversation member={member()} />}</Show>
           </Show>
           <Show when={agentChatOpen()}>
-            <WorkspaceConversation account={props.account} />
+            <Show when={activeAgent()?.provider === "bob"} fallback={<WorkspaceConversation account={props.account} />}>
+              <BobFactoryView />
+            </Show>
           </Show>
           <Show when={middlePane() === "channel"}>
             <WorkspaceChannelConversation account={props.account} />
