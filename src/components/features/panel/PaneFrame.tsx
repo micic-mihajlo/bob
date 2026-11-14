@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import { PanelResizer } from "./PanelResizer";
 
-const PANEL_MIN = 220;
+export const PANEL_MIN = 220;
 const PANEL_MAX = 1600;
 const PANEL_DEFAULT = 380;
 /** The chat keeps at least this much room beside the panel, as in the reference. */
