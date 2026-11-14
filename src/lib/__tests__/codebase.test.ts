@@ -75,7 +75,7 @@ describe("codebase graph: extraction", () => {
     const R = "\u001e";
     const F = "\u001f";
     const log = [
-      R + "s2" + F + "2026-11-14T10:00:00-05:00" + F + "Add export (#12)" + F + "Exports invoices.\n\nCo-authored-by: x <x@y>" + F + "\n\nsrc/export.ts\nsrc/a.ts\n",
+      R + "s2" + F + "2026-11-14T10:00:00-05:00" + F + "Add export (#12)" + F + "Exports tasks.\n\nCo-authored-by: x <x@y>" + F + "\n\nsrc/export.ts\nsrc/a.ts\n",
       R + "s1" + F + "2026-11-13T10:00:00Z" + F + "Merge pull request #11 from me/branch" + F + "Fix totals\nDetails here" + F + "\n\nsrc/totals.ts\n",
       R + "abc1234" + F + "2026-11-12T10:00:00Z" + F + "Direct commit" + F + "" + F + "\n\nsrc/old.ts\n",
     ].join("");
@@ -85,7 +85,7 @@ describe("codebase graph: extraction", () => {
       [11, "Fix totals", "git"],
       [10, "The old one", "log"],
     ]);
-    expect(out[0]).toMatchObject({ body: "Exports invoices.", files: ["src/export.ts", "src/a.ts"], at: "2026-11-14T15:00:00.000Z" });
+    expect(out[0]).toMatchObject({ body: "Exports tasks.", files: ["src/export.ts", "src/a.ts"], at: "2026-11-14T15:00:00.000Z" });
     expect(out[2].files).toEqual(["src/old.ts"]);
   });
 });

@@ -46,7 +46,7 @@ function agentOf(script: Script) {
 
 /** Two pull requests on the same file; #1 merges, so #2 goes back to its build thread, whose turn the test then runs. */
 async function conflictHandedOff(): Promise<string> {
-  postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+  postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
   await settle();
   setBrainOverride(brainFrom({}));
   const started = await callTool("start_thread", { role: "build", title: "Another CSV export", brief: "Goal: a second take on CSV." }, asBob);
