@@ -1,0 +1,100 @@
+{
+  "ok": true,
+  "lean": "Lean (version 4.35.0, x86_64-unknown-linux-gnu, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
+  "sourceHash": "7fb1181d49070feb392244ed4fc403da32967519d67cf78a404e506c4164330b",
+  "theorems": [
+    {
+      "name": "BobFormal.MergeGate.merge_needs_approval",
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ]
+    },
+    {
+      "name": "BobFormal.MergeGate.approved_by_person",
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ]
+    },
+    {
+      "name": "BobFormal.MergeGate.merge_traces_to_person",
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ]
+    },
+    {
+      "name": "BobFormal.MergeGate.approval_does_not_pin_head",
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ]
+    },
+    {
+      "name": "BobFormal.Mailbox.first_sends_within_budget",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ]
+    },
+    {
+      "name": "BobFormal.Mailbox.deliveries_bounded",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ]
+    },
+    {
+      "name": "BobFormal.Mailbox.agent_messages_bounded",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ]
+    },
+    {
+      "name": "BobFormal.Mailbox.send_message_replies_unbounded",
+      "axioms": [
+        "propext"
+      ]
+    },
+    {
+      "name": "BobFormal.Roadmap.step_shape",
+      "axioms": [
+        "propext"
+      ]
+    },
+    {
+      "name": "BobFormal.Roadmap.stage_monotone",
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ]
+    },
+    {
+      "name": "BobFormal.Roadmap.stages_in_order",
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ]
+    },
+    {
+      "name": "BobFormal.Trace.every_message_traces_to_person",
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ]
+    },
+    {
+      "name": "BobFormal.Trace.no_causal_cycles",
+      "axioms": [
+        "propext",
+        "Quot.sound"
+      ]
+    }
+  ],
+  "conformance": "passed"
+}

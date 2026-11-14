@@ -1,0 +1,95 @@
+{
+  "theorems": [
+    {
+      "name": "BobFormal.MergeGate.merge_needs_approval",
+      "rule": "Merge gate",
+      "kind": "proof",
+      "mirrors": "mergePullRequestTool, approvalRefusal (src/lib/tools/pull-requests.ts)",
+      "statement": "No pull request is merged unless an approval for that exact pull request is approved."
+    },
+    {
+      "name": "BobFormal.MergeGate.approved_by_person",
+      "rule": "Merge gate",
+      "kind": "proof",
+      "mirrors": "decideApproval (src/lib/actions.ts), requestApproval (src/lib/tools/work.ts)",
+      "statement": "An approval only becomes approved through the person's decision; no agent call can approve one."
+    },
+    {
+      "name": "BobFormal.MergeGate.merge_traces_to_person",
+      "rule": "Merge gate",
+      "kind": "proof",
+      "mirrors": "mergePullRequestTool, decideApproval",
+      "statement": "Every merged pull request has an approval for it that a person approved somewhere in the history."
+    },
+    {
+      "name": "BobFormal.MergeGate.approval_does_not_pin_head",
+      "rule": "Merge gate",
+      "kind": "gap",
+      "mirrors": "approvalRefusal, upsertPullRequest (src/lib/tools/pull-requests.ts)",
+      "statement": "Known gap: the approval is not tied to a head, so commits pushed after the person was asked are what gets merged."
+    },
+    {
+      "name": "BobFormal.Mailbox.first_sends_within_budget",
+      "rule": "Loop termination",
+      "kind": "proof",
+      "mirrors": "applySend, overBudget, budgetUsed (src/lib/mailbox.ts)",
+      "statement": "In one request, agents start at most 12 deliveries of new work."
+    },
+    {
+      "name": "BobFormal.Mailbox.deliveries_bounded",
+      "rule": "Loop termination",
+      "kind": "proof",
+      "mirrors": "applySend, markAnswered (src/lib/mailbox.ts), planRelays (src/lib/relay.ts), report (src/lib/tools/report.ts)",
+      "statement": "When every reply answers one owed ask, a request sees at most 24 agent deliveries, so every message cascade ends."
+    },
+    {
+      "name": "BobFormal.Mailbox.agent_messages_bounded",
+      "rule": "Loop termination",
+      "kind": "proof",
+      "mirrors": "applySend (src/lib/mailbox.ts)",
+      "statement": "At most 24 agent messages are accepted in one request; after that every agent send is refused."
+    },
+    {
+      "name": "BobFormal.Mailbox.send_message_replies_unbounded",
+      "rule": "Loop termination",
+      "kind": "gap",
+      "mirrors": "route (src/lib/tools/messaging.ts), overBudget (src/lib/mailbox.ts)",
+      "statement": "Known gap: through send_message, two person-added teammates can keep replying to each other's replies without limit, because replies skip the budget."
+    },
+    {
+      "name": "BobFormal.Roadmap.step_shape",
+      "rule": "Stage order",
+      "kind": "proof",
+      "mirrors": "advanceStage, unmetCriteria (src/lib/roadmap.ts), STAGES (src/lib/stages.ts)",
+      "statement": "Every roadmap call either leaves the stage alone or is an advance by exactly one stage from a stage whose gate holds."
+    },
+    {
+      "name": "BobFormal.Roadmap.stage_monotone",
+      "rule": "Stage order",
+      "kind": "proof",
+      "mirrors": "src/lib/roadmap.ts",
+      "statement": "The roadmap never moves back a stage."
+    },
+    {
+      "name": "BobFormal.Roadmap.stages_in_order",
+      "rule": "Stage order",
+      "kind": "proof",
+      "mirrors": "src/lib/roadmap.ts",
+      "statement": "The stages the roadmap has left are exactly 1, 2, ... up to the current one, in order, so no stage is ever skipped."
+    },
+    {
+      "name": "BobFormal.Trace.every_message_traces_to_person",
+      "rule": "Traceability",
+      "kind": "proof",
+      "mirrors": "traceWhy (src/lib/why.ts), postUserMessage (src/lib/actions.ts), executeMove (src/lib/turns.ts)",
+      "statement": "Following causedBy from any message always ends at a message a person sent."
+    },
+    {
+      "name": "BobFormal.Trace.no_causal_cycles",
+      "rule": "Traceability",
+      "kind": "proof",
+      "mirrors": "traceWhy (src/lib/why.ts)",
+      "statement": "No message is its own cause, however far back you follow causedBy."
+    }
+  ]
+}

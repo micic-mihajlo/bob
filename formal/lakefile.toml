@@ -1,0 +1,5 @@
+name = "bob-formal"
+defaultTargets = ["BobFormal"]
+
+[[lean_lib]]
+name = "BobFormal"
