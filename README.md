@@ -78,7 +78,7 @@ To use a live model, create `.env.local` with `AI_GATEWAY_API_KEY` set and resta
 
 ```
 AI_GATEWAY_API_KEY=...
-BOB_MODEL_STRONG=moonshotai/kimi-k3.1-pro
+BOB_MODEL_STRONG=deepseek/deepseek-v4.1-flash
 BOB_MODEL_LIGHT=deepseek/deepseek-v4.1-flash
 ```
 

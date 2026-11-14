@@ -141,7 +141,7 @@ try {
   const nsSandbox = process.platform === "linux" && env.BOB_SANDBOX !== "off" && spawnSync("unshare", ["--user", "--map-root-user", "--mount", "true"], { stdio: "ignore" }).status === 0;
   const github = env.BOB_GITHUB?.trim().toLowerCase();
   const model = live
-    ? `live: captain ${env.BOB_MODEL_STRONG || "moonshotai/kimi-k3.1-pro"}, crew ${serverEnv.BOB_ENGINE === "sdk" ? "on the coding agent" : env.BOB_MODEL_LIGHT || "deepseek/deepseek-v4.1-flash"}`
+    ? `live: captain ${env.BOB_MODEL_STRONG || "deepseek/deepseek-v4.1-flash"}, crew ${serverEnv.BOB_ENGINE === "sdk" ? "on the coding agent" : env.BOB_MODEL_LIGHT || "deepseek/deepseek-v4.1-flash"}`
     : `scripted (${opts.scripted ? "--scripted" : fs.existsSync(envFile) ? "no AI_GATEWAY_API_KEY in .env.local" : "no .env.local"})`;
   const rows = [
     ["Model", model],
