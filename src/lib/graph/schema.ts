@@ -19,6 +19,8 @@ export type NodeKind =
   | "Note"
   | "Approval"
   | "Roadmap"
+  | "Track"
+  | "InboxItem"
   | "WorkOrder";
 
 export type EdgeType =
@@ -38,7 +40,12 @@ export type EdgeType =
   | "HAS"
   | "DELIVERED_BY"
   | "OWNED_BY"
-  | "WORKS_ON";
+  | "WORKS_ON"
+  | "STARTED_BY"
+  | "HANDS_IN"
+  | "FROM_INBOX"
+  | "RESOLVED_BY"
+  | "FOLLOW_UP_OF";
 
 export type Props = Record<string, string | number | boolean>;
 
@@ -110,7 +117,9 @@ export function toGraph(s: State): Graph {
     if (a.workOrderId) edge("Agent", a.id, "WORKS_ON", "WorkOrder", a.workOrderId);
   }
 
+  const inbox = new Map((s.inbox ?? []).map((i) => [i.id, i]));
   for (const m of s.messages) {
+    const item = m.inboxId ? inbox.get(m.inboxId) : undefined;
     const question = m.continues ? questionBefore(s, m.to[0], m) : null;
     const next = m.causedBy ?? m.continues ?? null;
     node("Message", m.id, short(m.text), {
@@ -126,6 +135,13 @@ export function toGraph(s: State): Graph {
       causedBy: m.causedBy,
       continues: m.continues,
       approvalId: m.approvalId,
+      automatic: m.automatic,
+      via: m.via,
+      inboxId: m.inboxId,
+      inboxKind: item?.kind,
+      inboxLabel: item?.source,
+      shown: m.shown,
+      quote: m.quote,
       question,
       at: m.at,
     });
@@ -178,6 +194,20 @@ export function toGraph(s: State): Graph {
     if (ap.pullRequestId) edge("PullRequest", ap.pullRequestId, "GATED_BY", "Approval", ap.id);
   }
 
+  for (const t of s.roadmap.tracks ?? []) {
+    const ask = t.messageId ? s.messages.find((m) => m.id === t.messageId) : undefined;
+    node("Track", t.requestId, short(t.goal?.title ?? ask?.text ?? t.requestId), { stage: t.stage, stageTitle: t.stageTitle, startedAt: t.startedAt, updatedAt: t.updatedAt });
+    edge("Roadmap", roadmapId, "HAS", "Track", t.requestId);
+    if (t.messageId) edge("Track", t.requestId, "STARTED_BY", "Message", t.messageId);
+  }
+
+  for (const i of s.inbox ?? []) {
+    node("InboxItem", i.id, short(i.source), { inboxKind: i.kind, source: i.source, status: i.status, text: i.text.slice(0, TEXT_CAP), at: i.at });
+    edge("Message", i.messageId, "HANDS_IN", "InboxItem", i.id);
+    if (i.resolvedBy) edge("InboxItem", i.id, "RESOLVED_BY", "PullRequest", i.resolvedBy.pullRequestId);
+    if (i.followUpOf) edge("InboxItem", i.id, "FOLLOW_UP_OF", "PullRequest", i.followUpOf.pullRequestId);
+  }
+
   const seenOrders = new Set<string>();
   for (const wo of [...s.roadmap.today, ...(s.roadmap.backlog ?? [])]) {
     if (seenOrders.has(wo.id)) continue;
@@ -186,6 +216,8 @@ export function toGraph(s: State): Graph {
     edge("Roadmap", roadmapId, "HAS", "WorkOrder", wo.id);
     if (wo.ownerAgentId) edge("WorkOrder", wo.id, "OWNED_BY", "Agent", wo.ownerAgentId);
     if (wo.artifactId) edge("WorkOrder", wo.id, "DELIVERED_BY", "PullRequest", wo.artifactId);
+    if (wo.requestId) edge("WorkOrder", wo.id, "PART_OF", "Track", wo.requestId);
+    if (wo.source) edge("WorkOrder", wo.id, "FROM_INBOX", "InboxItem", wo.source.inboxId);
   }
 
   const known = new Set(nodes.map((n) => `${n.kind}:${n.id}`));

@@ -119,6 +119,68 @@ export function composioTransport(auth: ComposioAuth, fetcher: typeof fetch = fe
   };
 }
 
+/** The text of the last JSON-RPC message in a JSON or server-sent-events reply. */
+function rpcResult(text: string): { result?: { content?: { text?: string }[]; isError?: boolean }; error?: { message?: string } } | null {
+  const events = text.split("\n").filter((l) => l.startsWith("data:")).map((l) => l.slice(5).trim());
+  const last = events.at(-1) ?? text.trim();
+  try {
+    return JSON.parse(last);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Composio Connect: a consumer key (ck_…) only opens Connect's MCP server, so each GitHub toolkit tool runs
+ * through its COMPOSIO_MULTI_EXECUTE_TOOL with the account the person connected there.
+ */
+export function composioConnectTransport(auth: ComposioAuth, fetcher: typeof fetch = fetch): Transport {
+  let session: Promise<string | null> | null = null;
+  let id = 0;
+  const post = async (sessionId: string | null, message: Record<string, unknown>) => {
+    const res = await fetcher(auth.baseUrl, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+        "x-consumer-api-key": auth.apiKey,
+        ...(sessionId ? { "mcp-session-id": sessionId } : {}),
+      },
+      body: JSON.stringify({ jsonrpc: "2.0", ...message }),
+      signal: AbortSignal.timeout(GH_TIMEOUT_MS),
+    });
+    return { res, text: await res.text() };
+  };
+  const open = async () => {
+    const init = await post(null, { id: ++id, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "bob", version: "0.1.0" } } });
+    if (!init.res.ok) throw new Error(`composio connect: HTTP ${init.res.status}`);
+    const sessionId = init.res.headers.get("mcp-session-id");
+    await post(sessionId, { method: "notifications/initialized", params: {} });
+    return sessionId;
+  };
+  return async (op) => {
+    session ??= open().catch((error) => {
+      session = null;
+      throw error;
+    });
+    const sessionId = await session;
+    const tool = { tool_slug: op.slug, arguments: op.args, ...(auth.connectedAccountId ? { account: auth.connectedAccountId } : {}) };
+    const { res, text } = await post(sessionId, {
+      id: ++id,
+      method: "tools/call",
+      params: { name: "COMPOSIO_MULTI_EXECUTE_TOOL", arguments: { tools: [tool], sync_response_to_workbench: false, thought: "Bob publishes its pull request to GitHub.", current_step: op.slug } },
+    });
+    const reply = rpcResult(text);
+    if (!res.ok || !reply?.result) throw new Error(`composio connect ${op.slug}: ${reply?.error?.message ?? `HTTP ${res.status}`}`);
+    const body = JSON.parse(reply.result.content?.[0]?.text ?? "null") as { data?: { results?: Record<string, unknown>[] }; error?: unknown } | null;
+    const first = body?.data?.results?.[0];
+    const response = (first?.response ?? first) as { data?: unknown; error?: unknown; successful?: boolean } | undefined;
+    const error = first?.error ?? response?.error ?? (reply.result.isError ? body?.error : null);
+    if (!first || error || response?.successful === false) throw new Error(`composio connect ${op.slug}: ${String(typeof error === "string" ? error : JSON.stringify(error ?? body?.error ?? "no result"))}`);
+    return unwrap(response?.data ?? first.data);
+  };
+}
+
 const WRAPPERS = ["details", "response_data"];
 
 /** Composio sometimes nests GitHub's JSON one level down; this returns GitHub's own shape. */
@@ -149,7 +211,30 @@ export function setGitHubTransport(transport: Transport | null): void {
   override = transport;
 }
 
-export function transportFor(config: GitHubConfig): Transport {
+const connectTransports = new Map<string, Transport>();
+
+function baseTransport(config: GitHubConfig): Transport {
   if (override) return override;
-  return config.composio ? composioTransport(config.composio) : ghTransport;
+  const auth = config.composio;
+  if (!auth) return ghTransport;
+  if (auth.kind === "project") return composioTransport(auth);
+  const key = `${auth.baseUrl} ${auth.apiKey} ${auth.connectedAccountId ?? ""}`;
+  if (!connectTransports.has(key)) connectTransports.set(key, composioConnectTransport(auth));
+  return connectTransports.get(key) as Transport;
+}
+
+/** Every GitHub call logs which route carried it, so a run shows whether Composio or gh did the work. */
+export function transportFor(config: GitHubConfig): Transport {
+  const call = baseTransport(config);
+  const via = config.composio ? `composio-${config.composio.kind}` : "gh";
+  return async (op) => {
+    try {
+      const value = await call(op);
+      console.info(`[github] via=${via} ${op.slug} ok`);
+      return value;
+    } catch (error) {
+      console.warn(`[github] via=${via} ${op.slug} failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  };
 }
