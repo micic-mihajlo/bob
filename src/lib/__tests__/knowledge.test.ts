@@ -81,7 +81,7 @@ describe("HydraDB knowledge", { timeout: 60_000 }, () => {
     expect(brief?.text).not.toContain("PR #7");
     expect(brief?.knowledge?.files.map((f) => f.path)).toEqual(["src/tasks.ts", "src/format.ts"]);
     const query = sent.find((x) => x.url.endsWith(".com/query"))?.json;
-    expect(query).toMatchObject({ type: "knowledge", mode: "fast", graph_context: true });
+    expect(query).toMatchObject({ type: "knowledge", mode: "fast", graph_context: false });
     expect(String(query?.query)).toContain("export tasks as CSV");
     expect(knowledgeSummary(brief!.knowledge!)).toMatch(/^Context from HydraDB: 2 files · \d+ ms$/);
   });

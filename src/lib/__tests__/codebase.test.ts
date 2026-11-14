@@ -4,6 +4,8 @@ import { codebaseCollection, codebaseGraphed, codebaseOverview, codebaseStats, f
 import { prsFromGitLog } from "../codebase/history";
 import { resetHydraHealth } from "../graph/hydra";
 import { getState } from "../store";
+import { sourceOf, workspaceOptions } from "../thread-workspace";
+import { ensureProject } from "../workspace";
 import { freshTeam } from "./helpers";
 
 const files: SourceFile[] = [
@@ -106,8 +108,9 @@ function fakeHydra(answer: (query: string) => unknown = () => []): { query: stri
 }
 
 describe("codebase graph: HydraDB", { timeout: 60_000 }, () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     freshTeam();
+    await ensureProject(getState().project.id, sourceOf(getState().project), workspaceOptions());
     resetCodebaseGraph();
     resetHydraHealth();
     vi.stubEnv("BOB_STORE", "hydra");
