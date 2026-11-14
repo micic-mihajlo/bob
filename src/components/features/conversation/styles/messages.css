@@ -1438,3 +1438,7 @@ button.chat-action-target:active,
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+
+.chat-action-marker[data-tone="warning"] .chat-action-marker-label {
+  color: var(--bob-warning-text);
+}
