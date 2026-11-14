@@ -438,6 +438,8 @@ export interface Project {
   repo: string | null;
   /** Which template a project without a repository was made from. Missing on projects saved before templates: the invoices sample. */
   template?: ProjectTemplate;
+  /** The branch of `repo` the project starts from, as its main. The repository's own main when missing. */
+  branch?: string;
 }
 
 /** False before a project is chosen, when Bob opens on the Open a project choice. */

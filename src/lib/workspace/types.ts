@@ -2,7 +2,7 @@ import type { ProjectTemplate } from "../types";
 
 export type Result<T extends object = object> = ({ ok: true } & T) | { ok: false; error: string };
 
-export type ProjectSource = { kind: "template"; template?: ProjectTemplate } | { kind: "git"; url: string };
+export type ProjectSource = { kind: "template"; template?: ProjectTemplate } | { kind: "git"; url: string; branch?: string };
 
 export interface WorkspaceOptions {
   /** Directory that holds every project. Defaults to `<cwd>/.data/workspaces`. */

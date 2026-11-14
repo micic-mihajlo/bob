@@ -11,6 +11,6 @@ export async function GET(): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   ready();
-  const body = await parseBody(request, z.object({ repo: z.string().max(500).optional(), name: z.string().max(80).optional(), template: z.enum(["invoices", "blank-ts"]).optional() }));
+  const body = await parseBody(request, z.object({ repo: z.string().max(500).optional(), branch: z.string().max(200).optional(), name: z.string().max(80).optional(), template: z.enum(["invoices", "blank-ts"]).optional() }));
   return body.ok ? answer(await openProject(body.data)) : body.response;
 }
