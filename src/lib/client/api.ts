@@ -57,14 +57,10 @@ export function decideApproval(approvalId: string, decision: "approved" | "denie
   return post(API.approval(approvalId), { decision });
 }
 
-export async function createAgent(
-  input: NewAgentInput,
-): Promise<{ ok: true; agentId: AgentId } | { ok: false; error: string }> {
+export async function createAgent(input: NewAgentInput): Promise<{ ok: true; agentId: AgentId } | { ok: false; error: string }> {
   const result = await post(API.agents, input);
   if (!result.ok) return result;
-  return typeof result.agentId === "string"
-    ? { ok: true, agentId: result.agentId }
-    : { ok: false, error: "The server did not return the new agent." };
+  return typeof result.agentId === "string" ? { ok: true, agentId: result.agentId } : { ok: false, error: "The server did not return the new agent." };
 }
 
 export async function fetchWhy(messageId: MessageId, signal: AbortSignal): Promise<WhyHop[]> {
@@ -81,6 +77,16 @@ export async function fetchGraph(pullRequestId: string, signal: AbortSignal): Pr
   const payload: unknown = await response.json();
   if (!isRecord(payload) || !Array.isArray(payload.nodes) || !Array.isArray(payload.edges)) throw new Error("The graph was not in the expected shape.");
   return payload as unknown as GraphView;
+}
+
+/** Posts the demo inbox: a customer call and a production error. The captain triages them. */
+export function postInboxSample(): Promise<ActionResult> {
+  return post(API.inbox, { sample: true });
+}
+
+/** The person's "build this" on an inbox work order in the backlog. */
+export function promoteInboxOrder(workOrderId: string): Promise<ActionResult> {
+  return post(API.inboxPromote, { workOrderId });
 }
 
 /** Opens a parked project by name, brings in a repository, or starts one from the template. */

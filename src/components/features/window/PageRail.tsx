@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, FolderOpen, Map as MapIcon, Users, type LucideIcon } from "lucide-react";
+import { Bot, FolderOpen, Inbox, Map as MapIcon, Users, type LucideIcon } from "lucide-react";
 import { useBob } from "@/components/features/window/BobContext";
 import { buttonClass } from "@/components/ui/classes";
 import type { PanelTab } from "@/lib/client/panel-tabs";
@@ -28,6 +28,7 @@ function RailButton({ label, icon: Icon, current = false, onClick }: { label: st
 
 const CAPTAIN_PAGES: ReadonlyArray<{ tab: PanelTab; label: string; icon: LucideIcon }> = [
   { tab: "roadmap", label: "Roadmap", icon: MapIcon },
+  { tab: "inbox", label: "Inbox", icon: Inbox },
   { tab: "crew", label: "Crew", icon: Users },
   { tab: "drive", label: "Drive", icon: FolderOpen },
 ];
@@ -41,14 +42,7 @@ export function PageRail() {
       <div className="window-rail-group">
         <RailButton label="Agents" icon={Bot} current onClick={() => captain && selectAgent(captain.id)} />
         {captain
-          ? CAPTAIN_PAGES.map((page) => (
-              <RailButton
-                key={page.tab}
-                label={page.label}
-                icon={page.icon}
-                onClick={() => openThreadTab(captain.id, page.tab)}
-              />
-            ))
+          ? CAPTAIN_PAGES.map((page) => <RailButton key={page.tab} label={page.label} icon={page.icon} onClick={() => openThreadTab(captain.id, page.tab)} />)
           : null}
       </div>
     </nav>

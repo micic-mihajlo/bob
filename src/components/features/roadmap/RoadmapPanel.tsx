@@ -21,7 +21,7 @@ const PHASE_LABEL: Record<StepPhase, string> = { done: "Done", current: "Now", n
  * the delivery stages as a line with the planned work of the current one. It reads the live snapshot.
  */
 export function RoadmapPanel({ onClose }: { onClose: () => void }) {
-  const { snapshot, agentsById, selectAgent } = useBob();
+  const { snapshot, agentsById, selectAgent, captain, openThreadTab } = useBob();
   const { roadmap, releaseNotes = [], requests = [], budgets } = snapshot;
   const goal = roadmap.goal;
   const progress = workOrderProgress(roadmap);
@@ -120,6 +120,16 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                               <li key={order.id} data-done={order.status === "done" ? "true" : undefined}>
                                 <span className="bob-roadmap-plan-title">{order.title}</span>
                                 <span className="bob-roadmap-task-meta">{meta(order)}</span>
+                                {order.source && captain ? (
+                                  <button
+                                    type="button"
+                                    className="bob-roadmap-source"
+                                    title={`“${order.source.quote}”`}
+                                    onClick={() => openThreadTab(captain.id, "inbox")}
+                                  >
+                                    From {order.source.label}
+                                  </button>
+                                ) : null}
                               </li>
                             ))}
                           </ul>

@@ -1,0 +1,203 @@
+/* The inbox pane: one card per meeting, feedback or error, with its quoted lines and the asks made from them. */
+.bob-inbox-panel {
+  overflow: hidden;
+}
+
+.bob-inbox-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--bob-space-3);
+  overflow-y: auto;
+  padding: var(--bob-space-4);
+}
+
+.bob-inbox-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bob-space-3);
+  padding: var(--bob-space-8) var(--bob-space-4);
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+  text-align: center;
+}
+
+.bob-inbox-empty > p {
+  max-width: 280px;
+  margin: 0;
+}
+
+.bob-inbox-empty > svg {
+  width: var(--bob-icon-lg);
+  height: var(--bob-icon-lg);
+  stroke-width: var(--bob-icon-stroke);
+}
+
+.bob-inbox-error {
+  margin: 0;
+  color: var(--bob-warning-text);
+  font-size: var(--bob-text-sm);
+}
+
+.bob-inbox-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bob-space-3);
+  padding: var(--bob-space-4);
+  animation: message-in var(--bob-duration-normal) var(--bob-ease-out) both;
+}
+
+.bob-inbox-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--bob-space-2);
+}
+
+.bob-inbox-kind {
+  display: grid;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: var(--bob-radius-md);
+  border: 1px solid var(--bob-border);
+  color: var(--bob-text-secondary);
+}
+
+.bob-inbox-card[data-kind="error"] .bob-inbox-kind {
+  border-color: transparent;
+  background: var(--bob-warning-soft);
+  color: var(--bob-warning-text);
+}
+
+.bob-inbox-kind svg {
+  width: var(--bob-icon-sm);
+  height: var(--bob-icon-sm);
+  stroke-width: var(--bob-icon-stroke);
+}
+
+.bob-inbox-title {
+  min-width: 0;
+  flex: 1;
+}
+
+.bob-inbox-title h3,
+.bob-inbox-title p {
+  margin: 0;
+}
+
+.bob-inbox-title h3 {
+  color: var(--bob-text-primary);
+  font-size: var(--bob-text-sm);
+  font-weight: var(--bob-weight-semibold);
+  line-height: var(--bob-leading-sm);
+}
+
+.bob-inbox-title p {
+  color: var(--bob-text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bob-inbox-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bob-space-1);
+  margin: 0;
+  border-left: 2px solid var(--bob-border);
+  padding-left: var(--bob-space-3);
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+  overflow-wrap: anywhere;
+}
+
+.bob-inbox-card[data-kind="error"] .bob-inbox-text {
+  font-family: var(--bob-font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.bob-inbox-text mark {
+  margin-left: calc(-1 * var(--bob-space-3) - 2px);
+  border-left: 2px solid var(--bob-accent);
+  padding-left: var(--bob-space-3);
+  background: transparent;
+  color: var(--bob-text-primary);
+}
+
+.bob-inbox-asks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bob-space-2);
+  margin: 0;
+  border-top: 1px solid var(--bob-border);
+  padding: var(--bob-space-3) 0 0;
+  list-style: none;
+}
+
+.bob-inbox-ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bob-space-1);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+}
+
+.bob-inbox-ask-line,
+.bob-inbox-order {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bob-space-2);
+}
+
+.bob-inbox-ask-text {
+  min-width: 0;
+  color: var(--bob-text-primary);
+}
+
+.bob-inbox-ask .z-badge {
+  flex: none;
+}
+
+.bob-inbox-order {
+  color: var(--bob-text-muted);
+  font-size: 12px;
+}
+
+.bob-inbox-order > .ui-button svg {
+  width: var(--bob-icon-xs);
+  height: var(--bob-icon-xs);
+}
+
+.bob-inbox-question {
+  margin: 0;
+  color: var(--bob-warning-text);
+  font-size: 12px;
+  line-height: var(--bob-leading-sm);
+}
+
+button.bob-inbox-owner {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--bob-text-secondary);
+  font: inherit;
+}
+
+button.bob-inbox-owner:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bob-inbox-card {
+    animation: none;
+  }
+}
