@@ -14,10 +14,10 @@ import { PaneFrame } from "./PaneFrame";
 import { Activity } from "lucide-react";
 import { pullRequestIdOf } from "@/lib/client/why-graph";
 
-const KIND: Record<Artifact["kind"], { badge: string; tone: FileReferenceTone; label: string }> = {
-  pull_request: { badge: "PR", tone: "source", label: "Pull request" },
-  review: { badge: "REV", tone: "script", label: "Review" },
-  note: { badge: "NOTE", tone: "default", label: "Note" },
+const KIND: Record<Artifact["kind"], { badge: string; tone: FileReferenceTone }> = {
+  pull_request: { badge: "PR", tone: "source" },
+  review: { badge: "REV", tone: "script" },
+  note: { badge: "NOTE", tone: "default" },
 };
 
 const STATUS_VARIANT: Record<PullRequestState, BadgeVariant> = {
@@ -68,7 +68,7 @@ export function ActivityPane({ onClose }: { onClose: () => void }) {
               at: artifact.at,
               badge: KIND[artifact.kind].badge,
               tone: KIND[artifact.kind].tone,
-              meta: [`${KIND[artifact.kind].label} by ${nameOf(agentsById, artifact.agentId)}`, formatClock(artifact.at)].filter(Boolean),
+              meta: [formatClock(artifact.at), nameOf(agentsById, artifact.agentId)].filter(Boolean),
               status: statusOf(artifact),
               actionLabel: `Open the thread of ${artifact.title}`,
               disabled: !agentsById.has(artifact.agentId),
