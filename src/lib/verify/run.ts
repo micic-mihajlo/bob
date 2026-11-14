@@ -15,19 +15,19 @@ const PARALLEL = 4;
 const MAX_MUTANTS = 24;
 const STANDARD_AXIOMS = new Set(["propext", "Classical.choice", "Quot.sound"]);
 
+export const leanSchema = z.object({
+  file: z.string().min(1),
+  theorems: z.array(z.string().min(1)).min(1),
+  conformance: z
+    .object({ lean: z.string().min(1), module: z.string().min(1), export: z.string().min(1), inputs: z.array(z.string()).min(1).max(50) })
+    .optional(),
+});
+
 export const contractSchema = z.object({
   acceptance: z.string().min(1),
   propertiesFile: z.string().min(1),
   properties: z.array(z.object({ name: z.string().min(1), criterion: z.string().min(1) })).min(1),
-  lean: z
-    .object({
-      file: z.string().min(1),
-      theorems: z.array(z.string().min(1)).min(1),
-      conformance: z
-        .object({ lean: z.string().min(1), module: z.string().min(1), export: z.string().min(1), inputs: z.array(z.string()).min(1).max(50) })
-        .optional(),
-    })
-    .optional(),
+  lean: leanSchema.optional(),
 });
 export type Contract = z.infer<typeof contractSchema>;
 
@@ -69,7 +69,7 @@ export const propertyNames = (src: string): string[] => [...src.matchAll(/\b(?:i
  * When the thread wrote a properties file but no contract, the contract is written for it: the work order's
  * acceptance check, that file, and one entry per it() in it. Returns the properties file used, or null.
  */
-export async function writeContractFor(ws: Workspace, file: string, acceptance: string): Promise<string | null> {
+export async function writeContractFor(ws: Workspace, file: string, acceptance: string, lean?: Contract["lean"]): Promise<string | null> {
   await gitIn(ws, ["add", "--all"]);
   const changed = await gitIn(ws, ["diff", "--name-only", "--diff-filter=AM", await mergeBase(ws)]);
   const candidates = changed.stdout.split("\n").filter((f) => PROPERTIES_FILE.test(f));
@@ -77,7 +77,7 @@ export async function writeContractFor(ws: Workspace, file: string, acceptance: 
   const propertiesFile = candidates[0];
   const names = propertyNames(await readFile(path.join(ws.root, propertiesFile), "utf8").catch(() => ""));
   if (names.length === 0) return null;
-  const contract: Contract = { acceptance, propertiesFile, properties: names.map((name) => ({ name, criterion: acceptance })) };
+  const contract: Contract = { acceptance, propertiesFile, properties: names.map((name) => ({ name, criterion: acceptance })), ...(lean ? { lean } : {}) };
   await mkdir(path.dirname(path.join(ws.root, file)), { recursive: true });
   await writeFile(path.join(ws.root, file), JSON.stringify(contract, null, 2) + "\n");
   return propertiesFile;

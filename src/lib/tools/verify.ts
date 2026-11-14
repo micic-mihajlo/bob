@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { newId, nowIso } from "../ids";
@@ -9,7 +10,7 @@ import { ensureWorkspaceDeps } from "../workspace";
 import { threadWorkspace } from "../thread-workspace";
 import { gatePassed, isEquivalent, verificationLine, verificationOf, type EquivalentMutant, type Proof, type Verification } from "../verification";
 import { goalOf } from "../roadmap";
-import { contractPathOf, mutantsFor, readContract, runMutants, runProof, runProperties, workingTree, writeContractFor, writeHarness } from "../verify/run";
+import { contractPathOf, leanSchema, mutantsFor, readContract, runMutants, runProof, runProperties, workingTree, writeContractFor, writeHarness, type Contract } from "../verify/run";
 import { done, fail, type ToolContext } from "./context";
 import { define } from "./define";
 
@@ -45,7 +46,7 @@ function findingsOf(v: Verification, waivers: readonly EquivalentMutant[]) {
 }
 
 /** Tiers 1 to 3 now; the Lean proof runs after, and its result lands on the same record when it finishes. */
-async function verifyChange(ctx: ToolContext) {
+async function verifyChange(ctx: ToolContext, lean?: Contract["lean"]) {
   const started = Date.now();
   const s = getState();
   const agent = agentById(s, ctx.agentId);
@@ -54,7 +55,12 @@ async function verifyChange(ctx: ToolContext) {
   if (!existsSync(path.join(ws.root, "node_modules", ".bin", "vitest"))) return fail("vitest is not installed in this workspace, so nothing can run the properties. Add vitest and fast-check to the project's devDependencies.");
   const contractPath = await contractPathOf(ws, agent?.workOrderId ?? null);
   const acceptance = goalOf(s.roadmap, ctx.requestId)?.acceptance ?? agent?.title ?? "the work order's acceptance check";
-  const wrote = existsSync(path.join(ws.root, contractPath)) ? null : await writeContractFor(ws, contractPath, acceptance);
+  const existing = existsSync(path.join(ws.root, contractPath));
+  if (existing && lean) {
+    const json = JSON.parse(await readFile(path.join(ws.root, contractPath), "utf8").catch(() => "{}"));
+    await writeFile(path.join(ws.root, contractPath), JSON.stringify({ ...json, lean }, null, 2) + "\n");
+  }
+  const wrote = existing ? null : await writeContractFor(ws, contractPath, acceptance, lean);
   const tree = await workingTree(ws);
   if (!tree) return fail("Could not read the workspace's tree with git. Check git status and try again.");
   const base = { id: newId("ver"), agentId: ctx.agentId, tree, at: nowIso() };
@@ -146,12 +152,12 @@ export function markEquivalent(input: z.infer<typeof markEquivalentSchema>, ctx:
 export const VERIFY_TOOLS = [
   define({
     name: "verify_change",
-    description: `Check your change against its contract before you open or update a pull request. Write your fast-check properties as src/<module>.properties.test.ts first: each property one it() calling fc.assert(fc.property(...)) from fast-check, with no seed or numRuns. When verify/<your work order id>.json is missing, this writes it for you from the work order and that file. Otherwise it reads it, shaped exactly {"acceptance": "<the work order's acceptance check>", "propertiesFile": "src/<module>.properties.test.ts", "properties": [{"name": "<the it() name>", "criterion": "<the part of the acceptance it checks>"}]}; the properties file is a vitest file where each property is one it() calling fc.assert(fc.property(...)) from fast-check, with no seed or numRuns. Then: tier 1 checks the contract names the acceptance check and its properties; tier 2 runs every fast-check property in the properties file 300 times with a seed Bob picks, and a failure comes back as a counterexample; tier 3 mutates the changed lines (flipped comparisons, off-by-one numbers, dropped calls) and runs the properties and the test files that import the mutated file against each mutant, and a mutant that survives is a finding; tier 4, when the contract names a Lean model, builds it with lake, checks every theorem for sorry and its axioms, and compares its cases with the TypeScript, after this call returns. The person can approve a merge only when tiers 1 to 3 pass on the pull request's exact head.`,
-    schema: z.object({}),
+    description: `Check your change against its contract before you open or update a pull request. Write your fast-check properties as src/<module>.properties.test.ts first: each property one it() calling fc.assert(fc.property(...)) from fast-check, with no seed or numRuns. When verify/<your work order id>.json is missing, this writes it for you from the work order and that file. Otherwise it reads it, shaped exactly {"acceptance": "<the work order's acceptance check>", "propertiesFile": "src/<module>.properties.test.ts", "properties": [{"name": "<the it() name>", "criterion": "<the part of the acceptance it checks>"}]}; the properties file is a vitest file where each property is one it() calling fc.assert(fc.property(...)) from fast-check, with no seed or numRuns. Then: tier 1 checks the contract names the acceptance check and its properties; tier 2 runs every fast-check property in the properties file 300 times with a seed Bob picks, and a failure comes back as a counterexample; tier 3 mutates the changed lines (flipped comparisons, off-by-one numbers, dropped calls) and runs the properties and the test files that import the mutated file against each mutant, and a mutant that survives is a finding; tier 4, when the contract names a Lean model, builds it with lake, checks every theorem for sorry and its axioms, and compares its cases with the TypeScript, after this call returns. The person can approve a merge only when tiers 1 to 3 pass on the pull request's exact head. Prove it in Lean too: write a small Lean 4 model of the function you changed in verify/<Name>.lean (plain Lean 4 core, no Mathlib, inside namespace <Name>), with 1 to 3 theorems that state the acceptance check and are proved without sorry, and pass it as lean. Example from the overdue tasks work order, verify/Overdue.lean: "namespace Overdue\ninductive Status where\n  | draft | open | done\n  deriving DecidableEq\nstructure Task where\n  status : Status\n  due : Nat\ndef overdue (l : List Task) (today : Nat) : List Task :=\n  l.filter (fun i => i.status = .open ∧ i.due < today)\ntheorem overdue_sound (l : List Task) (today : Nat) :\n    ∀ i ∈ overdue l today, i.status = .open ∧ i.due < today := by\n  intro i h\n  simp [overdue, List.mem_filter] at h\n  exact h.2\nend Overdue" with lean {"file": "verify/Overdue.lean", "theorems": ["Overdue.overdue_sound"]}. When the function maps a string to a string, add conformance {"lean": "<Name>.<fn>", "module": "src/<module>.ts", "export": "<fn>", "inputs": ["<input>", ...]}: Bob runs each input through the Lean function and the TypeScript export and the outputs must match. A Lean model that fails to build shows as not proved and never blocks the merge.`,
+    schema: z.object({ lean: leanSchema.optional().describe("The Lean model of the change: its file under verify/, the theorems to check by full name, and optional conformance cases.") }),
     sets: ["build", "review"],
     label: () => "Verifying the change",
     doneLabel: (_i, r) => (typeof r.line === "string" ? `${r.passed ? "Verified" : "Verification failed"}: ${r.line}` : undefined),
-    execute: (_i, ctx) => verifyChange(ctx),
+    execute: (input, ctx) => verifyChange(ctx, input.lean),
   }),
   define({
     name: "mark_equivalent_mutant",
