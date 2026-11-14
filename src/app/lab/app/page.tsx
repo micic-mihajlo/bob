@@ -1,10 +1,10 @@
 import "@/components/theme/index.css";
-import { SnapshotGate } from "@/components/features/window/SnapshotGate";
+import { AppWindow } from "@/components/features/window/AppWindow";
 
 export default function AppLab() {
   return (
-    <SnapshotGate>
-      <div className="app-window" />
-    </SnapshotGate>
+    <AppWindow>
+      <main className="conversation-panel" aria-label="Conversation" />
+    </AppWindow>
   );
 }
