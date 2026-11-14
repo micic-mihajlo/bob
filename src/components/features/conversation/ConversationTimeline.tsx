@@ -188,7 +188,6 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
     <>
       <span className="sr-only" role="status" aria-live="polite" aria-atomic="true" />
       <div className="conversation-scroll" ref={scrollRef} onScroll={onScroll}>
-        {!pinned ? <ScrollToLatestButton count={unseen} onClick={jumpToNewest} onDismiss={jumpToNewest} /> : null}
         {rows.length === 0 && !live ? empty : null}
         <div className="virtual-chat-list virtual-chat-list-static" style={{ height: "auto" }} ref={contentRef}>
           {rows.map((row, index) => {
@@ -222,6 +221,11 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
           </div>
         </div>
       </div>
+      {!pinned ? (
+        <div className="scroll-to-latest-band">
+          <ScrollToLatestButton count={unseen} onClick={jumpToNewest} onDismiss={jumpToNewest} />
+        </div>
+      ) : null}
     </>
   );
 }
