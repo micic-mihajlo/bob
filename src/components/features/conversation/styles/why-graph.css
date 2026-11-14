@@ -191,3 +191,86 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* Context from HydraDB: what the captain was handed for this request. */
+.hydra-context {
+  display: grid;
+  flex: 0 0 auto;
+  gap: var(--bob-space-2);
+  border-bottom: 1px solid var(--bob-border);
+  padding: var(--bob-space-3) var(--bob-space-4);
+}
+
+.hydra-context-icon {
+  width: var(--bob-icon-sm);
+  height: var(--bob-icon-sm);
+  flex: none;
+}
+
+.hydra-context .why-graph-source,
+.hydra-context-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bob-space-1);
+}
+
+.hydra-context-group {
+  display: grid;
+  gap: var(--bob-space-1);
+}
+
+.hydra-context-label {
+  justify-self: start;
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+}
+
+.hydra-context-list {
+  display: grid;
+  gap: var(--bob-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hydra-context-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--bob-space-2);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+}
+
+.hydra-context-score {
+  color: var(--bob-text-secondary);
+  font-family: var(--bob-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.hydra-context-text {
+  display: grid;
+  min-width: 0;
+}
+
+.hydra-context-text strong {
+  overflow: hidden;
+  color: var(--bob-text-primary);
+  font-weight: var(--bob-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hydra-context-detail {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--bob-text-secondary);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.hydra-context-source {
+  color: var(--bob-text-muted);
+  white-space: nowrap;
+}
+

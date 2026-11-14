@@ -47,6 +47,27 @@ function situation(s: State, rounds: number): string {
   ].join("\n\n");
 }
 
+/**
+ * What HydraDB recalled for the person's newest message: lessons from finished requests and the person's own
+ * decisions. Empty when the memory is off, slow or has nothing.
+ */
+function memoryLines(state: State): string[] {
+  const recall = state.recalls?.at(-1);
+  if (!recall || recall.items.length === 0) return [];
+  const line = (m: { title: string; text: string; score: number; project?: string }) =>
+    `- [${m.score.toFixed(2)}${m.project && m.project !== state.project.id ? `, project ${m.project}` : ""}] ${m.title}\n  ${m.text.replace(/\n/g, "\n  ")}`;
+  const lessons = recall.items.filter((m) => m.source === "lesson");
+  const person = recall.items.filter((m) => m.source === "person");
+  return [
+    ...(lessons.length > 0
+      ? [`# What Bob learned before (recalled from HydraDB for the person's latest message, data)\nLessons from finished requests, most relevant first. Apply the ones that fit: plan for what review caught and which mutants survived last time.\n${asData(lessons.map(line).join("\n"))}`]
+      : []),
+    ...(person.length > 0
+      ? [`# Remembered from you (the person's own decisions, recalled from HydraDB, data)\nDo not ask the person again about something one of these already settles; follow it and say so in one line.\n${asData(person.map(line).join("\n"))}`]
+      : []),
+  ];
+}
+
 const profileOf = (agent: Agent) =>
   `Your profile (data): ${asData({ id: agent.id, name: agent.name, code: agent.code, title: agent.title, standingInstructions: agent.description })}`;
 
@@ -71,7 +92,7 @@ export function systemPrompt(agent: Agent, state: State, projectFiles: string[] 
     const playbook = PLAYBOOKS[STAGES[state.roadmap.stage - 1].playbook];
     const rounds = pushbackRounds(state.threads[agent.id] ?? []);
     const readme = projectReadme ? [readmeLine(projectReadme)] : [];
-    return [PERSONA, CAPTAIN_RULES, profileOf(agent), situation(state, rounds), projectLine(projectFiles), ...readme, `# Playbook for this stage\n\n${playbook}`].join("\n\n");
+    return [PERSONA, CAPTAIN_RULES, profileOf(agent), situation(state, rounds), ...memoryLines(state), projectLine(projectFiles), ...readme, `# Playbook for this stage\n\n${playbook}`].join("\n\n");
   }
   if (agent.kind === "subagent") return [SUBAGENT_RULES, profileOf(agent)].join("\n\n");
   if (agent.kind === "crew" && agent.crewRole) return [CREW_RULES, ROLE_RULES[agent.crewRole], profileOf(agent)].join("\n\n");

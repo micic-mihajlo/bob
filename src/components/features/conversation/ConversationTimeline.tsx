@@ -5,6 +5,7 @@ import { useBob } from "@/components/features/window/BobContext";
 import { cx } from "@/components/ui/classes";
 import { markThreadRead } from "@/lib/client/api";
 import { stillAwaiting } from "@/lib/client/awaiting";
+import { chatActionMarkers, groupedMessageIds, type ChatActionMarkerModel } from "@/lib/client/chat-action-markers";
 import { dayMarkerLabel } from "@/lib/client/chat-time";
 import { buildConversationRows, continuesSenderRun, markerRow, rowDrawsTime, senderRunRow, type ConversationRow } from "@/lib/client/conversation-rows";
 import { pendingSteps } from "@/lib/client/live-move";
@@ -13,16 +14,17 @@ import { liveSteps, type LiveTurn } from "@/lib/client/thread-rows";
 import { useNow } from "@/lib/client/use-now";
 import { useStickToBottom } from "@/lib/client/use-stick-to-bottom";
 import type { Agent, ThreadView } from "@/lib/types";
-import { AgentActivityIndicator, DEFAULT_ACTIVITY_LABEL } from "./AgentActivity";
+import { AgentActivityIndicator } from "./AgentActivity";
 import { AgentStepsDisclosure } from "./AgentSteps";
 import { ApprovalCard } from "./ApprovalCard";
-import { AgentMessageMarker, NoticeMarker } from "./ChatActionMarker";
+import { ChatActionMarker } from "./ChatActionMarker";
 import { ChatMessageRow } from "./ChatMessageRow";
 import { ChatRowBoundary } from "./ChatRowBoundary";
 import { ChatScrollRail, chatScrollSections } from "./ChatScrollRail";
 import { ScrollToLatestButton } from "./MessageNavigation";
 import { ArtifactCard } from "./PullRequestCard";
 import { scrollToUnreadBoundary, UnreadMessagesBanner, UnreadMessagesDivider, unreadMessagesDividerIsVisible } from "./UnreadMessages";
+import { useAgentActivity } from "./use-agent-activity";
 
 /** Slack in pixels before an edge counts as reached, absorbing sub-pixel scroll positions. */
 const EDGE_EPSILON = 2;
@@ -57,14 +59,14 @@ function RowView({
   row,
   agent,
   animate,
-  expanded,
+  marker,
   onToggle,
 }: {
   row: ConversationRow;
   agent: Agent;
   animate: boolean;
-  expanded: boolean;
-  onToggle: () => void;
+  marker: ChatActionMarkerModel | undefined;
+  onToggle: (id: string) => void;
 }): ReactNode {
   const { snapshot } = useBob();
   const question = snapshot.answering?.agentId === agent.id ? snapshot.answering.question?.toLowerCase() : undefined;
@@ -105,39 +107,19 @@ function RowView({
         </ChatRowBoundary>
       );
     case "sent":
-      return (
-        <ChatRowBoundary>
-          <article data-chat-search-message={row.id}>
-            <AgentMessageMarker
-              direction="outgoing"
-              expectsReply={row.item.expectsReply}
-              agentIds={row.item.to}
-              text={row.item.text}
-              at={row.at}
-              expanded={expanded}
-              onToggle={onToggle}
-              animate={animate}
-            />
-          </article>
-        </ChatRowBoundary>
-      );
     case "received":
-      return (
+    case "notice":
+      return marker ? (
         <ChatRowBoundary>
-          <article data-chat-search-message={row.id}>
-            <AgentMessageMarker
-              direction="incoming"
-              expectsReply={!row.item.isReply}
-              agentIds={[row.item.from]}
-              text={row.item.text}
-              at={row.at}
-              expanded={expanded}
-              onToggle={onToggle}
-              animate={animate}
-            />
+          <article
+            data-chat-search-message={row.id}
+            data-chat-search-group={groupedMessageIds(marker)}
+            className={animate ? "chat-action-entry-animated" : undefined}
+          >
+            <ChatActionMarker marker={marker} announce={animate} onToggleAgentMessage={onToggle} />
           </article>
         </ChatRowBoundary>
-      );
+      ) : null;
     case "approval": {
       const approval = snapshot.approvals.find((candidate) => candidate.id === row.item.approvalId);
       return approval ? (
@@ -148,14 +130,6 @@ function RowView({
         </ChatRowBoundary>
       ) : null;
     }
-    case "notice":
-      return (
-        <ChatRowBoundary>
-          <article data-chat-search-message={row.id}>
-            <NoticeMarker tone={row.item.tone} text={row.item.text} at={row.at} />
-          </article>
-        </ChatRowBoundary>
-      );
     case "artifact":
       return (
         <ChatRowBoundary>
@@ -284,6 +258,7 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
       else next.add(id);
       return next;
     });
+  const markers = chatActionMarkers(rows, agent.id, thread.items, snapshot.activity, expanded, unreadBoundaryId);
 
   const markUnreadMessages = async () => {
     if (markingRead) return;
@@ -325,8 +300,10 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
     element.scrollTo({ top, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   };
 
-  const label =
-    pending.at(-1)?.label ?? (activity?.state === "working" ? (activity.step ?? running.at(-1)?.label ?? DEFAULT_ACTIVITY_LABEL) : DEFAULT_ACTIVITY_LABEL);
+  const detail = pendingReply
+    ? "Thinking…"
+    : (pending.at(-1)?.label ?? (activity?.state === "working" ? (activity.step ?? running.at(-1)?.label ?? null) : null));
+  const shown = useAgentActivity(live ? `turn-${live.since}` : pendingReply ? `sent-${sent.at}` : null, detail);
   /*
    * A thread with no message yet, and no turn and no reply on its way. The activity line shows the
    * turn, so it is read here.
@@ -354,6 +331,8 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
         {showEmpty ? empty : null}
         <div className="virtual-chat-list virtual-chat-list-static" style={{ height: "auto" }} ref={contentRef}>
           {rows.map((row, index) => {
+            const actionMarker = markers.get(row.id);
+            if (actionMarker === null) return null;
             const previous = rows[index - 1];
             /*
              * The separator above the row. The first row always carries one, and a later row
@@ -391,8 +370,8 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
                   row={row}
                   agent={agent}
                   animate={!initialIds.has(row.id) && !(row.kind === "agent" && streamedTurnIds.has(row.item.turnId))}
-                  expanded={expanded.has(row.id)}
-                  onToggle={() => toggle(row.id)}
+                  marker={actionMarker}
+                  onToggle={toggle}
                 />
               </div>
             );
@@ -407,10 +386,15 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
         </div>
         <div className="conversation-live">
           <div className="agent-activity-slot" data-reserved={activityShown ? "true" : "false"}>
-            {live && activity?.state === "working" ? (
-              <AgentActivityIndicator agent={agent} label={label} since={activity.since} steps={running} />
-            ) : pendingReply ? (
-              <AgentActivityIndicator agent={agent} label="Thinking…" since={new Date(sent.at).toISOString()} steps={[]} />
+            {shown ? (
+              <AgentActivityIndicator
+                agent={agent}
+                label={shown.label}
+                detail={shown.detail}
+                phase={shown.phase}
+                since={shown.since}
+                steps={live ? running : []}
+              />
             ) : null}
           </div>
         </div>

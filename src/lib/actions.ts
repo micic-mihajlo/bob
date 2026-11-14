@@ -2,7 +2,8 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { openAsk, openFollowUp, openInboxQuestion } from "./brain/intake";
 import { globals } from "./globals";
-import { newId } from "./ids";
+import { startRecall, withRecall } from "./graph/memory";
+import { newId, nowIso } from "./ids";
 import { isThreadModel, unknownModel } from "./models";
 import { interrupt, type InterruptResult } from "./interrupt";
 import { send } from "./mailbox";
@@ -85,7 +86,18 @@ export function postUserMessage(agentId: AgentId, text: string, mode: SendMode =
   });
   if (!sent.ok) return { ok: false, error: sent.error.message };
   const steered = mode === "steer" && steerInto(agentId, sent.message.id, sent.deliveries[0].id, sent.message.text, via);
-  if (!steered) drain(agentId);
+  const recalling = agent.kind === "captain" ? startRecall(text, getState().project.id) : null;
+  if (!recalling) {
+    if (!steered) drain(agentId);
+  } else {
+    void recalling
+      .then((recall) => {
+        if (recall) update((s) => withRecall(s, sent.message, recall, nowIso()));
+      })
+      .finally(() => {
+        if (!steered) drain(agentId);
+      });
+  }
   return { ok: true, messageId: sent.message.id, steered };
 }
 
