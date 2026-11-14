@@ -7,7 +7,7 @@ import { getState, transact } from "../store";
 import { threadWorkspace, workspaceOptions } from "../thread-workspace";
 import { findPullRequest, isPullRequest, nextPullRequestNumber, type PullRequestArtifact } from "../threads";
 import type { Agent, Artifact, ReviewFinding } from "../types";
-import { mergePullRequest, openPullRequest } from "../workspace";
+import { git, mergePullRequest, openPullRequest, type Workspace } from "../workspace";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
 
 const PATCH_PREVIEW = 6_000;
@@ -15,6 +15,7 @@ const PATCH_PREVIEW = 6_000;
 export const openPullRequestSchema = z.object({
   title: z.string().min(1).max(100).describe("One line saying what the change does."),
   body: z.string().min(1).describe("Why the change is needed, what it touches, and how you checked it."),
+  commitMessage: z.string().min(1).optional().describe("Commits every uncommitted change with this message first. Defaults to the title."),
 });
 type OpenInput = z.infer<typeof openPullRequestSchema>;
 type Opened = { headSha: string; files: PullRequestArtifact["pullRequest"]["files"]; patch: string };
@@ -50,12 +51,26 @@ function upsertPullRequest(s: State, ctx: ToolContext, agent: Agent, branch: str
   return { state: linkWorkOrder({ ...s, artifacts: [...s.artifacts, artifact] }, agent, artifact.id), value: artifact };
 }
 
+/** Stages and commits whatever the thread changed, so opening a pull request is one call. */
+async function commitPending(ws: Workspace, message: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const status = await git(ws, ["status", "--porcelain"]);
+  if (!status.ok) return status;
+  if (status.output.trim() === "") return { ok: true };
+  const added = await git(ws, ["add", "--all"]);
+  if (!added.ok) return added;
+  const commit = await git(ws, ["commit", "--quiet", "-m", message]);
+  return commit.ok ? { ok: true } : commit;
+}
+
 export async function openPullRequestTool(input: OpenInput, ctx: ToolContext): Promise<ToolOutput> {
   const s = getState();
   const agent = agentById(s, ctx.agentId);
   if (!agent?.branch) return fail("This thread has no branch of its own, so it cannot open a pull request.");
   const branch = agent.branch;
-  const opened = await openPullRequest(await threadWorkspace(s.project, agent.id), { branch, title: input.title, body: input.body });
+  const ws = await threadWorkspace(s.project, agent.id);
+  const committed = await commitPending(ws, input.commitMessage ?? input.title);
+  if (!committed.ok) return fail(committed.error);
+  const opened = await openPullRequest(ws, { branch, title: input.title, body: input.body });
   if (!opened.ok) return fail(opened.error);
   const pr = transact((x) => upsertPullRequest(x, ctx, agent, branch, input, opened));
   return done({
@@ -158,6 +173,6 @@ export async function mergePullRequestTool(input: z.infer<typeof mergeSchema>): 
     const fresh = findPullRequest(x, pr.id);
     return fresh ? markMerged(x, fresh) : { state: x, value: null };
   });
-  const next = "Merged. Close this work order's threads with close_thread and update DIGEST.md.";
+  const next = "Merged. Close this work order's threads with close_thread.";
   return done({ merged: true, alreadyMerged: !result || result.alreadyMerged, number: pr.pullRequest.number, workOrderId, next });
 }

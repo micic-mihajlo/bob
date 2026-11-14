@@ -10,6 +10,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "verify": "node formal/verify.mjs",
+    "live": "vitest run --config vitest.live.config.ts",
     "walkthrough": "node --no-warnings scripts/walkthrough.ts"
   },
   "dependencies": {

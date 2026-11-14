@@ -1,62 +1,131 @@
 import { z } from "zod";
-import { getState } from "../store";
+import { getConfig, getState } from "../store";
 import { threadWorkspace } from "../thread-workspace";
-import { editFile, git, listFiles, readFile, writeFile, type Workspace } from "../workspace";
+import { editFile, ensureWorkspaceDeps, git, listFiles, readFile, runCommand, writeFile, type Workspace } from "../workspace";
 import type { ToolContext, ToolOutput } from "./context";
 import { clip, define, fromResult, type ToolDef } from "./define";
 import { openPullRequestSchema, openPullRequestTool, recordReview, recordReviewSchema } from "./pull-requests";
 import { recordNote, recordNoteSchema, report, reportSchema } from "./report";
 
 const READ_ONLY_GIT = ["status", "diff", "log", "show", "fetch", "switch", "checkout"] as const;
+const MAX_BATCH = 20;
+const READ_BUDGET = 80_000;
+const STEP_OUTPUT = 3_000;
 
 const relPath = (what: string) => z.string().describe(`${what}, relative to the workspace root, such as src/format.ts`);
 
+const workspaceOf = (ctx: ToolContext) => threadWorkspace(getState().project, ctx.agentId);
+
 async function inWorkspace(ctx: ToolContext, run: (ws: Workspace) => Promise<{ ok: true } | { ok: false; error: string }>): Promise<ToolOutput> {
-  return fromResult(await run(await threadWorkspace(getState().project, ctx.agentId)));
+  return fromResult(await run(await workspaceOf(ctx)));
+}
+
+const names = (paths: string[]) => clip(paths.join(", "), 70);
+
+/** One result per item, in order. The call fails only when every item failed. */
+function batch(items: Record<string, unknown>[]): ToolOutput {
+  const failed = items.filter((i) => "error" in i).length;
+  if (failed > 0 && failed === items.length) return { result: { error: items.map((i) => `${i.path}: ${i.error}`).join("\n"), results: items } };
+  return { result: { results: items, ...(failed ? { failed } : {}) } };
 }
 
 const listFilesDef = define({
   name: "list_files",
   description:
-    "List the files in your workspace, your own git checkout of the project. Call it first to see what exists. Pass dir to list one folder. Leaves out .git and ignored files.",
+    "List the files in your workspace, your own git checkout of the project. Your first message already shows the file tree, so call this only for a folder it left out. Leaves out .git and ignored files.",
   schema: z.object({ dir: relPath("Folder to list").optional() }),
   sets: ["build", "review", "research"],
   label: (i) => (i.dir ? `Listing ${i.dir}` : "Listing the workspace"),
   execute: (i, ctx) => inWorkspace(ctx, (ws) => listFiles(ws, i.dir)),
 });
 
-const readFileDef = define({
-  name: "read_file",
-  description:
-    "Read a text file in your workspace. Read a file before you edit it so you can copy its text exactly. offset is the first line (1-based) and limit the number of lines; the result says when it is truncated.",
+const readFilesDef = define({
+  name: "read_files",
+  description: `Read up to ${MAX_BATCH} text files in your workspace in one call. Read every file you need at once instead of one per call. Files your first message already shows need no reading. Each result has the content, totalLines and truncated; for a long file pass offset (1-based first line) and limit.`,
   schema: z.object({
-    path: relPath("File to read"),
+    paths: z.array(relPath("File to read")).min(1).max(MAX_BATCH),
     offset: z.number().int().min(1).optional(),
     limit: z.number().int().min(1).max(2000).optional(),
   }),
   sets: ["build", "review", "research"],
-  label: (i) => `Reading ${i.path}`,
-  execute: (i, ctx) => inWorkspace(ctx, (ws) => readFile(ws, i.path, { offset: i.offset, limit: i.limit })),
+  label: (i) => `Reading ${names(i.paths)}`,
+  execute: async (i, ctx) => {
+    const ws = await workspaceOf(ctx);
+    let budget = READ_BUDGET;
+    const items: Record<string, unknown>[] = [];
+    for (const p of i.paths) {
+      const read = await readFile(ws, p, { offset: i.offset, limit: i.limit });
+      if (!read.ok) {
+        items.push({ path: p, error: read.error });
+        continue;
+      }
+      const content = read.content.slice(0, Math.max(0, budget));
+      budget -= content.length;
+      items.push({ path: read.path, content, totalLines: read.totalLines, truncated: read.truncated || content.length < read.content.length });
+    }
+    return batch(items);
+  },
 });
 
-const writeFileDef = define({
-  name: "write_file",
-  description:
-    "Create a file, or replace a whole file, in your workspace. Use edit_file to change part of an existing file. Writing does not commit: run git add and git commit afterwards.",
-  schema: z.object({ path: relPath("File to write"), content: z.string().describe("The complete new content") }),
+const writeFilesDef = define({
+  name: "write_files",
+  description: `Create or replace up to ${MAX_BATCH} whole files in your workspace in one call: write the change and its test together. Missing folders are created. Use edit_files to change part of a file. Nothing is committed until open_pull_request.`,
+  schema: z.object({
+    files: z.array(z.object({ path: relPath("File to write"), content: z.string().describe("The complete new content") })).min(1).max(MAX_BATCH),
+  }),
   sets: ["build"],
-  label: (i) => `Writing ${i.path}`,
-  execute: (i, ctx) => inWorkspace(ctx, (ws) => writeFile(ws, i.path, i.content)),
+  label: (i) => `Writing ${names(i.files.map((f) => f.path))}`,
+  execute: async (i, ctx) => {
+    const ws = await workspaceOf(ctx);
+    const items: Record<string, unknown>[] = [];
+    for (const f of i.files) {
+      const out = await writeFile(ws, f.path, f.content);
+      items.push(out.ok ? { path: out.path, bytes: out.bytes } : { path: f.path, error: out.error });
+    }
+    return batch(items);
+  },
 });
 
-const editFileDef = define({
-  name: "edit_file",
-  description:
-    "Replace one exact piece of text in a file in your workspace. oldText must match character for character and occur exactly once, or nothing changes; read the file first and include enough lines to make it unique.",
-  schema: z.object({ path: relPath("File to edit"), oldText: z.string().min(1), newText: z.string() }),
+const editFilesDef = define({
+  name: "edit_files",
+  description: `Make up to ${MAX_BATCH} exact text replacements across files in your workspace in one call, applied in order. Each oldText must match the file character for character and occur exactly once, or that edit changes nothing and reports an error; copy it from the file and include enough lines to make it unique.`,
+  schema: z.object({
+    edits: z.array(z.object({ path: relPath("File to edit"), oldText: z.string().min(1), newText: z.string() })).min(1).max(MAX_BATCH),
+  }),
   sets: ["build"],
-  label: (i) => `Editing ${i.path}`,
-  execute: (i, ctx) => inWorkspace(ctx, (ws) => editFile(ws, i.path, i.oldText, i.newText)),
+  label: (i) => `Editing ${names([...new Set(i.edits.map((e) => e.path))])}`,
+  execute: async (i, ctx) => {
+    const ws = await workspaceOf(ctx);
+    const items: Record<string, unknown>[] = [];
+    for (const e of i.edits) {
+      const out = await editFile(ws, e.path, e.oldText, e.newText);
+      items.push(out.ok ? { path: out.path, bytes: out.bytes } : { path: e.path, error: out.error });
+    }
+    return batch(items);
+  },
+});
+
+const runDef = define({
+  name: "run",
+  description:
+    "Run one shell command in your workspace root, such as \"npm test\", \"npm run typecheck\" or \"ls src\", and get its exit code and output. Dependencies are already installed. Chain steps with && in one call. Commands run with no network credentials and no API keys, are killed at the timeout (default 120 seconds), and long output keeps its head and tail. Use it to run the tests before you open a pull request and name the command in Evidence.",
+  schema: z.object({
+    command: z.string().min(1).describe("A bash command line, run from the workspace root"),
+    timeoutSeconds: z.number().int().min(1).max(600).optional(),
+  }),
+  sets: ["build", "review", "research"],
+  label: (i) => `Running ${clip(i.command, 70)}`,
+  detail: (i, r) => (typeof r.output === "string" ? `$ ${i.command}\n${r.output.slice(-STEP_OUTPUT)}\n${String(r.note ?? "")}`.trim() : undefined),
+  execute: async (i, ctx) => {
+    const ws = await workspaceOf(ctx);
+    const deps = getConfig().installDeps ? await ensureWorkspaceDeps(ws) : null;
+    const setup = deps?.ok && deps.state.kind === "failed" ? `Installing dependencies failed (${deps.state.command}): ${deps.state.output}` : undefined;
+    const out = await runCommand(ws, i.command, (i.timeoutSeconds ?? 120) * 1000);
+    if (!out.ok) return { result: { error: out.error } };
+    const { ok: _ok, ...rest } = out;
+    const note = out.timedOut ? `Killed after ${out.seconds}s, the timeout.` : out.exitCode === 0 ? "Passed: exit code 0." : `Failed: exit code ${out.exitCode}.`;
+    return { result: { ...rest, passed: out.exitCode === 0 && !out.timedOut, note, ...(setup ? { setup } : {}) } };
+  },
 });
 
 const gitArgs = z.object({ args: z.array(z.string()).min(1).describe("Arguments after git, subcommand first, such as [\"status\"]") });
@@ -64,7 +133,7 @@ const gitArgs = z.object({ args: z.array(z.string()).min(1).describe("Arguments 
 const buildGitDef = define({
   name: "git",
   description:
-    "Run one git command in your workspace, arguments without \"git\": [\"status\"], [\"add\", \"src/csv.ts\"], [\"commit\", \"-m\", \"Add CSV export\"], [\"diff\", \"main\"]. Your branch is already checked out; commit on it. Before you report, read your change with [\"diff\", \"main\"]. You cannot push to main or force-push; open_pull_request publishes your branch.",
+    "Run one git command in your workspace, arguments without \"git\": [\"status\"], [\"diff\", \"main\"], [\"log\", \"--oneline\"]. Your branch is already checked out. You rarely need it: open_pull_request commits your changes and returns the diff. You cannot push to main or force-push.",
   schema: gitArgs,
   sets: ["build"],
   label: (i) => clip(`git ${i.args.join(" ")}`),
@@ -73,7 +142,7 @@ const buildGitDef = define({
 
 const readOnlyGitDef = define({
   name: "git",
-  description: `Run one read-only git command in your workspace, arguments without "git". Allowed: ${READ_ONLY_GIT.join(", ")}. To read a pull request: ["fetch", "origin"], then ["diff", "origin/main...origin/<branch>"]; use ["show", "origin/<branch>:<path>"] to read a whole changed file.`,
+  description: `Run one read-only git command in your workspace, arguments without "git". Allowed: ${READ_ONLY_GIT.join(", ")}. Your first message already holds the pull request's diff, and the workspace has its branch checked out, so you rarely need this; use ["show", "<ref>:<path>"] to read a file at another revision.`,
   schema: gitArgs,
   sets: ["review", "research"],
   label: (i) => clip(`git ${i.args.join(" ")}`),
@@ -82,15 +151,16 @@ const readOnlyGitDef = define({
 
 export const CREW_TOOLS: ToolDef[] = [
   listFilesDef,
-  readFileDef,
-  writeFileDef,
-  editFileDef,
+  readFilesDef,
+  writeFilesDef,
+  editFilesDef,
+  runDef,
   buildGitDef,
   readOnlyGitDef,
   define({
     name: "open_pull_request",
     description:
-      "Publish your branch and open a pull request for it, once your change is committed and you have read the diff. Returns the number, changed files and the diff against main. After more commits, call it again to update the same pull request. You never merge.",
+      "Commit every change in your workspace with commitMessage, publish your branch and open its pull request, in one call. Returns the number, the changed files and the diff against main. Call it once your tests pass. Call it again after more changes to update the same pull request. You never merge.",
     schema: openPullRequestSchema,
     sets: ["build"],
     label: (i) => `Opening a pull request: ${clip(i.title)}`,

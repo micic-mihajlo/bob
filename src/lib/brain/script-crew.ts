@@ -15,11 +15,9 @@ function buildPlan(ctx: TurnContext, brief: string): Plan {
   const files = change.files(goal);
   return {
     steps: [
-      () => [call("list_files", {}), call("read_file", { path: "src/invoices.ts" })],
-      () => files.map((f) => call("write_file", f)),
-      () => [call("git", { args: ["add", "--all"] }), call("git", { args: ["commit", "-m", change.commit] })],
-      () => [call("git", { args: ["diff", "main", "--stat"] })],
-      () => [call("open_pull_request", change.pullRequest)],
+      () => [call("read_files", { paths: ["src/invoices.ts"] })],
+      () => [call("write_files", { files })],
+      () => [call("open_pull_request", { ...change.pullRequest, commitMessage: change.commit })],
       (done) => {
         const pr = resultOf(done, "open_pull_request");
         if (!pr) return [];
