@@ -2383,7 +2383,7 @@ button.ui-bubble-content {
 }
 
 .ui-bubble-variant-secondary > .ui-bubble-content {
-  background: var(--bob-bg-surface-raised);
+  background: var(--bob-bg-bubble);
 }
 
 .ui-bubble-variant-muted > .ui-bubble-content {
