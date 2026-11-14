@@ -19,7 +19,7 @@ export interface PreviewView {
   port: number;
   status: "starting" | "ready" | "failed";
   error?: string;
-  /** Bob previewing itself, which opens on the scripted sample instead of the Open a project choice. */
+  /** Bob previewing itself, which opens on an empty blank project instead of the Open a project choice. */
   self: boolean;
 }
 
@@ -94,7 +94,7 @@ async function waitReady(running: Running): Promise<void> {
       await new Promise((resolve) => setTimeout(resolve, 500));
       continue;
     }
-    if (running.view.self) await fetch(`${base}/api/reset`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sample: true }) }).catch(() => undefined);
+    if (running.view.self) await fetch(`${base}/api/projects`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "bob", template: "blank-ts" }) }).catch(() => undefined);
     running.view = { ...running.view, status: "ready" };
   }
 }
@@ -104,7 +104,7 @@ let exitHooked = false;
 /**
  * Starts the pull request's head in its thread's workspace with the project's dev command on a free port, replacing
  * any other preview. Bob previewing itself gets its own .data under that workspace, Durable state off and the
- * scripted brain, so the child never touches this Bob's state.
+ * scripted brain, so the child never touches this Bob's state; it opens on an empty project.
  */
 export async function startPreview(pullRequestId: string): Promise<{ ok: true; preview: PreviewView } | { ok: false; error: string }> {
   const s = getState();
