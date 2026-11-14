@@ -39,7 +39,7 @@ function fakeHydra(answer: (call: Call) => { status: number; json: unknown } = (
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string, init: RequestInit) => {
-      const call = { url, headers: init.headers as Record<string, string>, body: JSON.parse(String(init.body)) };
+      const call = { url, headers: init.headers as Record<string, string>, body: init.body === undefined ? undefined : JSON.parse(String(init.body)) };
       calls.push(call);
       const { status, json } = answer(call);
       return new Response(JSON.stringify(json), { status, headers: { "content-type": "application/json" } });
@@ -249,7 +249,7 @@ describe("Why? from HydraDB", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((url: string, init: RequestInit) => {
-        calls.push({ url, headers: {}, body: JSON.parse(String(init.body)) });
+        calls.push({ url, headers: {}, body: init.body === undefined ? undefined : JSON.parse(String(init.body)) });
         return new Promise((_, reject) => init.signal?.addEventListener("abort", () => reject(init.signal?.reason)));
       }),
     );
