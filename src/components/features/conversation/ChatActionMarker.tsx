@@ -123,7 +123,9 @@ export function NoticeMarker({ tone, text, at }: { tone: "info" | "warning"; tex
     >
       <div className="chat-action-marker-summary">
         <span data-slot="marker-content" className="ui-marker-content chat-action-marker-content">
-          <span className="chat-action-marker-label">{text}</span>
+          <span className="chat-action-marker-label" title={text}>
+            {text}
+          </span>
           <time className="chat-action-marker-time" dateTime={at}>
             {formatChatTimestamp(at)}
           </time>

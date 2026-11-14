@@ -1420,3 +1420,21 @@ button.chat-action-target:active,
   content: "·";
   margin-inline-end: var(--bob-space-1);
 }
+
+/* A runtime notice can run long (a conflict lists its files). It wraps to two centered lines and
+ * keeps the whole text in its title, instead of running past the edge of the chat. */
+.chat-action-marker[data-tone] .chat-action-marker-content {
+  flex-wrap: wrap;
+  justify-content: center;
+  min-width: 0;
+}
+
+.chat-action-marker[data-tone] .chat-action-marker-label {
+  display: -webkit-box;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
