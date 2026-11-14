@@ -235,6 +235,10 @@ export interface PullRequestData {
   githubError?: string;
   /** The preview deployment built for this head, once a review checked it (BOB_PREVIEWS=vercel). */
   preview?: PreviewDeployment;
+  /** The git tree of the head, which a verification must match. */
+  tree?: string;
+  /** The head's verification as one line, kept current with the trace block. */
+  verification?: string;
 }
 
 export interface GitHubPullRequest {

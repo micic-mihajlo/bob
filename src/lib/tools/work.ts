@@ -8,6 +8,7 @@ import { findPullRequest, type PullRequestArtifact } from "../threads";
 import type { Approval, Artifact } from "../types";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
 import { reviewGateRefusal } from "./handoff";
+import { verificationRefusal } from "../verification";
 
 export const recordArtifactSchema = z.object({
   kind: z.enum(["review", "note"]).describe("Pull requests come only from a build thread's open_pull_request."),
@@ -69,7 +70,7 @@ export function requestApproval(input: ApprovalInput, ctx: ToolContext): ToolOut
     const pr = input.pullRequestId ? findPullRequest(s, input.pullRequestId) : undefined;
     if (input.pullRequestId && !pr) return { state: s, value: fail(`No pull request ${input.pullRequestId}. Use its id or number.`) };
     if (pr?.pullRequest.merged) return { state: s, value: fail(`#${pr.pullRequest.number} is already merged.`) };
-    const unreviewed = pr ? reviewGateRefusal(s, pr) : null;
+    const unreviewed = pr ? (reviewGateRefusal(s, pr) ?? verificationRefusal(s, pr)) : null;
     if (unreviewed) return { state: s, value: fail(`${unreviewed} End your turn now.`) };
     const pending = pr && s.approvals.find((a) => a.pullRequestId === pr.id && a.status === "pending");
     if (pending) return { state: s, value: done({ approvalId: pending.id, note: `Already waiting on the person. ${WAIT_NOTE}` }, { endTurn: true }) };

@@ -73,6 +73,12 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
             <strong>{pullRequest.pullRequest.branch}</strong>
           </div>
         ) : null}
+        {pullRequest?.pullRequest.verification ? (
+          <div className="approval-detail-row">
+            <span className="approval-detail-label">Verification</span>
+            <strong>{pullRequest.pullRequest.verification}</strong>
+          </div>
+        ) : null}
         {files.length > 0 ? (
           <div className="approval-detail-row">
             <span className="approval-detail-label">Files</span>

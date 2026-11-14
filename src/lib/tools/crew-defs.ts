@@ -9,6 +9,7 @@ import { openPullRequestSchema, openPullRequestTool, recordReview, recordReviewS
 import { recordNote, recordNoteSchema, report, reportSchema } from "./report";
 import { PREVIEW_TOOLS } from "../integrations/vercel/check-preview";
 import { startSubagent, startSubagentSchema } from "../subagents";
+import { VERIFY_TOOLS } from "./verify";
 
 const READ_ONLY_GIT = ["status", "diff", "log", "show", "fetch", "switch", "checkout"] as const;
 const MAX_BATCH = 20;
@@ -187,6 +188,7 @@ export const CREW_TOOLS: ToolDef[] = [
     execute: recordReview,
   }),
   ...PREVIEW_TOOLS,
+  ...VERIFY_TOOLS,
   define({
     name: "record_artifact",
     description: "Record what you found as a note the captain and the person can read. Cite the files you read.",
