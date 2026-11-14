@@ -6,7 +6,7 @@ import { patchApproval } from "../state-ops";
 import { getConfig, getState, update } from "../store";
 import { browseWorkspace, threadWorkspace, workspaceChanges } from "../thread-workspace";
 import { callTool, toolsFor } from "../tools";
-import { settle } from "../turns";
+import { drain, settle } from "../turns";
 import { traceWhy } from "../why";
 import { git, listFiles } from "../workspace";
 import { expectQuiet, freshTeam } from "./helpers";
@@ -89,7 +89,9 @@ describe("captain and crew, scripted, end to end", { timeout: GIT_TIMEOUT }, () 
     await callTool("write_files", { files: [{ path: "src/late.ts", content: "export const late = true;\n" }] }, asBuild);
     await callTool("git", { args: ["add", "src/late.ts"] }, asBuild);
     await callTool("git", { args: ["commit", "-m", "Add a late file"] }, asBuild);
-    await callTool("open_pull_request", { title: prOf()?.title, body: prOf()?.detail }, asBuild);
+    // Outside a turn, so wake the reviewer the new head is handed to, as a build turn would.
+    (await callTool("open_pull_request", { title: prOf()?.title, body: prOf()?.detail }, asBuild)).wake?.forEach(drain);
+    await settle();
 
     expect(decideApproval(first?.id ?? "", "approved").ok).toBe(true);
     await settle();

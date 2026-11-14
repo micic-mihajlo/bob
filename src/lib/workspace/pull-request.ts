@@ -129,6 +129,18 @@ export async function mergePullRequest(
   return mergeShas(run, branch, branchOut.stdout.trim(), mainOut.stdout.trim());
 }
 
+/** Files where `branch` conflicts with origin's main, or an empty list when it merges cleanly. */
+export async function conflictsWithMain(projectId: string, branch: string, options: WorkspaceOptions = {}): Promise<Result<{ conflicts: string[] }>> {
+  const problem = checkId("project id", projectId) ?? checkBranch(branch);
+  if (problem) return fail(problem);
+  const layout = projectLayout(rootOf(options), projectId);
+  const run = gitIn(layout.origin, layout.home, MERGE_IDENTITY);
+  const merged = await run("merge-tree", "--write-tree", "--name-only", "--no-messages", heads(MAIN_BRANCH), heads(branch));
+  if (merged.exitCode === 0) return { ok: true, conflicts: [] };
+  if (merged.exitCode !== 1) return fail(`could not check "${branch}" against ${MAIN_BRANCH}: ${errorText(merged)}`);
+  return { ok: true, conflicts: merged.stdout.trim().split("\n").slice(1).filter(Boolean) };
+}
+
 async function mergeShas(run: Git, branch: string, branchSha: string, mainSha: string): Promise<MergePullRequestResult> {
   if ((await run("merge-base", "--is-ancestor", branchSha, mainSha)).exitCode === 0) {
     return { ok: true, mainSha, alreadyMerged: true };
