@@ -7,15 +7,20 @@ function dollars(value: number): string {
 
 const BUILD_ORDER = /^Build work order \S+ now: ("(?:[^"\\]|\\.)*")/;
 
-/**
- * What a request is called: the sentence the person typed; for an inbox item's triage, where the item
- * came from; for a "Build this" press, the work order it builds.
- */
-export function requestLabel(ask: string, inbox: readonly InboxItem[]): string {
+/** Where a request's text came from: the person typing it, an inbox item handed over for triage, or a "Build this" press. */
+export type RequestOrigin = { kind: "typed"; text: string } | { kind: "inbox"; source: string } | { kind: "build"; title: string };
+
+export function requestOrigin(ask: string, inbox: readonly InboxItem[]): RequestOrigin {
   const build = BUILD_ORDER.exec(ask);
-  if (build) return `Build: ${JSON.parse(build[1]) as string}`;
+  if (build) return { kind: "build", title: JSON.parse(build[1]) as string };
   const item = inbox.find((candidate) => ask.includes(candidate.id));
-  return item ? `Triage: ${item.source}` : ask;
+  return item ? { kind: "inbox", source: item.source } : { kind: "typed", text: ask };
+}
+
+/** What a request is called: the sentence the person typed, "Triage: <source>" for an inbox item, or "Build: <order>" for a Build this press. */
+export function requestLabel(ask: string, inbox: readonly InboxItem[]): string {
+  const origin = requestOrigin(ask, inbox);
+  return origin.kind === "build" ? `Build: ${origin.title}` : origin.kind === "inbox" ? `Triage: ${origin.source}` : origin.text;
 }
 
 /** One request's use against its limits: "1m 37s of 3m · 12 of 90 model calls · $0.04 of $1.00". */
