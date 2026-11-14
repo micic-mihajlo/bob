@@ -198,6 +198,8 @@ const seenNeeds = new Set<string>();
 const seenNotices = new Set<string>();
 const answeredQuestions = new Set<string>();
 const checks: Record<string, unknown> = {};
+/** "Change the acceptance test" cards the driver approved, so a run that needed one never reads as clean by accident. */
+const acceptanceChanges: { t: number; approvalId: string; thread: string; title: string; ok: boolean }[] = [];
 let captainIdleSince: number | null = null;
 
 function observe(s: Snapshot): void {
@@ -404,6 +406,14 @@ async function phase(reqs: Request[], restartAt: Request | null): Promise<{ stop
       await restartServer();
       lastChange = Date.now();
       continue;
+    }
+    for (const a of s.approvals) {
+      if (!a.acceptanceChange || a.status !== "pending" || acceptanceChanges.some((x) => x.approvalId === a.id)) continue;
+      if (!(s.needsYou ?? []).some((n) => n.approvalId === a.id)) continue;
+      const res = await post(`/api/approvals/${a.id}`, { decision: "approved" });
+      const thread = agentOf(s, a.agentId)?.code ?? a.agentId;
+      acceptanceChanges.push({ t: secs(), approvalId: a.id, thread, title: a.title, ok: res.ok });
+      log(`acceptance change approved for ${thread}: ${a.title}${res.ok ? "" : ` (failed: ${res.error})`}`);
     }
     for (const r of reqs) {
       if (!r.approvalId || r.approvedIds.includes(r.approvalId)) continue;
@@ -613,6 +623,7 @@ async function main(): Promise<void> {
     milestones: Object.fromEntries([A, B, C].filter((r) => r.postedAt !== null).map((r) => [r.key, Object.fromEntries(Object.keys(r.at).map((k) => [k, since(r, k)]))])),
     requests: [A, B, C].filter((r) => r.postedAt !== null).map(({ key, vague, testable, pushback, answers }) => ({ key, vague, testable, pushback, answers })),
     restart,
+    acceptanceChanges,
     checks,
     events,
   };
@@ -623,6 +634,7 @@ async function main(): Promise<void> {
   fs.writeFileSync(path.join(OUT, "final-snapshot.json"), JSON.stringify(outcome.final, null, 2));
   if (restartOutcome) fs.writeFileSync(path.join(OUT, "restart-snapshot.json"), JSON.stringify(restartOutcome.final, null, 2));
   console.log("\n" + table(rows));
+  console.log(`\nacceptance changes approved: ${acceptanceChanges.length}${acceptanceChanges.length ? ` (${acceptanceChanges.map((x) => `${x.thread} at ${x.t}s`).join(", ")})` : ""}`);
   console.log(`\n${report.summary.holds} hold, ${report.summary.partly} partly, ${report.summary.no} no (${report.brain} brain, ${commit}, ${report.totalSeconds}s). JSON: ${path.relative(ROOT, path.join(OUT, "latest.json"))}`);
   process.exitCode = report.summary.no > 0 ? 1 : 0;
 }
