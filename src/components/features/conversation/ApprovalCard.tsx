@@ -19,6 +19,10 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
   const files = pullRequest?.pullRequest.files ?? [];
   const reason = files.length > 0 ? reasonWithoutFiles(approval.detail) : approval.detail;
   const pending = approval.status === "pending";
+  const movedTo =
+    approval.status === "approved" && approval.headSha && pullRequest && pullRequest.pullRequest.headSha !== approval.headSha
+      ? pullRequest.pullRequest.headSha
+      : null;
 
   const submit = async (decision: "approved" | "denied") => {
     if (submitting) return;
@@ -42,6 +46,10 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
           <Badge variant="warning-light" className="conversation-interaction-status" role="status">
             <LoaderCircle className="conversation-interaction-spinner" data-icon="inline-start" aria-hidden="true" />
             Approval
+          </Badge>
+        ) : movedTo ? (
+          <Badge variant="secondary" className="conversation-interaction-status" role="status">
+            Replaced
           </Badge>
         ) : approval.status === "approved" ? (
           <Badge variant="success-light" className="conversation-interaction-status" role="status">
@@ -92,6 +100,7 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
           </div>
         ) : null}
       </div>
+      {movedTo ? <p className="approval-reason">The branch moved to {movedTo.slice(0, 7)} after this approval, so this head didn&apos;t merge.</p> : null}
       {error ? (
         <p className="approval-reason" role="alert">
           {error}
