@@ -1,0 +1,131 @@
+import type { AgentId, Artifact, ThreadItem, TurnId } from "@/lib/types";
+import { liveSteps, timeOf, type LiveTurn, type StepItem } from "./thread-rows";
+
+type Item<K extends ThreadItem["kind"]> = Extract<ThreadItem, { kind: K }>;
+
+/** The steps of one finished turn, as its steps row shows them. */
+export interface TurnSteps {
+  turnId: TurnId;
+  steps: readonly StepItem[];
+  /** From the turn's first item to its last. */
+  durationMs: number;
+}
+
+/**
+ * One row of the reference chat. A finished turn's steps sit above its answer, as the reference
+ * draws them; a turn with no answer gets a steps row of its own where its last step was.
+ */
+export type ConversationRow =
+  | { kind: "user"; id: string; at: string; item: Item<"user_text"> }
+  | { kind: "agent"; id: string; at: string; item: Item<"agent_text">; steps: TurnSteps | null }
+  | { kind: "steps"; id: string; at: string; steps: TurnSteps }
+  | { kind: "sent"; id: string; at: string; item: Item<"message_out"> }
+  | { kind: "received"; id: string; at: string; item: Item<"message_in"> }
+  | { kind: "approval"; id: string; at: string; item: Item<"approval"> }
+  | { kind: "notice"; id: string; at: string; item: Item<"notice"> }
+  | { kind: "artifact"; id: string; at: string; artifactId: string };
+
+interface TurnFacts {
+  steps: StepItem[];
+  answerId: string | null;
+  lastStepId: string | null;
+  first: number;
+  last: number;
+}
+
+function turnIdOf(item: ThreadItem): TurnId | null {
+  return item.kind === "step" || item.kind === "agent_text" || item.kind === "message_out" ? item.turnId : null;
+}
+
+function collectTurns(items: readonly ThreadItem[], liveIds: ReadonlySet<string>): Map<TurnId, TurnFacts> {
+  const turns = new Map<TurnId, TurnFacts>();
+  for (const item of items) {
+    const turnId = turnIdOf(item);
+    if (turnId === null) continue;
+    const time = timeOf(item.at);
+    const facts = turns.get(turnId) ?? { steps: [], answerId: null, lastStepId: null, first: time, last: time };
+    facts.first = Math.min(facts.first, time);
+    facts.last = Math.max(facts.last, time);
+    if (item.kind === "agent_text") facts.answerId = item.id;
+    if (item.kind === "step" && !liveIds.has(item.id)) {
+      facts.steps.push(item);
+      facts.lastStepId = item.id;
+    }
+    turns.set(turnId, facts);
+  }
+  return turns;
+}
+
+function stepsOf(turnId: TurnId, facts: TurnFacts): TurnSteps {
+  return { turnId, steps: facts.steps, durationMs: Math.max(0, facts.last - facts.first) };
+}
+
+function rowOf(item: ThreadItem, turns: ReadonlyMap<TurnId, TurnFacts>): ConversationRow | null {
+  switch (item.kind) {
+    case "user_text":
+      return { kind: "user", id: item.id, at: item.at, item };
+    case "agent_text": {
+      const facts = turns.get(item.turnId);
+      const steps = facts && facts.answerId === item.id && facts.steps.length > 0 ? stepsOf(item.turnId, facts) : null;
+      return { kind: "agent", id: item.id, at: item.at, item, steps };
+    }
+    case "step": {
+      const facts = turns.get(item.turnId);
+      if (!facts || facts.answerId !== null || facts.lastStepId !== item.id) return null;
+      return { kind: "steps", id: `steps-${item.turnId}`, at: item.at, steps: stepsOf(item.turnId, facts) };
+    }
+    case "message_out":
+      return { kind: "sent", id: item.id, at: item.at, item };
+    case "message_in":
+      return { kind: "received", id: item.id, at: item.at, item };
+    case "approval":
+      return { kind: "approval", id: item.id, at: item.at, item };
+    case "notice":
+      return { kind: "notice", id: item.id, at: item.at, item };
+  }
+}
+
+function rowTurn(row: ConversationRow): TurnId | null {
+  if (row.kind === "agent" || row.kind === "sent") return row.item.turnId;
+  if (row.kind === "steps") return row.steps.turnId;
+  return null;
+}
+
+/**
+ * Where an artifact's card sits in one thread: after the turn that made it in its own thread, and in
+ * another thread after the first message its author sent there afterwards. Only pull requests show
+ * in other threads; a review shows in the reviewer's thread. -1 is the end; null is not shown.
+ */
+function anchorOf(rows: readonly ConversationRow[], agentId: AgentId, artifact: Artifact): number | null {
+  if (artifact.agentId === agentId) return rows.findLastIndex((row) => rowTurn(row) === artifact.turnId);
+  if (artifact.pullRequest === undefined) return null;
+  const at = timeOf(artifact.at);
+  const index = rows.findIndex((row) => row.kind === "received" && row.item.from === artifact.agentId && timeOf(row.item.at) >= at);
+  return index < 0 ? null : index;
+}
+
+/** The rows of one thread. The running turn's steps are left out; its activity line shows them. */
+export function buildConversationRows(
+  items: readonly ThreadItem[],
+  live: LiveTurn | null,
+  agentId: AgentId,
+  artifacts: readonly Artifact[],
+): ConversationRow[] {
+  const liveIds = new Set(live ? liveSteps(items, live).map((step) => step.id) : []);
+  const turns = collectTurns(items, liveIds);
+  const rows = items.flatMap((item) => {
+    const row = rowOf(item, turns);
+    return row ? [row] : [];
+  });
+  const placed = artifacts
+    .filter((artifact) => artifact.pullRequest !== undefined || artifact.review !== undefined)
+    .flatMap((artifact) => {
+      const anchor = anchorOf(rows, agentId, artifact);
+      if (anchor === null) return [];
+      const row: ConversationRow = { kind: "artifact", id: `artifact-${artifact.id}`, at: artifact.at, artifactId: artifact.id };
+      return [{ anchor, row }];
+    });
+  if (placed.length === 0) return rows;
+  const after = (index: number) => placed.filter((entry) => entry.anchor === index).map((entry) => entry.row);
+  return [...rows.flatMap((row, index) => [row, ...after(index)]), ...after(-1)];
+}
