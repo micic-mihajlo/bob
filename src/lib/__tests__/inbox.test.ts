@@ -5,7 +5,8 @@ import { addInboxItem, inboxItem, promoteInboxOrder, SAMPLE_INBOX } from "../inb
 import { buildSnapshot } from "../snapshot";
 import { messageById } from "../state";
 import { needsYou } from "../thread-status";
-import { getState } from "../store";
+import { getState, update } from "../store";
+import type { Artifact } from "../types";
 import { callTool } from "../tools";
 import { settle } from "../turns";
 import { traceWhy } from "../why";
@@ -102,6 +103,15 @@ describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_
     const hops = traceWhy(getState(), brief?.id ?? "");
     expect(hops.at(-1)?.source).toEqual({ inboxId: added.inboxId, kind: "meeting", label: "customer call, Nov 13", quote: CSV.quote });
     expect(hops.at(-1)?.message.from.kind).toBe("user");
+  });
+
+  it("links an error to the shipped pull request whose diff has the function its stack names, not just the newest one on that file", () => {
+    const pr = (number: number, patch: string) =>
+      ({ id: `art_pr${number}`, kind: "pull_request", agentId: "bob", title: `#${number}`, detail: "", at: "", pullRequest: { number, branch: `b${number}`, headSha: "abc", files: [{ path: "src/invoices.ts", additions: 3, deletions: 0 }], patch, merged: true } }) as unknown as Artifact;
+    update((s) => ({ ...s, artifacts: [...s.artifacts, pr(1, "+export function exportInvoices(invoices: Invoice[]) {"), pr(2, "+export function overdueInvoices(invoices: Invoice[], today: string) {")] }));
+    const added = addInboxItem(ERROR);
+    if (!added.ok) throw new Error(added.error);
+    expect(inboxItem(getState(), added.inboxId)?.followUpOf).toEqual({ pullRequestId: "art_pr1", number: 1 });
   });
 
   it("Learn: a merge that touches the module an error names resolves it, and a new error about the shipped change reopens it as a follow-up", async () => {

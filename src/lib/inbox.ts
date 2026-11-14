@@ -56,12 +56,18 @@ function mentionedFiles(text: string): string[] {
 
 const baseName = (path: string) => path.split("/").pop() ?? path;
 
-/** Merged pull requests whose changed files the item mentions, newest first. */
+/** Function names in the item's stack frames, such as exportInvoices in "at exportInvoices (src/invoices.ts:31:18)". */
+const framedFunctions = (text: string): string[] => [...text.matchAll(/\bat (?:[\w$]+\.)*([\w$]+) \(/g)].map((m) => m[1]);
+
+/** Merged pull requests whose changed files the item mentions: those whose diff has a function its stack names first, then newest first. */
 function shippedMatches(s: State, text: string): PullRequestArtifact[] {
   const mentioned = new Set(mentionedFiles(text));
+  const functions = framedFunctions(text);
+  const namesOne = (pr: PullRequestArtifact) => functions.some((f) => new RegExp(`\\b${f.replace(/\$/g, "\\$")}\\b`).test(pr.pullRequest.patch));
   return s.artifacts
     .filter((a): a is PullRequestArtifact => isPullRequest(a) && a.pullRequest.merged && a.pullRequest.files.some((f) => mentioned.has(baseName(f.path))))
-    .reverse();
+    .reverse()
+    .sort((a, b) => Number(namesOne(b)) - Number(namesOne(a)));
 }
 
 function framed(item: InboxItem): string {
