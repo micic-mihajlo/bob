@@ -44,6 +44,11 @@ describe("an acceptance test locks once it has run red", { timeout: 60_000 }, ()
     const ws = await threadWorkspace(getState().project, build.id);
     const csv = await import("node:fs/promises").then((fs) => fs.readFile(path.join(ws.root, "src/csv.ts"), "utf8"));
     expect(csv).not.toBe("x");
+
+    const original = await import("node:fs/promises").then((fs) => fs.readFile(path.join(ws.root, own), "utf8"));
+    const ran = await callTool("run", { command: `echo "export {};" > ${own}` }, ctx);
+    expect(String(ran.result.error)).toMatch(/changed .* your locked acceptance test, so Bob put it back/);
+    expect(await import("node:fs/promises").then((fs) => fs.readFile(path.join(ws.root, own), "utf8"))).toBe(original);
   });
 
   it("refuses the SDK engine's Write and Edit of it through the workspace guard", async () => {

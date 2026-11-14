@@ -130,6 +130,12 @@ export function acceptanceLock(s: State, agentId: AgentId, file: string): string
   return `${rel} is locked: it is your acceptance test and it has already run red, so it is the check, not the code. Fix the code until it passes. If you think the test itself is wrong, stop and report blocked, saying why.`;
 }
 
+/** The build thread's acceptance test once it is locked, or null. */
+export function lockedAcceptance(s: State, agentId: AgentId): string | null {
+  const own = ownAcceptance(s, agentId);
+  return own && redAt(stepsOf(s, agentId)) >= 0 ? own : null;
+}
+
 /** Acceptance files the diff changes that were already there before it, so not this pull request's own new test. */
 function changedExistingAcceptance(patch: string): string[] {
   return patch.split(/^diff --git /m).slice(1).flatMap((block) => {

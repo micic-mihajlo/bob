@@ -1,5 +1,7 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { z } from "zod";
-import { ACCEPTANCE_WRITE_LABEL, acceptanceLock, failedTests, isAcceptanceTest, isTestCommand, testRunLabel } from "../acceptance";
+import { ACCEPTANCE_WRITE_LABEL, acceptanceLock, failedTests, lockedAcceptance, isAcceptanceTest, isTestCommand, testRunLabel } from "../acceptance";
 import { getConfig, getState } from "../store";
 import { threadWorkspace } from "../thread-workspace";
 import { editFile, ensureWorkspaceDeps, git, listFiles, readFile, runCommand, writeFile, type Workspace } from "../workspace";
@@ -132,8 +134,13 @@ const runDef = define({
     const ws = await workspaceOf(ctx);
     const deps = getConfig().installDeps ? await ensureWorkspaceDeps(ws) : null;
     const setup = deps?.ok && deps.state.kind === "failed" ? `Installing dependencies failed (${deps.state.command}): ${deps.state.output}` : undefined;
+    const locked = lockedAcceptance(getState(), ctx.agentId);
+    const kept = locked ? await fs.readFile(path.join(ws.root, locked), "utf8").catch(() => null) : null;
     const out = await runCommand(ws, i.command, (i.timeoutSeconds ?? 120) * 1000);
+    const restored = locked && kept !== null && (await fs.readFile(path.join(ws.root, locked), "utf8").catch(() => null)) !== kept;
+    if (restored) await fs.writeFile(path.join(ws.root, locked), kept);
     if (!out.ok) return { result: { error: out.error } };
+    if (restored) return { result: { error: `That command changed ${locked}, your locked acceptance test, so Bob put it back. Fix the code until it passes. If you think the test itself is wrong, stop and report blocked, saying why.`, output: out.output } };
     const { ok: _ok, ...rest } = out;
     const failedTestsShown = isTestCommand(i.command) && (failedTests(out.output) ?? 0) > 0;
     const note = out.timedOut
