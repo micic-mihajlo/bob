@@ -9,7 +9,7 @@ import { threadWorkspace, workspaceOptions } from "../thread-workspace";
 import { findPullRequest, isPullRequest, nextPullRequestNumber, type PullRequestArtifact } from "../threads";
 import type { Agent, Artifact, ReviewFinding } from "../types";
 import { conflictsWithMain, git, mergePullRequest, openPullRequest, type Workspace } from "../workspace";
-import { askForReReview, askToUpdateBranch, handFindingsToBuilder, MAX_FIX_ROUNDS, reviewGateRefusal } from "./handoff";
+import { askForReReview, askToUpdateBranch, handFindingsToBuilder, maxFixRounds, reviewGateRefusal } from "./handoff";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
 
 const PATCH_PREVIEW = 6_000;
@@ -133,9 +133,10 @@ export function recordReview(input: ReviewInput, ctx: ToolContext): ToolOutput {
   const handed = handFindingsToBuilder(pr, reviewer, reviewArtifactFindings(input));
   if (!handed.to) return out;
   const builder = agentById(getState(), handed.to)?.name ?? handed.to;
+  const max = maxFixRounds(getState());
   const note =
-    handed.round <= MAX_FIX_ROUNDS
-      ? `Your findings went to ${builder} automatically (fix round ${handed.round} of ${MAX_FIX_ROUNDS}); you get its new head to review again.`
+    handed.round <= max
+      ? `Your findings went to ${builder} automatically (fix round ${handed.round} of ${max}); you get its new head to review again.`
       : `That was the last fix round; ${builder} now reports blocked to the captain.`;
   return { ...out, result: { ...out.result, next: `${note} Now call report once with your verdict in Status / Result / Evidence form.` }, wake: [...(out.wake ?? []), handed.to] };
 }

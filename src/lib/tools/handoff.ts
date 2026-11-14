@@ -1,12 +1,14 @@
 import { send } from "../mailbox";
+import { DEFAULT_POLICY, policyFor } from "../policy";
 import { addNotice } from "../state-ops";
 import { agentById, captainOf, isClosed, type State } from "../state";
 import { getState, update } from "../store";
 import type { PullRequestArtifact } from "../threads";
 import type { AgentId, Artifact, ReviewFinding } from "../types";
 
-/** Fix rounds a build thread gets on one pull request before it reports blocked instead. */
-export const MAX_FIX_ROUNDS = 2;
+/** Fix rounds a build thread gets on one pull request before it reports blocked instead, unless bob.policy.json sets maxFixRounds. */
+export const MAX_FIX_ROUNDS = DEFAULT_POLICY.maxFixRounds;
+export const maxFixRounds = (s: State): number => policyFor(s.project.id).maxFixRounds;
 
 export const reviewsOf = (s: State, prId: string): (Artifact & { review: NonNullable<Artifact["review"]> })[] =>
   s.artifacts.filter((a): a is Artifact & { review: NonNullable<Artifact["review"]> } => a.kind === "review" && a.review?.pullRequestId === prId);
@@ -54,14 +56,15 @@ function sendForCaptain(to: AgentId, text: string, expectsReply: boolean, reques
 export function handFindingsToBuilder(pr: PullRequestArtifact, reviewerName: string, findings: ReviewFinding[]): { to: AgentId | null; round: number } {
   const s = getState();
   const round = reviewsOf(s, pr.id).filter((r) => r.review.verdict === "request_changes").length;
-  if (round > MAX_FIX_ROUNDS + 1) return { to: null, round };
+  const max = maxFixRounds(s);
+  if (round > max + 1) return { to: null, round };
   const n = `#${pr.pullRequest.number}`;
   const list = findings.length ? findings.map(findingLine).join("\n") : "- (the reviewer listed no findings; read its summary)";
   const text =
-    round <= MAX_FIX_ROUNDS
-      ? `Review by ${reviewerName} requests changes on pull request ${n} (id ${pr.id}), fix round ${round} of ${MAX_FIX_ROUNDS}:\n${list}\nFix them on your branch, run the tests, then call open_pull_request again. The review runs again by itself on your new head, so report only if you are blocked.`
-      : `Review by ${reviewerName} still requests changes on pull request ${n} (id ${pr.id}) after ${MAX_FIX_ROUNDS} fix rounds. Change no more code. Call report with Status: blocked, list these open findings in Result, and in Unblock say what decision you need:\n${list}`;
-  return { to: sendForCaptain(pr.agentId, text, round > MAX_FIX_ROUNDS, pr.requestId), round };
+    round <= max
+      ? `Review by ${reviewerName} requests changes on pull request ${n} (id ${pr.id}), fix round ${round} of ${max}:\n${list}\nFix them on your branch, run the tests, then call open_pull_request again. The review runs again by itself on your new head, so report only if you are blocked.`
+      : `Review by ${reviewerName} still requests changes on pull request ${n} (id ${pr.id}) after ${max} fix rounds. Change no more code. Call report with Status: blocked, list these open findings in Result, and in Unblock say what decision you need:\n${list}`;
+  return { to: sendForCaptain(pr.agentId, text, round > max, pr.requestId), round };
 }
 
 /** After a pull request gets a new head: its last reviewer checks it again, once per head, so approval always follows a review of the current head. */

@@ -2,6 +2,7 @@ import { generateText, tool, type ModelMessage, type ToolSet } from "ai";
 import { modelsToTry } from "../models";
 import { addNotice } from "../state-ops";
 import { update } from "../store";
+import { recordUsage } from "../usage";
 import { projectFiles } from "../thread-workspace";
 import type { ToolSpec } from "../tools";
 import { systemPrompt } from "./prompt";
@@ -77,8 +78,8 @@ export const modelBrain: Brain = {
   async next(ctx) {
     const files = ctx.agent.kind === "captain" ? await projectFiles(ctx.state.project).catch(() => []) : [];
     const timeout = ctx.agent.kind === "captain" ? CAPTAIN_CALL_TIMEOUT_MS : CREW_CALL_TIMEOUT_MS;
-    const call = (model: string, extra: ModelMessage[], reasoning?: "none") =>
-      generateText({
+    const call = async (model: string, extra: ModelMessage[], reasoning?: "none") => {
+      const out = await generateText({
         model,
         instructions: systemPrompt(ctx.agent, ctx.state, files),
         messages: [...messages(ctx), ...extra],
@@ -88,6 +89,9 @@ export const modelBrain: Brain = {
         maxRetries: 0,
         ...(reasoning ? { reasoning } : {}),
       });
+      recordUsage(ctx.requestId, model, out.usage);
+      return out;
+    };
     const attempt = async (model: string) => {
       let result = await call(model, []);
       // A reply that spent its whole budget (usually on reasoning) gets one shorter retry instead of failing the turn.
