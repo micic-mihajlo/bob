@@ -1,11 +1,12 @@
 import type { State } from "../state";
-import { ensureDatabase, hydraConfig, runCypher, type HydraConfig } from "./hydra";
+import { ensureDatabase, HydraError, hydraConfig, hydraUp, runCypher, type HydraConfig } from "./hydra";
 import { toGraph, type GraphEdge, type GraphNode, type NodeKind } from "./schema";
 
 /**
  * Write-through mirror. The JSON store stays the source of truth; after each commit the graph gets the nodes and
  * edges that changed since the last write that succeeded. Every write is a MERGE on `ext_id`, so a retry or a
- * restart that resends everything is safe.
+ * restart that resends everything is safe. Nothing on the request path waits for a write: commits only schedule one,
+ * and while HydraDB is down the mirror waits out the cool-off and catches up in one diff.
  */
 
 const DEBOUNCE_MS = 250;
@@ -45,16 +46,25 @@ function warn(error: unknown): void {
   m.lastError = message;
 }
 
-/** Called by the store on every commit. Does nothing unless the graph store is switched on. */
+const COOL_OFF_RETRY_MS = 5_000;
+
+function schedule(m: Mirror, delay: number): void {
+  if (m.timer) return;
+  m.timer = setTimeout(() => {
+    m.timer = null;
+    if (!m.latest) return;
+    if (m.running || !hydraUp()) return schedule(m, m.running ? DEBOUNCE_MS : COOL_OFF_RETRY_MS);
+    syncGraph(m.latest).catch(warn);
+  }, delay);
+  m.timer.unref?.();
+}
+
+/** Called by the store on every commit. Only schedules a sync, and does nothing unless the graph store is on. */
 export function mirrorCommit(state: State): void {
   if (!hydraConfig()) return;
   const m = mirror();
   m.latest = state;
-  if (m.timer) return;
-  m.timer = setTimeout(() => {
-    m.timer = null;
-    if (m.latest) syncGraph(m.latest).catch(warn);
-  }, DEBOUNCE_MS);
+  schedule(m, DEBOUNCE_MS);
 }
 
 /** Brings the graph level with `state`. One sync runs at a time; a failed batch is sent again next time. */
@@ -67,6 +77,24 @@ export async function syncGraph(state: State): Promise<void> {
     m.running = null;
   });
   return m.running;
+}
+
+/** Syncs, but gives up waiting after `ms`; the sync carries on in the background. True when the graph caught up. */
+export async function syncWithin(state: State, ms: number): Promise<boolean> {
+  if (!hydraUp()) return false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const sync = syncGraph(state).then(
+    () => true,
+    (error: unknown) => (warn(error), false),
+  );
+  const late = new Promise<boolean>((resolve) => {
+    timer = setTimeout(() => resolve(false), ms);
+  });
+  try {
+    return await Promise.race([sync, late]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 const nodeKey = (n: Pick<GraphNode, "kind" | "id">) => `n|${n.kind}|${n.id}`;
@@ -146,7 +174,15 @@ async function writeChanges(c: HydraConfig, m: Mirror, state: State): Promise<vo
     m.databaseReady = true;
   }
   for (const batch of plan) {
-    await runCypher(c, batch.query, { rows: batch.rows });
+    try {
+      await runCypher(c, batch.query, { rows: batch.rows });
+    } catch (error) {
+      if (error instanceof HydraError && error.status === 400) {
+        warn(new Error(`${error.message} (in: ${batch.query})`));
+        continue;
+      }
+      throw error;
+    }
     batch.keys.forEach((key, i) => {
       const value = batch.values[i];
       if (value === null) m.synced.delete(key);

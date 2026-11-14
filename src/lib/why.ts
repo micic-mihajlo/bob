@@ -1,9 +1,9 @@
 import { questionBefore } from "./brain/intake";
-import { hydraConfig, runCypher } from "./graph/hydra";
-import { syncGraph } from "./graph/mirror";
+import { hydraConfig, hydraUp, READ_TIMEOUT_MS, runCypher } from "./graph/hydra";
+import { syncWithin } from "./graph/mirror";
 import { senderName } from "./graph/schema";
 import { agentName, messageById, type State } from "./state";
-import type { Message, MessageId, WhyHop } from "./types";
+import type { InboxKind, Message, MessageId, WhyHop } from "./types";
 
 /**
  * Follows `causedBy` from a message back to what a person typed, then from an answer to the captain's
@@ -51,6 +51,13 @@ export const HOP_COLUMNS = [
   "causedBy",
   "continues",
   "approvalId",
+  "automatic",
+  "via",
+  "inboxId",
+  "inboxKind",
+  "inboxLabel",
+  "shown",
+  "quote",
   "question",
   "at",
 ]
@@ -61,6 +68,10 @@ export const HOP_COLUMNS = [
 /** Why? as one path query: every message reachable from the start along CAUSED_BY, the start included. */
 export const WHY_QUERY = `MATCH (m:Message {ext_id: $messageId})-[:CAUSED_BY*0..${MAX_HOPS}]->(hop:Message) RETURN ${HOP_COLUMNS} LIMIT ${MAX_HOPS + 1}`;
 
+/** Most of what a read may wait for the mirror to catch up before it asks the graph anyway. */
+export const SYNC_BUDGET_MS = 1_500;
+
+/** A property the graph does not hold comes back null. */
 export interface HopRow {
   id: string;
   label: string;
@@ -76,11 +87,24 @@ export interface HopRow {
   causedBy: string | null;
   continues: string | null;
   approvalId: string | null;
+  automatic: boolean | null;
+  via: "voice" | null;
+  inboxId: string | null;
+  inboxKind: InboxKind | null;
+  inboxLabel: string | null;
+  shown: string | null;
+  quote: string | null;
   question: string | null;
   at: string;
 }
 
-/** Puts the path's rows in order from the start back to the root, the way `traceWhy` walks it. */
+const nextOf = (r: HopRow): string | null => r.causedBy ?? r.continues ?? null;
+
+/**
+ * Puts the path's rows in order from the start back to the root, the way `traceWhy` walks it. Empty unless the
+ * path is whole: it starts at `startId` and ends at a message with nothing before it, so a graph that is behind
+ * never answers with half a trace.
+ */
 export function orderHops(rows: HopRow[], startId: MessageId): HopRow[] {
   const byId = new Map(rows.map((r) => [r.id, r]));
   const ordered: HopRow[] = [];
@@ -89,26 +113,42 @@ export function orderHops(rows: HopRow[], startId: MessageId): HopRow[] {
     const row: HopRow = byId.get(cursor)!;
     byId.delete(cursor);
     ordered.push(row);
-    cursor = row.causedBy ?? row.continues ?? null;
+    cursor = nextOf(row);
   }
-  return ordered;
+  return cursor === null ? ordered : [];
 }
 
-function hopFromRow(r: HopRow): WhyHop {
-  const message: Message = {
-    id: r.id,
-    requestId: r.requestId,
-    causedBy: r.causedBy ?? null,
-    from: r.fromKind === "user" ? { kind: "user" } : { kind: "agent", agentId: r.fromId },
-    to: JSON.parse(r.to) as string[],
-    text: r.text,
-    expectsReply: r.expectsReply === true,
-    replyTo: r.replyTo ?? null,
-    ...(r.approvalId ? { approvalId: r.approvalId } : {}),
-    ...(r.continues ? { continues: r.continues } : {}),
-    at: r.at,
-  };
-  return { message, fromName: r.fromName, toNames: JSON.parse(r.toNames) as string[], ...(r.question ? { question: r.question } : {}) };
+export function hopsFromRows(rows: HopRow[]): WhyHop[] {
+  const hops: WhyHop[] = [];
+  for (const r of rows) {
+    const message: Message = {
+      id: r.id,
+      requestId: r.requestId,
+      causedBy: r.causedBy ?? null,
+      from: r.fromKind === "user" ? { kind: "user" } : { kind: "agent", agentId: r.fromId },
+      to: JSON.parse(r.to) as string[],
+      text: r.text,
+      expectsReply: r.expectsReply === true,
+      replyTo: r.replyTo ?? null,
+      ...(r.approvalId ? { approvalId: r.approvalId } : {}),
+      ...(r.continues ? { continues: r.continues } : {}),
+      ...(r.automatic ? { automatic: true as const } : {}),
+      ...(r.via ? { via: r.via } : {}),
+      ...(r.inboxId ? { inboxId: r.inboxId } : {}),
+      ...(r.shown ? { shown: r.shown } : {}),
+      ...(r.quote ? { quote: r.quote } : {}),
+      at: r.at,
+    };
+    const quote = [...hops].reverse().find((h) => h.message.quote)?.message.quote ?? null;
+    hops.push({
+      message,
+      fromName: r.fromName,
+      toNames: JSON.parse(r.toNames) as string[],
+      ...(r.question ? { question: r.question } : {}),
+      ...(r.inboxId && r.inboxKind && r.inboxLabel ? { source: { inboxId: r.inboxId, kind: r.inboxKind, label: r.inboxLabel, quote } } : {}),
+    });
+  }
+  return hops;
 }
 
 export interface WhyAnswer {
@@ -117,14 +157,18 @@ export interface WhyAnswer {
   source: "hydra" | "memory";
 }
 
-/** Asks the graph when `BOB_STORE=hydra`; otherwise, or when the graph has no path, walks the state in memory. */
+/**
+ * Asks the graph when `BOB_STORE=hydra`; otherwise, or when the graph is down, slow, or has no whole path, walks
+ * the state in memory. Bounded: at most the sync budget plus one read timeout, and nothing at all while HydraDB
+ * is cooling off after a failure.
+ */
 export async function answerWhy(s: State, messageId: MessageId): Promise<WhyAnswer> {
   const c = hydraConfig();
-  if (c) {
+  if (c && hydraUp()) {
     try {
-      await syncGraph(s);
-      const rows = await runCypher<HopRow>(c, WHY_QUERY, { messageId });
-      const hops = orderHops(rows, messageId).map(hopFromRow);
+      await syncWithin(s, SYNC_BUDGET_MS);
+      const rows = await runCypher<HopRow>(c, WHY_QUERY, { messageId }, READ_TIMEOUT_MS);
+      const hops = hopsFromRows(orderHops(rows, messageId));
       if (hops.length > 0) return { hops, source: "hydra" };
     } catch (error) {
       console.warn(`HydraDB Why? query failed, answering from memory: ${error instanceof Error ? error.message : String(error)}`);

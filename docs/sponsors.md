@@ -34,6 +34,7 @@ How the mirror works (`src/lib/graph/`):
 
 - `schema.ts` projects the state into nodes and edges. `mirror.ts` diffs that against what it last wrote, 250 ms after the latest commit, and sends only what changed, one `UNWIND $rows` statement per label or edge type, in chunks under the 256 KiB body cap. Things that disappear (a reset back to the seed) are `DETACH DELETE`d.
 - Every write is `MERGE` on `ext_id`, then `SET n += row`. A batch that fails is sent again on the next sync, and a restart resends everything, which is safe because MERGE is idempotent.
+- Requests' tracks (`(Roadmap)-[:HAS]->(Track)-[:STARTED_BY]->(Message)`, `(WorkOrder)-[:PART_OF]->(Track)`) and inbox items (`(Message)-[:HANDS_IN]->(InboxItem)`, `(WorkOrder)-[:FROM_INBOX]->(InboxItem)`, `(InboxItem)-[:RESOLVED_BY|FOLLOW_UP_OF]->(PullRequest)`) are mirrored too.
 - Every node keeps Bob's own id in `ext_id`. HydraDB reserves `id` for its internal node id, reuses it after deletes, and hides a stored `id` property in responses, so nothing keys on it. Its docs recommend `ext_id` for this.
 - Every read has a `LIMIT` and a bounded hop count, because HydraDB drops rows past its cap without an error.
 - `/api/why` and `/api/graph` sync first, so they never read a graph that is behind. If the switch is off, the key is missing, or HydraDB errors or has no path, both answer from memory. Each response has `source: "hydra" | "memory"` so you can see which one answered.
@@ -62,12 +63,23 @@ Then check it live:
 3. `curl "localhost:3000/api/graph?prId=<the PR's id>"` should answer `"source": "hydra"`.
 4. If either says `memory`, the server log has a line starting `HydraDB` with the reason.
 
+### Outages and slowness
+
+HydraDB can't stall the demo:
+
+- A commit only schedules a sync. Nothing on the request path waits for a write, and a write gives up after 8 s.
+- `/api/why` and `/api/graph` wait at most 1.5 s for the mirror to catch up, then give the read 2.5 s. After that they answer from memory.
+- Any timeout, network error, 401/403, 429 or 5xx puts HydraDB in a 30 s cool-off. During it, reads go straight to memory without a request, and the mirror waits. When the cool-off ends, the mirror catches up in one diff.
+- HydraDB rejecting one statement with a 400 skips that batch and keeps writing the rest.
+- A graph answer has to be a whole path, from the start back to a message with nothing before it, or Bob answers from memory. A mirror that's behind can't show half a trace.
+
 ### What was tested, and how
 
-- **Not run against HydraDB itself.** No key was available overnight, so nothing has reached api.hydradb.com yet. Request shapes come from HydraDB's BYOG docs: `POST /byog/query` with `{database, collection, query, params}`, a bearer key, and the `{success, data, error, meta}` envelope.
-- **Run against a real Cypher engine.** Every statement the mirror and the read routes send was run on a local FalkorDB, a Cypher engine with the same dialect notes HydraDB's docs list (bare pattern predicates, `shortestPath` only in `RETURN`). That covered the full write of a walkthrough state, the incremental updates, a reset that deletes back to the seed (the graph ended with exactly the seed's 4 nodes and 2 edges), and the three read queries. A full `BOB_STORE=hydra` walkthrough on `pnpm dev`, pointed at a local shim that serves HydraDB's API on top of that FalkorDB, answered both routes with `source: "hydra"` and ended at "customers want to export invoices as CSV".
-- **Recorded-response test** (`src/lib/__tests__/graph.test.ts`, fixtures in `__tests__/fixtures/hydra/`): a walkthrough state, plus the rows FalkorDB returned for the Why? and graph queries on that state, wrapped in HydraDB's envelope. The Why? trace from those rows equals the in-memory trace, roots at the original ask, and keeps the pushback question. The graph view from those rows equals the in-memory one. The other tests check the request shapes and headers, MERGE on `ext_id`, diff-only writes, a retry after a 500, deletes on reset, the fallbacks, and that every read is bounded.
-- **Risk before the demo.** HydraDB says it supports all of openCypher, but its open-source engine accepts a narrower subset (no untyped relationship patterns, for example). If the hosted service rejects a statement, the routes fall back to memory and log the reason. `/api/graph`'s neighbour query (`(pr)-[r]->(n)` with no type) is the most likely one to need a change.
+- **Live against api.hydradb.com, database `bob`, default collection `state`.** Every statement shape was accepted: the MERGE batches for nodes and edges, the deletes, the index, the Why? path query, the PR path query and the neighbour query. Each took about 30 ms. A second `CREATE INDEX` answers 400 "already indexed", which the mirror ignores. No `HYDRADB_COLLECTION` is needed.
+- **The default demo order, live** (`pnpm demo` with `BOB_STORE=hydra`, then `pnpm walkthrough --live --url`; captain kimi-k3.1-pro, crew deepseek-v4.1-flash). 9 of 9 checks held (the restart check doesn't run against a server you point it at). Both PRs merged in 104 s.
+  - `/api/why` answered `source: "hydra"` for both PRs, in 72 ms and 36 ms. PR #1's trace ran through the pushback answer to "customers want to export invoices as CSV", and PR #2's ended at its own sentence. `/api/graph` also answered `hydra` for both, and the Why? dialog showed "from HydraDB" on both.
+  - The graph in HydraDB had all 13 node kinds, including both request tracks (`Track`, with `STARTED_BY` to the typed sentence). After the sample inbox was posted, both inbox items appeared as `InboxItem` nodes with `HANDS_IN` edges from their messages.
+- **Recorded-response test** (`src/lib/__tests__/graph.test.ts`, fixtures in `__tests__/fixtures/hydra/`). The fixtures are a walkthrough state plus an inbox-promoted build, and the real responses api.hydradb.com gave to the Why? and graph queries after the mirror's writes for that state went to a fresh collection. From those responses, the Why? trace equals the in-memory trace: it roots at the original ask, keeps the pushback question and keeps the inbox source on the last hop. The graph view equals the in-memory one too. Other tests cover the request shapes, MERGE on `ext_id`, diff-only writes, a retry after a 500, a skipped 400, deletes on reset, tracks and inbox items, a partial path, a hung HydraDB (bounded wait, then the cool-off with no requests), commits that never wait, and bounded reads.
 
 ## ElevenLabs: start a request by voice
 
