@@ -284,15 +284,7 @@
 
 .settings-modal :where(.ui-button-variant-destructive) {
   background: var(--bob-danger);
-  color: var(--bob-text-primary);
-}
-
-.settings-modal .ui-switch[data-checked] {
-  background: var(--bob-accent);
-}
-
-.settings-modal .ui-switch-thumb[data-checked] {
-  background: var(--bob-text-primary);
+  color: var(--bob-text-on-accent);
 }
 
 @media (hover: hover) and (pointer: fine) {

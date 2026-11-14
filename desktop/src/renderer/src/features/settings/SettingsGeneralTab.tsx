@@ -1,3 +1,4 @@
+import { APP_APPEARANCES, type AppAppearance } from "@bob/contracts/app-appearance";
 import { APP_INTERFACE_SIZES, type AppInterfaceSize, type AppVariant } from "@bob/contracts/ipc";
 import {
   Item,
@@ -28,6 +29,7 @@ import { useLogoColorChoice } from "../../logo-color";
 import { ExternalLinkSelect } from "./ExternalLinkSelect";
 
 const interfaceSizeOptions = [...APP_INTERFACE_SIZES];
+const appearanceOptions = [...APP_APPEARANCES];
 
 interface SettingsGeneralTabProps {
   value: GeneralSettingsValue;
@@ -49,6 +51,8 @@ export function SettingsGeneralTab(props: SettingsGeneralTabProps) {
   const { format } = useText();
   const interfaceSizeLabel = (value: AppInterfaceSize | undefined) =>
     value === undefined ? "" : format.percent(value / 100);
+  const appearanceLabel = (value: AppAppearance | undefined) =>
+    value === undefined ? "" : i18n.t(`settings.appearance.theme.${value}`);
   return (
     <>
       <SettingsSection title={i18n.t("settings.appearance.title")}>
@@ -62,6 +66,29 @@ export function SettingsGeneralTab(props: SettingsGeneralTabProps) {
               description={i18n.t("settings.appearance.transparentWindow.description")}
             />
           </Show>
+          <Item data-settings-row="settings.appearance.theme.title" class="settings-modal-row">
+            <ItemContent>
+              <ItemTitle>{i18n.t("settings.appearance.theme.title")}</ItemTitle>
+              <ItemDescription>{i18n.t("settings.appearance.theme.description")}</ItemDescription>
+            </ItemContent>
+            <ItemActions>
+              <Select<AppAppearance>
+                class="settings-modal-select"
+                options={appearanceOptions}
+                value={appearance.appearance()}
+                onChange={(value) => value && appearance.changeAppearance(value)}
+                placement="bottom-end"
+                itemComponent={(selectProps) => (
+                  <SelectItem item={selectProps.item}>{appearanceLabel(selectProps.item.rawValue)}</SelectItem>
+                )}
+              >
+                <SelectTrigger size="sm" aria-label={i18n.t("settings.appearance.theme.title")}>
+                  <SelectValue<AppAppearance>>{(state) => appearanceLabel(state.selectedOption())}</SelectValue>
+                </SelectTrigger>
+                <SelectContent mount={props.selectMount} />
+              </Select>
+            </ItemActions>
+          </Item>
           <Item data-settings-row="settings.language.title" class="settings-modal-row">
             <ItemContent>
               <ItemTitle>{i18n.t("settings.language.title")}</ItemTitle>
