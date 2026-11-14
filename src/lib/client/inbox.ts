@@ -1,11 +1,16 @@
 import type { InboxCandidate, InboxItem, Roadmap, WorkOrder } from "@/lib/types";
 
-/** What became of one ask: a backlog order the person can build, an order already planned, or a question to the person. */
+/** What became of one ask: a backlog order the person can build, an order already planned, a merged pull request that already does it, or a question to the person. */
 export type CandidateOutcome =
-  { kind: "backlog"; order: WorkOrder } | { kind: "planned"; order: WorkOrder } | { kind: "asked"; question: string } | { kind: "none" };
+  | { kind: "backlog"; order: WorkOrder }
+  | { kind: "planned"; order: WorkOrder }
+  | { kind: "shipped"; number: number }
+  | { kind: "asked"; question: string }
+  | { kind: "none" };
 
 export function candidateOutcome(candidate: InboxCandidate, roadmap: Pick<Roadmap, "today" | "backlog">): CandidateOutcome {
   if (candidate.verdict === "vague") return candidate.question ? { kind: "asked", question: candidate.question } : { kind: "none" };
+  if (candidate.shippedIn) return { kind: "shipped", number: candidate.shippedIn.number };
   const backlog = (roadmap.backlog ?? []).find((order) => order.id === candidate.workOrderId);
   if (backlog) return { kind: "backlog", order: backlog };
   const planned = roadmap.today.find((order) => order.id === candidate.workOrderId);
