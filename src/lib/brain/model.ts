@@ -1,13 +1,18 @@
 import { generateText, tool, type ModelMessage, type ToolSet } from "ai";
-import { modelFor } from "../models";
+import { modelsToTry } from "../models";
+import { addNotice } from "../state-ops";
+import { update } from "../store";
 import { projectFiles } from "../thread-workspace";
 import type { ToolSpec } from "../tools";
 import { systemPrompt } from "./prompt";
 import type { Brain, MoveRecord, TurnContext } from "./types";
 
 const MAX_OUTPUT_TOKENS = 16_000;
-/** One model call; a hung connection fails the turn instead of holding it forever. */
-const CALL_TIMEOUT_MS = 180_000;
+/** One attempt at a model call. A hung connection is cut here and tried again instead of holding the turn. */
+const CAPTAIN_CALL_TIMEOUT_MS = 60_000;
+const CREW_CALL_TIMEOUT_MS = 120_000;
+/** Pauses before the second and third attempt. */
+export const RETRY_DELAYS_MS = [1_000, 3_000];
 const CUT_OFF_NOTE =
   "Your last reply was cut off by the output limit before it called a tool or finished. Reply again, shorter: call the one tool you need next, or answer in a few lines.";
 
@@ -40,26 +45,62 @@ function messages(ctx: TurnContext): ModelMessage[] {
   return [{ role: "user", content: ctx.input }, ...ctx.moves.flatMap(moveMessages)];
 }
 
-/** The AI SDK through the gateway: one model step per move, model id from the agent record. */
+/**
+ * Runs one attempt per model in order, waiting RETRY_DELAYS_MS between them, and returns the first that
+ * succeeds. Any error counts: a 5xx, a rate limit, a timeout, or a reply with nothing in it.
+ */
+export async function withRetries<T>(
+  models: string[],
+  attempt: (model: string) => Promise<T>,
+  onRetry: (failed: string, next: string, error: unknown) => void = () => {},
+  wait: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+): Promise<T> {
+  let last: unknown;
+  for (const [i, model] of models.entries()) {
+    if (i > 0) {
+      onRetry(models[i - 1], model, last);
+      await wait(RETRY_DELAYS_MS[i - 1] ?? RETRY_DELAYS_MS.at(-1) ?? 0);
+    }
+    try {
+      return await attempt(model);
+    } catch (error) {
+      last = error;
+    }
+  }
+  throw last;
+}
+
+const reasonOf = (error: unknown) => (error instanceof Error ? error.message : String(error)).split("\n")[0].slice(0, 200);
+
+/** The AI SDK through the gateway: one model step per move, model id from the agent record, with retries and a fallback model. */
 export const modelBrain: Brain = {
   async next(ctx) {
     const files = ctx.agent.kind === "captain" ? await projectFiles(ctx.state.project).catch(() => []) : [];
-    const call = (extra: ModelMessage[], reasoning?: "none") =>
+    const timeout = ctx.agent.kind === "captain" ? CAPTAIN_CALL_TIMEOUT_MS : CREW_CALL_TIMEOUT_MS;
+    const call = (model: string, extra: ModelMessage[], reasoning?: "none") =>
       generateText({
-        model: modelFor(ctx.agent),
+        model,
         instructions: systemPrompt(ctx.agent, ctx.state, files),
         messages: [...messages(ctx), ...extra],
         tools: toolSet(ctx.tools),
         maxOutputTokens: MAX_OUTPUT_TOKENS,
-        abortSignal: AbortSignal.timeout(CALL_TIMEOUT_MS),
+        abortSignal: AbortSignal.timeout(timeout),
+        maxRetries: 0,
         ...(reasoning ? { reasoning } : {}),
       });
-    let result = await call([]);
-    // A reply that spent its whole budget (usually on reasoning) gets one shorter retry instead of failing the turn.
-    if (result.finishReason === "length" && result.toolCalls.length === 0) result = await call([{ role: "user", content: CUT_OFF_NOTE }], "none");
-    if (result.toolCalls.length === 0 && !result.text.trim()) {
-      throw new Error(`The model returned no text and no tool calls (finish reason: ${result.finishReason}).`);
-    }
+    const attempt = async (model: string) => {
+      let result = await call(model, []);
+      // A reply that spent its whole budget (usually on reasoning) gets one shorter retry instead of failing the turn.
+      if (result.finishReason === "length" && result.toolCalls.length === 0) result = await call(model, [{ role: "user", content: CUT_OFF_NOTE }], "none");
+      if (result.toolCalls.length === 0 && !result.text.trim()) {
+        throw new Error(`The model returned no text and no tool calls (finish reason: ${result.finishReason}).`);
+      }
+      return result;
+    };
+    const result = await withRetries(modelsToTry(ctx.agent), attempt, (failed, next, error) => {
+      const note = failed === next ? `${failed} failed (${reasonOf(error)}). Trying it again.` : `${failed} failed twice (${reasonOf(error)}). Using ${next} for this move.`;
+      update((s) => addNotice(s, ctx.agent.id, "warning", note));
+    });
     return {
       text: result.text,
       toolCalls: result.toolCalls.map((c) => ({ id: c.toolCallId, name: c.toolName, input: c.input })),
