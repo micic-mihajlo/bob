@@ -166,7 +166,7 @@ A seed with findings keeps its `.data` folder for diagnosis.
 | Run | Seeds | Steps | Events | kill -9 restarts | Findings |
 | --- | --- | --- | --- | --- | --- |
 | Final, at the merged head | 1–300 | 30 | 7,655 | 183 | 0 |
-| After the last rebase | 301–400 | 30 | about 2,550 | 47 | 0 |
+| After the last rebase | 301–400 | 30 | 2,545 | 47 | 0 |
 
 The 300 seeds took 82 minutes at `--jobs 2`, 10 to 45 s per seed. Across them, the person made 2,266 requests, gave 1,059 answers, approved 1,050 cards and denied 277, and pushed after an approval 314 times. There were also 796 nudges, 229 stops, 660 inbox items, 367 promotes and 454 project switches. That came to 3,336 pull requests, and 2,938 of them merged.
 
