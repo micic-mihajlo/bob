@@ -211,3 +211,8 @@
 :root[data-embed] .app-window {
   --window-frame: var(--bob-bg-canvas);
 }
+
+/* The desktop window has its own rail, so Bob's page rail stays out of the frame. */
+:root[data-embed] .app-window > .window-rail {
+  display: none;
+}

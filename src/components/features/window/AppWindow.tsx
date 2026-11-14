@@ -8,6 +8,7 @@ import { TitleTooltips } from "@/components/ui/TitleTooltips";
 import { cx } from "@/components/ui/classes";
 import { hasProject } from "@/lib/types";
 import { useBob } from "./BobContext";
+import { useEmbedded } from "./embed";
 import {
   LEFT_PANEL_COLLAPSED_STORAGE_KEY,
   LEFT_PANEL_COMPACT,
@@ -57,17 +58,16 @@ function savePanelWidth(key: string, value: number | string) {
  * look, and the desktop's palette in the scheme it asks for (`&scheme=light` or dark).
  */
 function useEmbed(): boolean {
-  const [embed, setEmbed] = useState(false);
+  const embed = useEmbedded();
   useEffect(() => {
+    if (!embed) return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get("embed") !== "1") return;
     const root = document.documentElement;
     root.dataset.embed = "";
     root.dataset.scheme = params.get("scheme") === "light" ? "light" : "dark";
     root.dataset.theme = "classic";
     delete root.dataset.print;
-    setEmbed(true);
-  }, []);
+  }, [embed]);
   return embed;
 }
 
