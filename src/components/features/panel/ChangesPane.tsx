@@ -31,7 +31,8 @@ const MAX_LINES = 1500;
 
 const STATE_VARIANT: Record<PullRequestState, BadgeVariant> = {
   open: "info-light",
-  approved: "warning-light",
+  approved: "success-light",
+  awaiting_merge: "warning-light",
   merged: "success-light",
   closed: "secondary",
 };
@@ -50,8 +51,8 @@ function diffLines(diff: DiffFile): CodeLine[] {
 }
 
 function PullRequestCard({ pullRequest }: { pullRequest: PullRequestArtifact }) {
-  const { openWhy } = useBob();
-  const state = pullRequestState(pullRequest);
+  const { snapshot, openWhy } = useBob();
+  const state = pullRequestState(pullRequest, snapshot.approvals);
   const { branch, headSha, number } = pullRequest.pullRequest;
   return (
     <Card className="bob-pane-card bob-pr-card">

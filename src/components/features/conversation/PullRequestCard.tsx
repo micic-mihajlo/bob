@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronRight, GitMerge, GitPullRequest, LoaderCircle, MessageSquareText, X } from "lucide-react";
+import { Check, ChevronRight, Clock3, GitMerge, GitPullRequest, LoaderCircle, MessageSquareText, X } from "lucide-react";
 import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
@@ -14,14 +14,16 @@ import {
   reviewsOf,
   VERDICT_LABEL,
   type PullRequestArtifact,
+  type PullRequestState,
   type ReviewArtifact,
 } from "@/lib/client/pull-requests";
 import type { Artifact } from "@/lib/types";
 
-function StatusIcon({ state }: { state: string }) {
+function StatusIcon({ state }: { state: PullRequestState }) {
   if (state === "merged") return <GitMerge aria-hidden="true" />;
   if (state === "closed") return <X aria-hidden="true" />;
   if (state === "open") return <LoaderCircle aria-hidden="true" />;
+  if (state === "awaiting_merge") return <Clock3 aria-hidden="true" />;
   return <Check aria-hidden="true" />;
 }
 
@@ -72,7 +74,8 @@ function PullRequestBody({ artifact }: { artifact: PullRequestArtifact }) {
 }
 
 function PullRequestCardView({ artifact, animate }: { artifact: PullRequestArtifact; animate: boolean }) {
-  const state = pullRequestState(artifact);
+  const { snapshot } = useBob();
+  const state = pullRequestState(artifact, snapshot.approvals);
   const titleId = `pull-request-${artifact.id}-title`;
   return (
     <article aria-labelledby={titleId} className={cx("conversation-interaction-card chat-action-card", animate && "chat-action-entry-animated")} data-artifact-id={artifact.id}>
@@ -90,7 +93,7 @@ function PullRequestCardView({ artifact, animate }: { artifact: PullRequestArtif
       </header>
       <PullRequestBody artifact={artifact} />
       <footer className="chat-action-card-footer">
-        <span className="chat-action-card-status" role="status">
+        <span className="chat-action-card-status" role="status" data-state={state}>
           <StatusIcon state={state} />
           {PULL_REQUEST_STATE_LABEL[state]}
         </span>

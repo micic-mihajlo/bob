@@ -99,6 +99,10 @@
   height: var(--bob-icon-sm);
 }
 
+.chat-action-card-status[data-state="awaiting_merge"] {
+  color: var(--bob-warning-text);
+}
+
 .chat-action-card-footer-action {
   margin-left: auto;
 }
