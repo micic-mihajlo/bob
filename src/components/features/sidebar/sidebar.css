@@ -33,6 +33,15 @@
   background: var(--bob-warning);
 }
 
+.sidebar-search-empty {
+  margin: 0;
+  padding: var(--bob-space-2);
+  overflow-wrap: anywhere;
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+}
+
 .new-agent-form {
   display: grid;
   gap: var(--bob-space-3);
