@@ -10,9 +10,10 @@ export interface SweepResult {
 }
 
 /**
- * Tools a cut-off turn may run again after a restart: they read, or they set the same result when called
- * twice. Everything else (starting a thread, messages, reports, approvals, reviews, merges, today's
- * schedule) would happen twice, so a turn that called one is not run again. Unknown tools count as unsafe.
+ * Tools that read, or set the same result when called twice. A turn cut off after only these runs again from
+ * its message. After anything else (starting a thread, messages, reports, approvals, reviews, merges, the
+ * roadmap) it still runs again, but its notice names what already happened, so it picks up from the state
+ * instead of repeating it. Unknown tools count as unsafe.
  */
 export const REPLAY_SAFE_TOOLS: ReadonlySet<string> = new Set([
   "list_files",
@@ -34,34 +35,40 @@ const stepsOf = (s: State, t: Turn): Step[] => (s.threads[t.agentId] ?? []).filt
 
 const listed = (steps: Step[]) => steps.map((i) => i.label).join("; ");
 
-function noticeFor(steps: Step[], unsafe: Step[], replay: boolean, acted: boolean): string {
+function noticeFor(steps: Step[], unsafe: Step[], replay: boolean, failed: boolean): string {
   const done = steps.length > 0 ? ` after: ${listed(steps)}` : "";
-  if (replay && steps.length === 0) return "The server restarted before this turn did anything. Its message is back in the queue.";
-  if (replay) return `The server restarted while this turn was running,${done}. None of that changes anything when done twice, so its message is back in the queue and the turn runs again from it.`;
-  if (unsafe.length > 0) return `The server restarted while this turn was running,${done}. ${listed(unsafe)} must not happen twice, so the turn was not run again.`;
-  return acted ? "The server restarted while this turn was running. It had already acted, so it was not run again." : "The server restarted while this turn was running.";
+  if (failed) return `The server restarted while this turn was running${done}. It was already cut off once, so it was not run again.`;
+  if (!replay) return `The server restarted while this turn was running${done}. It had already answered, so it was not run again.`;
+  if (steps.length === 0) return "The server restarted before this turn did anything. Its message is back in the queue.";
+  if (unsafe.length === 0) return `The server restarted while this turn was running,${done}. None of that changes anything when done twice, so its message is back in the queue and the turn runs again from it.`;
+  return `The server restarted while this turn was running,${done}. Its message is back in the queue, and the turn picks up from where things stand: ${listed(unsafe)} already happened and must not happen twice.`;
 }
 
 /**
- * A cut-off turn runs again from its messages when every step it took is safe to repeat; otherwise its
- * deliveries fail with a notice naming what must not happen twice, and boot answers its askers.
+ * A cut-off turn runs again from its messages, once: an answered delivery is complete, a delivery already
+ * requeued by an earlier restart fails and boot answers its asker. The notice tells the new turn what the
+ * cut-off one already did.
  */
 function closeOrphan(s: State, t: Turn): State {
-  const acted = s.actedTurnIds.includes(t.id);
   const steps = stepsOf(s, t);
   const unsafe = steps.filter((i) => !REPLAY_SAFE_TOOLS.has(i.tool));
-  const safeToRepeat = unsafe.length === 0 && (steps.length > 0 || !acted);
   let next = patchTurn(s, t.id, { status: "interrupted", endedAt: nowIso() });
   let replayed = false;
+  let failed = false;
   for (const d of next.deliveries.filter((x) => x.turnId === t.id)) {
-    const replay = safeToRepeat && !next.requeuedDeliveryIds.includes(d.id);
+    if (d.answered) {
+      next = patchDelivery(next, d.id, { status: "completed" });
+      continue;
+    }
+    const replay = !next.requeuedDeliveryIds.includes(d.id);
     replayed = replayed || replay;
+    failed = failed || !replay;
     next = replay
       ? { ...patchDelivery(next, d.id, { status: "queued", turnId: null }), requeuedDeliveryIds: [...next.requeuedDeliveryIds, d.id] }
       : patchDelivery(next, d.id, { status: "failed" });
   }
   if (!replayed) next = { ...next, actedTurnIds: next.actedTurnIds.includes(t.id) ? next.actedTurnIds : [...next.actedTurnIds, t.id] };
-  return addNotice(next, t.agentId, "warning", noticeFor(steps, unsafe, replayed, acted));
+  return addNotice(next, t.agentId, "warning", noticeFor(steps, unsafe, replayed, failed));
 }
 
 /**
