@@ -36,3 +36,32 @@ export function overdue(invoices: readonly Invoice[], today: string): Invoice[] 
 export function totalCents(list: readonly Invoice[]): number {
   return list.reduce((sum, invoice) => sum + invoice.amountCents, 0);
 }
+
+/** Header row of the CSV export, agreed with the accountant. */
+export const CSV_HEADER = "id,customer,amount,status,due_date";
+
+/**
+ * One CSV field: quoted only when it has to be, with quotes doubled.
+ * Commas, quotes and newlines are what force the quotes.
+ */
+function csvField(value: string): string {
+  return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+/** Amount as plain dollars and cents, e.g. `1250.00`, so a spreadsheet reads it as a number. */
+function csvAmount(cents: number): string {
+  return (cents / 100).toFixed(2);
+}
+
+/**
+ * Every invoice as one CSV file: the header row, then one row per invoice.
+ * Rows end with CRLF and the file ends with a newline, as CSV readers expect.
+ */
+export function invoicesCsv(list: readonly Invoice[]): string {
+  const rows = list.map((invoice) =>
+    [invoice.id, invoice.customer, csvAmount(invoice.amountCents), invoice.status, invoice.dueDate]
+      .map(csvField)
+      .join(","),
+  );
+  return [CSV_HEADER, ...rows].join("\r\n") + "\r\n";
+}

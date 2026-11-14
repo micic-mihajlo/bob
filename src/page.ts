@@ -14,6 +14,11 @@ export function invoiceRows(list: readonly Invoice[]): string {
     .join("");
 }
 
+/** Download name for the CSV export, dated so month-end files do not overwrite each other. */
+export function csvFileName(date: Date): string {
+  return `invoices-${date.toISOString().slice(0, 10)}.csv`;
+}
+
 export function summary(list: readonly Invoice[]): string {
   const owed = outstanding(list);
   return `${list.length} invoices, ${owed.length} outstanding (${formatAmount(totalCents(owed))} owed)`;
