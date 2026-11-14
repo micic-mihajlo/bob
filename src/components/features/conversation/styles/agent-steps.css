@@ -204,6 +204,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* A step without output keeps its time in the same column as the steps that open, whose time sits
+ * before a chevron inside a padded toggle. */
+.agent-step > .agent-step-duration {
+  margin-right: calc(var(--bob-icon-xs) + var(--bob-space-2) + var(--bob-space-1-5));
+}
+
 /* A step with output: the row opens it below, the way a finished turn's row opens its steps. */
 .agent-step:has(> .agent-step-toggle) {
   flex-wrap: wrap;
