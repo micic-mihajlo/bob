@@ -22,6 +22,22 @@ describe("send button colours", () => {
     );
   });
 
+  it("the disabled label is readable whatever the theme background is", () => {
+    const block = css.match(/\.voice-button\.composer-send:disabled[^{]*\{([^}]*)\}/)![1];
+    const pct = Number(block.match(/color-mix\(in srgb, var\(--bob-send\) (\d+)%, white\)/)![1]) / 100;
+    const orange = hex("--bob-send");
+    const mixed =
+      "#" +
+      [1, 3, 5]
+        .map((i) => Math.round(parseInt(orange.slice(i, i + 2), 16) * pct + 255 * (1 - pct)).toString(16).padStart(2, "0"))
+        .join("");
+    fc.assert(
+      fc.property(fc.constantFrom("ink", "newsprint", "classic"), () => {
+        expect(ratio(mixed, hex("--bob-send-text"))).toBeGreaterThanOrEqual(4.5);
+      }),
+    );
+  });
+
   it("every send-button state is painted from a send token, never a literal colour", () => {
     fc.assert(
       fc.property(fc.constantFrom("", ":hover:not(:disabled)", ":disabled"), (state) => {

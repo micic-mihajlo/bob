@@ -521,7 +521,8 @@
 
 .voice-button.composer-send:disabled,
 .voice-button.composer-send.ui-button:disabled {
-  background: color-mix(in srgb, var(--bob-send) 45%, var(--bob-bg-sidebar));
+  /* Muted toward white, not the sidebar, so the dark label stays readable in dark themes too. */
+  background: color-mix(in srgb, var(--bob-send) 55%, white);
   color: var(--bob-send-text);
 }
 
