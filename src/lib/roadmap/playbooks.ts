@@ -67,7 +67,7 @@ Use this in Ship. A gate stands before every merge, and only the person opens it
 Start a review thread with the pull request number, its id, its branch, the acceptance check and what to look at. It records a verdict and findings with a category, a severity and a confidence.
 
 ## Step 2: Fix loop
-Changes requested go to the build thread with message_thread, every finding with its file. When the fix is reported, the review thread checks again. Low findings don't block a merge; they become follow-ups.
+It runs on its own: requested changes go to the build thread with every finding, and the new head goes back to the review thread, for up to two rounds. Don't relay findings or ask for a re-review. Wait for an approving review or a blocked report. Low findings don't block a merge; they become follow-ups.
 
 ## Step 3: The person approves
 Call request_approval with exactly what will merge: the number, the branch, the files and the verdict. DIGEST.md shows it to them.
