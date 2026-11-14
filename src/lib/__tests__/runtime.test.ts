@@ -4,7 +4,8 @@ import { setBrainOverride } from "../brain";
 import { send } from "../mailbox";
 import { getState } from "../store";
 import { callTool } from "../tools";
-import { MAX_CREW_MOVES, settle } from "../turns";
+import { MAX_CHECK_MOVES, MAX_CREW_MOVES, drain, settle } from "../turns";
+import { isPullRequest } from "../threads";
 import type { Agent, ThreadItem } from "../types";
 import { brainFrom, freshTeam } from "./helpers";
 
@@ -105,5 +106,51 @@ describe("crew runtime", { timeout: GIT_TIMEOUT }, () => {
     expect(reply?.text).toMatch(/Status: blocked/);
     expect(reply?.text).toMatch(/step limit/);
     expect(s.turns.some((t) => t.status === "running")).toBe(false);
+  });
+
+  it("ends a reviewer that records its verdict on its last allowed step as done, not failed", async () => {
+    await buildThread();
+    const pr = getState().artifacts.find(isPullRequest);
+    const reviewer = getState().agents.find((a) => a.kind === "crew" && a.crewRole === "review");
+    if (!pr || !reviewer) throw new Error("the scripted flow made no pull request or review thread");
+    let moves = 0;
+    setBrainOverride(
+      brainFrom({
+        [reviewer.id]: () => {
+          moves += 1;
+          if (moves < MAX_CHECK_MOVES) return { toolCalls: [{ name: "list_files", input: {} }] };
+          return { toolCalls: [{ name: "record_review", input: { pullRequestId: pr.id, verdict: "approve", findings: [] } }] };
+        },
+      }),
+    );
+    send({ from: { kind: "agent", agentId: "bob" }, to: [reviewer.id], text: "Review it again.", expectsReply: true, replyTo: null, causedBy: null, requestId: "req_review" });
+    drain(reviewer.id);
+    await settle();
+    const s = getState();
+    expect(moves).toBe(MAX_CHECK_MOVES);
+    expect(s.turns.filter((t) => t.agentId === reviewer.id).at(-1)?.status).toBe("completed");
+    const reply = s.messages.filter((m) => m.from.kind === "agent" && m.from.agentId === reviewer.id).at(-1);
+    expect(reply?.text).toMatch(/Status: done/);
+    expect(reply?.text).toContain(`Recorded my review of #${pr.pullRequest.number}: approved.`);
+    expect((s.threads[reviewer.id] ?? []).some((i) => i.kind === "notice" && i.text.includes("step limit"))).toBe(false);
+  });
+
+  it("still fails a build thread at the cap when it changed files after opening its pull request", async () => {
+    const build = await buildThread();
+    let moves = 0;
+    setBrainOverride(
+      brainFrom({
+        [build.id]: () => {
+          moves += 1;
+          if (moves === 1) return { toolCalls: [{ name: "open_pull_request", input: { title: "More", body: "More." } }] };
+          if (moves === 2) return { toolCalls: [{ name: "write_files", input: { files: [{ path: "src/late.ts", content: "export const late = 1;\n" }] } }] };
+          return { toolCalls: [{ name: "list_files", input: {} }] };
+        },
+      }),
+    );
+    send({ from: { kind: "agent", agentId: "bob" }, to: [build.id], text: "One more change.", expectsReply: true, replyTo: null, causedBy: null, requestId: "req_late" });
+    drain(build.id);
+    await settle();
+    expect(getState().turns.filter((t) => t.agentId === build.id).at(-1)?.status).toBe("failed");
   });
 });
