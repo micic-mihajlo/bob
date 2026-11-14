@@ -4,7 +4,7 @@ import { newId, nowIso } from "../ids";
 import { scheduleKnowledgeIngest } from "../graph/knowledge";
 import { resolveOnMerge } from "../inbox";
 import { completeWorkOrder, updateWorkOrder } from "../roadmap";
-import { agentById, type State } from "../state";
+import { agentById, messageById, type State } from "../state";
 import { patchArtifact } from "../state-ops";
 import { recordReleaseNote } from "../release-notes-live";
 import { shipToLinear } from "../integrations/linear/outbound";
@@ -247,6 +247,23 @@ export async function mergePullRequestTool(input: z.infer<typeof mergeSchema>): 
   const github = findPullRequest(getState(), pr.id)?.pullRequest.github;
   const onGitHub = github ? { github: github.merged ? `merged ${github.url}` : `not merged on GitHub: ${github.error ?? remote?.error ?? "unknown"}` } : {};
   return done({ merged: true, alreadyMerged: !mainMoved, number: pr.pullRequest.number, workOrderId, next, ...(resolved.length ? { resolvedInbox: resolved.map((i) => i.id) } : {}), ...onGitHub }, { wake: updating.map((u) => u.owner) });
+}
+
+/**
+ * Why a turn asked to bring a pull request up to date with main cannot end done: its published branch still
+ * conflicts with main. Null when the turn carried no such ask, or every branch it was asked about merges cleanly.
+ */
+export async function conflictLeft(s: State, turnId: string): Promise<string | null> {
+  const asks = (s.turns.find((t) => t.id === turnId)?.messageIds ?? []).map((id) => messageById(s, id)?.text ?? "").filter((text) => text.includes(" conflicts with main"));
+  if (asks.length === 0) return null;
+  const prs = s.artifacts.filter((a): a is PullRequestArtifact => isPullRequest(a) && !a.pullRequest.merged && asks.some((text) => text.includes(`(id ${a.id})`)));
+  for (const pr of prs) {
+    const conflict = await conflictsWithMain(s.project.id, pr.pullRequest.branch, workspaceOptions());
+    if (conflict.ok && conflict.conflicts.length > 0) {
+      return `Pull request #${pr.pullRequest.number} still conflicts with main in ${conflict.conflicts.join(", ")}: its branch was not brought up to date.`;
+    }
+  }
+  return null;
 }
 
 /** After a merge, every other open pull request that now conflicts with main goes back to its owner, so none is stranded. */

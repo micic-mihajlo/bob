@@ -14,6 +14,7 @@ import { liveMove } from "./live";
 import { getConfig, getState, transact, update } from "./store";
 import { preloadedFiles, workspaceContext } from "./thread-workspace";
 import { callTool } from "./tools";
+import { conflictLeft } from "./tools/pull-requests";
 import { buildContext } from "./turn-context";
 import { planTurn, type StartedTurn } from "./turn-start";
 import type { AgentId, DeliveryStatus } from "./types";
@@ -147,7 +148,7 @@ async function runTurn(t: StartedTurn): Promise<void> {
       break;
     }
   }
-  finishTurn(t, final === STEP_LIMIT_TEXT || final === TIME_LIMIT_TEXT ? (finishedWork(moves) ?? final) : final);
+  await finishChecked(t, final === STEP_LIMIT_TEXT || final === TIME_LIMIT_TEXT ? (finishedWork(moves) ?? final) : final);
 }
 
 /** BOB_ENGINE=sdk: one coding-agent query in place of the move loop, ending the way the loop would. */
@@ -156,9 +157,9 @@ async function runSdk(t: StartedTurn, initial: State, moves: MoveRecord[], works
   if (!built) return finishStopped(t);
   const { outcome, moves: made } = await runSdkTurn(built, t.messageIds[0] ?? null, liveMove(t.agentId, t.turnId), drain, MAX_TURN_MS);
   if (outcome.kind === "stopped" || !isRunning(t.turnId)) return finishStopped(t);
-  if (outcome.kind === "ended") return finishTurn(t, null);
-  if (outcome.kind === "answered") return finishTurn(t, outcome.text);
-  finishTurn(t, finishedWork([...moves, ...made]) ?? (outcome.kind === "time_limit" ? TIME_LIMIT_TEXT : STEP_LIMIT_TEXT));
+  if (outcome.kind === "ended") return finishChecked(t, null);
+  if (outcome.kind === "answered") return finishChecked(t, outcome.text);
+  await finishChecked(t, finishedWork([...moves, ...made]) ?? (outcome.kind === "time_limit" ? TIME_LIMIT_TEXT : STEP_LIMIT_TEXT));
 }
 
 async function executeMove(t: StartedTurn, calls: ToolCallRequest[]): Promise<{ calls: CallRecord[]; endTurn: boolean } | null> {
@@ -208,6 +209,15 @@ function finishTurn(t: StartedTurn, text: string | null): void {
   update((s) => addNotice(s, t.agentId, "warning", text));
   closeTurn(t, "failed", "failed");
   relayAndDrain(t, `${text} ${progressOf(t)}`, "blocked", "Ask me to continue from my branch, or narrow the work.");
+}
+
+/** A turn asked to bring its pull request up to date with main never ends done while it still conflicts: it reports blocked instead. */
+async function finishChecked(t: StartedTurn, text: string | null): Promise<void> {
+  const left = text === STEP_LIMIT_TEXT || text === TIME_LIMIT_TEXT ? null : await conflictLeft(getState(), t.turnId);
+  if (!left) return finishTurn(t, text);
+  if (text) addAgentText(t, text);
+  closeTurn(t, "completed", "completed");
+  relayAndDrain(t, left, "blocked", "Ask me again to merge main into my branch, or resolve the conflict by hand.");
 }
 
 /** What the turn got done, for the report a limit forces: its last few steps. */
