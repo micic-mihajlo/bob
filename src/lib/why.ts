@@ -2,7 +2,7 @@ import { questionBefore } from "./brain/intake";
 import { hydraConfig, hydraUp, READ_TIMEOUT_MS, runCypher } from "./graph/hydra";
 import { syncWithin } from "./graph/mirror";
 import { senderName } from "./graph/schema";
-import { agentName, messageById, type State } from "./state";
+import { agentName, causeOf, messageById, type State } from "./state";
 import type { InboxKind, Message, MessageId, WhyHop } from "./types";
 
 /** The Linear issue an inbox item came from, as a Why? source shows it. */
@@ -12,8 +12,9 @@ function linearOf(s: State, inboxId: string): { linear?: { identifier: string; t
 }
 
 /**
- * Follows `causedBy` from a message back to what a person typed, then from an answer to the captain's
- * question back to the ask it answers, so the root is the first thing the person typed. Newest first.
+ * Follows `causedBy` from a message back to what a person typed, from an answer to the captain's question back
+ * to the ask it answers, and from an approval decision back to what the asking turn was handling, so the root is
+ * the first thing the person typed. Newest first.
  */
 export function traceWhy(s: State, messageId: MessageId): WhyHop[] {
   const hops: WhyHop[] = [];
@@ -33,7 +34,7 @@ export function traceWhy(s: State, messageId: MessageId): WhyHop[] {
       ...(question ? { question } : {}),
       ...(item ? { source: { inboxId: item.id, kind: item.kind, label: item.source, quote, ...linearOf(s, item.id) } } : {}),
     });
-    cursor = message.causedBy ?? message.continues ?? null;
+    cursor = causeOf(s, message);
   }
   return hops;
 }

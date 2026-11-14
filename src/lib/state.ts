@@ -9,6 +9,7 @@ import type {
   LiveMove,
   MemoryRecall,
   Message,
+  MessageId,
   Project,
   ReleaseNote,
   RequestId,
@@ -64,6 +65,18 @@ export const captainOf = (s: State): Agent | undefined => s.agents.find((a) => a
 
 export const agentById = (s: State, id: AgentId) => s.agents.find((a) => a.id === id);
 export const messageById = (s: State, id: string) => s.messages.find((m) => m.id === id);
+
+/**
+ * The message before this one on its Why? chain: what caused it, the question an answer continues, or, for a
+ * person's approval decision, the message the asking turn was handling for that request. Null at a typed request.
+ */
+export function causeOf(s: State, m: Message): MessageId | null {
+  if (m.causedBy || m.continues) return m.causedBy ?? m.continues ?? null;
+  if (!m.approvalId) return null;
+  const approval = s.approvals.find((a) => a.id === m.approvalId);
+  const turn = approval ? s.turns.find((t) => t.id === approval.turnId) : undefined;
+  return turn?.messageIds.filter((id) => id !== m.id && messageById(s, id)?.requestId === approval?.requestId).at(-1) ?? null;
+}
 export const runningTurn = (s: State, agentId: AgentId) =>
   s.turns.find((t) => t.agentId === agentId && t.status === "running");
 
