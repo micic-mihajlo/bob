@@ -1,7 +1,7 @@
 import type { Agent } from "@/lib/types";
 
 /** A pane of the side panel. Each open pane has a tab in the panel's top row. */
-export type PanelTab = "roadmap" | "crew" | "drive" | "activity" | "changes" | "files" | "review";
+export type PanelTab = "roadmap" | "inbox" | "crew" | "drive" | "activity" | "changes" | "files" | "review";
 
 /**
  * Every pane the new side panel can show. `verified` is not a PanelTab yet, because the old panel
@@ -14,7 +14,7 @@ export type PanelKind = "captain" | "crew" | "standing";
 
 /** The panes each kind of thread can open, in tab order. */
 export const PANEL_TABS: Readonly<Record<PanelKind, readonly PanelTab[]>> = {
-  captain: ["roadmap", "crew", "drive", "activity"],
+  captain: ["roadmap", "inbox", "crew", "drive", "activity"],
   crew: ["changes", "files", "review"],
   standing: ["roadmap", "activity"],
 };
@@ -28,6 +28,7 @@ export const SIDE_PANEL_PANES: Readonly<Record<PanelKind, readonly SidePanelPane
 
 export const PANEL_TAB_LABEL: Readonly<Record<SidePanelPaneId, string>> = {
   roadmap: "Roadmap",
+  inbox: "Inbox",
   crew: "Crew",
   drive: "Drive",
   activity: "Activity",
@@ -55,11 +56,7 @@ export function selectedPane(panes: readonly SidePanelPaneId[], remembered: Side
 }
 
 /** After a tab closes, the tab that takes its place is selected, or the one before it at the end. */
-export function paneAfterClose(
-  panes: readonly SidePanelPaneId[],
-  closing: SidePanelPaneId,
-  selected: SidePanelPaneId | null,
-): SidePanelPaneId | null {
+export function paneAfterClose(panes: readonly SidePanelPaneId[], closing: SidePanelPaneId, selected: SidePanelPaneId | null): SidePanelPaneId | null {
   const rest = panes.filter((pane) => pane !== closing);
   if (selected !== closing) return selected !== null && rest.includes(selected) ? selected : (rest[0] ?? null);
   const index = panes.indexOf(closing);

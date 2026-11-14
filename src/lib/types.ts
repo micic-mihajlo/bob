@@ -585,4 +585,6 @@ export const API = {
   voice: "/api/voice",
   voiceSession: "/api/voice/session",
   voiceTurn: "/api/voice/turn",
+  inbox: "/api/inbox",
+  inboxPromote: "/api/inbox/promote",
 } as const;
