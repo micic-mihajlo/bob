@@ -10,14 +10,15 @@ import type { ReleaseNote } from "./types";
 import { recordUsage } from "./usage";
 
 /** Records the release note for a merged pull request. Called once the merge lands; a second call keeps the first note. */
-export function recordReleaseNote(pullRequestId: string): void {
+/** Records the factory note, and with a live model starts its rewrite. Resolves when the note is final. */
+export function recordReleaseNote(pullRequestId: string): Promise<void> {
   update((s) => {
     const pr = s.artifacts.find((a): a is PullRequestArtifact => a.id === pullRequestId && isPullRequest(a));
     if (!pr?.pullRequest.merged || s.releaseNotes?.[pr.id]) return s;
     const note: ReleaseNote = { pullRequestId: pr.id, number: pr.pullRequest.number, workOrderId: workOrderOf(s, pr)?.id ?? null, text: factoryNote(s, pr), source: "factory", at: nowIso() };
     return { ...s, releaseNotes: { ...s.releaseNotes, [pr.id]: note } };
   });
-  if (brainKind() === "model") void rewriteReleaseNote(pullRequestId).catch(() => undefined);
+  return brainKind() === "model" ? rewriteReleaseNote(pullRequestId).catch(() => undefined) : Promise.resolve();
 }
 
 /** With a live model, rewrites the factory note as one or two sentences a customer would read. */
