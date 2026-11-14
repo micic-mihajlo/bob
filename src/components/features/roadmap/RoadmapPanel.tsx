@@ -12,7 +12,10 @@ import { Card } from "@/components/ui/Surface";
 import { displayName } from "@/lib/client/crew";
 import { formatDeadline } from "@/lib/client/format";
 import { requestLabel, requestUsage } from "@/lib/client/requests";
+import { useNow } from "@/lib/client/use-now";
+import { formatElapsed } from "@/lib/format-time";
 import {
+  elapsedSince,
   forUserLine,
   hasPlan,
   roadmapSteps,
@@ -41,6 +44,8 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
   const { roadmap, releaseNotes = [], requests = [], budgets, inbox = [] } = snapshot;
   const { tracks, backlog } = trackViews(roadmap);
   const started = tracks.some((track) => track.goal !== null) || roadmap.today.length > 0 || (roadmap.backlog?.length ?? 0) > 0;
+  // One clock for every card: each request's elapsed time ticks over once a second.
+  const now = useNow(started);
 
   const meta = (order: WorkOrder) => {
     const owner = order.ownerAgentId ? agentsById.get(order.ownerAgentId) : undefined;
@@ -118,9 +123,13 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                   const progress = trackProgress(track, roadmap.totalStages);
                   const asked = track.ask ? requestLabel(track.ask, inbox) : null;
                   const steps = roadmapSteps(track);
+                  const elapsed = elapsedSince(track.startedAt, now);
                   return (
                     <Fragment key={track.key}>
                       <Card className="bob-roadmap-card" aria-label={goal?.title ?? "Goal"}>
+                        <p className="bob-roadmap-elapsed" aria-label={`Elapsed ${formatElapsed(elapsed)}`}>
+                          {formatElapsed(elapsed)}
+                        </p>
                         <p className="bob-roadmap-label">Goal</p>
                         <h3 className="bob-roadmap-goal">{goal?.title ?? "No goal set yet"}</h3>
                         {asked ? (
