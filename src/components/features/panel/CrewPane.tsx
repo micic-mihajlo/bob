@@ -9,11 +9,9 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import { crewInOrder, displayName, THREAD_STATUS_LABEL, threadStatusOf } from "@/lib/client/crew";
-import { PULL_REQUEST_STATE_LABEL, pullRequestState, pullRequestsBy, reviewsForThread, VERDICT_LABEL } from "@/lib/client/pull-requests";
-import type { Agent, CrewRole, ThreadStatus } from "@/lib/types";
+import { workParts } from "@/lib/client/pull-requests";
+import type { Agent, ThreadStatus } from "@/lib/types";
 import { PaneFrame, PaneHeader } from "./PaneFrame";
-
-const ROLE_LABEL: Record<CrewRole, string> = { build: "Build", review: "Review", research: "Research" };
 
 function StatusGlyph({ status }: { status: ThreadStatus }) {
   switch (status) {
@@ -36,20 +34,9 @@ function CrewRow({ agent }: { agent: Agent }) {
   const { snapshot, selectedAgent, selectAgent } = useBob();
   const status = threadStatusOf(snapshot, agent);
   const activity = snapshot.activity[agent.id];
-  const pullRequest = pullRequestsBy(snapshot.artifacts, agent.id)[0];
-  const review = reviewsForThread(snapshot.artifacts, agent.id)[0];
   const selected = selectedAgent?.id === agent.id;
   const step = activity?.state === "working" ? activity.step : null;
-  const live =
-    step ??
-    [
-      agent.crewRole ? ROLE_LABEL[agent.crewRole] : null,
-      pullRequest ? `#${pullRequest.pullRequest.number}` : null,
-      pullRequest ? PULL_REQUEST_STATE_LABEL[pullRequestState(pullRequest, snapshot.approvals)] : review ? VERDICT_LABEL[review.review.verdict] : null,
-      agent.branch,
-    ]
-      .filter(Boolean)
-      .join(" · ");
+  const live = step ?? [...workParts(agent, snapshot.artifacts, snapshot.approvals), agent.branch].filter(Boolean).join(" · ");
   return (
     <li>
       <Button

@@ -1,4 +1,4 @@
-import type { AgentId, Approval, Artifact, ChangedFile, PullRequestData, ReviewData, ReviewFinding } from "@/lib/types";
+import type { Agent, AgentId, Approval, Artifact, ChangedFile, CrewRole, PullRequestData, ReviewData, ReviewFinding } from "@/lib/types";
 
 export type PullRequestArtifact = Artifact & { pullRequest: PullRequestData };
 export type ReviewArtifact = Artifact & { review: ReviewData };
@@ -74,6 +74,21 @@ const MERGE_WORDS = /merge|pull request|\bPR\b/i;
  * The pull request an approval is about. `pullRequestId` names it; an approval from before that field
  * falls back to a "#3" in its text, then to the newest pull request of the same request.
  */
+const ROLE_LABEL: Record<CrewRole, string> = { build: "Build", review: "Review", research: "Research" };
+
+/** What a crew thread did, in short parts: its role, the pull request it opened or reviewed, and where that stands. */
+export function workParts(agent: Agent, artifacts: readonly Artifact[], approvals: readonly Approval[]): string[] {
+  const pullRequest = pullRequestOfThread(artifacts, agent.id);
+  const review = reviewsForThread(artifacts, agent.id)[0];
+  const state =
+    pullRequest?.agentId === agent.id
+      ? PULL_REQUEST_STATE_LABEL[pullRequestState(pullRequest, approvals)]
+      : review
+        ? VERDICT_LABEL[review.review.verdict]
+        : null;
+  return [agent.crewRole ? ROLE_LABEL[agent.crewRole] : null, pullRequest ? `#${pullRequest.pullRequest.number}` : null, state].filter((part) => part !== null);
+}
+
 export function pullRequestForApproval(artifacts: readonly Artifact[], approval: Approval): PullRequestArtifact | undefined {
   const requests = artifacts.filter(isPullRequest).sort(newestFirst);
   if (approval.pullRequestId) return requests.find((artifact) => artifact.id === approval.pullRequestId);
