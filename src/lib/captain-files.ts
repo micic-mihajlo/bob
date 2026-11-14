@@ -1,5 +1,6 @@
 import { resultLine } from "./brain/script-plan";
 import { nowIso } from "./ids";
+import { changelogFile } from "./release-notes";
 import { agentName, type State } from "./state";
 import { needsYou, threadStateOf } from "./thread-status";
 import { isPullRequest } from "./threads";
@@ -101,6 +102,7 @@ export function withCaptainFiles(s: State): State {
     "DIGEST.md": digestFile(s),
     "CREW.md": crewFile(s),
     "NOTES.md": notesFile(s, current("NOTES.md")),
+    ...(changelogFile(s) ? { "CHANGELOG.md": changelogFile(s) } : {}),
   };
   const changed = Object.entries(wanted).filter(([name, content]) => current(name) !== content);
   if (changed.length === 0) return s;

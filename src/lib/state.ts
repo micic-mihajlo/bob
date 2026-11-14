@@ -7,6 +7,7 @@ import type {
   DriveFile,
   Message,
   Project,
+  ReleaseNote,
   Roadmap,
   ThreadItem,
   Turn,
@@ -33,6 +34,8 @@ export interface State {
   requeuedDeliveryIds: string[];
   /** The captain's own files: DIGEST.md, CREW.md, NOTES.md. */
   drive: DriveFile[];
+  /** By pull request id: what each merge changed for the people who use the product. */
+  releaseNotes?: Record<string, ReleaseNote>;
   rev: number;
 }
 
