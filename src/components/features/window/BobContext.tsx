@@ -60,7 +60,7 @@ export function useBob(): BobContextValue {
 
 export type SyncState = "live" | "polling" | "offline";
 
-export function BobProvider({ snapshot, sync, children }: { snapshot: Snapshot; sync: SyncState; children: ReactNode }) {
+export function BobProvider({ snapshot, sync, children }: { snapshot: Snapshot; sync: SyncState; children?: ReactNode }) {
   const [selectedId, setSelectedId] = useState<AgentId | null>(null);
   // Where the panel would float over the thread, it starts closed.
   const [panelOpen, setPanelOpen] = useState(

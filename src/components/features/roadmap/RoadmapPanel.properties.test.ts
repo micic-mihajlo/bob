@@ -70,7 +70,7 @@ const withWindow = <T,>(run: () => T): T => {
 
 const render = (snapshot: Snapshot) =>
   withWindow(() =>
-    renderToStaticMarkup(createElement(BobProvider, { snapshot, sync: "live", children: createElement(RoadmapPanel, { onClose: () => undefined }) })),
+    renderToStaticMarkup(createElement(BobProvider, { snapshot, sync: "live" }, createElement(RoadmapPanel, { onClose: () => undefined }))),
   );
 
 const TIMER = /<p class="bob-roadmap-timer"[^>]*>([^<]*)<\/p>/g;

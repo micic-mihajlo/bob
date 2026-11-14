@@ -1,8 +1,8 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { RoadmapPanel } from "../../../components/features/roadmap/RoadmapPanel";
-import { BobProvider } from "../../../components/features/window/BobContext";
+import { RoadmapPanel } from "@/components/features/roadmap/RoadmapPanel";
+import { BobProvider } from "@/components/features/window/BobContext";
 import { formatElapsed } from "../format";
 import { panelChangesView } from "../changes-view";
 import { diffLineText, diffLineToken, parseUnifiedDiff } from "../diff";
@@ -14,7 +14,7 @@ import { parseMarkdown } from "../markdown";
 import { openPanes, paneAfterClose, PANEL_TABS, selectedPane } from "../panel-tabs";
 import { currentStep, forUserLine, hasPlan, roadmapSteps, trackProgress, trackViews, workOrderProgress } from "../roadmap-view";
 import { groupTheorems } from "../verification";
-import type { Agent, Roadmap, Snapshot, WorkOrder } from "../../types";
+import type { Agent, Roadmap, Snapshot, WorkOrder } from "@/lib/types";
 
 const order = (id: string, status: WorkOrder["status"]): WorkOrder => ({ id, title: id, status, ownerAgentId: null, artifactId: null });
 
@@ -327,7 +327,7 @@ describe("roadmap card elapsed timer", () => {
     ],
   } as unknown as Snapshot;
   const render = () =>
-    renderToStaticMarkup(createElement(BobProvider, { snapshot, sync: "live", children: createElement(RoadmapPanel, { onClose: () => undefined }) }));
+    renderToStaticMarkup(createElement(BobProvider, { snapshot, sync: "live" }, createElement(RoadmapPanel, { onClose: () => undefined })));
 
   /** The panel's resizer reads the window while rendering, which the node test environment does not have. */
   const withWindow = <T,>(run: () => T): T => {
