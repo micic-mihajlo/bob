@@ -5,9 +5,18 @@ import { PANEL_MIN } from "@/components/features/panel/PaneFrame";
 import { OpenProjectDialog } from "@/components/features/sidebar/OpenProjectDialog";
 import { Sidebar } from "@/components/features/sidebar/Sidebar";
 import { TitleTooltips } from "@/components/ui/TitleTooltips";
+import { cx } from "@/components/ui/classes";
 import { hasProject } from "@/lib/types";
 import { useBob } from "./BobContext";
-import { LEFT_PANEL_DEFAULT, LeftPanelResizer } from "./LeftPanelResizer";
+import {
+  LEFT_PANEL_COLLAPSED_STORAGE_KEY,
+  LEFT_PANEL_COMPACT,
+  LEFT_PANEL_DEFAULT,
+  LEFT_PANEL_MAX,
+  LEFT_PANEL_MIN,
+  LEFT_PANEL_STORAGE_KEY,
+  LeftPanelResizer,
+} from "./LeftPanelResizer";
 import { PageRail } from "./PageRail";
 import { SnapshotGate } from "./SnapshotGate";
 
@@ -36,10 +45,23 @@ function FirstRun() {
  * panel narrows to fit.
  */
 const CONVERSATION_MIN_WIDTH = 424;
-const LEFT_PANEL_COMPACT = 88;
+
+function savePanelWidth(key: string, value: number | string) {
+  try {
+    localStorage.setItem(key, String(value));
+  } catch {}
+}
 
 function WindowFrame({ children }: { children: ReactNode }) {
   const [width, setWidth] = useState(LEFT_PANEL_DEFAULT);
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      const stored = Number(localStorage.getItem(LEFT_PANEL_STORAGE_KEY));
+      if (Number.isFinite(stored) && stored >= LEFT_PANEL_MIN && stored <= LEFT_PANEL_MAX) setWidth(stored);
+      setCollapsed(localStorage.getItem(LEFT_PANEL_COLLAPSED_STORAGE_KEY) === "true");
+    } catch {}
+  }, []);
   const [windowWidth, setWindowWidth] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
   const { panelOpen, panelMaximized, panelWidth } = useBob();
@@ -52,20 +74,31 @@ function WindowFrame({ children }: { children: ReactNode }) {
   const panel = panelOpen && !panelMaximized ? panelWidth : 0;
   const tooNarrow = windowWidth !== null && windowWidth - width - panel < CONVERSATION_MIN_WIDTH;
   if (expanded && !tooNarrow) setExpanded(false);
-  const compact = tooNarrow && !expanded;
+  const compact = collapsed || (tooNarrow && !expanded);
+  const changeCompact = (next: boolean) => {
+    setCollapsed(next);
+    setExpanded(!next);
+    savePanelWidth(LEFT_PANEL_COLLAPSED_STORAGE_KEY, String(next));
+  };
   const left = compact ? LEFT_PANEL_COMPACT : width;
   const panelFit = windowWidth === null ? panelWidth : Math.max(PANEL_MIN, windowWidth - left - CONVERSATION_MIN_WIDTH);
   return (
     <div className="app-window">
       <PageRail />
       <div
-        className="app-frame app-frame-edge"
+        className={cx("app-frame app-frame-edge", compact && "app-frame-sidebar-compact")}
         data-window-page="agents"
         data-window-page-kind="agents"
         style={{ "--left-panel-width": `${left}px`, "--panel-fit": `${panelFit}px` } as CSSProperties}
       >
-        <Sidebar compact={compact} onExpand={() => setExpanded(true)} />
-        {compact ? null : <LeftPanelResizer width={width} onWidth={setWidth} />}
+        <Sidebar compact={compact} onExpand={() => changeCompact(false)} />
+        <LeftPanelResizer
+          value={width}
+          compact={compact}
+          onResize={setWidth}
+          onResizeEnd={(next) => savePanelWidth(LEFT_PANEL_STORAGE_KEY, next)}
+          onCompactChange={changeCompact}
+        />
         <div className="app-frame-panes server-connection-workspace">
           <div className="server-connection-content">{children}</div>
         </div>

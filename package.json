@@ -13,7 +13,8 @@
     "live": "vitest run --config vitest.live.config.ts",
     "walkthrough": "node --no-warnings scripts/walkthrough.ts",
     "chaos": "node --no-warnings scripts/chaos.ts",
-    "demo": "node scripts/demo.mjs"
+    "demo": "node scripts/demo.mjs",
+    "durable:proof": "node scripts/durable-proof.mjs"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "0.3.309",

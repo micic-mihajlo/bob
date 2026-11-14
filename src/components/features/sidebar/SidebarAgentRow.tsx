@@ -11,7 +11,10 @@ import { threadStatusOf } from "@/lib/client/crew";
 import { liveLine } from "@/lib/client/live-move";
 import { sidebarMessageTime, type SidebarAgentState } from "@/lib/client/sidebar-rows";
 import type { Agent } from "@/lib/types";
+import { SidebarAgentContextMenu } from "./SidebarAgentContextMenu";
 import { SidebarAgentIndicator, SidebarWaitChip, sidebarStateLabel } from "./SidebarAgentIndicator";
+import { useMenuAnchor } from "./SidebarMenu";
+import type { useSidebarPins } from "./sidebar-pins";
 
 /** The label beside the name: the captain's part, a crew thread's work, a standing agent's title. */
 function badgeOf(agent: Agent): string {
@@ -21,9 +24,24 @@ function badgeOf(agent: Agent): string {
 
 /**
  * One thread in the list, as the reference draws an agent row. A waiting row (in "Needs you") shows
- * what the person does next in the time slot and previews what it waits on.
+ * what the person does next in the time slot and previews what it waits on. A hidden row (in
+ * "Hidden") sleeps, shows no state, and shows when the person hid it in place of the last message.
  */
-export function SidebarAgentRow({ agent, state, waiting = false }: { agent: Agent; state: SidebarAgentState | undefined; waiting?: boolean }) {
+export function SidebarAgentRow({
+  agent,
+  state,
+  pins,
+  waiting = false,
+  userHidden = false,
+  hiddenSince,
+}: {
+  agent: Agent;
+  state: SidebarAgentState | undefined;
+  pins: ReturnType<typeof useSidebarPins>;
+  waiting?: boolean;
+  userHidden?: boolean;
+  hiddenSince?: string;
+}) {
   const { snapshot, agentsById, selectedAgent, selectAgent, focusThread } = useBob();
   const thread = snapshot.threads[agent.id];
   const status = threadStatusOf(snapshot, agent);
@@ -32,7 +50,9 @@ export function SidebarAgentRow({ agent, state, waiting = false }: { agent: Agen
   const wait = waiting && state?.kind === "waiting" ? state : undefined;
   const parts = status === "closed" ? workParts(agent, snapshot.artifacts, snapshot.approvals) : [];
   const outcome = parts.length > 1 ? parts.join(" · ") : "";
-  const preview = wait?.detail || liveLine(snapshot.live?.[agent.id]) || outcome || threadLine(agent, status, snapshot.activity[agent.id], thread, agentsById);
+  const menu = useMenuAnchor();
+  const hiddenDetail = userHidden && hiddenSince ? `Paused since ${new Date(hiddenSince).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : "";
+  const preview = hiddenDetail || wait?.detail || liveLine(snapshot.live?.[agent.id]) || outcome || threadLine(agent, status, snapshot.activity[agent.id], thread, agentsById);
   const active = selectedAgent?.id === agent.id;
   const stateLabel = state ? sidebarStateLabel(state) : "";
   const approvalId = wait?.reason === "approval" ? (snapshot.needsYou?.find((item) => item.agentId === agent.id)?.approvalId ?? null) : null;
@@ -41,16 +61,19 @@ export function SidebarAgentRow({ agent, state, waiting = false }: { agent: Agen
     <button
       type="button"
       className={buttonClass({ variant: "ghost", className: cx("agent-row", active && "agent-row-active") })}
-      aria-label={`${name}${badge ? `, ${badge}` : ""}${wait ? "" : `. ${preview}`}${stateLabel ? `. ${stateLabel}` : ""}`}
+      aria-label={`${name}${badge ? `, ${badge}` : ""}${wait ? "" : `. ${userHidden ? "Hidden. " : ""}${preview}`}${stateLabel ? `. ${stateLabel}` : ""}`}
       aria-pressed={active ? "true" : "false"}
       data-status={status}
       data-slot="button"
       data-variant="ghost"
       data-size="default"
+      aria-haspopup="menu"
+      data-expanded={menu.anchor ? "" : undefined}
       onClick={() => (wait ? focusThread({ agentId: agent.id, approvalId }) : selectAgent(agent.id))}
+      onContextMenu={menu.openAtPointer}
     >
       <span className="agent-row-avatar">
-        <AgentAvatar agent={agent} motion="idle" mood={agentMood(snapshot, agent.id)} />
+        <AgentAvatar agent={agent} motion="idle" mood={userHidden ? "asleep" : agentMood(snapshot, agent.id)} />
         <SidebarAgentIndicator state={state} />
       </span>
       <span className="agent-row-copy">
@@ -67,7 +90,7 @@ export function SidebarAgentRow({ agent, state, waiting = false }: { agent: Agen
           </span>
           {wait ? (
             <SidebarWaitChip reason={wait.reason} />
-          ) : (
+          ) : userHidden ? null : (
             <span className="agent-row-time">{sidebarMessageTime(thread?.items.at(-1)?.at ?? agent.createdAt)}</span>
           )}
         </span>
@@ -78,7 +101,7 @@ export function SidebarAgentRow({ agent, state, waiting = false }: { agent: Agen
   );
 
   return (
-    <div className="sidebar-agent-item" data-chat-id={waiting ? undefined : agent.id}>
+    <div className={cx("sidebar-agent-item", userHidden && "sidebar-agent-item-user-hidden")} data-chat-id={waiting || userHidden ? undefined : agent.id}>
       {wait ? (
         <div className="sidebar-agent-tooltip-trigger" title={`${sidebarStateLabel(wait)}. Select to ${wait.reason === "approval" ? "review" : wait.reason === "question" ? "answer" : "open"}`}>
           {row}
@@ -86,6 +109,7 @@ export function SidebarAgentRow({ agent, state, waiting = false }: { agent: Agen
       ) : (
         row
       )}
+      {menu.anchor ? <SidebarAgentContextMenu agent={agent} pinned={false} userHidden={userHidden} anchor={menu.anchor} pins={pins} onClose={menu.close} /> : null}
     </div>
   );
 }

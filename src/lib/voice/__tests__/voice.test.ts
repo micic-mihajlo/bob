@@ -7,9 +7,9 @@ import { getState } from "../../store";
 import { settle } from "../../turns";
 import { traceWhy } from "../../why";
 import { brainFrom, freshTeam, gate, say } from "../../__tests__/helpers";
-import { agentId, agentRequest, conversationToken, createAgent, elevenLabsKey, SEND_TO_BOB_TOOL } from "../elevenlabs";
+import { agentId, agentRequest, conversationToken, createAgent, elevenLabsKey, REALTIME_MODEL, SEND_TO_BOB_TOOL, syncAgent } from "../elevenlabs";
 import { SEND_TO_BOB, speakable, utteranceFor } from "../speech";
-import { STILL_WORKING, voiceTurn } from "../turn";
+import { STILL_WORKING, TURN_FAILED, voiceTurn } from "../turn";
 
 const VAGUE = "customers want to export invoices as CSV";
 const ANSWER = "All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.";
@@ -59,6 +59,18 @@ describe("a call with the captain", { timeout: 60_000 }, () => {
     expect(getState().threads.bob?.some((i) => i.kind === "agent_text" && i.text === "Done.")).toBe(true);
   });
 
+  it("says the model could not be reached when the captain's turn fails", async () => {
+    setBrainOverride(
+      brainFrom({
+        bob: async () => {
+          throw new Error("budget cap reached");
+        },
+      }),
+    );
+    const turn = await voiceTurn("bob", "how is it going?");
+    expect(turn.ok && turn.reply).toBe(TURN_FAILED);
+  });
+
   it("refuses an unknown agent", async () => {
     expect(await voiceTurn("nobody", "hello")).toMatchObject({ ok: false });
   });
@@ -81,12 +93,29 @@ describe("the ElevenLabs switch and requests", () => {
     expect(toolUrl).toBe("https://api.elevenlabs.io/v1/convai/tools");
     expect(toolInit).toMatchObject({ method: "POST", headers: { "xi-api-key": "k", "content-type": "application/json" } });
     expect(JSON.parse(toolInit.body)).toEqual({ tool_config: SEND_TO_BOB_TOOL });
-    expect(SEND_TO_BOB_TOOL).toMatchObject({ type: "client", name: SEND_TO_BOB, expects_response: true, parameters: { required: ["text"] } });
-    expect(SEND_TO_BOB_TOOL.response_timeout_secs).toBeLessThanOrEqual(120);
+    expect(SEND_TO_BOB_TOOL).toMatchObject({ type: "client", name: SEND_TO_BOB, expects_response: false, parameters: { required: ["text"] } });
     expect(agentUrl).toBe("https://api.elevenlabs.io/v1/convai/agents/create");
     expect(JSON.parse(agentInit.body)).toEqual(agentRequest("tool_1"));
     expect(agentRequest("tool_1").conversation_config.agent.prompt.tool_ids).toEqual(["tool_1"]);
     expect(agentRequest("tool_1").platform_settings.auth.enable_auth).toBe(true);
+    expect(agentRequest("tool_1").conversation_config.realtime_model).toBe(REALTIME_MODEL);
+  });
+
+  it("puts the current tool and agent config onto an existing agent", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(ok({ conversation_config: { agent: { prompt: { tool_ids: ["tool_9"] } } } }))
+      .mockResolvedValueOnce(ok({}))
+      .mockResolvedValueOnce(ok({}));
+    await syncAgent("k", "agent_9", fetchMock);
+    const [[getUrl], [toolUrl, toolInit], [agentUrl, agentInit]] = fetchMock.mock.calls;
+    expect(getUrl).toBe("https://api.elevenlabs.io/v1/convai/agents/agent_9");
+    expect(toolUrl).toBe("https://api.elevenlabs.io/v1/convai/tools/tool_9");
+    expect(toolInit.method).toBe("PATCH");
+    expect(JSON.parse(toolInit.body)).toEqual({ tool_config: SEND_TO_BOB_TOOL });
+    expect(agentUrl).toBe("https://api.elevenlabs.io/v1/convai/agents/agent_9");
+    expect(agentInit.method).toBe("PATCH");
+    expect(JSON.parse(agentInit.body).conversation_config).toEqual(agentRequest("tool_9").conversation_config);
   });
 
   it("uses ELEVENLABS_AGENT_ID, else creates the agent once and remembers it", async () => {

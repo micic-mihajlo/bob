@@ -24,7 +24,8 @@ Open http://localhost:3000.
 `pnpm demo` does the rest. First it checks the machine: the Node and git versions, that dependencies are installed (it runs `pnpm install` when they aren't), and that the port is free. Then it builds and starts the production server and resets Bob to the demo seed. The reset re-creates the project's repository and installs its dependencies before it answers, so the first thread doesn't wait on an install. Last, it prints what is on and off:
 
 ```
-  Model            live: captain moonshotai/kimi-k3.1-pro, crew deepseek/deepseek-v4.1-flash
+  Model            live: captain deepseek/deepseek-v4.1-flash, crew on the coding agent
+  Crew engine      Claude Agent SDK for build and review (BOB_ENGINE=loop for the move loop)
   run sandbox      plain shell (no namespace sandbox on darwin); commands still get no API keys
   HydraDB graph    off (BOB_STORE=hydra turns it on)
   Voice            browser speech (BOB_VOICE=elevenlabs for ElevenLabs)
@@ -37,9 +38,11 @@ Other flags: `--prewarm` (see the optional order below), `--scripted` (the fallb
 
 On macOS, `run` has no namespace sandbox. Every run step says so ("plain shell"). Commands still run in the thread's own checkout, with a scrubbed environment and no API keys, but the file system isn't sealed the way it is on Linux. `pnpm verify` works on a Mac once Lean is installed (it prints the one-line elan install). Without Lean it skips the proofs and still runs the conformance tests. The demo doesn't need it.
 
+The live model is deepseek/deepseek-v4.1-flash for the captain and the crew, set by `BOB_MODEL_STRONG` and `BOB_MODEL_LIGHT` in `.env.local`. The live timings below were measured with the captain on kimi-k3.1-pro, and nothing has been timed on deepseek for both roles yet. Build and review threads run on the Claude Agent SDK by default: one coding-agent query per turn, with Bob's own tools over MCP. They use Token Pass, or your own Claude once you pick **Connect your Claude** in the project menu. The captain stays on the move loop. With a live model, every pull request that changes source runs the verification gate: a contract, fast-check properties, mutants of the changed lines and a Lean proof. Live, the gate is advisory: its line shows on the card but never blocks. In `--scripted` it blocks.
+
 ## The 3-minute script
 
-The numbers in brackets are the ten checks `pnpm walkthrough` times. Each request gets its own track on the roadmap (Intent, Spec, Build, Ship, Learn) and moves on its own gates, so the two requests below never wait on each other. The times are from three clean live runs of this exact order on main at 03b6a25 (captain kimi-k3.1-pro, crew deepseek-v4.1-flash, sandbox on), counted from when you type the CSV request.
+The numbers in brackets are the ten checks `pnpm walkthrough` times. Each request gets its own track on the roadmap (Intent, Spec, Build, Ship, Learn) and moves on its own gates, so the two requests below never wait on each other. The times are from three clean live runs of this exact order on main at 03b6a25 (captain kimi-k3.1-pro, crew deepseek-v4.1-flash on the move loop, sandbox on), counted from when you type the CSV request. Those runs came before the coding-agent engine and the verification gate, which add time. See Presenter notes for the current numbers.
 
 | Time | What happens | Steps |
 | --- | --- | --- |
@@ -63,8 +66,20 @@ If the review asks for changes, the build thread gets a fix round first. In the 
 
 For questions: kill the server mid-run and start it again with `pnpm demo --keep`, and nothing is lost or stranded (step 9). The inbox is the other story to tell. In the Inbox pane, "Add a sample call and error" has the captain triage a customer call and a production error into quoted backlog work. Nothing builds until you press Build this, and a merge that fixes the error marks it resolved.
 
+## Presenter notes
+
+- **Current timings.** These were measured with kimi-k3.1-pro as captain; on deepseek they haven't been timed yet. On the coding-agent engine with the verification gate, the CSV request was measured at 100-118 s to the approval card in BOB-5's eight live walkthroughs. When a merge-with-main round is needed, it takes up to 153 s to closed. Each verified build spends 50-66 s writing its contract and running `verify_change`, so expect the first merge card nearer 2:00 than the 1:20 in the table. Fill the wait with step 3: the build thread's steps, the red then green acceptance test, and the gate line.
+- **A "Change the acceptance test for WO-x?" card.** About one live build in six writes a wrong acceptance test and asks you to change it. The test is locked once it has run red, and only you can unlock it. The card shows the thread's reason and the diff. Read the reason out, then approve: Bob writes exactly that file, the lock stays on, and the build reruns the test. This is the factory working, so say so. If the reason doesn't hold up, deny it, and the test stays as it ran red.
+- **Steering.** Typing into a working build thread steers its running turn: the message lands as the turn's next input, and the turn answers it before it ends.
+- **The gate line on the merge card**, for example `4 properties · 1,200 cases · 5/5 mutants killed · proved in Lean`. Live, it's advisory. Lean runs after the card appears and updates the line, and it reads "Lean skipped" on a machine without Lean.
+- **Fallback switches.** Set these in the shell before `pnpm demo`:
+  - `BOB_ENGINE=loop pnpm demo` puts build and review back on the move loop.
+  - `BOB_VERIFY=off pnpm demo` turns the verification gate off. Use it if the gate is what's slow.
+  - `pnpm demo --scripted` runs the scripted brain, with no model calls.
+
 ## When something goes wrong mid-demo
 
+- **A build thread is slow or stuck on the coding agent.** Press Ctrl-C, then run `BOB_ENGINE=loop pnpm demo`. If the time goes into verification, use `BOB_VERIFY=off pnpm demo`.
 - **The model is slow, loops or says something odd.** Press Ctrl-C, then run `pnpm demo --scripted`. That starts from a fresh seed with the scripted brain, which drives the same tools, workspaces, PRs, reviews and gate, finishes a request in about 20 seconds, and needs no network for the model. Say that you switched.
 - **The state is a mess, but the server is fine.** Reset without restarting: `curl -X POST localhost:3000/api/reset -H 'content-type: application/json' -d '{"warm":true}'`, then reload the page.
 - **The server crashed or the page won't load.** Run `pnpm demo --keep`. The JSON store and the restart recovery bring every thread back where it was. Read `.data/demo/server.log` afterwards.

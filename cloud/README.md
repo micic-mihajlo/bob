@@ -1,6 +1,6 @@
 # Bob durable state (Cloudflare Worker)
 
-One Durable Object per Bob project holds that project's latest state revision, stored in pieces in one
+One Durable Object per Bob project and Bob instance holds that project's latest state revision, stored in pieces in one
 transaction, plus a log of the last 50 revisions. A write whose rev is not newer than the one held gets 409, so a
 stale or restarted Bob server can never roll the state back. A directory object remembers the last project
 written, so a server that lost its disk can restore with `GET /latest`.
@@ -13,7 +13,10 @@ written, so a server that lost its disk can restore with `GET /latest`.
 | `PUT /projects/:id/state` | body: the state JSON, header `x-bob-rev`; 409 when not newer |
 | `GET /projects/:id/revisions` | the revision log |
 
-Every route but `/health` needs the header `x-bob-durable-secret`, matching the Worker's `BOB_DURABLE_SECRET`.
+Every route but `/health` needs the header `x-bob-durable-secret`, matching the Worker's `BOB_DURABLE_SECRET`, and
+`x-bob-namespace`, the Bob instance the objects belong to (Bob sends `BOB_DURABLE_NAMESPACE`, else its hostname).
+Two instances on the same project have separate objects, and `/latest` only reads the caller's own. `npm test` checks it
+against the real Worker.
 
 ```sh
 npm install

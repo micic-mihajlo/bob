@@ -16,6 +16,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
+import os from "node:os";
 import path from "node:path";
 import { parseArgs } from "node:util";
 
@@ -141,7 +142,7 @@ try {
   const nsSandbox = process.platform === "linux" && env.BOB_SANDBOX !== "off" && spawnSync("unshare", ["--user", "--map-root-user", "--mount", "true"], { stdio: "ignore" }).status === 0;
   const github = env.BOB_GITHUB?.trim().toLowerCase();
   const model = live
-    ? `live: captain ${env.BOB_MODEL_STRONG || "moonshotai/kimi-k3.1-pro"}, crew ${serverEnv.BOB_ENGINE === "sdk" ? "on the coding agent" : env.BOB_MODEL_LIGHT || "deepseek/deepseek-v4.1-flash"}`
+    ? `live: captain ${env.BOB_MODEL_STRONG || "deepseek/deepseek-v4.1-flash"}, crew ${serverEnv.BOB_ENGINE === "sdk" ? "on the coding agent" : env.BOB_MODEL_LIGHT || "deepseek/deepseek-v4.1-flash"}`
     : `scripted (${opts.scripted ? "--scripted" : fs.existsSync(envFile) ? "no AI_GATEWAY_API_KEY in .env.local" : "no .env.local"})`;
   const rows = [
     ["Model", model],
@@ -150,6 +151,14 @@ try {
     ["HydraDB graph", env.BOB_STORE === "hydra" ? (has("HYDRADB_API_KEY") ? "on" : "BOB_STORE=hydra but no HYDRADB_API_KEY, so JSON only") : "off (BOB_STORE=hydra turns it on)"],
     ["Voice", env.BOB_VOICE === "elevenlabs" ? (has("ELEVENLABS_API_KEY") ? "ElevenLabs" : "BOB_VOICE=elevenlabs but no ELEVENLABS_API_KEY") : "browser speech (BOB_VOICE=elevenlabs for ElevenLabs)"],
     ["GitHub PRs", github === "gh" || github === "composio" ? `on via ${github} to ${env.BOB_GITHUB_REPO || "micic-mihajlo/bob"}` : "off (BOB_GITHUB=gh turns it on)"],
+    [
+      "Durable state",
+      env.BOB_DURABLE === "cloudflare"
+        ? has("BOB_DURABLE_URL") && has("BOB_DURABLE_SECRET")
+          ? `Cloudflare Durable Object at ${env.BOB_DURABLE_URL}, namespace ${(env.BOB_DURABLE_NAMESPACE?.trim() || os.hostname()).replace(/[^A-Za-z0-9._-]/g, "-").slice(0, 100)}, local file kept`
+          : "BOB_DURABLE=cloudflare but no BOB_DURABLE_URL or BOB_DURABLE_SECRET, so the local file only"
+        : "local file .data/state.json (BOB_DURABLE=cloudflare for a Durable Object)",
+    ],
     ["Vercel previews", env.BOB_PREVIEWS?.trim().toLowerCase() === "vercel" ? "on" : "off (BOB_PREVIEWS=vercel turns it on)"],
     ["Project", `${snapshot.project?.name ?? "?"} (${snapshot.project?.repo ?? "invoices template"})`],
   ];

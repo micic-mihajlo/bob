@@ -24,7 +24,7 @@ export interface EngineAuth {
 
 /**
  * The credential and model one SDK turn uses. With no Claude connected it is the Token Pass gateway on the
- * thread's model (kimi-k3.1-pro when the thread has none Bob can call), with every Claude Code model slot
+ * thread's model (deepseek-v4.1-flash when the thread has none Bob can call), with every Claude Code model slot
  * pointed at Token Pass models. With a Claude connected every SDK turn runs on it, on the thread's Claude model
  * or Claude Sonnet.
  */
