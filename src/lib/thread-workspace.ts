@@ -19,6 +19,7 @@ import {
   projectLayout,
   readFile,
   rootOf,
+  type DepsState,
   type ProjectSource,
   type Workspace,
   type WorkspaceOptions,
@@ -82,6 +83,13 @@ export async function projectFiles(project: Project): Promise<string[]> {
 export function prewarmProject(ws: Workspace): void {
   if (!getConfig().installDeps) return;
   void prepareProjectDeps(ws.project).catch(() => undefined);
+}
+
+/** Makes the project's shared repository and installs its dependencies now, waiting for both, so the first thread starts warm. */
+export async function warmProject(project: Project): Promise<DepsState> {
+  const options = workspaceOptions();
+  await ensureProject(project.id, sourceOf(project), options);
+  return getConfig().installDeps ? prepareProjectDeps(projectLayout(rootOf(options), project.id)) : { kind: "none" };
 }
 
 const SHOWN_BYTES = 24_000;
