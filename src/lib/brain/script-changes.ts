@@ -9,6 +9,8 @@ export interface ScriptedChange {
   match: RegExp;
   workTitle: (request: string) => string;
   files: (request: string) => { path: string; content: string }[];
+  /** The acceptance test the build writes first, for a file under src/acceptance/. It fails until files() lands. */
+  acceptance: (request: string) => string;
   commit: string;
   pullRequest: { title: string; body: string };
   finding: { path: string; line: number | null; category: "tests" | "style"; severity: "low"; confidence: number; comment: string };
@@ -37,7 +39,7 @@ export function invoicesToCsv(list: readonly Invoice[]): string {
 `;
 
 const CSV_TEST = `import { describe, expect, it } from "vitest";
-import { invoicesToCsv } from "./csv";
+import { invoicesToCsv } from "../csv";
 
 describe("invoicesToCsv", () => {
   it("writes a header and one row per invoice", () => {
@@ -52,23 +54,34 @@ describe("invoicesToCsv", () => {
 });
 `;
 
+const notePath = (request: string) => `docs/${slugify(request).slice(0, 40) || "request"}.md`;
+
+const noteTest = (request: string) => `import { existsSync, readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+describe("the request note", () => {
+  it("restates the request under docs/", () => {
+    expect(existsSync("${notePath(request)}")).toBe(true);
+    expect(readFileSync("${notePath(request)}", "utf8")).toContain("# Request");
+  });
+});
+`;
+
 const noteFor = (request: string) => `# Request\n\n${request.trim()}\n\nThis note records the request so the next change can start from it.\n`;
 
 export const SCRIPTED_CHANGES: readonly ScriptedChange[] = [
   {
     match: /\bcsv\b|\bexport\b/i,
     workTitle: () => "CSV export for invoices",
-    files: () => [
-      { path: "src/csv.ts", content: CSV_MODULE },
-      { path: "src/csv.test.ts", content: CSV_TEST },
-    ],
+    files: () => [{ path: "src/csv.ts", content: CSV_MODULE }],
+    acceptance: () => CSV_TEST,
     commit: "Add CSV export for invoices",
     pullRequest: {
       title: "Add CSV export for invoices",
-      body: "Adds invoicesToCsv in src/csv.ts: a header row, then one row per invoice with the amount in dollars. Cells with a comma, quote or line break are quoted. src/csv.test.ts covers a plain row and a quoted customer name.",
+      body: "Adds invoicesToCsv in src/csv.ts: a header row, then one row per invoice with the amount in dollars. Cells with a comma, quote or line break are quoted. The acceptance test covers a plain row and a quoted customer name.",
     },
     finding: {
-      path: "src/csv.test.ts",
+      path: "src/csv.ts",
       line: null,
       category: "tests",
       severity: "low",
@@ -90,7 +103,8 @@ export const SCRIPTED_CHANGES: readonly ScriptedChange[] = [
   {
     match: /[\s\S]*/,
     workTitle: (request) => request.trim().split(/[.!?\n]/)[0].slice(0, 60) || "Record the request",
-    files: (request) => [{ path: `docs/${slugify(request).slice(0, 40) || "request"}.md`, content: noteFor(request) }],
+    files: (request) => [{ path: notePath(request), content: noteFor(request) }],
+    acceptance: noteTest,
     commit: "Record the request in docs",
     pullRequest: { title: "Record the request in docs", body: "Adds a short note under docs/ that restates the request, as a starting point for the change." },
     finding: { path: "docs", line: null, category: "style", severity: "low", confidence: 0.6, comment: "The note could link the work order it came from." },

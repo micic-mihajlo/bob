@@ -110,6 +110,7 @@
 .agent-steps-panel {
   display: grid;
   width: 100%;
+  margin-bottom: var(--bob-space-2);
   grid-template-rows: 1fr;
   opacity: 1;
   transition:
@@ -134,6 +135,32 @@
 
 .agent-steps-viewport[data-scrolls] {
   overflow-y: auto;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--agent-steps-fade)), transparent);
+}
+
+/* A list that scrolls fades out at its bottom edge, so a cut row reads as "more below", and the fade
+ * lifts as the list reaches its end. Without scroll timelines the fade stays. */
+@property --agent-steps-fade {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 28px;
+}
+
+@supports (animation-timeline: scroll()) {
+  .agent-steps-viewport[data-scrolls] {
+    animation: agent-steps-fade linear both;
+    animation-timeline: scroll(self);
+  }
+}
+
+@keyframes agent-steps-fade {
+  0%,
+  85% {
+    --agent-steps-fade: 28px;
+  }
+  100% {
+    --agent-steps-fade: 0px;
+  }
 }
 
 .agent-steps-panel > .agent-steps-viewport {

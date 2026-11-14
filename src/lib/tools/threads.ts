@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { briefWithAcceptance } from "../acceptance";
 import { branchName, MAX_BUSY_THREADS, nextThreadCode, ROLE_TEMPLATES, threadHue } from "../crew";
 import { nowIso } from "../ids";
 import { inboxItem, isInboxRequest } from "../inbox";
@@ -110,7 +111,7 @@ export async function startThread(input: StartInput, ctx: ToolContext): Promise<
   const sent = send({
     from: { kind: "agent", agentId: ctx.agentId },
     to: [created.id],
-    text: input.brief,
+    text: briefWithAcceptance(getState(), created, input.brief),
     expectsReply: true,
     replyTo: null,
     causedBy: origin ?? ctx.causedBy,

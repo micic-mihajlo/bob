@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { failedTests, isAcceptanceTest, isTestCommand, testRunLabel } from "../acceptance";
 import { getConfig, getState } from "../store";
 import { threadWorkspace } from "../thread-workspace";
 import { editFile, ensureWorkspaceDeps, git, listFiles, readFile, runCommand, writeFile, type Workspace } from "../workspace";
@@ -76,7 +77,7 @@ const writeFilesDef = define({
     files: z.array(z.object({ path: relPath("File to write"), content: z.string().describe("The complete new content") })).min(1).max(MAX_BATCH),
   }),
   sets: ["build", "subagent"],
-  label: (i) => `Writing ${names(i.files.map((f) => f.path))}`,
+  label: (i) => (i.files.some((f) => isAcceptanceTest(f.path)) ? "Writing the acceptance test" : `Writing ${names(i.files.map((f) => f.path))}`),
   execute: async (i, ctx) => {
     const ws = await workspaceOf(ctx);
     const items: Record<string, unknown>[] = [];
@@ -117,6 +118,7 @@ const runDef = define({
   }),
   sets: ["build", "review", "research", "subagent"],
   label: (i) => `Running ${clip(i.command, 70)}`,
+  doneLabel: (i, r) => (isTestCommand(i.command) && typeof r.output === "string" ? testRunLabel(r.passed === true, r.output) : undefined),
   detail: (i, r) => (typeof r.output === "string" ? `$ ${i.command}   (${String(r.sandbox)})\n${r.output.slice(-STEP_OUTPUT)}\n${String(r.note ?? "")}`.trim() : undefined),
   execute: async (i, ctx) => {
     const ws = await workspaceOf(ctx);
@@ -125,8 +127,15 @@ const runDef = define({
     const out = await runCommand(ws, i.command, (i.timeoutSeconds ?? 120) * 1000);
     if (!out.ok) return { result: { error: out.error } };
     const { ok: _ok, ...rest } = out;
-    const note = out.timedOut ? `Killed after ${out.seconds}s, the timeout.` : out.exitCode === 0 ? "Passed: exit code 0." : `Failed: exit code ${out.exitCode}.`;
-    return { result: { ...rest, passed: out.exitCode === 0 && !out.timedOut, note, ...(setup ? { setup } : {}) } };
+    const failedTestsShown = isTestCommand(i.command) && (failedTests(out.output) ?? 0) > 0;
+    const note = out.timedOut
+      ? `Killed after ${out.seconds}s, the timeout.`
+      : out.exitCode !== 0
+        ? `Failed: exit code ${out.exitCode}.`
+        : failedTestsShown
+          ? "Failed: the output shows failing tests, though the exit code was 0 (a pipe hides it)."
+          : "Passed: exit code 0.";
+    return { result: { ...rest, passed: out.exitCode === 0 && !out.timedOut && !failedTestsShown, note, ...(setup ? { setup } : {}) } };
   },
 });
 

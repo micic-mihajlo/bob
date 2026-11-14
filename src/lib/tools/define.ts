@@ -14,6 +14,8 @@ export interface ToolDef extends ToolSpec {
   label: (input: never) => string;
   /** What the finished step shows. Defaults to the error, if any. */
   detail?: (input: never, result: Record<string, unknown>) => string | undefined;
+  /** The finished step's label, in place of the one it started with. */
+  doneLabel?: (input: never, result: Record<string, unknown>) => string | undefined;
   execute: (input: never, ctx: ToolContext) => ToolOutput | Promise<ToolOutput>;
 }
 
@@ -24,6 +26,7 @@ export function define<S extends z.ZodType>(def: {
   sets: readonly Toolset[];
   label: (input: z.infer<S>) => string;
   detail?: (input: z.infer<S>, result: Record<string, unknown>) => string | undefined;
+  doneLabel?: (input: z.infer<S>, result: Record<string, unknown>) => string | undefined;
   execute: (input: z.infer<S>, ctx: ToolContext) => ToolOutput | Promise<ToolOutput>;
 }): ToolDef {
   return def as unknown as ToolDef;

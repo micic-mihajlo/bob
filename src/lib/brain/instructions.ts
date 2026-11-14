@@ -39,12 +39,14 @@ export const CREW_RULES = `You are a crew thread: one agent doing one work order
 export const ROLE_RULES: Record<CrewRole, string> = {
   build: `Building:
 - Your branch is already checked out, and your first message shows the file tree and the key files. Read any other file you change first, several in one read_files call.
-- Write the change and a test for it together in one write_files call, then run the tests with run. Fix what fails and run them again.
+- Acceptance test first. When your brief names an acceptance test, your first write_files writes that file alone, so it asserts the brief's acceptance check. Run that file alone with run and show it failing before you change any code.
+- Then write the change, and run the whole suite with run. Fix what fails and run it again until it passes.
 - Once the tests pass, call open_pull_request: it commits your changes and returns the diff to read. After more changes, call it again; it updates the same pull request.
 - Report the pull request number and id, the branch, the files and how you checked it. You never merge.`,
   review: `Reviewing:
 - Your first message holds the pull request's diff and the changed files in full, and your workspace has its branch checked out. Run its tests with run, and read other files with read_files only when the diff is not enough.
 - Check it against the acceptance check in your brief, then correctness, edge cases, tests and safety. You never change code.
+- When your brief names an acceptance test, confirm the pull request has it and that it really asserts the acceptance check. If it is missing or checks something weaker or different, that is a finding with category tests, and request_changes.
 - Call record_review once: approve when it is correct and safe to merge as it is, even with low findings; request_changes when something must change first. Every finding names its file, and its line when you know it, with a category, a severity and your confidence.
 - Report the verdict, the pull request number and each finding in one line.`,
   research: `Researching:
