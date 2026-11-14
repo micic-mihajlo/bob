@@ -8,7 +8,8 @@ import { findPullRequest } from "../threads";
 import { ensureWorkspaceDeps } from "../workspace";
 import { threadWorkspace } from "../thread-workspace";
 import { gatePassed, isEquivalent, verificationLine, verificationOf, type EquivalentMutant, type Proof, type Verification } from "../verification";
-import { contractPathOf, mutantsFor, readContract, runMutants, runProof, runProperties, workingTree, writeHarness } from "../verify/run";
+import { goalOf } from "../roadmap";
+import { contractPathOf, mutantsFor, readContract, runMutants, runProof, runProperties, workingTree, writeContractFor, writeHarness } from "../verify/run";
 import { done, fail, type ToolContext } from "./context";
 import { define } from "./define";
 
@@ -51,10 +52,12 @@ async function verifyChange(ctx: ToolContext) {
   const ws = await threadWorkspace(s.project, ctx.agentId);
   if (getConfig().installDeps) await ensureWorkspaceDeps(ws);
   if (!existsSync(path.join(ws.root, "node_modules", ".bin", "vitest"))) return fail("vitest is not installed in this workspace, so nothing can run the properties. Add vitest and fast-check to the project's devDependencies.");
+  const contractPath = await contractPathOf(ws, agent?.workOrderId ?? null);
+  const acceptance = goalOf(s.roadmap, ctx.requestId)?.acceptance ?? agent?.title ?? "the work order's acceptance check";
+  const wrote = existsSync(path.join(ws.root, contractPath)) ? null : await writeContractFor(ws, contractPath, acceptance);
   const tree = await workingTree(ws);
   if (!tree) return fail("Could not read the workspace's tree with git. Check git status and try again.");
   const base = { id: newId("ver"), agentId: ctx.agentId, tree, at: nowIso() };
-  const contractPath = await contractPathOf(ws, agent?.workOrderId ?? null);
   const read = await readContract(ws, contractPath);
   if (!read.ok) {
     const v: Verification = {
@@ -67,7 +70,7 @@ async function verifyChange(ctx: ToolContext) {
     };
     record(v);
     return fail(
-      `Tier 1 failed: ${read.error}. Write ${contractPath} as JSON: {"acceptance": the work order's acceptance check, "propertiesFile": a vitest file such as src/<module>.properties.test.ts, "properties": [{"name": the test's exact name, "criterion": the part of the acceptance it checks}], "lean": optional {"file", "theorems", "conformance": {"lean", "module", "export", "inputs"}}}. Each property is one it() that calls fc.assert(fc.property(...)) from fast-check, with no seed or numRuns of its own. Then call verify_change again.`,
+      `Tier 1 failed: ${read.error}. Write your properties as src/<module>.properties.test.ts, and verify_change writes ${contractPath} for you; or write ${contractPath} yourself as JSON: {"acceptance": the work order's acceptance check, "propertiesFile": a vitest file such as src/<module>.properties.test.ts, "properties": [{"name": the test's exact name, "criterion": the part of the acceptance it checks}], "lean": optional {"file", "theorems", "conformance": {"lean", "module", "export", "inputs"}}}. Each property is one it() that calls fc.assert(fc.property(...)) from fast-check, with no seed or numRuns of its own. Then call verify_change again.`,
     );
   }
   const contract = read.contract;
@@ -101,7 +104,7 @@ async function verifyChange(ctx: ToolContext) {
     : reviewer
       ? `The gate fails.${survivorsOnly ? " If no input at all can tell a surviving mutant from the original line, call mark_equivalent_mutant with a one-line reason for it." : ""} For everything else, call record_review with verdict request_changes and these findings; they go to the build thread.`
       : `The gate fails. Fix the code, or add the property that kills each surviving mutant, then call verify_change again.${survivorsOnly ? " If you are sure no input tells a survivor apart from the original, say so in your report: only the reviewer can mark a mutant equivalent." : ""}`;
-  return done({ verificationId: v.id, tree: tree.slice(0, 7), passed, line, seconds: v.seconds, ...(findings.length ? { findings } : {}), next });
+  return done({ verificationId: v.id, tree: tree.slice(0, 7), passed, line, ...(wrote ? { contract: `wrote ${contractPath} from the work order for ${wrote}` } : {}), seconds: v.seconds, ...(findings.length ? { findings } : {}), next });
 }
 
 export const markEquivalentSchema = z.object({
@@ -143,7 +146,7 @@ export function markEquivalent(input: z.infer<typeof markEquivalentSchema>, ctx:
 export const VERIFY_TOOLS = [
   define({
     name: "verify_change",
-    description: `Check your change against its contract before you open or update a pull request. Reads verify/<your work order id>.json, shaped exactly {"acceptance": "<the work order's acceptance check>", "propertiesFile": "src/<module>.properties.test.ts", "properties": [{"name": "<the it() name>", "criterion": "<the part of the acceptance it checks>"}]}; the properties file is a vitest file where each property is one it() calling fc.assert(fc.property(...)) from fast-check, with no seed or numRuns. Then: tier 1 checks the contract names the acceptance check and its properties; tier 2 runs every fast-check property in the properties file 300 times with a seed Bob picks, and a failure comes back as a counterexample; tier 3 mutates the changed lines (flipped comparisons, off-by-one numbers, dropped calls) and runs the tests and properties against each mutant, and a mutant that survives is a finding; tier 4, when the contract names a Lean model, builds it with lake, checks every theorem for sorry and its axioms, and compares its cases with the TypeScript, after this call returns. The person can approve a merge only when tiers 1 to 3 pass on the pull request's exact head.`,
+    description: `Check your change against its contract before you open or update a pull request. Write your fast-check properties as src/<module>.properties.test.ts first: each property one it() calling fc.assert(fc.property(...)) from fast-check, with no seed or numRuns. When verify/<your work order id>.json is missing, this writes it for you from the work order and that file. Otherwise it reads it, shaped exactly {"acceptance": "<the work order's acceptance check>", "propertiesFile": "src/<module>.properties.test.ts", "properties": [{"name": "<the it() name>", "criterion": "<the part of the acceptance it checks>"}]}; the properties file is a vitest file where each property is one it() calling fc.assert(fc.property(...)) from fast-check, with no seed or numRuns. Then: tier 1 checks the contract names the acceptance check and its properties; tier 2 runs every fast-check property in the properties file 300 times with a seed Bob picks, and a failure comes back as a counterexample; tier 3 mutates the changed lines (flipped comparisons, off-by-one numbers, dropped calls) and runs the tests and properties against each mutant, and a mutant that survives is a finding; tier 4, when the contract names a Lean model, builds it with lake, checks every theorem for sorry and its axioms, and compares its cases with the TypeScript, after this call returns. The person can approve a merge only when tiers 1 to 3 pass on the pull request's exact head.`,
     schema: z.object({}),
     sets: ["build", "review"],
     label: () => "Verifying the change",
