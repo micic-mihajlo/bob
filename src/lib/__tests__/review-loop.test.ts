@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { decideApproval, postUserMessage } from "../actions";
 import { setBrainOverride } from "../brain";
+import { budgetUsed, REQUEST_DELIVERY_BUDGET, send } from "../mailbox";
 import { messageById } from "../state";
 import { getState } from "../store";
 import { callTool } from "../tools";
@@ -64,6 +65,21 @@ describe("review and fix loop", { timeout: GIT_TIMEOUT }, () => {
     expect([first?.text, second?.text].map((t) => /fix round (\d) of 2/.exec(t ?? "")?.[1])).toEqual(["1", "2"]);
     expect(third?.text).toMatch(/after 2 fix rounds\. Change no more code\. Call report with Status: blocked/);
     expect(third?.expectsReply).toBe(true);
+  });
+
+  it("still hands off after the request has spent its message budget, and the hand-offs do not spend it", async () => {
+    await toApprovalThenIdle();
+    const requestId = prOf()?.requestId ?? "";
+    while (send({ from: { kind: "agent", agentId: "bob" }, to: ["inv-1"], text: "Status?", expectsReply: false, replyTo: null, causedBy: null, requestId }).ok);
+    const used = budgetUsed(getState(), requestId);
+    expect(used).toBe(REQUEST_DELIVERY_BUDGET);
+
+    const changes = await callTool("record_review", { pullRequestId: "#1", verdict: "request_changes", findings: [finding] }, as("inv-2"));
+    expect(changes.wake).toContain("inv-1");
+    expect(inbox("inv-1").at(-1)?.text).toMatch(/fix round 1 of 2/);
+    await callTool("write_files", { files: [{ path: "src/csv.ts", content: "export const fixed = true;\n" }] }, as("inv-1"));
+    expect((await callTool("open_pull_request", { title: "Add CSV export", body: "Fixed quoting." }, as("inv-1"))).wake).toContain("inv-2");
+    expect(budgetUsed(getState(), requestId)).toBe(used);
   });
 
   it("sends a pull request that conflicts with a merged one back to its owner to update", async () => {
