@@ -9,10 +9,11 @@ import { agentById, runningTurn } from "./state";
 import { addThreadItem, patchApproval, patchDelivery, patchTurn, stamp } from "./state-ops";
 import { getState, resetState, transact, update } from "./store";
 import { addAgent, type NewAgentInput } from "./team";
-import { removeProjectWorkspaces } from "./thread-workspace";
+import { removeProjectWorkspaces, warmProject } from "./thread-workspace";
 import { closeThreadState } from "./threads";
 import { drain } from "./turns";
 import type { AgentId } from "./types";
+import type { DepsState } from "./workspace";
 
 /** What a person can do. Routes call these after validating the request body. */
 
@@ -142,14 +143,15 @@ export function setThreadModelByPerson(agentId: AgentId, model: string): ActionR
   });
 }
 
-/** Back to the seed, with the project's repository and every thread's clone removed. */
-export async function resetAll(): Promise<ActionResult> {
+/** Back to the seed, with the project's repository and every thread's clone removed. With warm, the repository and its dependencies are made again before it answers. */
+export async function resetAll(options: { warm?: boolean } = {}): Promise<ActionResult<{ deps?: DepsState }>> {
   const projectId = getState().project.id;
   resetState();
   try {
     await removeProjectWorkspaces(projectId);
+    if (options.warm) return { ok: true, deps: await warmProject(getState().project) };
   } catch (error) {
-    return { ok: false, error: `State was reset, but the workspaces could not be removed: ${error instanceof Error ? error.message : "unknown error"}` };
+    return { ok: false, error: `State was reset, but the workspaces could not be ${options.warm ? "prepared" : "removed"}: ${error instanceof Error ? error.message : "unknown error"}` };
   }
   return { ok: true };
 }
