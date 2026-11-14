@@ -206,3 +206,27 @@ button.bob-inbox-owner:hover {
     animation: none;
   }
 }
+
+.bob-inbox-linear {
+  display: flex;
+  align-items: center;
+  gap: var(--bob-space-2);
+}
+
+.bob-inbox-linear-note {
+  min-width: 0;
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+}
+
+.bob-inbox-linear-note[data-error] {
+  color: var(--bob-warning-text);
+}
+
+.bob-inbox-linear-link {
+  color: inherit;
+  font-family: var(--bob-font-mono);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

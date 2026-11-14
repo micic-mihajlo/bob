@@ -186,3 +186,8 @@
     animation: none;
   }
 }
+
+.why-graph-node-link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

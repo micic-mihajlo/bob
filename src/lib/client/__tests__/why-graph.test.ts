@@ -63,6 +63,21 @@ describe("buildPathGraph", () => {
     });
   });
 
+  it("starts a path that came from Linear at the issue, as a link", () => {
+    const label = 'Build work order wo_1 now: "Quote names with commas". It came from Linear STA-551: Quote names with commas: "names break the CSV". It is already in the backlog.';
+    const view: GraphView = { ...VIEW, nodes: VIEW.nodes.map((n) => (n.id === "msg_ask" ? { ...n, label } : n)) };
+    const linear = { issueId: "iss_1", identifier: "STA-551", title: "Quote names with commas", url: "https://linear.app/stan/issue/STA-551", teamId: "team_1" };
+    const inbox = [
+      { id: "inb_2", kind: "feedback", source: "Linear STA-551: Quote names with commas", text: "", at: "", messageId: "m", status: "triaged", candidates: [], linear } as InboxItem,
+    ];
+    expect(buildPathGraph(view, { approvals: [], artifacts: [], inbox }).columns.at(-1)?.nodes[0]).toMatchObject({
+      kind: "origin",
+      title: "From Linear",
+      label: "STA-551: Quote names with commas",
+      href: "https://linear.app/stan/issue/STA-551",
+    });
+  });
+
   it("keeps what it can when the gate and the turn are missing", () => {
     const graph = buildPathGraph({ ...VIEW, edges: VIEW.edges.filter((e) => !["REVIEWS", "GATED_BY", "MADE"].includes(e.type)) });
     expect(graph.columns.map((c) => c.nodes[0].kind)).toEqual(["pull_request", "message", "message", "origin"]);
