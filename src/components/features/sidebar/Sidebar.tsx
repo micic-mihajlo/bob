@@ -17,12 +17,9 @@ export function Sidebar({ compact = false, onExpand }: { compact?: boolean; onEx
   const [query, setQuery] = useState("");
   const list = sidebarList(snapshot);
   const needle = query.trim().toLowerCase();
-  const matches = (agent: Agent) =>
-    needle === "" || [agent.name, agent.code ?? "", agent.title].some((text) => text.toLowerCase().includes(needle));
+  const matches = (agent: Agent) => needle === "" || [agent.name, agent.code ?? "", agent.title].some((text) => text.toLowerCase().includes(needle));
   const waiting = list.waiting.filter((entry) => matches(entry.agent));
-  const sections = list.sections
-    .map((section) => ({ ...section, agents: section.agents.filter(matches) }))
-    .filter((section) => section.agents.length > 0);
+  const sections = list.sections.map((section) => ({ ...section, agents: section.agents.filter(matches) })).filter((section) => section.agents.length > 0);
 
   return (
     <aside id="agent-sidebar" aria-label="Agent navigation" className={cx("sidebar panel-edge", compact && "sidebar-compact")}>
@@ -127,6 +124,7 @@ function SidebarSection({ section, list }: { section: SidebarSectionModel; list:
   const [collapsed, setCollapsed] = useState(section.collapsedByDefault);
   const bodyId = `sidebar-section-body-${section.id}`;
   const folded = section.name !== null && collapsed;
+  const counted = section.collapsedByDefault;
 
   return (
     <section className="sidebar-chat-group sidebar-section" aria-label={section.name ?? "Captain"} data-section-id={section.id}>
@@ -135,17 +133,16 @@ function SidebarSection({ section, list }: { section: SidebarSectionModel; list:
           <button
             type="button"
             className={buttonClass({ variant: "ghost", className: "sidebar-section-toggle sidebar-section-drag-handle" })}
+            aria-label={counted ? `${section.name}, ${section.agents.length} ${section.agents.length === 1 ? "thread" : "threads"}` : undefined}
             aria-expanded={collapsed ? "false" : "true"}
             aria-controls={bodyId}
             onClick={() => setCollapsed((value) => !value)}
           >
             <span className="sidebar-section-name" title={section.name}>
               {section.name}
+              {counted ? <span className="sidebar-hidden-group-count">({section.agents.length})</span> : null}
             </span>
-            <ChevronDown
-              className={`sidebar-section-chevron size-4${collapsed ? " sidebar-section-chevron-collapsed" : ""}`}
-              aria-hidden="true"
-            />
+            <ChevronDown className={`sidebar-section-chevron size-4${collapsed ? " sidebar-section-chevron-collapsed" : ""}`} aria-hidden="true" />
           </button>
         </header>
       ) : null}
