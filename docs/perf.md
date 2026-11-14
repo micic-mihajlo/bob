@@ -78,6 +78,52 @@ Every run planned one work order. On deepseek-v4.1-flash, 3 of 3 runs reached th
 
 The first run before bob#29 found the one way the second request could strand. Its conflict update and re-reviews used up the request's 12-delivery budget, so the automatic re-review was refused and PR #2 stayed in review. Hand-offs now have a separate budget of their own (24 deliveries per request, see docs/formal.md).
 
+## Demo reliability: ten runs back to back
+
+`scripts/live-ten.sh <dir> 10` runs `live-run` ten times in a row, each on fresh state, with `BOB_LIVE_MERGE=1`. The harness answers the captain's pushback once, approves the merge card at once, and runs on until the pull request merged and every crew thread closed. Each summary records the time from the typed sentence to the approval card, to the merge and to the last thread closing. It also records model errors, failed turns, and the longest gap with a turn running and nothing new in any thread, which counts as a stall at 45 s or more. Models: kimi-k3.1-pro for the captain and deepseek-v4.1-flash for the crew.
+
+**Before**, on main at 791d0e2:
+
+| Run | To approval | To merged | To closed | Longest gap | Errors | Captain calls | Captain time | Review |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 69 s | 80 s | 83 s | 11 s | 0 | 16 | 60 s | approve |
+| 2 | 81 s | 93 s | 96 s | 20 s | 0 | 15 | 83 s | approve |
+| 3 | 92 s | 95 s | 98 s | 25 s | 0 | 13 | 61 s | approve |
+| 4 | 90 s | 103 s | 106 s | 22 s | 0 | 15 | 90 s | approve |
+| 5 | 97 s | 100 s | 101 s | 17 s | 0 | 14 | 84 s | approve |
+| 6 | 100 s | 105 s | 107 s | 18 s | 0 | 20 | 93 s | approve |
+| 7 | 85 s | 93 s | 100 s | 20 s | 0 | 15 | 74 s | approve |
+| 8 | 60 s | 66 s | 68 s | 8 s | 0 | 15 | 45 s | approve |
+| 9 | 92 s | 99 s | 107 s | 17 s | 0 | 14 | 80 s | approve |
+| 10 | 158 s | 171 s | 176 s | 13 s | 0 | 13 | 86 s | changes, then approve |
+
+10 of 10 completed with no failed turns and no stalls. To approval: median 91 s, p90 100 s, worst 158 s. The worst run was a medium review finding plus a fix round, which cost about 55 s. In every run the captain called advance_stage and request_approval in separate replies, and the merge and the closes in separate replies again. In most runs it also called list_threads although its input already lists the crew. (The uncommitted bob#47 change sat in the checkout when runs 7 and 8 started. No call in them failed or timed out, so its retry path never ran.)
+
+**After**, on main at 5cfb69c: bob#47 (retries and a fallback model), bob#55 (streaming), bob#58 (the read step), bob#61 (captain autopilot):
+
+| Run | To approval | To merged | To closed | Longest gap | Errors | Captain calls | Captain time | Review |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 70 s | 71 s | 71 s | 7 s | 0 | 10 | 33 s | approve |
+| 2 | 48 s | 49 s | 49 s | 6 s | 0 | 10 | 24 s | approve |
+| 3 | 59 s | 60 s | 60 s | 10 s | 0 | 13 | 38 s | approve |
+| 4 | 81 s | 81 s | 81 s | 13 s | 0 | 12 | 42 s | approve |
+| 5 | 43 s | 43 s | 43 s | 8 s | 0 | 14 | 33 s | approve |
+| 6 | 87 s | 88 s | 88 s | 17 s | 0 | 11 | 34 s | approve |
+| 7 | 61 s | 62 s | 62 s | 11 s | 0 | 11 | 47 s | approve |
+| 8 | 65 s | 66 s | 66 s | 26 s | 0 | 12 | 54 s | approve |
+| 9 | 50 s | 51 s | 51 s | 5 s | 0 | 10 | 29 s | approve |
+| 10 | 72 s | 73 s | 73 s | 13 s | 0 | 14 | 47 s | approve |
+
+10 of 10 completed with no failed turns and no stalls. To approval: median 63 s, p90 81 s, worst 87 s. Merged and closed came within 1 s of the approval, down from 3 to 18 s. The captain's own model time fell from 45 to 93 s to 24 to 54 s per request.
+
+No review asked for changes in the after runs. A fix round adds about 50 s, so a run with one would land near 115 to 135 s.
+
+What changed for the tail:
+
+- **Captain autopilot (bob#61).** Before the captain's first model call in a turn, the runtime runs the steps its rules already fix. A review that approves the current head gets advance_stage and request_approval, so that turn makes no model call. An approved merge card gets merge_pull_request and close_thread for its threads.
+- **Retries and a fallback (bob#47).** Each move tries its model twice, then a fallback model (kimi-k3-fast for the captain, glm-5.3-fast for the crew), with 1 s and 3 s between attempts. Each attempt has a timeout: 60 s for the captain, 120 s for the crew. A hung call used to hold the turn for 180 s and then fail it.
+- **Liveness (bob#55, bob#58).** Text and started tool calls stream into `state.live` while the model writes them, and a crew turn opens with a finished "Read N files" step for the files it was given. These don't change the timings. They make the thread visibly busy during the 5 to 25 s a model call takes.
+
 ## What changed
 
 - **A shell per thread.** `run` executes one bash command in the thread's own checkout, in its own process group. A timeout (120 s by default, at most 600 s) kills the whole group. The command gets an environment built from scratch: no API keys, `HOME` set to the project's own folder, and `node_modules/.bin` on the `PATH`. Output over 12,000 characters keeps its head and tail. The step in the thread shows the command, its output and whether it passed.
