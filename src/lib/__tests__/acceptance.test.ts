@@ -69,7 +69,7 @@ describe("acceptance test first, scripted, end to end", { timeout: 60_000 }, () 
     expect(at("Tests failed (1)")).toBeGreaterThan(at("Writing the acceptance test"));
     expect(at("Writing src/csv.ts")).toBeGreaterThan(at("Tests failed (1)"));
     expect(labels[at("Writing src/csv.ts") + 1]).toMatch(/^Tests (passed|failed)/);
-    expect(steps[at("Writing src/csv.ts") + 1].detail).toContain("$ npm test");
+    expect(steps[at("Writing src/csv.ts") + 1].detail).toContain(`$ npx vitest run ${path}`);
     expect(steps[at("Tests failed (1)")].detail).toContain(`$ npx vitest run ${path}`);
 
     const pr = s.artifacts.find((a) => a.kind === "pull_request")!;

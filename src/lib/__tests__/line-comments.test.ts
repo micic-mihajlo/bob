@@ -28,20 +28,20 @@ describe("a comment on lines of a pull request", () => {
   });
 
   it("goes to the build thread as the person's message and pins to the lines at the current head", async () => {
-    const result = commentOnLines("#1", { path: "src/invoices.ts", startLine: 14, endLine: 12, text: "Round to cents here." });
+    const result = commentOnLines("#1", { path: "src/tasks.ts", startLine: 14, endLine: 12, text: "Round to cents here." });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     await settle();
     const s = getState();
     const message = s.messages.find((m) => m.id === result.messageId);
     expect(message).toMatchObject({ from: { kind: "user" }, to: ["bob"], causedBy: null });
-    expect(message?.text).toContain("src/invoices.ts:12-14");
+    expect(message?.text).toContain("src/tasks.ts:12-14");
     expect(message?.text).toContain("Round to cents here.");
     expect(s.artifacts.find((a) => a.id === result.artifactId)).toMatchObject({
       kind: "comment",
       messageId: result.messageId,
       detail: "Round to cents here.",
-      lineComment: { pullRequestId: "art_pr1", path: "src/invoices.ts", startLine: 12, endLine: 14, headSha: "abc1234def" },
+      lineComment: { pullRequestId: "art_pr1", path: "src/tasks.ts", startLine: 12, endLine: 14, headSha: "abc1234def" },
     });
   });
 

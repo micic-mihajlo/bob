@@ -33,7 +33,7 @@ export function briefWithAcceptance(s: State, agent: Agent, brief: string): stri
   if (acceptancePathIn(brief) === path) return brief;
   const line =
     agent.crewRole === "build"
-      ? `Acceptance test: ${path}. Write it first, on its own, so it asserts: ${check}. Run that file alone, without a pipe (npx vitest run ${path}), and show it failing, then implement, then run the whole suite (npm test) and show it passing. Once it has run red it is locked: fix the code, not the test.`
+      ? `Acceptance test: ${path}. Write it first, on its own, so it asserts: ${check}. Run that file alone, without a pipe (npx vitest run ${path}), and show it failing, then implement, then run the test files that import what you changed (npx vitest run <those files>) and show them passing. Once it has run red it is locked: fix the code, not the test.`
       : `Acceptance test: ${path} should assert: ${check}. Confirm it does. If it is missing or checks something else, record a finding with category tests.`;
   return `${brief.trim()}\n${line}`;
 }
