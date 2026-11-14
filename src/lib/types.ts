@@ -513,6 +513,8 @@ export interface Snapshot {
   linear?: { on: boolean; error: string | null };
   /** Whether the person's own Claude is connected for SDK turns. Never the credential. */
   claude?: ClaudeStatus;
+  /** The gateway models a thread can run on, and the ones the captain and the crew use by default and fall back to. */
+  models?: { gateway: string[]; captain: string; crew: string; captainFallback: string; crewFallback: string };
   /** What HydraDB recalled for the person's recent messages to the captain, oldest first. */
   recalls?: MemoryRecall[];
   /** What HydraDB recalled for each crew brief, by the brief's message id. */
@@ -645,18 +647,7 @@ export interface GraphView {
   edges: GraphViewEdge[];
 }
 
-/** The models a Vercel Token Pass key can call, so the ones a crew thread can be set to. */
-export const THREAD_MODELS = [
-  "moonshotai/kimi-k3.1-pro",
-  "moonshotai/kimi-k3",
-  "moonshotai/kimi-k3-fast",
-  "zai/glm-5.3-fast",
-  "zai/glm-5.3-flash",
-  "deepseek/deepseek-v4.1-flash",
-  "deepseek/deepseek-v4.1-flash-fast",
-] as const;
-
-/** The Claude models a crew thread can run on once the person connects their own Claude. */
+/** The Claude models a thread can run on once the person connects their own Claude. */
 export const CLAUDE_MODELS = ["claude-sonnet", "claude-opus", "claude-haiku"] as const;
 export type ClaudeModel = (typeof CLAUDE_MODELS)[number];
 
@@ -689,7 +680,7 @@ export interface ClaudeStatus {
  * GET  /api/agents/:id/files?path=...     -> WorkspaceListing               browse that thread's workspace
  * GET  /api/agents/:id/changes            -> WorkspaceChanges               that thread's branch against main
  * POST /api/agents/:id/close              {}                                close a crew thread
- * POST /api/agents/:id/model              { model }                         pick a crew thread's model, one of THREAD_MODELS
+ * POST /api/agents/:id/model              { model }                         pick a thread's model, one of Snapshot.models
  * GET  /api/claude                        -> ClaudeStatus                   whether the person's own Claude is connected
  * POST /api/claude                        { method, secret? }               connect it; the secret is stored server-side only -> { ok, status }
  * DELETE /api/claude                      -> { ok, status }                 disconnect it; SDK turns go back to Token Pass

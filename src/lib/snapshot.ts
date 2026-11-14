@@ -1,6 +1,7 @@
 import { liveAsks } from "./asks";
 import { brainKind } from "./brain";
 import { claudeStatus } from "./claude-connection";
+import { gatewayModels, LIGHT_FALLBACK, LIGHT_MODEL, STRONG_FALLBACK, STRONG_MODEL } from "./models";
 import { linearStatus } from "./integrations/linear/config";
 import { openAsk, openFollowUp, openInboxQuestion } from "./brain/intake";
 import { policyFor } from "./policy";
@@ -105,6 +106,7 @@ export function buildSnapshot(s: State): Snapshot {
     answering: answeringOf(s),
     linear: linearStatus(),
     claude: claudeStatus(),
+    models: { gateway: gatewayModels(), captain: STRONG_MODEL, crew: LIGHT_MODEL, captainFallback: STRONG_FALLBACK, crewFallback: LIGHT_FALLBACK },
     recalls: s.recalls ?? [],
     knowledge: Object.fromEntries(s.messages.flatMap((m) => (m.knowledge ? [[m.id, m.knowledge]] : []))),
   };
