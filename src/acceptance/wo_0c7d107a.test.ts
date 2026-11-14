@@ -18,11 +18,12 @@ function invoice(overrides: Partial<Invoice> & Pick<Invoice, "id">): Invoice {
 const mixed = [
   invoice({ id: "INV-OVERDUE", dueDate: "2026-11-10" }),
   invoice({ id: "INV-PAID", status: "paid", dueDate: "2026-11-01" }),
+  invoice({ id: "INV-DRAFT-OVERDUE", status: "draft", dueDate: "2026-10-20" }),
   invoice({ id: "INV-NOT-YET-DUE", dueDate: "2026-12-01" }),
 ];
 
 describe("wo_0c7d107a overdue invoice filtering and summary count", () => {
-  it("returns only the overdue sent invoice, excluding paid and not-yet-due invoices", () => {
+  it("returns only the overdue sent invoice, excluding paid, draft and not-yet-due invoices", () => {
     expect(overdueInvoices(mixed, TODAY).map((i) => i.id)).toEqual(["INV-OVERDUE"]);
   });
 
@@ -41,6 +42,6 @@ describe("wo_0c7d107a overdue invoice filtering and summary count", () => {
   });
 
   it("shows the overdue count in the existing page summary", () => {
-    expect(summary(mixed, TODAY)).toBe("3 invoices, 2 outstanding ($200.00 owed), 1 overdue");
+    expect(summary(mixed, TODAY)).toBe("4 invoices, 3 outstanding ($300.00 owed), 1 overdue");
   });
 });

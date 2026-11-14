@@ -14,8 +14,18 @@ export function invoiceRows(list: readonly Invoice[]): string {
     .join("");
 }
 
-/** Today as an ISO `YYYY-MM-DD` string, used when no date is passed in. */
-const todayIso = (): string => new Date().toISOString().slice(0, 10);
+/** Download name for the CSV export, dated so month-end files do not overwrite each other. */
+export function csvFileName(date: Date): string {
+  return `invoices-${date.toISOString().slice(0, 10)}.csv`;
+}
+
+/** Today as an ISO `YYYY-MM-DD` string in local time, used when no date is passed in. */
+const todayIso = (): string => {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+};
 
 export function summary(list: readonly Invoice[], today: string = todayIso()): string {
   const owed = outstanding(list);
