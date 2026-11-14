@@ -44,9 +44,9 @@ function CrewRow({ agent }: { agent: Agent }) {
     step ??
     [
       agent.crewRole ? ROLE_LABEL[agent.crewRole] : null,
-      agent.branch,
       pullRequest ? `#${pullRequest.pullRequest.number}` : null,
       pullRequest ? PULL_REQUEST_STATE_LABEL[pullRequestState(pullRequest, snapshot.approvals)] : review ? VERDICT_LABEL[review.review.verdict] : null,
+      agent.branch,
     ]
       .filter(Boolean)
       .join(" · ");
