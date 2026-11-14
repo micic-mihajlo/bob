@@ -6,6 +6,7 @@ import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import { displayName } from "@/lib/client/crew";
+import { useNow } from "@/lib/client/use-now";
 import { formatAgo, openedTimeSuffix } from "@/lib/format-time";
 import {
   changeTotals,
@@ -117,8 +118,11 @@ function PullRequestCardView({ artifact, animate }: { artifact: PullRequestArtif
   const state = pullRequestState(artifact, snapshot.approvals);
   const [mergedOnMount] = useState(state === "merged");
   const titleId = `pull-request-${artifact.id}-title`;
+  // The card ticks with the window clock, so the opened time keeps counting while the thread is idle.
+  const clock = useNow(true);
+  const now = clock === 0 ? Date.now() : clock;
   const openedAt = Date.parse(artifact.at);
-  const openedAgo = Number.isNaN(openedAt) ? null : formatAgo(openedAt);
+  const openedAgo = Number.isNaN(openedAt) ? null : formatAgo(openedAt, now);
   return (
     <article aria-labelledby={titleId} className={cx("conversation-interaction-card chat-action-card", animate && "chat-action-entry-animated")} data-artifact-id={artifact.id}>
       <header className="chat-action-card-header">

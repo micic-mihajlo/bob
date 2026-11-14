@@ -69,6 +69,15 @@ button.bob-roadmap-source:focus-visible {
   margin-right: 0;
 }
 
+/* A request's elapsed time, its card's largest number, counting up from when the request was recorded. */
+.bob-roadmap-elapsed {
+  color: var(--bob-text-primary);
+  font-size: var(--bob-text-3xl);
+  font-weight: var(--bob-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--bob-leading-md);
+}
+
 /* The sentence the person typed, which every change for the request traces back to. */
 .bob-roadmap-ask {
   display: -webkit-box;

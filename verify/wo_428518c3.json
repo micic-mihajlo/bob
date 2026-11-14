@@ -1,0 +1,22 @@
+{
+  "acceptance": "A vitest test on formatElapsed in src/lib/format-time.ts passes for 45000 ms (\"45s\"), 185000 ms (\"3m 05s\") and 3720000 ms (\"1h 02m\").",
+  "propertiesFile": "src/lib/format-time.properties.test.ts",
+  "properties": [
+    {
+      "name": "names one unit per range: seconds under a minute, minutes under an hour, hours after",
+      "criterion": "A vitest test on formatElapsed in src/lib/format-time.ts passes for 45000 ms (\"45s\"), 185000 ms (\"3m 05s\") and 3720000 ms (\"1h 02m\")."
+    },
+    {
+      "name": "shows whole seconds only, dropping the part of a second below",
+      "criterion": "A vitest test on formatElapsed in src/lib/format-time.ts passes for 45000 ms (\"45s\"), 185000 ms (\"3m 05s\") and 3720000 ms (\"1h 02m\")."
+    },
+    {
+      "name": "reads back to the same time, and never shows less time for a later moment",
+      "criterion": "A vitest test on formatElapsed in src/lib/format-time.ts passes for 45000 ms (\"45s\"), 185000 ms (\"3m 05s\") and 3720000 ms (\"1h 02m\")."
+    },
+    {
+      "name": "reads a moment before the start as zero",
+      "criterion": "A vitest test on formatElapsed in src/lib/format-time.ts passes for 45000 ms (\"45s\"), 185000 ms (\"3m 05s\") and 3720000 ms (\"1h 02m\")."
+    }
+  ]
+}
