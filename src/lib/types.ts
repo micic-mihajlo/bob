@@ -351,9 +351,7 @@ export interface Snapshot {
   roadmap: Roadmap;
   /** "script" until a model key is configured. */
   brain: "script" | "model";
-  /** Derived status per thread, for grouping the sidebar. */
-  threadStatus?: Record<AgentId, ThreadStatus>;
-  /** Status and the needs-you and closed flags per thread. Replaces threadStatus. */
+  /** Status and the needs-you and closed flags per thread. */
   threadState?: Record<AgentId, ThreadState>;
   /** Everything waiting on the person, newest first. The captain keeps this short. */
   needsYou?: NeedsYouItem[];
