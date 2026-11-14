@@ -98,6 +98,8 @@
   --bob-marketplace-detail-bg: #121213;
   --bob-bg-surface: #1a1a1b;
   --bob-bg-surface-raised: #222223;
+  /* The person's own message: a quiet fill a step off the page. */
+  --bob-bg-bubble: #232325;
   --bob-bg-control: #1c1c1d;
   --bob-bg-control-hover: #232324;
   --bob-bg-control-active: #2e2e30;
@@ -511,6 +513,7 @@
   --bob-marketplace-detail-bg: #fafafb;
   --bob-bg-surface: #ffffff;
   --bob-bg-surface-raised: #ffffff;
+  --bob-bg-bubble: #ededf0;
   --bob-bg-control: #ffffff;
   --bob-bg-control-hover: #f7f7f8;
   --bob-bg-control-active: #e4e4e7;

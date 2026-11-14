@@ -1004,6 +1004,12 @@ button.chat-action-target:active,
   max-width: min(720px, 100%);
 }
 
+/* The agent writes on the page, and only the person's own words sit in a bubble. */
+.message-entry-agent .ui-bubble-variant-muted > .ui-bubble-content {
+  background: transparent;
+  padding-inline: 0;
+}
+
 .message-entry-agent .ui-bubble:has(.choice-card) {
   width: min(500px, 100%);
   max-width: min(500px, 100%);
