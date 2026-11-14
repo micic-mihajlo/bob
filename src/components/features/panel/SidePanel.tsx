@@ -59,13 +59,16 @@ export function PaneIcon({ pane }: { pane: SidePanelPaneId }) {
 
 /**
  * The classes and widths the conversation's `<main className="conversation-panel">` takes while the
- * side panel is open, as the reference's ConversationView sets them.
+ * side panel is open, as the reference's ConversationView sets them. The window narrows the panel to `--panel-fit`.
  */
 export function useSidePanelFrame(): { className: string; style: CSSProperties } {
   const { panelOpen, panelMaximized, panelWidth } = useBob();
   return {
     className: cx(panelOpen && "browser-panel-active side-panel-docked", panelOpen && panelMaximized && "side-panel-maximized"),
-    style: { "--browser-panel-width": `${panelWidth}px`, "--side-panel-width": `${panelWidth}px` } as CSSProperties,
+    style: {
+      "--browser-panel-width": `min(${panelWidth}px, var(--panel-fit, ${panelWidth}px))`,
+      "--side-panel-width": `min(${panelWidth}px, var(--panel-fit, ${panelWidth}px))`,
+    } as CSSProperties,
   };
 }
 

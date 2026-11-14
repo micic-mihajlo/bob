@@ -95,6 +95,7 @@
 
 .side-panel-tab-select {
   display: block;
+  flex: 0 1 auto;
   height: auto;
   min-width: 0;
   overflow: hidden;
@@ -186,6 +187,17 @@
 @container side-panel-header (max-width: 360px) {
   .side-panel-tabs:has(> .side-panel-tab:nth-child(3)) {
     --side-panel-tabs-compact: 1;
+  }
+}
+
+/* A panel narrowed to fit a small window keeps only the icons, the selected one still filled. */
+@container side-panel-header (max-width: 280px) {
+  .side-panel-tab[data-selected] .side-panel-tab-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
   }
 }
 
