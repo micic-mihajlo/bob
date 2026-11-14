@@ -838,6 +838,12 @@
     transform: translateY(0) scale(1);
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .approval-card {
+    animation: none;
+  }
+}
 @media (max-width: 800px) {
   .direct-private-label {
     display: none;
