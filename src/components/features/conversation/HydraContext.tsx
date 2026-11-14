@@ -1,11 +1,12 @@
 "use client";
 
-import { BookOpen, Database, User } from "lucide-react";
+import { BookOpen, Database, FileCode, User } from "lucide-react";
 import type { MemoryRecall, RecalledMemory } from "@/lib/types";
 
 const SOURCE: Record<RecalledMemory["source"], { label: string; Glyph: typeof User }> = {
   lesson: { label: "What Bob learned before", Glyph: BookOpen },
   person: { label: "Remembered from you", Glyph: User },
+  code: { label: "From the codebase", Glyph: FileCode },
 };
 
 /**
@@ -26,7 +27,7 @@ export function HydraContext({ recalls, messageIds, requestId }: { recalls: read
           recalled in {recall.ms} ms
         </span>
       </header>
-      {(["lesson", "person"] as const).map((source) => {
+      {(["lesson", "person", "code"] as const).map((source) => {
         const items = recall.items.filter((m) => m.source === source);
         if (items.length === 0) return null;
         const { label, Glyph } = SOURCE[source];
@@ -42,9 +43,9 @@ export function HydraContext({ recalls, messageIds, requestId }: { recalls: read
                   <span className="hydra-context-score">{m.score.toFixed(2)}</span>
                   <span className="hydra-context-text">
                     <strong>{m.title}</strong>
-                    <span className="hydra-context-detail">{m.text.split("\n").slice(1).join(" · ") || m.text}</span>
+                    <span className="hydra-context-detail">{source === "code" ? (m.text.split("\n").find((l) => l.trim() && !l.startsWith("File ")) ?? "") : m.text.split("\n").slice(1).join(" · ") || m.text}</span>
                   </span>
-                  <span className="hydra-context-source">{source === "lesson" ? (m.project ? `lesson · ${m.project}` : "lesson") : "person"}</span>
+                  <span className="hydra-context-source">{source === "lesson" ? (m.project ? `lesson · ${m.project}` : "lesson") : source}</span>
                 </li>
               ))}
             </ul>

@@ -21,6 +21,7 @@ import { ChatActionMarker } from "./ChatActionMarker";
 import { ChatMessageRow } from "./ChatMessageRow";
 import { ChatRowBoundary } from "./ChatRowBoundary";
 import { ChatScrollRail, chatScrollSections } from "./ChatScrollRail";
+import { KnowledgeLine } from "./KnowledgeLine";
 import { ScrollToLatestButton } from "./MessageNavigation";
 import { ArtifactCard } from "./PullRequestCard";
 import { scrollToUnreadBoundary, UnreadMessagesBanner, UnreadMessagesDivider, unreadMessagesDividerIsVisible } from "./UnreadMessages";
@@ -117,6 +118,7 @@ function RowView({
             className={animate ? "chat-action-entry-animated" : undefined}
           >
             <ChatActionMarker marker={marker} announce={animate} onToggleAgentMessage={onToggle} />
+            {(row.kind === "received" || row.kind === "sent") && snapshot.knowledge?.[row.item.messageId] ? <KnowledgeLine knowledge={snapshot.knowledge[row.item.messageId]} /> : null}
           </article>
         </ChatRowBoundary>
       ) : null;
