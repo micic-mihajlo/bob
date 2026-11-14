@@ -1,11 +1,11 @@
-import { generateText, tool, type ModelMessage, type ToolSet } from "ai";
+import { streamText, tool, type ModelMessage, type TextStreamPart, type ToolSet } from "ai";
 import { modelsToTry } from "../models";
 import { addNotice } from "../state-ops";
 import { update } from "../store";
 import { projectFiles } from "../thread-workspace";
 import type { ToolSpec } from "../tools";
 import { systemPrompt } from "./prompt";
-import type { Brain, MoveRecord, TurnContext } from "./types";
+import type { Brain, LiveSink, MoveRecord, TurnContext } from "./types";
 
 const MAX_OUTPUT_TOKENS = 16_000;
 /** One attempt at a model call. A hung connection is cut here and tried again instead of holding the turn. */
@@ -72,13 +72,31 @@ export async function withRetries<T>(
 
 const reasonOf = (error: unknown) => (error instanceof Error ? error.message : String(error)).split("\n")[0].slice(0, 200);
 
+/** Reads a model stream to its end, showing text and started tool calls as they arrive. An error or abort in the stream throws. */
+export async function readStream(parts: AsyncIterable<TextStreamPart<ToolSet>>, live?: LiveSink): Promise<void> {
+  let text = "";
+  for await (const part of parts) {
+    if (part.type === "text-delta") {
+      text += part.text;
+      live?.text(text);
+    } else if (part.type === "tool-input-start") {
+      live?.toolStart(part.id, part.toolName);
+    } else if (part.type === "error") {
+      throw part.error instanceof Error ? part.error : new Error(String(part.error));
+    } else if (part.type === "abort") {
+      throw new Error("The model call was cut off by its timeout.");
+    }
+  }
+}
+
 /** The AI SDK through the gateway: one model step per move, model id from the agent record, with retries and a fallback model. */
 export const modelBrain: Brain = {
-  async next(ctx) {
+  async next(ctx, live) {
     const files = ctx.agent.kind === "captain" ? await projectFiles(ctx.state.project).catch(() => []) : [];
     const timeout = ctx.agent.kind === "captain" ? CAPTAIN_CALL_TIMEOUT_MS : CREW_CALL_TIMEOUT_MS;
-    const call = (model: string, extra: ModelMessage[], reasoning?: "none") =>
-      generateText({
+    const call = async (model: string, extra: ModelMessage[], reasoning?: "none") => {
+      live?.reset();
+      const stream = streamText({
         model,
         instructions: systemPrompt(ctx.agent, ctx.state, files),
         messages: [...messages(ctx), ...extra],
@@ -86,8 +104,13 @@ export const modelBrain: Brain = {
         maxOutputTokens: MAX_OUTPUT_TOKENS,
         abortSignal: AbortSignal.timeout(timeout),
         maxRetries: 0,
+        onError: () => {},
         ...(reasoning ? { reasoning } : {}),
       });
+      await readStream(stream.fullStream, live);
+      const [text, toolCalls, finishReason] = await Promise.all([stream.text, stream.toolCalls, stream.finishReason]);
+      return { text, toolCalls, finishReason };
+    };
     const attempt = async (model: string) => {
       let result = await call(model, []);
       // A reply that spent its whole budget (usually on reasoning) gets one shorter retry instead of failing the turn.

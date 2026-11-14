@@ -117,6 +117,17 @@ export interface Turn {
   endedAt: string | null;
 }
 
+/**
+ * What a turn's model is generating right now: its text so far and the tool calls it has started to write.
+ * The turn clears it when the move ends, and the move's real text and steps take its place.
+ */
+export interface LiveMove {
+  turnId: TurnId;
+  text: string;
+  tools: { id: string; tool: string }[];
+  at: string;
+}
+
 /** What one agent's thread shows, oldest first. */
 export type ThreadItem =
   | { kind: "user_text"; id: string; text: string; at: string; via?: "voice" }
