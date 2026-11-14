@@ -30,6 +30,21 @@ export function lastSpokenLine(thread: ThreadView | undefined): string | null {
   return null;
 }
 
+const WAIT_RANK: Record<WaitingOn["state"], number> = { working: 0, asked: 1, failed: 2, replied: 3 };
+
+/**
+ * One row for each teammate asked. A teammate asked twice (a re-review after a new head) is still one
+ * wait, shown by its most open ask: working before asked, a failure before a reply.
+ */
+export function oneRowPerAgent(rows: readonly WaitingOn[]): WaitingOn[] {
+  const byAgent = new Map<WaitingOn["agentId"], WaitingOn>();
+  for (const row of rows) {
+    const kept = byAgent.get(row.agentId);
+    if (!kept || WAIT_RANK[row.state] < WAIT_RANK[kept.state]) byAgent.set(row.agentId, row);
+  }
+  return [...byAgent.values()];
+}
+
 /** A reply is still coming only while the teammate has it; a failure will not answer. */
 export function unansweredRows(rows: readonly WaitingOn[]): WaitingOn[] {
   return rows.filter((row) => row.state === "asked" || row.state === "working");

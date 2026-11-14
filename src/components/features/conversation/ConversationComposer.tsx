@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import { interruptAgent, sendMessage, type SendMode } from "@/lib/client/api";
 import { displayName } from "@/lib/client/crew";
+import { reportView } from "@/lib/client/report-view";
+import { oneRowPerAgent } from "@/lib/client/selectors";
 import type { Agent, ThreadView } from "@/lib/types";
 import { QuickActions } from "./AgentChatEmptyState";
 import { AwaitingReplies, type AwaitingReplyItem } from "./AwaitingReplies";
@@ -16,10 +18,10 @@ import { StopIcon } from "./conversation-icons";
 
 /** The rows of the "Waiting for replies" block, with the start of each reply that came in. */
 function awaitingItems(thread: ThreadView, agentsById: ReadonlyMap<string, Agent>): AwaitingReplyItem[] {
-  return thread.waitingOn.map((wait) => {
+  return oneRowPerAgent(thread.waitingOn).map((wait) => {
     const agent = agentsById.get(wait.agentId);
     const reply = wait.state === "replied" ? thread.items.findLast((item) => item.kind === "message_in" && item.from === wait.agentId && item.isReply) : undefined;
-    const preview = reply?.kind === "message_in" ? reply.text.split("\n")[0] : undefined;
+    const preview = reply?.kind === "message_in" ? (reportView(reply.text)?.result ?? reply.text).split("\n")[0] : undefined;
     return { id: `${wait.messageId}:${wait.agentId}`, agent, name: agent ? displayName(agent) : wait.agentId, state: wait.state, preview };
   });
 }
