@@ -19,7 +19,8 @@ describe("page", () => {
     expect(exportButton()).toContain("Download CSV");
   });
 
-  it("summarises what is owed", () => {
-    expect(summary(SAMPLE_INVOICES)).toBe("3 invoices, 2 outstanding ($579.50 owed)");
+  it("summarises what is owed and how many are overdue", () => {
+    expect(summary(SAMPLE_INVOICES, "2026-11-20")).toBe("3 invoices, 2 outstanding ($579.50 owed), 1 overdue");
+    expect(summary(SAMPLE_INVOICES, "2026-11-01")).toBe("3 invoices, 2 outstanding ($579.50 owed), 0 overdue");
   });
 });
