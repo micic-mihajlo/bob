@@ -1,5 +1,6 @@
 import type { Agent, AgentId, Snapshot, ThreadItem, ThreadView, WaitingOn } from "@/lib/types";
 import { findCaptain } from "./crew";
+import { reportView } from "./report-view";
 
 export function resolveSelectedAgent(snapshot: Snapshot, selectedId: AgentId | null): Agent | undefined {
   const picked = selectedId === null ? undefined : snapshot.agents.find((agent) => agent.id === selectedId);
@@ -11,6 +12,7 @@ function previewOf(item: ThreadItem): string | null {
     case "agent_text":
     case "message_in":
     case "message_out":
+      return reportView(item.text)?.result ?? item.text;
     case "user_text":
       return item.text;
     default:

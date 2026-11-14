@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { reportView } from "../report-view";
+import { lastSpokenLine } from "../selectors";
 
 describe("reportView", () => {
   it("splits a report and keeps the line above it", () => {
@@ -26,5 +27,12 @@ describe("reportView", () => {
     expect(reportView("No one is working right now.")).toBeNull();
     expect(reportView("Status: done\nResult: Added it.")).toBeNull();
     expect(reportView("Status: maybe\nResult: Added it.\nEvidence: none")).toBeNull();
+  });
+});
+
+describe("lastSpokenLine", () => {
+  it("previews a report by its result, not its labels", () => {
+    const text = "Status: done\nResult: Pull request #1 is open.\nEvidence: npm test 14/14";
+    expect(lastSpokenLine({ items: [{ kind: "agent_text", id: "a1", turnId: "t1", text, at: "" }] } as never)).toBe("Pull request #1 is open.");
   });
 });
