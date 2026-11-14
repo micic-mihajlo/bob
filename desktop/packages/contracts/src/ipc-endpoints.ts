@@ -136,6 +136,7 @@ import type {
   AnalyticsPreference,
   AppInfo,
   AppSetupState,
+  BobCrewThread,
   CentralAuthState,
   ChatWindowTarget,
   ComputerUseHighlightPlacement,
@@ -178,6 +179,7 @@ import type {
   PreviewWorkspaceFileInput,
   WorkspaceDirectory,
 } from "./ipc-attachments";
+import type { BobOnboardingResult } from "./ipc-bob-onboarding";
 import type {
   BrowserBounds,
   BrowserControlState,
@@ -221,6 +223,7 @@ import type {
   UpdateChannelRoutineInput,
 } from "./ipc-channel-routines";
 import type { Channel, ChannelCommand, ChannelPage, ChannelReadInput, ChannelSummary } from "./ipc-chat-channels";
+import type { ComposioConnectInput, ComposioStatus } from "./ipc-composio";
 import type {
   CancelMessageLinkInput,
   ConversationFileSearchPage,
@@ -264,7 +267,6 @@ import type {
   SetDynamicIslandInteractiveInput,
   SetDynamicIslandPreferenceInput,
 } from "./ipc-dynamic-island";
-import type { BobOnboardingResult } from "./ipc-bob-onboarding";
 import type {
   EventActivity,
   EventRoutine,
@@ -285,7 +287,6 @@ import type {
   ExternalLinkFallback,
   ExternalLinkPreference,
 } from "./ipc-external-links";
-import type { ComposioConnectInput, ComposioStatus } from "./ipc-composio";
 import type { ApplyHermesImportInput, HermesImportPreview } from "./ipc-hermes-import";
 import type { HiddenAgentsSnapshot, SetAgentHiddenInput } from "./ipc-hidden-agents";
 import type { HostAnalytics, HostAnalyticsInput } from "./ipc-host-analytics";
@@ -609,6 +610,7 @@ function untypedRequest<Channel extends string>(channel: Channel): RequestEndpoi
 export const IPC_ENDPOINTS = {
   app: {
     getAppInfo: request<undefined, AppInfo>()("app:get-info"),
+    getBobCrew: request<undefined, BobCrewThread[]>()("app:get-bob-crew"),
     getSetupState: request<undefined, AppSetupState>()("app:get-setup-state"),
     saveSetup: request<SaveSetupInput, AppSetupState>()("app:save-setup"),
     // A joined owner or admin can set the default provider of this computer (`provider-default-v1`),

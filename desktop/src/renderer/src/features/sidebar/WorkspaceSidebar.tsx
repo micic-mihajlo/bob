@@ -1,4 +1,10 @@
-import { type ChatWindowTarget, canAdministerServer } from "@bob/contracts/ipc";
+import {
+  AVATAR_HUES,
+  type BobCrewThread,
+  type ChatWindowTarget,
+  canAdministerServer,
+  isAgentProviderRef,
+} from "@bob/contracts/ipc";
 import { AGENT_HIDDEN_CAPABILITY } from "@bob/contracts/team-protocol/current";
 import { computeAgentAvatarMoods } from "@bob/ui/features/agents/agent-avatar-mood";
 import { Sidebar } from "@bob/ui/features/sidebar/Sidebar";
@@ -9,8 +15,8 @@ import { teamMemberName } from "@bob/ui/features/team/TeamPersonAvatar";
 import { useText } from "@bob/ui/text";
 import { createEffect, createMemo, createSignal, onSettled, Show } from "solid-js";
 import { appPort } from "../../app-port";
-import { type ChatHistoryEntry, chatHistoryKeys } from "../../chat-history";
 import { BOB_ONLY, BOB_SINGLE_BOT } from "../../bob";
+import { type ChatHistoryEntry, chatHistoryKeys } from "../../chat-history";
 import { useLayout } from "../../layout";
 import { DirectConversation } from "../../lazy-views";
 import { useNavigation } from "../../navigation";
@@ -23,6 +29,7 @@ import { attentionByAgent } from "../agents/agent-runtime-snapshot";
 import { agentThreadAttention } from "../agents/agent-thread-attention";
 import { useAgents } from "../agents/agents-context";
 import { useChannels } from "../channels/channels-context";
+import { useBobCrew } from "../conversation/bob-crew";
 import { useConversation } from "../conversation/conversation-context";
 import { useDirectMessages } from "../conversation/direct-messages-context";
 import { useServerActions } from "../servers/server-actions";
@@ -49,6 +56,16 @@ import { createStorageCard } from "./storage-card";
  * decide which pane renders. Deriving it a second time here would let the two
  * answers disagree for a frame.
  */
+/** A Blob's row id. Blobs are threads on Bob's web server, so their rows open in Bob's view. */
+const BLOB_ROW = "blob:";
+/** Not Bob's provider, so a Blob's avatar wears its own hue instead of Bob's orange check. */
+const BLOB_PROVIDER = "blob";
+
+function nearestAvatarHue(hue: number) {
+  const distance = (value: number) => Math.min(Math.abs(value - hue), 360 - Math.abs(value - hue));
+  return AVATAR_HUES.reduce((best, value) => (distance(value) < distance(best) ? value : best));
+}
+
 export function WorkspaceSidebar(props: { peopleEnabled: boolean }) {
   const { t } = useText();
   const layout = useLayout();
@@ -91,6 +108,58 @@ export function WorkspaceSidebar(props: { peopleEnabled: boolean }) {
   const { directPeople, teamPresence } = usePresence();
   const { activeDirectMember, activeDirectMemberId, directThreads } = useDirectMessages();
   const { selectAgent, selectDirectMember, setGlobalSearchVisibility, chatHistory } = useNavigation();
+  const bobCrew = useBobCrew();
+  const bobAgent = () => agentList().find((agent) => agent.provider === "bob");
+  /* Bob's row previews his thread on the web server, and each open Blob gets a row of its own
+   * under him, with its newest message or its status. */
+  const sidebarAgents = createMemo(() => {
+    const bob = bobAgent();
+    const threads = bobCrew.crew();
+    const captain = threads.find((thread) => thread.kind === "captain");
+    if (!bob || !captain) return agentList();
+    const line = (thread: BobCrewThread) => thread.preview || t(`app.bobCrew.${thread.status}`);
+    const blobs = threads
+      .filter((thread) => thread.kind === "crew")
+      .map((thread) => ({
+        ...bob,
+        id: BLOB_ROW + thread.id,
+        name: thread.name,
+        title: "",
+        description: "",
+        provider: isAgentProviderRef(BLOB_PROVIDER) ? BLOB_PROVIDER : bob.provider,
+        threadId: null,
+        avatarSeed: thread.id,
+        avatarHue: nearestAvatarHue(thread.hue),
+        avatarUrl: null,
+        preview: line(thread),
+        updatedAt: thread.at,
+      }));
+    return agentList().flatMap((agent) =>
+      agent.id === bob.id
+        ? [{ ...bob, preview: line(captain), updatedAt: captain.at ?? bob.updatedAt }, ...blobs]
+        : [agent],
+    );
+  });
+  const ownAgent =
+    <Rest extends unknown[]>(action: (agentId: string, ...rest: Rest) => unknown) =>
+    async (agentId: string, ...rest: Rest) => {
+      if (!agentId.startsWith(BLOB_ROW)) await action(agentId, ...rest);
+    };
+  const onSelectSidebarAgent = (agentId: string) => {
+    const bob = bobAgent();
+    if (bob && agentId.startsWith(BLOB_ROW)) {
+      bobCrew.setSelectedThread(agentId.slice(BLOB_ROW.length));
+      selectAgent(bob.id);
+      return;
+    }
+    if (agentId === bob?.id) bobCrew.setSelectedThread(null);
+    selectAgent(agentId);
+  };
+  const activeSidebarAgentId = () => {
+    const active = activeAgent();
+    const thread = bobCrew.selectedThread();
+    return active && active.id === bobAgent()?.id && thread ? BLOB_ROW + thread : (active?.id ?? "");
+  };
   const agentTasks = useAgentTasks();
   const agentThreads = useAgentThreads();
   /**
@@ -271,8 +340,8 @@ export function WorkspaceSidebar(props: { peopleEnabled: boolean }) {
             }
           : undefined
       }
-      agents={agentList()}
-      activeAgentId={activeDirectMember() || channels.state.selectedId ? "" : (activeAgent()?.id ?? "")}
+      agents={sidebarAgents()}
+      activeAgentId={activeDirectMember() || channels.state.selectedId ? "" : activeSidebarAgentId()}
       showPeople={props.peopleEnabled}
       people={directPeople()}
       directThreads={directThreads()}
@@ -296,7 +365,7 @@ export function WorkspaceSidebar(props: { peopleEnabled: boolean }) {
       onUnpin={unpinSidebarItem}
       onReorderPinned={reorderPinnedSidebarItems}
       onReorderPeople={reorderSidebarPeople}
-      onSelectAgent={selectAgent}
+      onSelectAgent={onSelectSidebarAgent}
       onSelectPerson={(memberId) => void selectDirectMember(memberId)}
       onPreloadDirectConversation={props.peopleEnabled ? () => void DirectConversation.preload() : undefined}
       onCreateAgent={() => {
@@ -304,11 +373,11 @@ export function WorkspaceSidebar(props: { peopleEnabled: boolean }) {
         openAgentSetup();
       }}
       createSupported={!BOB_SINGLE_BOT}
-      onEditAgent={editAgent}
+      onEditAgent={ownAgent(editAgent)}
       duplicateSupported={!BOB_SINGLE_BOT && activeServerSupportsCapability("agent-duplication")}
       duplicatingAgentIds={duplicatingAgentIds()}
-      onDuplicateAgent={duplicateAgent}
-      onDeleteAgent={deleteAgent}
+      onDuplicateAgent={ownAgent(duplicateAgent)}
+      onDeleteAgent={ownAgent(deleteAgent)}
       // Bob has one agent, and nothing makes it again: deleting or hiding it would leave an empty app.
       deleteSupported={!BOB_SINGLE_BOT}
       userHiddenAgents={userHiddenAgents()}

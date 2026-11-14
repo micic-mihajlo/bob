@@ -18,7 +18,7 @@ import {
 import { app, type BrowserWindow, dialog, type OpenDialogOptions } from "electron";
 import { version as developmentVersion } from "../../../package.json";
 import type { AgentService } from "../../backend/agent-service";
-import { bobUrl } from "../../backend/bob-url";
+import { bobUrl, readBobCrew } from "../../backend/bob-url";
 import type { BrowserHost } from "../../backend/browser-host";
 import type { MailboxStore } from "../../backend/mailbox-store";
 import type { AgentDefaultsPreferenceStore } from "../agent-defaults-preference-store";
@@ -33,7 +33,7 @@ import type { InterfaceSizeService } from "../interface-size-service";
 import type { LanguageService } from "../language-service";
 import type { LogoColorService } from "../logo-color-service";
 import { MAC_PERMISSION_URLS } from "../mac-permission-urls";
-import { exportDiagnostics, exportBobData } from "../maintenance-service";
+import { exportBobData, exportDiagnostics } from "../maintenance-service";
 import { isTailscaleConnected } from "../private-network-detection";
 import type { RemoteNetworkRoutePreferenceStore } from "../remote-network-route-preference-store";
 import type { RemoteSessionCache } from "../remote-session-cache";
@@ -180,6 +180,7 @@ export function appIpcHandlers({
           ...(analyticsCaptureUrl ? { analyticsCaptureUrl } : {}),
         };
       }),
+      getBobCrew: handler(() => readBobCrew()),
       getSetupState: handler(() => runCauseEffect(readSetupState(setupFile))),
       getAnalyticsPreference: handler(() => Effect.runPromise(readAnalyticsPreference(analyticsPreferenceFile))),
       setAnalyticsPreference: payloadHandler(parseAnalyticsPreference, (parsed) => {
