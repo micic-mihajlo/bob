@@ -49,7 +49,6 @@ import {
   GlobalSearchOverlay,
   MarketplaceOverlay,
   ServerSettingsOverlay,
-  SharedAgentInstallOverlay,
 } from "./WorkspaceOverlayViews";
 
 /**
@@ -79,7 +78,6 @@ export function WorkspaceOverlays() {
   });
   return (
     <>
-      <SharedAgentInstall />
       <LeaveServer />
       <RestartServer />
       <ServerSettings />
@@ -149,25 +147,6 @@ export function SkillsMarketplace() {
   );
 }
 
-/**
- * A shared agent from an `bob://agents/<id>` link. It is added where a marketplace agent is: on
- * the selected joined server when this account administers it, otherwise on this computer.
- */
-function SharedAgentInstall() {
-  const { pendingAgentTemplateId, setPendingAgentTemplateId } = useSettings();
-  const { openInstalledMarketplaceAgent } = useServerSelection();
-  const { activeServer } = useServers();
-
-  return (
-    <SharedAgentInstallOverlay
-      templateId={pendingAgentTemplateId()}
-      server={activeServer()}
-      onOpenLink={(url) => void appPort().openUrl(url)}
-      onClose={() => setPendingAgentTemplateId(null)}
-      onInstalled={openInstalledMarketplaceAgent}
-    />
-  );
-}
 
 /** The leave or owner removal confirmation that the server menu opens. */
 function LeaveServer() {

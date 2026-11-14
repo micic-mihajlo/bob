@@ -11,11 +11,6 @@ import { lazy } from "solid-js";
  * `DirectConversation` by the sidebar that preloads it and the pane that renders
  * it), so the wrappers live here and each chunk has exactly one.
  */
-export const AgentTemplateInstall = lazy(() =>
-  import("./features/agent-templates/AgentTemplateInstall").then((module) => ({
-    default: module.AgentTemplateInstall,
-  })),
-);
 export const AccountLogin = lazy(() =>
   import("@bob/ui/features/account/AccountLogin").then((module) => ({ default: module.AccountLogin })),
 );

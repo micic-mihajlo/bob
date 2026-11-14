@@ -10,8 +10,6 @@ import { VoicePanel } from "@bob/ui/features/conversation/VoicePanel";
 import { McpSignInRelayDialog } from "@bob/ui/features/settings/McpSignInPage";
 import { useText } from "@bob/ui/text";
 import { actionToast } from "../../action-toast";
-import { agentTemplatesPort } from "../agent-templates/agent-templates-port";
-import { createPublishAgent } from "../agent-templates/PublishAgent";
 import { desktopBrowserProfileCalls } from "../browser/browser-profiles-port";
 import type { AgentFilesOptions } from "../files/AgentFilesSettings";
 import { canManageStorage, serverHasStorage } from "../files/storage-usage";
@@ -31,7 +29,7 @@ const loadAgentSettingsPanel = () => import("./AgentSettingsPanel");
 
 import { Portal } from "@solidjs/web";
 import { createEffect, createMemo, Loading, lazy, onSettled, Show, untrack } from "solid-js";
-import { BOB_ONLY, BOB_SINGLE_BOT } from "../../bob";
+import { BOB_SINGLE_BOT } from "../../bob";
 import { agentFolderCalls } from "./agent-folders-port";
 import { conversationPort } from "./conversation-port";
 
@@ -131,21 +129,11 @@ export function ConversationPanels(panelProps: { onOpenUsage?: ((trigger: HTMLBu
     channel,
   } = useConversationViewScope();
   const { t, errorMessage } = useText();
-  const publishAgent = createPublishAgent(
-    (url) => void conversationRuntime(props).openUrl(url),
-    () => props.runtime?.admin?.agentTemplates ?? agentTemplatesPort().agentTemplates,
-  );
-  // This computer reads the skills of its own agents from the workspace. A joined host publishes its
-  // own agents, for an owner or admin, when it serves `agent-publish-v1`.
   // A remote agent's host resolves its settings, so the account defaults of this computer do not apply.
   const localAgentDefaults = () => (props.server?.kind === "local" ? props.agentDefaults : undefined);
   const folderCalls = agentFolderCalls();
   /** An agent's folders are on the computer that runs it, and the Team API does not carry them. */
   const localFolderCalls = () => (props.server?.kind === "local" && !props.runtime ? folderCalls : undefined);
-  const canPublish = () =>
-    props.runtime
-      ? props.runtime.admin !== undefined && serverCanAdminister(props.server, "agent-publish-v1")
-      : props.server?.kind === "local";
   // The web client asks the host directly; desktop goes through main for this computer and for a joined server.
   // The calls follow the server id, so a new summary of the same server keeps the loaded profiles.
   const browserProfileServerId = createMemo(() =>
@@ -482,7 +470,7 @@ export function ConversationPanels(panelProps: { onOpenUsage?: ((trigger: HTMLBu
                   : undefined
               }
               onOpenUsage={panelProps.onOpenUsage}
-              onPublish={!BOB_ONLY && canPublish() ? () => publishAgent.open(agent().id) : undefined}
+              onPublish={undefined}
               agent={agent()}
               runtimeSettings={{
                 provider: settingsProvider(),
@@ -524,7 +512,6 @@ export function ConversationPanels(panelProps: { onOpenUsage?: ((trigger: HTMLBu
         )}
       </Show>
 
-      {publishAgent.dialog()}
       {/* A sign-in link of the host's agent, when this computer cannot take its callback: the user pastes
           the address that the browser shows. */}
       <Show when={messageLinkRelay()} keyed>

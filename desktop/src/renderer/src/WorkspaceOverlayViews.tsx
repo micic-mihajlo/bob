@@ -2,7 +2,6 @@ import type { AddedAgent, McpServerConfig, ServerSummary } from "@bob/contracts/
 import { MCP_SERVERS_CAPABILITY } from "@bob/contracts/ipc";
 import type { ComponentProps } from "@solidjs/web";
 import { createMemo, Loading, omit, Show } from "solid-js";
-import type { AgentTemplateInstallCalls } from "./features/agent-templates/agent-templates-port";
 import { ChannelCreateDialog } from "./features/channels/ChannelCreateDialog";
 import { useChannels } from "./features/channels/channels-context";
 import type { ConnectorRegistry } from "./features/connectors/connector-registry";
@@ -22,7 +21,6 @@ import type { MarketplaceCalls } from "./features/settings/marketplace-calls";
 import type { MarketplaceAgentRow } from "./features/settings/marketplace-controller";
 import { MARKETPLACE_PLUGINS } from "./features/settings/marketplace-plugin-catalog";
 import {
-  AgentTemplateInstall,
   GlobalSearch,
   JoinServerDialog,
   MarketplaceModal,
@@ -167,36 +165,6 @@ export function MarketplaceOverlay(props: {
   );
 }
 
-/**
- * A shared agent from an agent link. It is added where a marketplace agent is: on the selected joined
- * server when this account administers it, otherwise on this computer.
- */
-export function SharedAgentInstallOverlay(props: {
-  templateId: string | null | undefined;
-  server: ServerSummary | undefined;
-  /** Absent: this computer's bridge. */
-  calls?: AgentTemplateInstallCalls | undefined;
-  onOpenLink: (url: string) => void;
-  onClose: () => void;
-  onInstalled: (agent: AddedAgent, serverId?: string) => Promise<void>;
-}) {
-  return (
-    <Show when={props.templateId}>
-      {(templateId) => (
-        <Loading>
-          <AgentTemplateInstall
-            templateId={templateId()}
-            server={remoteAdminServer(props.server, "agent-install-v1")}
-            calls={props.calls}
-            onOpenLink={props.onOpenLink}
-            onClose={props.onClose}
-            onInstalled={props.onInstalled}
-          />
-        </Loading>
-      )}
-    </Show>
-  );
-}
 
 /**
  * Settings for one server. The MCP and Storage sections are gated on the server here: a remote host
