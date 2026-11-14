@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { AppLoadingScreen } from "@/components/features/window/AppLoadingScreen";
 import { BobProvider } from "@/components/features/window/BobContext";
 import { useSnapshot } from "@/lib/client/use-snapshot";
 
@@ -8,13 +9,7 @@ import { useSnapshot } from "@/lib/client/use-snapshot";
 export function SnapshotGate({ children }: { children: ReactNode }) {
   const { snapshot, error, connected } = useSnapshot();
 
-  if (snapshot === null) {
-    return (
-      <div className="app-loading-state" role={error === null ? "status" : "alert"}>
-        {error === null ? "Loading" : `Could not load Bob. ${error}`}
-      </div>
-    );
-  }
+  if (snapshot === null) return <AppLoadingScreen error={error} />;
 
   return (
     <BobProvider snapshot={snapshot} connected={connected}>
