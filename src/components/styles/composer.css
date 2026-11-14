@@ -1,0 +1,278 @@
+.composer-stack {
+  display: flex;
+  width: 100%;
+  max-width: calc(var(--chat-width) + var(--gap-3) * 2);
+  flex: 0 0 auto;
+  flex-direction: column;
+  margin: 0 auto;
+}
+
+/* One row that scrolls sideways, so a narrow thread keeps its height. */
+.quick-replies {
+  display: flex;
+  gap: var(--gap-1-5);
+  overflow-x: auto;
+  padding: var(--gap-0-5) var(--gap-3) var(--gap-2);
+  scrollbar-width: none;
+}
+
+.quick-reply {
+  height: var(--control-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: 0 var(--gap-3);
+  color: var(--color-ink-secondary);
+  font-size: var(--size-md);
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
+}
+
+.quick-reply:active:not(:disabled) {
+  transform: scale(var(--press-scale));
+}
+
+.quick-reply:disabled {
+  opacity: 0.42;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .quick-reply:hover:not(:disabled) {
+    background: var(--color-control-hover);
+    color: var(--color-ink);
+  }
+}
+
+/* The waiting card tucks under the composer: its bottom padding sits behind the composer's top edge. */
+.waiting {
+  position: relative;
+  z-index: 10;
+  margin: 0 var(--gap-3) calc(var(--stack-tuck) * -1);
+  overflow: hidden;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding-bottom: var(--stack-tuck);
+  animation: waiting-in var(--duration-normal) var(--ease-out) both;
+}
+
+@keyframes waiting-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px) scale(0.995);
+  }
+}
+
+.waiting-header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--gap-3);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-transparent);
+  padding: var(--gap-3);
+  color: var(--color-ink);
+  font-size: var(--size-md);
+  line-height: var(--leading-md);
+  text-align: left;
+}
+
+.waiting-title {
+  font-weight: 600;
+}
+
+.waiting-count {
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.waiting-chevron {
+  margin-left: auto;
+  color: var(--color-ink-muted);
+}
+
+.waiting-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-1-5);
+  margin: 0;
+  padding: 0 var(--gap-3) var(--gap-3);
+  list-style: none;
+}
+
+.waiting-chip {
+  display: inline-flex;
+  height: var(--control-sm);
+  align-items: center;
+  gap: var(--gap-1-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-canvas);
+  padding: 0 var(--gap-2) 0 var(--gap-1-5);
+  color: var(--color-ink);
+  font-size: var(--size-sm);
+  transition:
+    background-color var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
+}
+
+.waiting-chip:active {
+  transform: scale(var(--press-scale));
+}
+
+.waiting-chip-name {
+  font-weight: 500;
+}
+
+.waiting-chip-state {
+  color: var(--color-ink-muted);
+}
+
+.waiting-chip[data-state="working"] .waiting-chip-state {
+  color: var(--color-ink-secondary);
+  animation: breathe var(--loop-breathe) ease-in-out infinite;
+}
+
+.waiting-chip[data-state="failed"] .waiting-chip-state {
+  color: var(--color-danger-text);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .waiting-header:hover {
+    background: var(--color-hover);
+  }
+
+  .waiting-chip:hover {
+    background: var(--color-control-hover);
+  }
+}
+
+.composer-wrap {
+  position: relative;
+  z-index: 11;
+  padding: 0 var(--gap-1-5) var(--gap-1-5);
+}
+
+.composer {
+  display: grid;
+  min-height: 96px;
+  gap: var(--gap-1);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--composer-padding);
+  transition:
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
+}
+
+.composer:focus-within {
+  border-color: var(--color-ink-dim);
+  box-shadow: 0 0 0 3px var(--color-hover);
+}
+
+.composer-field {
+  min-height: 48px;
+  max-height: max(48px, 33dvh);
+  resize: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  background: var(--color-transparent);
+  padding: var(--gap-0-5) var(--gap-1) var(--gap-2);
+  color: var(--color-ink);
+  caret-color: var(--color-ink);
+  font-size: var(--size-lg);
+  line-height: var(--leading-lg);
+}
+
+.composer-field::placeholder {
+  color: var(--color-ink-muted);
+}
+
+.composer-field:focus-visible {
+  box-shadow: none;
+}
+
+.composer-toolbar {
+  display: flex;
+  min-height: var(--control-sm);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-2);
+}
+
+.composer-error {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-danger-text);
+  font-size: var(--size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-1-5);
+}
+
+.round-button {
+  display: grid;
+  width: var(--control-sm);
+  height: var(--control-sm);
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-pill);
+  padding: 0;
+  transition:
+    background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
+}
+
+.round-button:active:not(:disabled) {
+  transform: scale(var(--press-scale));
+}
+
+.round-button:disabled {
+  opacity: 0.42;
+}
+
+.round-button-soft {
+  background: var(--color-hover);
+  color: var(--color-ink-secondary);
+}
+
+.round-button-solid {
+  background: var(--color-light);
+  color: var(--color-on-light);
+}
+
+.stop-glyph {
+  fill: currentColor;
+}
+
+.send-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-accent-strong);
+  border-top-color: var(--color-on-light);
+  border-radius: var(--radius-pill);
+  animation: spin var(--loop-send) linear infinite;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .round-button-soft:hover:not(:disabled) {
+    color: var(--color-ink);
+  }
+
+  .round-button-solid:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-light) 84%, var(--color-canvas));
+  }
+}

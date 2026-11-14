@@ -1,0 +1,227 @@
+.avatar {
+  --agent-color: oklch(var(--agent-lightness) var(--agent-chroma) var(--agent-hue));
+  display: inline-grid;
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: radial-gradient(
+    circle at 32% 28%,
+    var(--agent-color),
+    oklch(var(--agent-lightness-deep) var(--agent-chroma) var(--agent-hue))
+  );
+  color: var(--color-on-light);
+  font-size: calc(var(--avatar-size) * 0.44);
+  font-weight: 650;
+  line-height: 1;
+  user-select: none;
+}
+
+.avatar[data-size="16"],
+.avatar[data-size="18"] {
+  font-size: 9px;
+}
+
+.face-stack {
+  display: inline-flex;
+}
+
+.face-stack > .avatar + .avatar {
+  margin-left: -6px;
+  box-shadow: 0 0 0 1.5px var(--color-canvas);
+}
+
+.rolling {
+  display: inline-flex;
+  font-variant-numeric: tabular-nums;
+}
+
+.rolling-char {
+  display: inline-block;
+  white-space: pre;
+}
+
+.rolling-char[data-roll] {
+  animation: digit-roll var(--duration-roll) var(--ease-overshoot) backwards;
+}
+
+.rolling[data-direction="down"] {
+  --roll-from: -8px;
+}
+
+.rolling[data-direction="up"] {
+  --roll-from: 8px;
+}
+
+@keyframes digit-roll {
+  from {
+    opacity: 0;
+    transform: translateY(var(--roll-from));
+    filter: blur(1px);
+  }
+}
+
+.state-mark {
+  flex: 0 0 auto;
+  fill: none;
+}
+
+.state-mark-dotted {
+  stroke: var(--color-ink-dim);
+  stroke-dasharray: 1.2 2;
+  stroke-width: 1.5;
+}
+
+.state-mark-spin {
+  transform-origin: 8px 8px;
+  animation: spin var(--loop-spin) linear infinite;
+}
+
+.state-mark-track {
+  stroke: var(--color-border-strong);
+  stroke-width: 2;
+}
+
+.state-mark-arc {
+  stroke: var(--color-ink);
+  stroke-dasharray: 12 100;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.state-mark-disc {
+  fill: var(--color-ink-dim);
+  transform-origin: 8px 8px;
+  animation: disc-in var(--duration-normal) var(--ease-out) both;
+}
+
+.state-mark[data-state="failed"] .state-mark-disc {
+  fill: var(--color-danger);
+}
+
+.state-mark-tick {
+  stroke: var(--color-canvas);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.75;
+}
+
+@keyframes disc-in {
+  from {
+    transform: scale(0.4);
+  }
+}
+
+.progress-ring {
+  flex: 0 0 auto;
+  fill: none;
+  transform: rotate(-90deg);
+}
+
+.progress-ring[data-complete] {
+  transform: none;
+}
+
+.progress-ring-track {
+  stroke: var(--color-border-strong);
+  stroke-width: 2;
+}
+
+.progress-ring-value {
+  stroke: var(--color-ink);
+  stroke-linecap: round;
+  stroke-width: 2;
+  transition: stroke-dashoffset var(--duration-slow) var(--ease-out);
+}
+
+.progress-ring-fill {
+  fill: var(--color-ink);
+}
+
+.progress-ring-tick {
+  stroke: var(--color-canvas);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.shine {
+  background: linear-gradient(
+      90deg,
+      var(--color-ink) 0 30%,
+      var(--color-ink-muted) 45% 55%,
+      var(--color-ink) 70% 100%
+    )
+    0 0 / 300% 100%;
+  background-clip: text;
+  color: var(--color-transparent);
+  animation: shine var(--loop-shine) cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+}
+
+@keyframes shine {
+  0%,
+  18% {
+    background-position: 100% 0;
+  }
+
+  82%,
+  100% {
+    background-position: 0 0;
+  }
+}
+
+.reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--duration-slow) var(--ease-close),
+    opacity var(--duration-normal) ease;
+}
+
+.reveal[data-open] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows var(--duration-overlay) var(--ease-out),
+    opacity var(--duration-normal) ease;
+}
+
+.reveal-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.status-badge {
+  display: inline-flex;
+  height: 20px;
+  flex: 0 0 auto;
+  align-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  padding: 0 var(--gap-2);
+  color: var(--color-ink-secondary);
+  font-size: var(--size-sm);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-badge:is([data-status="done"], [data-status="merged"], [data-status="approved"]) {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.status-badge:is([data-status="running"], [data-status="review"]) {
+  background: var(--color-accent-strong);
+  color: var(--color-ink);
+}
+
+.status-badge[data-status="stale"] {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.status-badge[data-status="closed"] {
+  color: var(--color-ink-dim);
+}

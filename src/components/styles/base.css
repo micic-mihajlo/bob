@@ -1,0 +1,203 @@
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--color-frame);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--size-lg);
+  line-height: var(--leading-lg);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+textarea,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 0;
+  box-shadow: var(--focus-ring);
+}
+
+/* Controls inside clipped containers draw the ring inside, or the clip would cut it. */
+.reveal-inner :focus-visible,
+.waiting-header:focus-visible,
+.step-viewport:focus-visible {
+  box-shadow: var(--focus-ring-inset);
+}
+
+.jump-newest:focus-visible {
+  box-shadow: var(--shadow-raised), var(--focus-ring);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-accent-strong) var(--color-transparent);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.icon {
+  flex: 0 0 auto;
+  stroke-width: var(--icon-stroke);
+}
+
+.btn {
+  display: inline-flex;
+  height: var(--control-md);
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-1-5);
+  border: 1px solid var(--color-transparent);
+  border-radius: var(--radius-md);
+  background: var(--color-control-hover);
+  padding: 0 var(--gap-3);
+  color: var(--color-ink);
+  font-size: var(--size-md);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    opacity var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
+}
+
+.btn:disabled {
+  opacity: 0.42;
+}
+
+.btn-primary {
+  background: var(--color-light);
+  color: var(--color-on-light);
+}
+
+.btn-quiet {
+  background: var(--color-transparent);
+  color: var(--color-ink-muted);
+}
+
+.btn-small {
+  height: var(--control-xs);
+  padding: 0 var(--gap-2);
+  font-size: var(--size-sm);
+}
+
+.icon-button {
+  display: inline-grid;
+  width: var(--control-sm);
+  height: var(--control-sm);
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-transparent);
+  padding: 0;
+  color: var(--color-ink-muted);
+  transition:
+    background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
+}
+
+.icon-button-xs {
+  width: var(--control-xs);
+  height: var(--control-xs);
+}
+
+.icon-button:disabled {
+  opacity: 0.42;
+}
+
+.btn:active:not(:disabled),
+.icon-button:active:not(:disabled) {
+  transform: scale(var(--press-scale));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover:not(:disabled) {
+    background: var(--color-control-active);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-light) 84%, var(--color-canvas));
+  }
+
+  .btn-quiet:hover:not(:disabled) {
+    background: var(--color-control-hover);
+    color: var(--color-ink);
+  }
+
+  .icon-button:hover:not(:disabled) {
+    background: var(--color-control-hover);
+    color: var(--color-ink);
+  }
+}
+
+.chevron {
+  transition: transform var(--duration-slow) var(--ease-out);
+}
+
+[aria-expanded="true"] > .chevron {
+  transform: rotate(180deg);
+}
+
+.empty-line {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--size-md);
+  line-height: var(--leading-md);
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
