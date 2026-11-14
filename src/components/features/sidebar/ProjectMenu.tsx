@@ -1,0 +1,121 @@
+"use client";
+
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useBob } from "@/components/features/window/BobContext";
+import { buttonClass } from "@/components/ui/classes";
+import { listProjects, openProject } from "@/lib/client/api";
+import type { Project } from "@/lib/types";
+import { OpenProjectDialog } from "./OpenProjectDialog";
+
+/**
+ * The project name on the sidebar title, as the reference's server menu: it lists the projects
+ * with a check on the active one, and ends with the item that opens another.
+ */
+export function ProjectMenu() {
+  const { snapshot, selectAgent } = useBob();
+  const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([snapshot.project]);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const active = snapshot.project;
+
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    void listProjects().then((list) => live && list && setProjects(list));
+    const close = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => event.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", escape);
+    return () => {
+      live = false;
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [open]);
+
+  async function choose(project: Project): Promise<void> {
+    if (project.id === active.id) return setOpen(false);
+    setPendingId(project.id);
+    setError(null);
+    const result = await openProject({ name: project.name });
+    setPendingId(null);
+    if (!result.ok) return setError(result.error);
+    selectAgent("bob");
+    setOpen(false);
+  }
+
+  return (
+    <div ref={root} className="sidebar-project-menu">
+      <button
+        type="button"
+        className={buttonClass({ variant: "ghost", size: "sm", className: "sidebar-server-name no-drag" })}
+        data-slot="button"
+        data-variant="ghost"
+        data-size="sm"
+        aria-haspopup="menu"
+        aria-expanded={open ? "true" : "false"}
+        aria-label={`Open project menu, ${active.name}`}
+        title={active.repo ?? active.name}
+        onClick={() => {
+          setError(null);
+          setOpen((value) => !value);
+        }}
+      >
+        <span className="sidebar-server-name-label">{active.name}</span>
+        <ChevronsUpDown className="sidebar-server-name-chevron" aria-hidden="true" />
+      </button>
+      {open ? (
+        <div role="menu" aria-label="Projects" className="ui-action-menu agent-context-menu server-menu sidebar-project-menu-content" data-expanded="">
+          <div className="ui-menu-label" aria-hidden="true">
+            Projects
+          </div>
+          {projects.map((project) => (
+            <button
+              key={project.id}
+              type="button"
+              role="menuitem"
+              className="server-menu-row"
+              aria-current={project.id === active.id ? "true" : undefined}
+              disabled={pendingId !== null}
+              title={project.repo ?? "From the invoices template"}
+              onClick={() => void choose(project)}
+            >
+              <span className="ui-menu-check" data-checked={project.id === active.id ? "" : undefined} aria-hidden="true">
+                {project.id === active.id ? <Check /> : null}
+              </span>
+              <span className="server-menu-name">{project.name}</span>
+              {pendingId === project.id ? <span className="ui-menu-trailing">Opening</span> : null}
+            </button>
+          ))}
+          {error ? (
+            <p className="sidebar-project-menu-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <div role="separator" />
+          <button
+            type="button"
+            role="menuitem"
+            className="server-menu-add"
+            onClick={() => {
+              setOpen(false);
+              setDialogOpen(true);
+            }}
+          >
+            <span className="server-menu-add-circle" aria-hidden="true">
+              <Plus />
+            </span>
+            <span>Open a project</span>
+          </button>
+        </div>
+      ) : null}
+      {dialogOpen ? <OpenProjectDialog onClose={() => setDialogOpen(false)} /> : null}
+    </div>
+  );
+}
