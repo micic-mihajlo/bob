@@ -1,6 +1,8 @@
 import { liveAsks } from "./asks";
 import { brainKind } from "./brain";
+import { policyFor } from "./policy";
 import { releaseNotesOf } from "./release-notes";
+import { requestControls } from "./usage";
 import { messageById, runningTurn, type State } from "./state";
 import { needsYou, threadStateOf, threadStatusOf } from "./thread-status";
 import type { AgentActivity, AgentId, Delivery, Snapshot, ThreadView, WaitingOn } from "./types";
@@ -78,5 +80,7 @@ export function buildSnapshot(s: State): Snapshot {
     needsYou: needs,
     drive: s.drive ?? [],
     releaseNotes: releaseNotesOf(s),
+    requests: requestControls(s),
+    budgets: policyFor(s.project.id).budgets,
   };
 }

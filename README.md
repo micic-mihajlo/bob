@@ -28,6 +28,21 @@ BOB_MODEL_LIGHT=deepseek/deepseek-v4.1-flash
 
 `BOB_MODEL_STRONG` is the captain's model and `BOB_MODEL_LIGHT` is every crew thread's. A Vercel Token Pass key can only call Token Pass models: `moonshotai/kimi-k3.1-pro`, `moonshotai/kimi-k3`, `moonshotai/kimi-k3-fast`, `zai/glm-5.3-fast`, `zai/glm-5.3-flash`, `deepseek/deepseek-v4.1-flash` and `deepseek/deepseek-v4.1-flash-fast`. After changing models, `POST /api/reset` reseeds the team so stored threads pick them up.
 
+## Factory policy
+
+A project can put `bob.policy.json` at the root of its main branch. Every field is optional, and anything left out keeps its default:
+
+```json
+{
+  "approvalPaths": ["package.json", "**/*.lock", ".github/**"],
+  "maxFixRounds": 2,
+  "budgets": { "maxMinutes": 3, "maxModelCalls": 60, "maxCostUsd": 1 },
+  "prices": { "moonshotai/kimi-k3.1-pro": [0.6, 2.5] }
+}
+```
+
+`approvalPaths` are named on the merge approval whenever a pull request touches them. `maxFixRounds` caps the review-fix loop. A request that goes over a budget gets an alert line in DIGEST.md. `prices` are dollars per million input and output tokens, and they feed the cost estimate shown for each request.
+
 ## How it works
 
 | Piece | Where |
