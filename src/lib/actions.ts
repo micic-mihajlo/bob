@@ -24,7 +24,8 @@ export function boot(): void {
   const orphans = g.pendingBoot;
   if (!orphans) return;
   g.pendingBoot = null;
-  for (const turn of s.turns.filter((t) => orphans.includes(t.id))) {
+  const rerun = (turnId: string) => s.deliveries.some((d) => s.requeuedDeliveryIds.includes(d.id) && d.status === "queued" && d.turnId === null && s.turns.find((t) => t.id === turnId)?.messageIds.includes(d.messageId));
+  for (const turn of s.turns.filter((t) => orphans.includes(t.id) && !rerun(t.id))) {
     relayOwed({
       agentId: turn.agentId,
       turnId: turn.id,
