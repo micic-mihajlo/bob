@@ -82,9 +82,10 @@ export function notesFile(s: State, current: string): string {
   const track = (t: Track) => {
     const g = t.goal;
     return [
+      `### ${g?.title ?? t.requestId}`,
       g ? `- Intent: ${g.title}${g.user ? `, for ${lowerFirst(g.user)}` : ""}.` : `- Intent: not recorded yet for ${t.requestId}.`,
       ...(g?.acceptance ? [`- Acceptance: ${g.acceptance}`] : []),
-      ...(g?.assumptions?.length ? [`- Assumed: ${g.assumptions.map(sentence).join("; ")}.`] : []),
+      ...(g?.assumptions?.length ? [`- Assumed: ${g.assumptions.map((a, i) => (i === 0 ? sentence(a) : lowerFirst(sentence(a)))).join("; ")}.`] : []),
       `- Stage ${t.stage} of ${r.totalStages}: ${t.stageTitle}.`,
       "- Today:",
       ...orders(ordersOf(r, t.requestId).today, "  "),

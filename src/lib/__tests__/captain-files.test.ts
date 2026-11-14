@@ -19,7 +19,7 @@ describe("the captain's files are kept in code", () => {
     await callTool("write_drive", { name: "NOTES.md", content: "Customers mean accountants here." }, asBob);
     await callTool("set_goal", { title: "CSV export", user: "Accountants", behaviour: "Export invoices", acceptance: "One row per invoice", assumptions: ["All invoices.", "Columns as listed"] }, asBob);
     const notes = file("NOTES.md");
-    expect(notes).toMatch(/\n\n- Intent: CSV export, for accountants\.\n- Acceptance: One row per invoice\n- Assumed: All invoices; Columns as listed\.\n- Stage \d of \d: \w+\.\n- Today:\n {2}- none\n\nBacklog:/);
+    expect(notes).toMatch(/\n\n### CSV export\n- Intent: CSV export, for accountants\.\n- Acceptance: One row per invoice\n- Assumed: All invoices; columns as listed\.\n- Stage \d of \d: \w+\.\n- Today:\n {2}- none\n\nBacklog:/);
     expect(notes).toMatch(/## Notes\nCustomers mean accountants here\.\n$/);
     await callTool("set_roadmap", { workOrderTitles: ["Add invoicesToCsv"] }, asBob);
     expect(file("NOTES.md")).toMatch(/Backlog:\n- wo_\w+ Add invoicesToCsv \(open\)[\s\S]*## Notes\nCustomers mean accountants here\./);
