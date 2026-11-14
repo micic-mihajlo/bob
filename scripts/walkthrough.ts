@@ -416,7 +416,8 @@ async function phase(reqs: Request[], restartAt: Request | null): Promise<{ stop
   }
   log(`stop: ${stopReason}`);
   // Let the last turns settle before judging what is stranded.
-  for (let i = 0; i < 20; i++) {
+  const settleUntil = Date.now() + STALL_S * 1000;
+  while (Date.now() < settleUntil) {
     s = await state();
     const busy = s.agents.some((a) => !a.closedAt && (s.activity[a.id]?.state === "working" || (s.threads[a.id]?.queued ?? 0) > 0));
     if (!busy) break;
