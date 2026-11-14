@@ -1,6 +1,6 @@
 import { liveAsks } from "./asks";
 import { messageById, runningTurn, type State } from "./state";
-import type { Agent, AgentId, NeedsYouItem, RunStatus, ThreadState, ThreadStatus, Turn } from "./types";
+import type { Agent, AgentId, NeedsYouItem, RunStatus, ThreadState, Turn } from "./types";
 
 const latestTurn = (s: State, agentId: AgentId): Turn | undefined =>
   s.turns.filter((t) => t.agentId === agentId).reduce<Turn | undefined>((last, t) => (!last || t.startedAt >= last.startedAt ? t : last), undefined);
@@ -62,18 +62,6 @@ export function needsYou(s: State): NeedsYouItem[] {
   const open = s.agents.filter((a) => !a.closedAt);
   const others = open.flatMap((a) => [openQuestion(s, a), failure(s, a)]).filter((x): x is NeedsYouItem => x !== null);
   return [...approvals, ...others, ...inboxQuestions(s)].sort((a, b) => b.at.localeCompare(a.at));
-}
-
-/** In priority order: closed, needs_you, failed, working, waiting, idle. */
-export function threadStatusOf(s: State, agent: Agent, needs: NeedsYouItem[]): ThreadStatus {
-  if (agent.closedAt) return "closed";
-  const mine = needs.filter((n) => n.agentId === agent.id);
-  if (mine.some((n) => n.kind !== "failed")) return "needs_you";
-  if (mine.some((n) => n.kind === "failed")) return "failed";
-  if (runningTurn(s, agent.id)) return "working";
-  const queued = s.deliveries.some((d) => d.recipientAgentId === agent.id && d.status === "queued");
-  if (queued || liveAsks(s, agent.id).length > 0) return "waiting";
-  return "idle";
 }
 
 function runStatusOf(s: State, agent: Agent, mine: NeedsYouItem[]): RunStatus {

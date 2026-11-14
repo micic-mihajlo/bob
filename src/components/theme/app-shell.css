@@ -1822,10 +1822,61 @@ textarea {
   margin-top: 4px;
 }
 
+/* A crew thread's subagents hang off its face on a guide line, with smaller faces and no role badge:
+ * the line under each name already says what it is doing. */
 .sidebar-subagents {
+  position: relative;
   display: grid;
   gap: 4px;
-  padding-left: 20px;
+  padding-left: 28px;
+}
+
+.sidebar-subagents::before {
+  position: absolute;
+  top: -10px;
+  bottom: 27px;
+  left: 26px;
+  width: 1px;
+  background: var(--bob-border-strong);
+  content: "";
+}
+
+.sidebar-subagents > .sidebar-agent-item {
+  position: relative;
+}
+
+.sidebar-subagents > .sidebar-agent-item::before {
+  position: absolute;
+  top: 50%;
+  left: -2px;
+  width: 10px;
+  height: 1px;
+  background: var(--bob-border-strong);
+  content: "";
+}
+
+.sidebar-subagents .agent-row-avatar {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+}
+
+.sidebar-subagents .agent-row .agent-avatar {
+  width: 28px;
+  height: 28px;
+}
+
+.sidebar-subagents .agent-role-badge {
+  display: none;
+}
+
+.sidebar-compact .sidebar-subagents {
+  padding-left: 0;
+}
+
+.sidebar-compact .sidebar-subagents::before,
+.sidebar-compact .sidebar-subagents > .sidebar-agent-item::before {
+  display: none;
 }
 
 .sidebar-agent-item-dragging {
