@@ -28,8 +28,6 @@ import { LocalSignInWindows } from "./local-sign-in-window";
 import { LocalSkillLibrary } from "./local-skill-library";
 import { localSkillTools } from "./local-skill-tools";
 import { MAC_PERMISSION_URLS } from "./mac-permission-urls";
-import { PushNotificationStore } from "./push-notification-store";
-import { DESKTOP_USE_MS } from "./push-notifications";
 import { RemoteWorkflowError, toRemoteWorkflowError } from "./remote-service-effects";
 /**
  * The composition root. Every long-lived service the desktop app owns is built here, in one
@@ -74,7 +72,6 @@ import {
   IPC_ENDPOINTS,
   isManagedToolRuntime,
   isUpdateBusyPhase,
-  LOCAL_SERVER_ID,
   latestTurnAnswer,
 } from "@bob/contracts/ipc";
 import { decodeRecord, requiredString } from "@bob/contracts/ipc-decoding";
@@ -86,9 +83,7 @@ import {
   BrowserWindow,
   clipboard,
   desktopCapturer,
-  Notification,
   nativeImage,
-  powerMonitor,
   safeStorage,
   screen,
   shell,
@@ -159,7 +154,6 @@ import { CUSTOM_AGENTS_FILE, CustomAgentStore } from "./custom-agent-store";
 import { type CustomProviderChanges, createCustomProviderChanges } from "./custom-provider-changes";
 import { CustomProviderStore } from "./custom-provider-store";
 import { MCP_OAUTH_REDIRECT_URL } from "./deep-link-router";
-import { desktopShowsAgentEvent } from "./desktop-notifications";
 import { shouldAutoStartHost } from "./development-profile";
 import {
   applyDevelopmentRemoteAccount,
@@ -323,7 +317,6 @@ const APPEARANCE_PREFERENCE_FILE = "bob-appearance-preference-v1.json";
 const INTERFACE_SIZE_PREFERENCE_FILE = "bob-interface-size-preference-v1.json";
 const UPDATE_PREFERENCE_FILE = "bob-update-preference-v1.json";
 const NOTIFICATION_PREFERENCE_FILE = "bob-notification-preference-v1.json";
-const PUSH_NOTIFICATION_FILE = "bob-push-notifications-v1.json";
 const BUSY_MESSAGE_MODE_PREFERENCE_FILE = "bob-busy-message-mode-v1.json";
 const PROVIDER_CLI_APP_VERSION_FILE = "bob-provider-cli-app-version-v1.json";
 const AGENT_DEFAULTS_PREFERENCE_FILE = "bob-agent-defaults-v1.json";
@@ -2238,8 +2231,6 @@ export async function createApplicationServices({
   // The live view of a sign-in page in this host's browser: only on Linux, where the Gemini CLI has
   // always printed its page. The relay takes the page on every platform.
   const providerHostSignIns = process.platform === "linux" ? providerSignIns : undefined;
-  const pushNotificationStore = new PushNotificationStore(join(app.getPath("userData"), PUSH_NOTIFICATION_FILE));
-  await runCauseEffect(pushNotificationStore.load());
   const host = new HostService({
     appVersion: app.getVersion(),
     store: teamStore,
@@ -2371,23 +2362,6 @@ export async function createApplicationServices({
     handOverRemoteHostKey: (hostId, handover) =>
       centralAuth.handOverRemoteHostKey(hostId, handover).pipe(toRemoteWorkflowError),
     issueRemoteHostTicket: (hostId) => centralAuth.issueRemoteHostTicket(hostId).pipe(toRemoteWorkflowError),
-    sendLiveActivityPush: (hostId, push) => centralAuth.sendLiveActivityPush(hostId, push).pipe(toRemoteWorkflowError),
-    sendPushNotification: (hostId, push) => centralAuth.sendPushNotification(hostId, push).pipe(toRemoteWorkflowError),
-    pushNotificationStore,
-    // The owner is at this computer only with recent input, also when the window was left in focus.
-    // Then the focused window shows the event, or the desktop notifies. When mute or the level of
-    // this server keeps the desktop quiet about the event, the phone tells the owner.
-    hostComputerInUse: (event) => {
-      const window = windows.getMainWindow();
-      if (!window || window.isDestroyed()) return false;
-      if (powerMonitor.getSystemIdleState(DESKTOP_USE_MS / 1_000) !== "active") return false;
-      if (window.isFocused()) return true;
-      // Without a notification service, as on Linux without a daemon, the desktop shows nothing.
-      if (!Notification.isSupported()) return false;
-      // Read when an event arrives, after the manager below exists.
-      const local = remoteServers.list().find((server) => server.id === LOCAL_SERVER_ID);
-      return desktopShowsAgentEvent(event, local, notificationPreference.get().desktopNotifications);
-    },
     verifyRemoteSessionTicket: (ticket) => centralAuth.verifyRemoteSessionTicket(ticket).pipe(toRemoteWorkflowError),
     endRemoteSession: (sessionId) => centralAuth.endRemoteSession(sessionId).pipe(toRemoteWorkflowError),
     remoteControlPlaneUrl: centralAuth.resolveApiUrl("/"),
