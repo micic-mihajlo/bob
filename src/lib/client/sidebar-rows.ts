@@ -7,10 +7,7 @@ export type SidebarWaitReason = "question" | "approval" | "failed";
 
 /** The one mark a row's avatar carries, as the reference sidebar draws it. */
 export type SidebarAgentState =
-  | { kind: "working" }
-  | { kind: "waiting"; reason: SidebarWaitReason; detail: string }
-  | { kind: "unread"; count: number }
-  | { kind: "failed" };
+  { kind: "working" } | { kind: "waiting"; reason: SidebarWaitReason; detail: string } | { kind: "unread"; count: number } | { kind: "failed" };
 
 export interface SidebarSectionModel {
   id: string;
@@ -29,6 +26,20 @@ export interface SidebarListModel {
 }
 
 /**
+ * A row waiting on the captain's question shows the question itself instead of "Bob asks you
+ * something": the first line that asks, without its list marker. Items from the inbox keep their
+ * title, which names the source.
+ */
+export function waitingLine(item: { id: string; title: string; detail: string }): string {
+  if (!item.id.startsWith("question:")) return item.title || item.detail;
+  const asking = item.detail
+    .split("\n")
+    .map((line) => line.replace(/^\s*(?:[-*]|\d+[.)])\s+/, "").trim())
+    .find((line) => line.endsWith("?"));
+  return asking ?? item.title;
+}
+
+/**
  * The sidebar as the reference draws it: "Needs you" first, then the captain, then crew threads by
  * status, then standing agents. A thread that needs the person sits only in "Needs you".
  */
@@ -39,7 +50,7 @@ export function sidebarList(snapshot: Snapshot): SidebarListModel {
   for (const item of needsYouItems(snapshot)) {
     const agent = agents.get(item.agentId);
     if (!agent || agent.kind === "subagent" || waiting.some((entry) => entry.agent.id === agent.id)) continue;
-    waiting.push({ agent, reason: item.kind, detail: item.title || item.detail });
+    waiting.push({ agent, reason: item.kind, detail: waitingLine(item) });
   }
   const waitingIds = new Set(waiting.map((entry) => entry.agent.id));
   const outside = (list: readonly Agent[]) => list.filter((agent) => !waitingIds.has(agent.id));
