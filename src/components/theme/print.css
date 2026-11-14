@@ -1,0 +1,58 @@
+/*
+ * Bob in print: the shared rules of the ink and newsprint themes. Every rule here sits under
+ * [data-print], which the root layout sets for both print themes and removes for the classic look.
+ * Display type is Anton (SIL Open Font License 1.1, self-hosted by next/font): titles, section labels
+ * and stamps only. Body text and code keep Geist and Geist Mono.
+ */
+
+[data-print] {
+  --bob-font-display: var(--font-display), "Impact", "Arial Narrow", sans-serif;
+  --bob-tracking-display-print: 0.02em;
+}
+
+[data-print] .conversation-title h1 {
+  font-family: var(--bob-font-display);
+  font-size: var(--bob-text-2xl);
+  font-weight: var(--bob-weight-regular);
+  letter-spacing: var(--bob-tracking-display-print);
+  line-height: var(--bob-leading-md);
+  text-transform: uppercase;
+}
+
+[data-print] .sidebar-waiting-group-name,
+[data-print] .bob-roadmap-label {
+  color: var(--bob-text-secondary);
+  font-family: var(--bob-font-display);
+  font-size: var(--bob-text-md);
+  font-weight: var(--bob-weight-regular);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+[data-print] .bob-roadmap-goal,
+[data-print] .bob-roadmap-stage,
+[data-print] .message-markdown-heading[data-level="1"],
+[data-print] .message-markdown-heading[data-level="2"],
+[data-print] .ui-block-title,
+[data-print] .ui-confirm-dialog-title,
+[data-print] .direct-conversation-empty h2,
+[data-print] .agent-memories-empty-title {
+  font-family: var(--bob-font-display);
+  font-weight: var(--bob-weight-regular);
+  letter-spacing: var(--bob-tracking-display-print);
+  text-transform: uppercase;
+}
+
+[data-print] .bob-roadmap-goal {
+  font-size: var(--bob-text-2xl);
+  line-height: var(--bob-leading-2xl);
+}
+
+[data-print] .sidebar-brain-sync[data-sync="live"]::before {
+  background: var(--bob-print-cyan);
+}
+
+.sidebar-theme-toggle {
+  color: var(--bob-text-secondary);
+  font-size: var(--bob-text-sm);
+}
