@@ -343,7 +343,12 @@ export function FirstAgentSetup(props: FirstAgentSetupProps) {
           data-avatar-seed={props.value.avatarSeed}
           data-avatar-hue={props.value.avatarHue ?? "automatic"}
         >
-          <AgentAvatar seed={props.value.avatarSeed} hue={props.value.avatarHue} motion="idle" />
+          <AgentAvatar
+            seed={props.value.avatarSeed}
+            hue={props.value.avatarHue}
+            provider={props.value.provider}
+            motion="idle"
+          />
           <h1 aria-live="polite">{displayName()}</h1>
         </div>
         <Show when={props.mode === "additional" && props.onCancel}>
@@ -380,6 +385,7 @@ export function FirstAgentSetup(props: FirstAgentSetupProps) {
             <AgentAvatar
               seed={props.value.avatarSeed}
               hue={props.value.avatarHue}
+              provider={props.value.provider}
               motion="idle"
               animationOffset={0.4}
             />
@@ -440,6 +446,7 @@ export function FirstAgentSetup(props: FirstAgentSetupProps) {
                     <AgentAvatar
                       seed={seed}
                       hue={props.value.avatarHue}
+                      provider={props.value.provider}
                       motion="idle"
                       animationOffset={index() * 0.16}
                     />
