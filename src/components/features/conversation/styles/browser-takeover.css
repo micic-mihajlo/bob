@@ -741,6 +741,15 @@
 }
 
 /* The pull request's GitHub link and its preview, with the preview check's mark. */
+/* A review finding's comment is prose, so it reads in the text face under its mono path. */
+.approval-detail-text {
+  margin: 0;
+  color: var(--bob-text-secondary);
+  font-size: var(--bob-text-sm);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .approval-detail-row strong:has(.pull-request-note) {
   display: flex;
   flex-wrap: wrap;
