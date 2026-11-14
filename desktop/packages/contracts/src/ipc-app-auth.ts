@@ -16,6 +16,19 @@ export interface AppInfo {
   analyticsCaptureUrl?: string;
 }
 
+/** A thread on Bob's web server as the sidebar lists it: Bob himself or one of his Blobs. */
+export interface BobCrewThread {
+  id: string;
+  name: string;
+  kind: "captain" | "crew";
+  /** 0-359, as the web server stores it. */
+  hue: number;
+  status: "working" | "waiting" | "needs_you" | "failed" | "idle";
+  /** The newest message in the thread, as plain text. Empty before the first one. */
+  preview: string;
+  at: string | null;
+}
+
 /** The phase list is the source of truth: `UpdatePhase` is derived from it. */
 export const UPDATE_PHASES = [
   "idle",
