@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowUp, LoaderCircle, Plus } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { ArrowUp, File, Image as ImageIcon, LoaderCircle, Plus } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useBob } from "@/components/features/window/BobContext";
 import { CallBob } from "@/components/voice/CallBob";
 import { Button } from "@/components/ui/Button";
@@ -14,7 +14,9 @@ import { oneRowPerAgent } from "@/lib/client/selectors";
 import type { Agent, ThreadView } from "@/lib/types";
 import { QuickActions } from "./AgentChatEmptyState";
 import { AwaitingReplies, type AwaitingReplyItem } from "./AwaitingReplies";
-import { ComposerNotice } from "./ComposerNotice";
+import { ComposerEditor } from "./ComposerEditor";
+import { ComposerErrorBanner } from "./ComposerErrorBanner";
+import { expandComposerMentions } from "./composer-tokens";
 import { StopIcon } from "./conversation-icons";
 
 /** The rows of the "Waiting for replies" block, with the start of each reply that came in. */
@@ -35,15 +37,67 @@ export interface ConversationComposerProps {
   quickActions: boolean;
 }
 
+/** The "+" menu, as the reference's add menu. Bob has no uploads, so the file rows stay shown and disabled. */
+function ComposerAddMenu({ open, onOpenChange, disabled, onClosed }: { open: boolean; onOpenChange: (open: boolean) => void; disabled: boolean; onClosed: () => void }) {
+  const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) onOpenChange(false);
+    };
+    const escape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      onOpenChange(false);
+      onClosed();
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [open, onOpenChange, onClosed]);
+
+  return (
+    <div ref={root} className="composer-add-menu">
+      <button
+        type="button"
+        className="composer-button"
+        aria-label="Add to prompt"
+        aria-haspopup="menu"
+        aria-expanded={open ? "true" : "false"}
+        disabled={disabled}
+        onClick={() => onOpenChange(!open)}
+      >
+        <Plus aria-hidden="true" />
+      </button>
+      {open ? (
+        <div role="menu" aria-label="Add to prompt" className="ui-action-menu composer-add-menu-content" data-expanded="">
+          <button type="button" role="menuitem" aria-disabled="true" data-disabled="" title="Attachments are not available in Bob yet" onClick={(event) => event.preventDefault()}>
+            <ImageIcon aria-hidden="true" />
+            <span>Attach image</span>
+          </button>
+          <button type="button" role="menuitem" aria-disabled="true" data-disabled="" title="Attachments are not available in Bob yet" onClick={(event) => event.preventDefault()}>
+            <File aria-hidden="true" />
+            <span>Add context</span>
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 /** Everything under the chat: the waits and the queue in one card, any notice, then the message box. */
 export function ConversationComposer({ agent, thread, working, quickActions }: ConversationComposerProps) {
   const { snapshot, agentsById, draftFor, setDraft, setAwaiting } = useBob();
   const activity = snapshot.activity[agent.id];
   const turnSince = activity?.state === "working" ? activity.since : null;
   const draft = draftFor(agent.id);
-  const surface = useRef<HTMLDivElement>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // The error stands for its own chat: it shows only there, until the person closes it or a send succeeds.
+  const [failure, setFailure] = useState<{ agentId: string; message: string } | null>(null);
+  const error = failure?.agentId === agent.id ? failure.message : null;
   // The turn Stop was pressed for; the button waits for that turn to end.
   const [stoppedTurn, setStoppedTurn] = useState<string | null>(null);
   const stopping = turnSince !== null && stoppedTurn === turnSince;
@@ -51,33 +105,25 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
   // While the captain's question is open, a message answers it unless the person marks it a new request.
   const answering = snapshot.answering?.agentId === agent.id ? snapshot.answering : null;
   const [newRequest, setNewRequest] = useState(false);
-
-  // The editor is not controlled by React: it takes the draft only when the draft changed elsewhere,
-  // as after a send or a quick action, so typing keeps its caret.
-  const typed = useRef<string | null>(null);
-  useLayoutEffect(() => {
-    const element = surface.current;
-    if (!element || draft === typed.current) return;
-    element.innerText = draft;
-    typed.current = draft;
-  }, [draft]);
-
-  useEffect(() => {
-    surface.current?.focus({ preventScroll: true });
-  }, []);
+  const [composerFocusRequest, setComposerFocusRequest] = useState(1);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const mentionAgents = useMemo(() => snapshot.agents.filter((candidate) => !candidate.closedAt), [snapshot.agents]);
+  const focusComposer = () => setComposerFocusRequest((current) => current + 1);
 
   const send = async (text: string, mode?: SendMode) => {
     const message = text.trim();
     if (message === "" || submitting) return false;
     setSubmitting(true);
-    setError(null);
+    setFailure(null);
     // The agent's face and a pending line answer the send at once; the real activity line replaces them.
     setAwaiting(agent.id, { count: thread.items.length, at: Date.now() });
-    const result = await sendMessage(agent.id, message, mode, answering !== null && newRequest);
+    const result = await sendMessage(agent.id, expandComposerMentions(message), mode, answering !== null && newRequest);
     setSubmitting(false);
+    focusComposer();
     if (!result.ok) {
       setAwaiting(agent.id, null);
-      setError(result.error);
+      setFailure({ agentId: agent.id, message: result.error });
       return false;
     }
     setNewRequest(false);
@@ -93,42 +139,25 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
     const result = await interruptAgent(agent.id);
     if (!result.ok) {
       setStoppedTurn(null);
-      setError(result.error);
+      setFailure({ agentId: agent.id, message: result.error });
     }
   };
 
   const prefill = (text: string) => {
     setDraft(agent.id, text);
-    requestAnimationFrame(() => {
-      const element = surface.current;
-      if (!element) return;
-      element.focus();
-      const selection = window.getSelection();
-      selection?.selectAllChildren(element);
-      selection?.collapseToEnd();
-    });
+    focusComposer();
   };
 
   const hasContent = draft.trim() !== "";
   // As in the reference: while the agent works, Enter queues the message for after the turn and Tab
   // steers it into the running turn.
   const steers = working && hasContent && !submitting;
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.nativeEvent.isComposing) return;
-    if (event.key === "Tab" && steers && !event.shiftKey && !event.altKey && !event.metaKey && !event.ctrlKey) {
-      event.preventDefault();
-      void submit("steer");
-      return;
-    }
-    if (event.key !== "Enter" || event.shiftKey || event.altKey || event.metaKey || event.ctrlKey) return;
-    event.preventDefault();
-    void submit();
-  };
 
   const items = awaitingItems(thread, agentsById);
   const awaitingKey = items.map((item) => `${item.id}:${item.state}`).join("|");
-  const awaitingVisible = items.length > 0 && awaitingDismissed !== awaitingKey;
-  const queueVisible = thread.queued > 0;
+  // The mention picker takes the room that the waits and the queue use.
+  const awaitingVisible = items.length > 0 && awaitingDismissed !== awaitingKey && !pickerOpen;
+  const queueVisible = thread.queued > 0 && !pickerOpen;
   const slotOpen = awaitingVisible || queueVisible;
   const label = `Message ${agent.name}`;
   const quote = answering ? answeringQuote(answering) : null;
@@ -149,7 +178,6 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
             ) : null}
           </div>
         </div>
-        {error ? <ComposerNotice tone="danger" title="Not sent" body={error} onDismiss={() => setError(null)} /> : null}
         {quote ? (
           <div className="composer-reply-preview composer-answering">
             <div>
@@ -161,49 +189,42 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
             </Button>
           </div>
         ) : null}
+        {error ? (
+          <ComposerErrorBanner
+            message={error}
+            onDismiss={() => {
+              setFailure(null);
+              focusComposer();
+            }}
+          />
+        ) : null}
       </div>
       <div
         className="composer"
         data-compact={draft.includes("\n") ? undefined : ""}
         onPointerDown={(event) => {
-          if (!(event.target instanceof Element) || event.target.closest("button, .composer-editor-surface")) return;
+          if (!(event.target instanceof Element) || event.target.closest("button, .composer-editor-surface, .ui-action-menu")) return;
           event.preventDefault();
-          surface.current?.focus();
+          focusComposer();
         }}
       >
         <div className="composer-input-label">
-          <div className="composer-editor-root" data-size="default">
-            {draft === "" ? (
-              <span className="composer-editor-placeholder" aria-hidden="true">
-                {label}
-              </span>
-            ) : null}
-            <div
-              ref={surface}
-              className="composer-editor-surface"
-              role="textbox"
-              aria-multiline="true"
-              spellCheck
-              data-cuelume-type=""
-              contentEditable={submitting ? false : "plaintext-only"}
-              suppressContentEditableWarning
-              tabIndex={0}
-              aria-label={label}
-              aria-keyshortcuts={steers ? "Tab" : undefined}
-              aria-disabled={submitting ? "true" : "false"}
-              onInput={(event) => {
-                const text = event.currentTarget.innerText === "\n" ? "" : event.currentTarget.innerText;
-                typed.current = text;
-                setDraft(agent.id, text);
-              }}
-              onKeyDown={onKeyDown}
-            />
-          </div>
+          <ComposerEditor
+            agentId={agent.id}
+            agents={mentionAgents}
+            value={draft}
+            disabled={submitting}
+            placeholder={quote && !newRequest ? "Reply…" : label}
+            ariaLabel={label}
+            focusRequest={composerFocusRequest}
+            onValueChange={(text) => setDraft(agent.id, text)}
+            onSubmit={() => void submit()}
+            onSteer={steers ? () => void submit("steer") : undefined}
+            onPickerOpenChange={setPickerOpen}
+          />
         </div>
         <div className="composer-toolbar">
-          <button type="button" className="composer-button" aria-label="Add to prompt" title="Attachments are not available in Bob yet" disabled>
-            <Plus aria-hidden="true" />
-          </button>
+          <ComposerAddMenu open={addMenuOpen} onOpenChange={setAddMenuOpen} disabled={submitting} onClosed={focusComposer} />
           <div className="composer-primary-actions">
             {agent.kind === "captain" ? <CallBob agent={agent} /> : null}
             {working && !hasContent ? (
