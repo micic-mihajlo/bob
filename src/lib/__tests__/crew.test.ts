@@ -86,7 +86,7 @@ describe("captain and crew, scripted, end to end", { timeout: GIT_TIMEOUT }, () 
     const first = s.approvals.find((a) => a.status === "pending");
     const build = s.agents.find((a) => a.crewRole === "build");
     const asBuild = { agentId: build?.id ?? "", turnId: "turn_test", requestId: prOf()?.requestId ?? "", causedBy: prOf()?.messageId ?? null };
-    await callTool("write_file", { path: "src/late.ts", content: "export const late = true;\n" }, asBuild);
+    await callTool("write_files", { files: [{ path: "src/late.ts", content: "export const late = true;\n" }] }, asBuild);
     await callTool("git", { args: ["add", "src/late.ts"] }, asBuild);
     await callTool("git", { args: ["commit", "-m", "Add a late file"] }, asBuild);
     await callTool("open_pull_request", { title: prOf()?.title, body: prOf()?.detail }, asBuild);
@@ -139,7 +139,7 @@ describe("crew rules", { timeout: GIT_TIMEOUT }, () => {
   it("gives the captain no workspace tools, and refuses them if called", async () => {
     const captain = getState().agents[0];
     const names = toolsFor(captain).map((t) => t.name);
-    for (const tool of ["list_files", "read_file", "write_file", "edit_file", "git", "open_pull_request", "send_message", "create_agent"]) {
+    for (const tool of ["list_files", "read_files", "write_files", "edit_files", "run", "git", "open_pull_request", "send_message", "create_agent"]) {
       expect(names).not.toContain(tool);
     }
     const out = await callTool("read_file", { path: "README.md" }, asBob);

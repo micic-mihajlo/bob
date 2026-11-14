@@ -5,7 +5,7 @@ import { send } from "../mailbox";
 import { updateWorkOrder } from "../roadmap";
 import { captainOf, isClosed, runningTurn, type State } from "../state";
 import { getState, transact, update } from "../store";
-import { checkoutBranch, threadWorkspace } from "../thread-workspace";
+import { checkoutBranch, prewarmProject, threadWorkspace } from "../thread-workspace";
 import { busyThreads, closeThreadState, findThread, isBusy, isPullRequest, openThreads } from "../threads";
 import type { Agent, CrewRole } from "../types";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
@@ -69,6 +69,7 @@ const addThread = (s: State, agent: Agent): State => ({
 async function prepareWorkspace(s: State, agent: Agent): Promise<string | null> {
   try {
     const ws = await threadWorkspace(s.project, agent.id);
+    prewarmProject(ws);
     if (!agent.branch) return null;
     const checkedOut = await checkoutBranch(ws, agent.branch);
     return checkedOut.ok ? null : checkedOut.error;

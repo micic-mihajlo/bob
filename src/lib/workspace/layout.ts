@@ -37,6 +37,7 @@ export function projectLayout(root: string, projectId: string): ProjectLayout {
     dir,
     origin: path.join(dir, "origin.git"),
     home: path.join(dir, "home"),
+    deps: path.join(dir, "deps"),
     agentsDir: path.join(dir, "agents"),
   };
 }

@@ -16,9 +16,10 @@ export interface SweepResult {
  */
 export const REPLAY_SAFE_TOOLS: ReadonlySet<string> = new Set([
   "list_files",
-  "read_file",
-  "write_file",
-  "edit_file",
+  "read_files",
+  "write_files",
+  "edit_files",
+  "run",
   "git",
   "open_pull_request",
   "list_threads",

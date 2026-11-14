@@ -4,7 +4,11 @@ import type { ToolSpec } from "../tools";
 import { systemPrompt } from "./prompt";
 import type { Brain, MoveRecord, TurnContext } from "./types";
 
-const MAX_OUTPUT_TOKENS = 8000;
+const MAX_OUTPUT_TOKENS = 16_000;
+/** One model call; a hung connection fails the turn instead of holding it forever. */
+const CALL_TIMEOUT_MS = 180_000;
+const CUT_OFF_NOTE =
+  "Your last reply was cut off by the output limit before it called a tool or finished. Reply again, shorter: call the one tool you need next, or answer in a few lines.";
 
 /** Tools are declared without `execute`, so the model proposes calls and the turn loop runs them. */
 function toolSet(specs: ToolSpec[]): ToolSet {
@@ -38,13 +42,19 @@ function messages(ctx: TurnContext): ModelMessage[] {
 /** The AI SDK through the gateway: one model step per move, model id from the agent record. */
 export const modelBrain: Brain = {
   async next(ctx) {
-    const result = await generateText({
-      model: modelFor(ctx.agent),
-      instructions: systemPrompt(ctx.agent, ctx.state),
-      messages: messages(ctx),
-      tools: toolSet(ctx.tools),
-      maxOutputTokens: MAX_OUTPUT_TOKENS,
-    });
+    const call = (extra: ModelMessage[], reasoning?: "none") =>
+      generateText({
+        model: modelFor(ctx.agent),
+        instructions: systemPrompt(ctx.agent, ctx.state),
+        messages: [...messages(ctx), ...extra],
+        tools: toolSet(ctx.tools),
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
+        abortSignal: AbortSignal.timeout(CALL_TIMEOUT_MS),
+        ...(reasoning ? { reasoning } : {}),
+      });
+    let result = await call([]);
+    // A reply that spent its whole budget (usually on reasoning) gets one shorter retry instead of failing the turn.
+    if (result.finishReason === "length" && result.toolCalls.length === 0) result = await call([{ role: "user", content: CUT_OFF_NOTE }], "none");
     if (result.toolCalls.length === 0 && !result.text.trim()) {
       throw new Error(`The model returned no text and no tool calls (finish reason: ${result.finishReason}).`);
     }

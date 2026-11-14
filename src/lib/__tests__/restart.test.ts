@@ -43,7 +43,7 @@ describe("a restart loses nothing and strands nothing", { timeout: TIMEOUT }, ()
   it("runs a build turn again when it was cut off after steps that are safe to repeat, and the request reaches approval", async () => {
     setBrainOverride(dyingAt((ctx) => ctx.agent.crewRole === "build" && ctx.moves.length === 2));
     postUserMessage("bob", REQUEST);
-    await until(() => running("inv-1") && (getState().threads["inv-1"] ?? []).some((i) => i.kind === "step" && i.tool === "write_file"));
+    await until(() => running("inv-1") && (getState().threads["inv-1"] ?? []).some((i) => i.kind === "step" && i.tool === "write_files"));
 
     await restart();
     expect(notices("inv-1").some((n) => /runs again from it/.test(n))).toBe(true);

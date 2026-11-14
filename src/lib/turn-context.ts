@@ -45,7 +45,8 @@ function whoBlock(s: State, agent: Agent): string {
   return teamBlock(s, agent.id);
 }
 
-export function buildContext(s: State, initial: State, t: StartedTurn, moves: MoveRecord[]): TurnContext | null {
+/** `workspace` is the crew thread's view of its checkout, read once when the turn starts. */
+export function buildContext(s: State, initial: State, t: StartedTurn, moves: MoveRecord[], workspace: string | null = null): TurnContext | null {
   const agent = agentById(s, t.agentId);
   const turn = s.turns.find((x) => x.id === t.turnId);
   if (!agent || !turn) return null;
@@ -56,6 +57,7 @@ export function buildContext(s: State, initial: State, t: StartedTurn, moves: Mo
     whoBlock(s, agent),
     historyBlock(s.threads[agent.id] ?? [], t.turnId, turn.startedAt),
     artifactsBlock(s, requestIds),
+    workspace,
     messagesBlock(inbound, silentTeammates(s, agent.id, messages), audienceOf(agent)),
   ]
     .filter((x): x is string => !!x)

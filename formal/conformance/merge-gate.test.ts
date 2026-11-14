@@ -86,7 +86,7 @@ describe("merge gate conforms to BobFormal.MergeGate", () => {
       expect(approval.headSha).toBe(pr.pullRequest.headSha);
 
       const asBuild = { agentId: build.id, turnId: "turn_formal", requestId: pr.requestId, causedBy: pr.messageId };
-      await callTool("write_file", { path: "src/unreviewed.ts", content: "export const unreviewed = true;\n" }, asBuild);
+      await callTool("write_files", { files: [{ path: "src/unreviewed.ts", content: "export const unreviewed = true;\n" }] }, asBuild);
       await callTool("git", { args: ["add", "src/unreviewed.ts"] }, asBuild);
       await callTool("git", { args: ["commit", "-m", "Add a file nobody reviewed"] }, asBuild);
       const reopened = await callTool("open_pull_request", { title: pr.title, body: pr.detail }, asBuild);

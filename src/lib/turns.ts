@@ -1,4 +1,4 @@
-import { getBrain } from "./brain";
+import { brainKind, getBrain } from "./brain";
 import type { CallRecord, MoveRecord, ToolCallRequest } from "./brain/types";
 import { globals } from "./globals";
 import { newId, nowIso } from "./ids";
@@ -7,6 +7,7 @@ import { relayOwed } from "./relay";
 import { agentById, messageById, type State } from "./state";
 import { addNotice, addThreadItem, patchDelivery, patchTurn, stamp } from "./state-ops";
 import { getConfig, getState, transact, update } from "./store";
+import { workspaceContext } from "./thread-workspace";
 import { callTool } from "./tools";
 import { buildContext } from "./turn-context";
 import { planTurn, type StartedTurn } from "./turn-start";
@@ -16,12 +17,30 @@ import type { AgentId, DeliveryStatus } from "./types";
 export const MAX_MOVES = 8;
 export const MAX_CAPTAIN_MOVES = 12;
 export const MAX_CREW_MOVES = 24;
+/** A review or research thread reads and checks; it never writes code, so it gets fewer moves. */
+export const MAX_CHECK_MOVES = 12;
+
+/** Wall-clock budget for one turn, checked before every move. */
+export const MAX_TURN_MS = 10 * 60_000;
+/** Moves left when the turn is told to wrap up, so it reports what it has instead of running out. */
+const WRAP_UP_AT = 3;
 
 const STEP_LIMIT_TEXT = "I reached the step limit for this turn before finishing.";
+const TIME_LIMIT_TEXT = "I ran out of time for this turn before finishing.";
+
+const FINISH: Record<string, string> = {
+  build: "open or update your pull request if you have a change, then report what is done and what is not",
+  review: "record_review with the verdict your evidence supports, then report",
+  research: "record what you found, then report",
+};
+
+const wrapUpNote = (left: number, role: string | undefined) =>
+  `Budget (data): you have ${left} move${left === 1 ? "" : "s"} left in this turn. Stop exploring and finish now: ${FINISH[role ?? ""] ?? "answer with what you have"}.`;
 
 function maxMoves(agentId: AgentId): number {
-  const kind = agentById(getState(), agentId)?.kind;
-  return kind === "crew" ? MAX_CREW_MOVES : kind === "captain" ? MAX_CAPTAIN_MOVES : MAX_MOVES;
+  const agent = agentById(getState(), agentId);
+  if (agent?.kind === "crew") return agent.crewRole === "build" ? MAX_CREW_MOVES : MAX_CHECK_MOVES;
+  return agent?.kind === "captain" ? MAX_CAPTAIN_MOVES : MAX_MOVES;
 }
 
 const sleep = (ms: number) => (ms > 0 ? new Promise<void>((r) => setTimeout(r, ms)) : Promise.resolve());
@@ -54,15 +73,28 @@ function addAgentText(t: StartedTurn, text: string): void {
   update((s) => markActed(addThreadItem(s, t.agentId, { kind: "agent_text", ...stamp(), turnId: t.turnId, text }), t.turnId));
 }
 
+/** The step pace is for the scripted brain, whose moves are instant; a model's own latency already paces the UI. */
+const pace = () => (brainKind() === "model" && !globals().brainOverride ? 0 : getConfig().pace);
+
+const briefOf = (s: State, t: StartedTurn) => t.messageIds.map((id) => messageById(s, id)?.text ?? "").join("\n");
+
 async function runTurn(t: StartedTurn): Promise<void> {
   const initial = getState();
+  const workspace = await workspaceContext(initial, t.agentId, briefOf(initial, t));
   const moves: MoveRecord[] = [];
   let final: string | null = STEP_LIMIT_TEXT;
   const limit = maxMoves(t.agentId);
+  const started = Date.now();
   for (let i = 0; i < limit; i++) {
-    await sleep(getConfig().pace);
-    const ctx = isRunning(t.turnId) ? buildContext(getState(), initial, t, moves) : null;
-    if (!ctx) return finishStopped(t);
+    if (Date.now() - started > MAX_TURN_MS) {
+      final = TIME_LIMIT_TEXT;
+      break;
+    }
+    await sleep(pace());
+    const built = isRunning(t.turnId) ? buildContext(getState(), initial, t, moves, workspace) : null;
+    if (!built) return finishStopped(t);
+    const left = limit - i;
+    const ctx = left <= WRAP_UP_AT ? { ...built, input: `${built.input}\n\n${wrapUpNote(left, built.agent.crewRole)}` } : built;
     const move = await getBrain().next(ctx);
     if (!isRunning(t.turnId)) return finishStopped(t);
     const text = move.text?.trim() || null;
@@ -94,7 +126,7 @@ async function executeMove(t: StartedTurn, calls: ToolCallRequest[]): Promise<{ 
     records.push({ id: call.id ?? newId("call"), name: call.name, input: call.input, result: out.result });
     out.wake?.forEach((id) => woken.add(id));
     endTurn = endTurn || !!out.endTurn;
-    await sleep(getConfig().pace / 2);
+    await sleep(pace() / 2);
   }
   woken.forEach(drain);
   return { calls: records, endTurn };
@@ -118,11 +150,24 @@ function relayAndDrain(t: StartedTurn, text: string, status: ReplyStatus, unbloc
   [...woken, t.agentId].forEach(drain);
 }
 
+/** A turn that hit its step or time limit ends failed, with a notice and a blocked report, so nothing waits on it. */
 function finishTurn(t: StartedTurn, text: string | null): void {
-  if (text) addAgentText(t, text);
-  closeTurn(t, "completed", "completed");
-  if (text === STEP_LIMIT_TEXT) return relayAndDrain(t, text, "blocked", "Ask me to continue, or narrow the work.");
-  relayAndDrain(t, text ?? "", "done");
+  if (text !== STEP_LIMIT_TEXT && text !== TIME_LIMIT_TEXT) {
+    if (text) addAgentText(t, text);
+    closeTurn(t, "completed", "completed");
+    return relayAndDrain(t, text ?? "", "done");
+  }
+  update((s) => addNotice(s, t.agentId, "warning", text));
+  closeTurn(t, "failed", "failed");
+  relayAndDrain(t, `${text} ${progressOf(t)}`, "blocked", "Ask me to continue from my branch, or narrow the work.");
+}
+
+/** What the turn got done, for the report a limit forces: its last few steps. */
+function progressOf(t: StartedTurn): string {
+  const steps = (getState().threads[t.agentId] ?? []).filter((i) => i.kind === "step" && i.turnId === t.turnId);
+  if (steps.length === 0) return "No steps ran.";
+  const last = steps.slice(-4).map((i) => (i.kind === "step" ? i.label : "")).join("; ");
+  return `${steps.length} steps ran; the last were: ${last}.`;
 }
 
 function finishStopped(t: StartedTurn): void {

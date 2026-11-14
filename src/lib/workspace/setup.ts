@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { chmod, mkdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
+import { appendFile, chmod, mkdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { agentIdentity, checkId, MAIN_BRANCH, MERGE_IDENTITY, projectLayout, rootOf } from "./layout";
 import { gitOrThrow } from "./run-git";
@@ -60,6 +60,7 @@ export async function ensureWorkspace(
       await gitOrThrow({ ...run, args: ["clone", "--quiet", "--", project.origin, tmp] });
       await gitOrThrow({ ...run, cwd: tmp, args: ["config", "user.name", identity.name] });
       await gitOrThrow({ ...run, cwd: tmp, args: ["config", "user.email", identity.email] });
+      await appendFile(path.join(tmp, ".git", "info", "exclude"), "\nnode_modules/\n", "utf8");
     });
   }
   return { root: await realpath(dir), projectId, agentId, project };
