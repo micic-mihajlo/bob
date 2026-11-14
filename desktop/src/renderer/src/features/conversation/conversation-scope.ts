@@ -1736,11 +1736,8 @@ export function createConversationViewScope(props: ConversationProps) {
   const setAttachmentPickerElement = (element: HTMLInputElement) => {
     attachmentPicker = element;
   };
-  /**
-   * A voice conversation hears and speaks on this computer, so it needs its speech models. A remote
-   * server gets the text only.
-   */
-  const voiceConversationAvailable = () => !channel && !props.runtime;
+  /** Bob has no voice conversation. */
+  const voiceConversationAvailable = () => false;
   /** Starts a voice conversation with an agent. It ends with the owner that calls this. */
   const startVoiceConversation = (agentId: string) =>
     createVoiceConversation({

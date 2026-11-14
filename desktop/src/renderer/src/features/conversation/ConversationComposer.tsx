@@ -168,8 +168,8 @@ export function ConversationComposer() {
   const waitItems = createMemo(() => openWaitItems(props.waits ?? [], props.queue));
   const waitsVisible = () => waitItems().length > 0 && Boolean(props.onCancelWait) && !pickerOpen();
   const slotOpen = () => queueVisible() || awaitingVisible() || waitsVisible();
-  // A channel has many speakers, so it has no voice input.
-  const voiceAvailable = () => !channel && !props.runtime;
+  // Bob has no voice input.
+  const voiceAvailable = () => false;
   /** The reply of this agent that is read aloud. The voice pane shows its own. */
   const speaking = () => {
     const reading = speechReading();
