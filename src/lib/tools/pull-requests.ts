@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { newId, nowIso } from "../ids";
+import { resolveOnMerge } from "../inbox";
 import { completeWorkOrder, updateWorkOrder } from "../roadmap";
 import { agentById, type State } from "../state";
 import { patchArtifact } from "../state-ops";
@@ -7,7 +8,7 @@ import { recordReleaseNote } from "../release-notes-live";
 import { getState, transact } from "../store";
 import { threadWorkspace, workspaceOptions } from "../thread-workspace";
 import { findPullRequest, isPullRequest, nextPullRequestNumber, type PullRequestArtifact } from "../threads";
-import type { Agent, Artifact, ReviewFinding } from "../types";
+import type { Agent, Artifact, InboxItem, ReviewFinding } from "../types";
 import { afterLocalMerge, mergeOnGitHub, postReviewToGitHub, publishToGitHub } from "../integrations/github";
 import { conflictsWithMain, git, mergePullRequest, openPullRequest, type Workspace } from "../workspace";
 import { askForReReview, askToUpdateBranch, handFindingsToBuilder, maxFixRounds, reviewGateRefusal } from "./handoff";
@@ -214,12 +215,19 @@ export async function mergePullRequestTool(input: z.infer<typeof mergeSchema>): 
     return fresh ? markMerged(x, fresh) : { state: x, value: null };
   });
   recordReleaseNote(pr.id);
+  const resolved = transact((x) => {
+    const fresh = findPullRequest(x, pr.id);
+    if (!fresh) return { state: x, value: [] as InboxItem[] };
+    const out = resolveOnMerge(x, fresh, workOrderId);
+    return { state: out.state, value: out.resolved };
+  });
+  const fixed = resolved.length ? ` Resolved in the inbox, with #${pr.pullRequest.number} as evidence: ${resolved.map((i) => `${i.id} (${i.source})`).join(", ")}.` : "";
   const updating = mainMoved ? await updateConflictingPullRequests(s.project.id, pr.id) : [];
   const also = updating.length ? ` ${updating.map((u) => `#${u.number}`).join(", ")} now conflicts with main; its build thread was asked to update its branch.` : "";
-  const next = `Merged. Close this work order's threads with close_thread.${also}`;
+  const next = `Merged. Close this work order's threads with close_thread.${also}${fixed}`;
   const github = findPullRequest(getState(), pr.id)?.pullRequest.github;
   const onGitHub = github ? { github: github.merged ? `merged ${github.url}` : `not merged on GitHub: ${github.error ?? remote?.error ?? "unknown"}` } : {};
-  return done({ merged: true, alreadyMerged: !mainMoved, number: pr.pullRequest.number, workOrderId, next, ...onGitHub }, { wake: updating.map((u) => u.owner) });
+  return done({ merged: true, alreadyMerged: !mainMoved, number: pr.pullRequest.number, workOrderId, next, ...(resolved.length ? { resolvedInbox: resolved.map((i) => i.id) } : {}), ...onGitHub }, { wake: updating.map((u) => u.owner) });
 }
 
 /** After a merge, every other open pull request that now conflicts with main goes back to its owner, so none is stranded. */

@@ -91,6 +91,10 @@ export interface Message {
   automatic?: true;
   /** Optional: "voice" on what a person said in a call; the text is the transcript. */
   via?: "voice";
+  /** Optional: on the message that hands an inbox item to the captain, the item's id. Why? ends here. */
+  inboxId?: string;
+  /** Optional: on a brief for a work order that came from the inbox, the source line it quotes. */
+  quote?: string;
   at: string;
 }
 
@@ -282,6 +286,54 @@ export interface WorkOrder {
   status: WorkOrderStatus;
   ownerAgentId: AgentId | null;
   artifactId: string | null;
+  /** Optional: set when the work order came from an inbox item. */
+  source?: WorkOrderSource;
+}
+
+export type InboxKind = "meeting" | "feedback" | "error";
+
+/** Where an inbox work order came from: the item, its label and the line it quotes. */
+export interface WorkOrderSource {
+  inboxId: string;
+  kind: InboxKind;
+  /** Where the item came from, such as "customer call, Nov 13". */
+  label: string;
+  /** The source line, verbatim. */
+  quote: string;
+  /** Optional: the merged pull request this work follows up on. */
+  followUpOf?: number;
+}
+
+/** One ask the captain found in an inbox item, judged by the same intent gate as a typed request. */
+export interface InboxCandidate {
+  id: string;
+  /** The source line, verbatim. */
+  quote: string;
+  /** The ask in one line. */
+  ask: string;
+  /** testable: who, what and a check are known, so it is a backlog work order. vague: the person was asked. */
+  verdict: "testable" | "vague";
+  workOrderId: string | null;
+  /** On a vague ask: what the captain asked the person. */
+  question: string | null;
+}
+
+/** Raw material that came in before anyone typed a request: a meeting, feedback, or a production error. */
+export interface InboxItem {
+  id: string;
+  kind: InboxKind;
+  source: string;
+  text: string;
+  at: string;
+  /** The message that handed it to the captain. */
+  messageId: MessageId;
+  /** new: not triaged yet. triaged: its asks are in the backlog or with the person. resolved: an error a merged change fixed. reopened: a resolved error that came back. */
+  status: "new" | "triaged" | "resolved" | "reopened";
+  candidates: InboxCandidate[];
+  /** On an error a merge fixed: that pull request. */
+  resolvedBy?: { pullRequestId: string; number: number; at: string };
+  /** On an error about an already shipped change: that pull request. */
+  followUpOf?: { pullRequestId: string; number: number };
 }
 
 export interface StageGate {
@@ -364,6 +416,8 @@ export interface Snapshot {
   /** Every request the person made, newest first, with its time, model use, cost and alerts. */
   requests?: RequestControl[];
   budgets?: RequestBudgets;
+  /** Raw materials and what triage made of them, newest first. */
+  inbox?: InboxItem[];
   /** By agent, the move its model is writing right now. Gone when the move's real text and steps land. */
   live?: Record<AgentId, LiveMove>;
 }
@@ -444,6 +498,8 @@ export interface WhyHop {
   toNames: string[];
   /** Optional: on a person's answer, the question the captain asked them. */
   question?: string;
+  /** Optional: on the message that handed an inbox item to the captain, the item and the line the work quotes. */
+  source?: { inboxId: string; kind: InboxKind; label: string; quote: string | null };
 }
 
 /** One node of a pull request's graph view. `kind` is the graph label: User, Agent, Message, Turn, PullRequest, Commit, Review, Approval, WorkOrder. */
@@ -501,6 +557,11 @@ export const THREAD_MODELS = [
  * POST /api/agents/:id/close              {}                                close a crew thread
  * POST /api/agents/:id/model              { model }                         pick a crew thread's model, one of THREAD_MODELS
  * POST /api/reset                         {}                                back to the seeded team
+ * GET  /api/inbox                         -> InboxItem[]                    raw materials, newest first
+ * POST /api/inbox                         { kind, source, text }            a meeting, feedback or error; the captain triages it
+ *                                                                             -> { inboxId }; { sample: true } posts the demo sample -> { inboxIds }
+ * POST /api/inbox/promote                 { workOrderId }                   the person picks an inbox work order from the backlog
+ *                                                                             to build now -> { messageId }
  * GET  /api/voice                         -> { elevenlabs: boolean }        whether a call goes through ElevenLabs
  * POST /api/voice/session                 {}                                -> { ok: true, conversationToken }
  * POST /api/voice/turn                    { agentId, text }                 a person says something in a call; answers

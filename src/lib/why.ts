@@ -18,11 +18,14 @@ export function traceWhy(s: State, messageId: MessageId): WhyHop[] {
     const message = messageById(s, cursor);
     if (!message) break;
     const question = message.continues ? questionBefore(s, message.to[0], message) : null;
+    const item = message.inboxId ? (s.inbox ?? []).find((i) => i.id === message.inboxId) : undefined;
+    const quote = [...hops].reverse().find((h) => h.message.quote)?.message.quote ?? null;
     hops.push({
       message,
       fromName: senderName(s, message),
       toNames: message.to.map((id) => agentName(s, id)),
       ...(question ? { question } : {}),
+      ...(item ? { source: { inboxId: item.id, kind: item.kind, label: item.source, quote } } : {}),
     });
     cursor = message.causedBy ?? message.continues ?? null;
   }

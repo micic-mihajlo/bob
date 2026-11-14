@@ -27,6 +27,7 @@ export const REPLAY_SAFE_TOOLS: ReadonlySet<string> = new Set([
   "list_agents",
   "write_drive",
   "set_goal",
+  "triage_inbox",
 ]);
 
 type Step = Extract<ThreadItem, { kind: "step" }>;

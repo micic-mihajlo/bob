@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { branchName, MAX_BUSY_THREADS, nextThreadCode, ROLE_TEMPLATES, threadHue } from "../crew";
 import { nowIso } from "../ids";
+import { inboxItem, isInboxRequest } from "../inbox";
 import { send } from "../mailbox";
 import { updateWorkOrder } from "../roadmap";
 import { captainOf, isClosed, runningTurn, type State } from "../state";
@@ -21,7 +22,10 @@ export const startThreadSchema = z.object({
 });
 type StartInput = z.infer<typeof startThreadSchema>;
 
-function startRefusal(s: State, input: StartInput): string | null {
+function startRefusal(s: State, input: StartInput, requestId: string): string | null {
+  if (isInboxRequest(s, requestId)) {
+    return "This turn is triaging an inbox item, and nothing from the inbox starts on its own. Leave its asks in the backlog with triage_inbox; the person promotes the work they want built.";
+  }
   if (input.model && !isThreadModel(input.model)) return unknownModel(input.model);
   if (input.workOrderId) {
     if (!s.roadmap.today.some((w) => w.id === input.workOrderId)) {
@@ -89,7 +93,7 @@ function assignBuild(s: State, agent: Agent): State {
 
 export async function startThread(input: StartInput, ctx: ToolContext): Promise<ToolOutput> {
   const created = transact<Agent | string>((s) => {
-    const refused = startRefusal(s, input);
+    const refused = startRefusal(s, input, ctx.requestId);
     if (refused) return { state: s, value: refused };
     const agent = newThread(s, input, ctx.agentId);
     return { state: addThread(s, agent), value: agent };
@@ -101,7 +105,18 @@ export async function startThread(input: StartInput, ctx: ToolContext): Promise<
     return fail(`Could not set up ${created.code}'s workspace: ${problem}. Tell the person; do not retry blindly.`);
   }
   await stampThread(getState(), created.id, ctx.requestId).catch(() => undefined);
-  const sent = send({ from: { kind: "agent", agentId: ctx.agentId }, to: [created.id], text: input.brief, expectsReply: true, replyTo: null, causedBy: ctx.causedBy, requestId: ctx.requestId });
+  const source = getState().roadmap.today.find((w) => w.id === input.workOrderId)?.source;
+  const origin = source ? inboxItem(getState(), source.inboxId)?.messageId : undefined;
+  const sent = send({
+    from: { kind: "agent", agentId: ctx.agentId },
+    to: [created.id],
+    text: input.brief,
+    expectsReply: true,
+    replyTo: null,
+    causedBy: origin ?? ctx.causedBy,
+    requestId: ctx.requestId,
+    ...(source ? { quote: source.quote } : {}),
+  });
   if (!sent.ok) {
     update((s) => closeThreadState(s, created.id, "the captain after its brief was refused"));
     return fail(sent.error.message);
