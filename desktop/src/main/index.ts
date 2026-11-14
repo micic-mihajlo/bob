@@ -73,6 +73,8 @@ import { dynamicIslandIpcHandlers } from "./ipc/dynamic-island-handlers";
 import { bobOnboardingIpcHandlers } from "./ipc/bob-onboarding-handlers";
 import { bobRoadmapIpcHandlers } from "./ipc/bob-roadmap-handlers";
 import { eventsIpcHandlers } from "./ipc/events-handlers";
+import { ComposioConnect } from "./composio-connect";
+import { composioIpcHandlers } from "./ipc/composio-handlers";
 import { githubConnectorIpcHandlers } from "./ipc/github-connector-handlers";
 import { hostAdminIpcHandlers } from "./ipc/host-admin-handlers";
 import { hostedServerIpcHandlers } from "./ipc/hosted-server-handlers";
@@ -633,6 +635,13 @@ function registerIpcHandlers({
   // Every handler below reads this only as the parent of a native dialog. A dialog opens on the
   // window that the user works in: when a chat window has focus, the main window can be hidden.
   const getDialogParent = () => windows.getChatWindows().find((window) => window.isFocused()) ?? windowHolder.current;
+  const composio = new ComposioConnect({ key: process.env.COMPOSIO_API_KEY, openExternal: (url) => shell.openExternal(url) });
+  composio
+    .ensureServer({
+      listMcpServers: async () => service.listMcpServers(),
+      saveMcpServer: (config) => runCauseEffect(service.saveMcpServer({ config })),
+    })
+    .catch((error: unknown) => console.warn("[composio] could not save the Composio MCP server:", error instanceof Error ? error.message : error));
 
   registerIpcGroups({
     ...appIpcHandlers({
@@ -692,6 +701,7 @@ function registerIpcHandlers({
       getMainWindow: getDialogParent,
       translate: language.translate,
     }),
+    ...composioIpcHandlers({ composio }),
     ...githubConnectorIpcHandlers({ githubConnector, remoteServers, openExternal: openLink }),
     ...onePasswordConnectorIpcHandlers({ onePasswordConnector, remoteServers }),
     ...bitwardenConnectorIpcHandlers({ bitwardenConnector, remoteServers }),

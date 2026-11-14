@@ -8,6 +8,7 @@ import {
   Mic,
   MousePointer2,
   PanelTop,
+  Plug,
   Server,
   Settings,
   Smartphone,
@@ -20,6 +21,7 @@ export type SettingsTab =
   | "agents"
   | "notifications"
   | "voice"
+  | "connectors"
   | "dynamic-island"
   | "computer-use"
   | "profile"
@@ -115,6 +117,13 @@ export const navItems: ReadonlyArray<SettingsNavItem> = [
       { titleKey: "settings.taskSound.title", descriptionKey: "settings.taskSound.description" },
       { titleKey: "settings.soundFeedback.title", descriptionKey: "settings.soundFeedback.description" },
     ],
+  },
+  {
+    value: "connectors",
+    titleKey: "settings.tab.connectors.title",
+    descriptionKey: "settings.tab.connectors.description",
+    icon: Plug,
+    rows: [{ titleKey: "settings.connectors.toolkits.title" }],
   },
   {
     value: "voice",

@@ -288,6 +288,7 @@ import type {
   ExternalLinkFallback,
   ExternalLinkPreference,
 } from "./ipc-external-links";
+import type { ComposioConnectInput, ComposioStatus } from "./ipc-composio";
 import type { GitHubConnectorRepositories, GitHubConnectorStatus } from "./ipc-github-connector";
 import type { ApplyHermesImportInput, HermesImportPreview } from "./ipc-hermes-import";
 import type { HiddenAgentsSnapshot, SetAgentHiddenInput } from "./ipc-hidden-agents";
@@ -1119,6 +1120,12 @@ export const IPC_ENDPOINTS = {
     getAgentAccess: scopedQuery<AgentAccessSnapshot, "required">()("host-admin:get-agent-access"),
     setAgentAccess: scopedRequest<AgentAccessChange, AgentAccessSnapshot, "required">()("host-admin:set-agent-access"),
   },
+  // Composio connectors: the toolkits the person connected through Composio Connect. The key stays in
+  // main; `connect` opens Composio's sign-in page in the browser and answers the new status.
+  composio: {
+    status: request<undefined, ComposioStatus>()("composio:status"),
+    connect: request<ComposioConnectInput, ComposioStatus>()("composio:connect"),
+  },
   // The built-in GitHub connection of this computer. The token stays in main; every answer is the
   // status only. The `host*` endpoints reach the connection of a joined server (`connectors-v1`): the
   // host runs the device flow, and main opens its GitHub pages in this computer's browser.
@@ -1838,6 +1845,7 @@ export const IPC_GROUP_PATHS = {
   providerAdmin: "providerAdmin",
   messaging: "messaging",
   hostAdmin: "hostAdmin",
+  composio: "composio",
   githubConnector: "githubConnector",
   onePasswordConnector: "onePasswordConnector",
   bitwardenConnector: "bitwardenConnector",

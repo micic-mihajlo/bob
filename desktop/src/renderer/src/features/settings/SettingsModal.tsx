@@ -46,6 +46,7 @@ import { licenseContactUs, trackLicenseEvent } from "./license-analytics";
 import { createProfileActivityStore } from "./profile-activity-store";
 import { renderProfileShareImage } from "./profile-share-image";
 import { createSettingsAgentsSection } from "./SettingsAgentsSection";
+import { SettingsConnectorsTab } from "./SettingsConnectorsTab";
 import { SettingsDynamicIslandTab } from "./SettingsDynamicIslandTab";
 import { SettingsGeneralTab } from "./SettingsGeneralTab";
 import { SettingsNotificationsTab } from "./SettingsNotificationsTab";
@@ -188,6 +189,7 @@ export function SettingsModal(props: SettingsModalProps) {
         value === "agents" ||
         value === "notifications" ||
         value === "voice" ||
+        value === "connectors" ||
         (value === "dynamic-island" && dynamicIslandShown()) ||
         value === "computer-use" ||
         value === "profile" ||
@@ -304,6 +306,10 @@ export function SettingsModal(props: SettingsModalProps) {
                 : undefined
             }
           />
+        </Tabs.Content>
+
+        <Tabs.Content value="connectors" class="settings-modal-tab-panel" data-tab="connectors">
+          <SettingsConnectorsTab />
         </Tabs.Content>
 
         <Tabs.Content value="voice" class="settings-modal-tab-panel" data-tab="voice">
