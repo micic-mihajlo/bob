@@ -16,6 +16,7 @@ import {
   forUserLine,
   hasPlan,
   roadmapSteps,
+  trackElapsedLabel,
   trackViews,
   WORK_ORDER_STATUS_LABEL,
   trackProgress,
@@ -118,10 +119,14 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                   const progress = trackProgress(track, roadmap.totalStages);
                   const asked = track.ask ? requestLabel(track.ask, inbox) : null;
                   const steps = roadmapSteps(track);
+                  const elapsed = trackElapsedLabel(track, roadmap.totalStages);
                   return (
                     <Fragment key={track.key}>
                       <Card className="bob-roadmap-card" aria-label={goal?.title ?? "Goal"}>
-                        <p className="bob-roadmap-label">Goal</p>
+                        <div className="bob-roadmap-card-head">
+                          <p className="bob-roadmap-label">Goal</p>
+                          {elapsed ? <span className="bob-roadmap-elapsed">{elapsed}</span> : null}
+                        </div>
                         <h3 className="bob-roadmap-goal">{goal?.title ?? "No goal set yet"}</h3>
                         {asked ? (
                           <p className="bob-roadmap-ask" title={asked}>

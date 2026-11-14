@@ -52,6 +52,22 @@ button.bob-roadmap-source:focus-visible {
   outline: none;
 }
 
+/* A request card's header: the Goal label and how long that request has taken so far. */
+.bob-roadmap-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--bob-space-2);
+}
+
+.bob-roadmap-elapsed {
+  flex: none;
+  color: var(--bob-text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* A request's use wraps between its parts, never inside "$0.11 of $1.00". */
 .bob-roadmap-usage-part {
   white-space: nowrap;

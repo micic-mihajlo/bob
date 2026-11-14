@@ -1,0 +1,26 @@
+{
+  "acceptance": "A vitest test in src/lib/format-time.test.ts passes for three inputs: 45000ms gives \"45s\", 185000ms gives \"3m 05s\", and 3720000ms gives \"1h 02m\".",
+  "propertiesFile": "src/lib/format-time.properties.test.ts",
+  "properties": [
+    {
+      "name": "shows whole floored seconds under a minute",
+      "criterion": "A vitest test in src/lib/format-time.test.ts passes for three inputs: 45000ms gives \"45s\", 185000ms gives \"3m 05s\", and 3720000ms gives \"1h 02m\"."
+    },
+    {
+      "name": "pads the seconds to two digits under an hour",
+      "criterion": "A vitest test in src/lib/format-time.test.ts passes for three inputs: 45000ms gives \"45s\", 185000ms gives \"3m 05s\", and 3720000ms gives \"1h 02m\"."
+    },
+    {
+      "name": "drops the seconds and pads the minutes from an hour",
+      "criterion": "A vitest test in src/lib/format-time.test.ts passes for three inputs: 45000ms gives \"45s\", 185000ms gives \"3m 05s\", and 3720000ms gives \"1h 02m\"."
+    },
+    {
+      "name": "shows 0s for a negative or non-finite time",
+      "criterion": "A vitest test in src/lib/format-time.test.ts passes for three inputs: 45000ms gives \"45s\", 185000ms gives \"3m 05s\", and 3720000ms gives \"1h 02m\"."
+    },
+    {
+      "name": "never writes NaN or a minus sign",
+      "criterion": "A vitest test in src/lib/format-time.test.ts passes for three inputs: 45000ms gives \"45s\", 185000ms gives \"3m 05s\", and 3720000ms gives \"1h 02m\"."
+    }
+  ]
+}

@@ -7,7 +7,7 @@ import { fileBadge, fileReferenceTone } from "../file-reference";
 import { fileDayLabel, fileTypeCounts, groupFilesByDay, queryFiles } from "../files-view";
 import { parseMarkdown } from "../markdown";
 import { openPanes, paneAfterClose, PANEL_TABS, selectedPane } from "../panel-tabs";
-import { currentStep, forUserLine, hasPlan, roadmapSteps, trackProgress, trackViews, workOrderProgress } from "../roadmap-view";
+import { currentStep, forUserLine, hasPlan, roadmapSteps, trackElapsedLabel, trackProgress, trackViews, workOrderProgress } from "../roadmap-view";
 import { groupTheorems } from "../verification";
 import type { Agent, Roadmap, Snapshot, WorkOrder } from "@/lib/types";
 
@@ -131,6 +131,38 @@ describe("trackViews", () => {
     expect(view.tracks).toHaveLength(1);
     expect(view.tracks[0]).toMatchObject({ ask: null, stage: 3, today: roadmap.today, backlog: roadmap.backlog });
     expect(view.backlog).toEqual([]);
+  });
+
+  it("carries a track's start and last change into the view", () => {
+    const view = trackViews({
+      ...roadmap,
+      tracks: [{ ...track("r1", 3), startedAt: "2026-11-14T12:00:00.000Z", updatedAt: "2026-11-14T12:30:00.000Z" }],
+      today: [],
+      backlog: [],
+    });
+    expect(view.tracks[0]).toMatchObject({ startedAt: "2026-11-14T12:00:00.000Z", updatedAt: "2026-11-14T12:30:00.000Z" });
+  });
+
+  it("shows a roadmap saved before tracks without a start time", () => {
+    expect(trackViews(roadmap).tracks[0]?.startedAt).toBeUndefined();
+  });
+});
+
+describe("trackElapsedLabel", () => {
+  const now = Date.parse("2026-11-14T13:00:00Z");
+
+  it("counts from the moment the request was recorded while the track moves", () => {
+    expect(trackElapsedLabel({ stage: 3, startedAt: "2026-11-14T12:59:15Z", updatedAt: "2026-11-14T12:59:40Z" }, 5, now)).toBe("Elapsed 45s");
+    expect(trackElapsedLabel({ stage: 3, startedAt: "2026-11-14T12:40:00Z", updatedAt: "2026-11-14T12:59:40Z" }, 5, now)).toBe("Elapsed 20m 00s");
+  });
+
+  it("freezes a finished track at its final duration", () => {
+    expect(trackElapsedLabel({ stage: 5, startedAt: "2026-11-14T12:48:40Z", updatedAt: "2026-11-14T12:50:45Z" }, 5, now)).toBe("Elapsed 2m 05s");
+  });
+
+  it("shows nothing without a start time or with a timestamp it cannot read", () => {
+    expect(trackElapsedLabel({ stage: 3 }, 5, now)).toBeNull();
+    expect(trackElapsedLabel({ stage: 3, startedAt: "not a time", updatedAt: "" }, 5, now)).toBeNull();
   });
 });
 

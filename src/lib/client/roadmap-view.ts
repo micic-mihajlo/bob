@@ -1,3 +1,4 @@
+import { formatElapsed } from "../format-time";
 import type { Goal, RequestId, Roadmap, StageGate, WorkOrder, WorkOrderStatus } from "@/lib/types";
 
 export type StepPhase = "done" | "current" | "next";
@@ -20,6 +21,10 @@ export interface TrackView {
   today: WorkOrder[];
   /** Its work orders not yet scheduled. */
   backlog: WorkOrder[];
+  /** When the person's request started the track. Missing on a roadmap saved before tracks existed. */
+  startedAt?: string;
+  /** When the track last changed. Missing on a roadmap saved before tracks existed. */
+  updatedAt?: string;
 }
 
 /**
@@ -46,9 +51,24 @@ export function trackViews(roadmap: Roadmap): { tracks: TrackView[]; backlog: Wo
       gates: track.gates,
       today: roadmap.today.filter(owns(track.requestId)),
       backlog: backlog.filter(owns(track.requestId)),
+      startedAt: track.startedAt,
+      updatedAt: track.updatedAt,
     })),
     backlog: backlog.filter((order) => !shown.some((track) => order.requestId === track.requestId)),
   };
+}
+
+/**
+ * A track's card label: "Elapsed 3m 05s" from the moment the request was recorded, which keeps counting
+ * while the track moves and freezes at its final duration once the track reaches the last stage. Null for a
+ * roadmap saved before tracks, which carries no start time.
+ */
+export function trackElapsedLabel(track: Pick<TrackView, "startedAt" | "updatedAt" | "stage">, lastStage: number, now: number = Date.now()): string | null {
+  if (!track.startedAt) return null;
+  const started = Date.parse(track.startedAt);
+  const ended = track.stage >= lastStage ? Date.parse(track.updatedAt ?? track.startedAt) : now;
+  if (!Number.isFinite(started) || !Number.isFinite(ended)) return null;
+  return `Elapsed ${formatElapsed(ended - started)}`;
 }
 
 /** The stage the work is in: the gate of the track's stage, else the first one not done. */
