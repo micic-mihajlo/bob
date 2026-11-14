@@ -342,6 +342,18 @@ export interface InboxItem {
   resolvedBy?: { pullRequestId: string; number: number; at: string };
   /** On an error about an already shipped change: that pull request. */
   followUpOf?: { pullRequestId: string; number: number };
+  /** On an item pulled from Linear: the issue it came from. */
+  linear?: LinearIssueRef;
+}
+
+/** A Linear issue an inbox item came from. */
+export interface LinearIssueRef {
+  issueId: string;
+  /** Such as "STA-123". */
+  identifier: string;
+  title: string;
+  url: string;
+  teamId: string;
 }
 
 export interface StageGate {
@@ -455,6 +467,8 @@ export interface Snapshot {
    * `ask` started, unless it is posted with `newRequest: true`.
    */
   answering?: { agentId: AgentId; requestId: RequestId; ask: string; question: string | null } | null;
+  /** Linear as an inbox source: on with BOB_LINEAR=on, and the last pull's error. */
+  linear?: { on: boolean; error: string | null };
 }
 
 /** Model use the factory recorded for one request, from the AI SDK's usage on each call. */
@@ -534,7 +548,7 @@ export interface WhyHop {
   /** Optional: on a person's answer, the question the captain asked them. */
   question?: string;
   /** Optional: on the message that handed an inbox item to the captain, the item and the line the work quotes. */
-  source?: { inboxId: string; kind: InboxKind; label: string; quote: string | null };
+  source?: { inboxId: string; kind: InboxKind; label: string; quote: string | null; linear?: { identifier: string; title: string; url: string } };
 }
 
 /** One node of a pull request's graph view. `kind` is the graph label: User, Agent, Message, Turn, PullRequest, Commit, Review, Approval, WorkOrder. */
@@ -594,6 +608,7 @@ export const THREAD_MODELS = [
  * POST /api/reset                         { warm? }                         back to the seeded team; warm also re-makes the project and installs its deps
  * GET  /api/inbox                         -> InboxItem[]                    raw materials, newest first
  * POST /api/inbox                         { kind, source, text }            a meeting, feedback or error; the captain triages it
+ * POST /api/inbox/linear/sync             -> { ok, added: inboxIds } | { ok: false, error }   pulls open Linear issues labelled "bob" (BOB_LINEAR=on)
  *                                                                             -> { inboxId }; { sample: true } posts the demo sample -> { inboxIds }
  * POST /api/inbox/promote                 { workOrderId }                   the person picks an inbox work order from the backlog
  *                                                                             to build now -> { messageId }

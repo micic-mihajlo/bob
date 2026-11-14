@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { boot } from "./actions";
+import { startLinearPolling } from "./integrations/linear";
 
 /** Helpers for the route handlers: the only place request bodies are parsed. */
 
@@ -34,5 +35,8 @@ export async function parseBody<S extends z.ZodType>(
   return { ok: true, data: parsed.data };
 }
 
-/** Loads the store and finishes any boot sweep before a route touches state. */
-export const ready = (): void => boot();
+/** Loads the store and finishes any boot sweep before a route touches state, and starts the Linear poll when it is on. */
+export const ready = (): void => {
+  boot();
+  startLinearPolling();
+};
