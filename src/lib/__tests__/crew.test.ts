@@ -81,6 +81,29 @@ describe("captain and crew, scripted, end to end", { timeout: GIT_TIMEOUT }, () 
     expect(hops[hops.length - 1].message.text).toBe(REQUEST);
   });
 
+  it("asks the person again when the pull request moved after they approved it", async () => {
+    const s = await toApproval();
+    const first = s.approvals.find((a) => a.status === "pending");
+    const build = s.agents.find((a) => a.crewRole === "build");
+    const asBuild = { agentId: build?.id ?? "", turnId: "turn_test", requestId: prOf()?.requestId ?? "", causedBy: prOf()?.messageId ?? null };
+    await callTool("write_file", { path: "src/late.ts", content: "export const late = true;\n" }, asBuild);
+    await callTool("git", { args: ["add", "src/late.ts"] }, asBuild);
+    await callTool("git", { args: ["commit", "-m", "Add a late file"] }, asBuild);
+    await callTool("open_pull_request", { title: prOf()?.title, body: prOf()?.detail }, asBuild);
+
+    expect(decideApproval(first?.id ?? "", "approved").ok).toBe(true);
+    await settle();
+    const again = getState().approvals.find((a) => a.status === "pending");
+    expect(prOf()?.pullRequest?.merged).toBe(false);
+    expect(again?.headSha).toBe(prOf()?.pullRequest?.headSha);
+    expect(again?.detail).toMatch(/changed after you approved it[\s\S]*src\/late\.ts/);
+    expect(getState().drive.find((f) => f.name === "DIGEST.md")?.content).toBe("1 thing needs you: approve the merge of #1\n");
+
+    expect(decideApproval(again?.id ?? "", "approved").ok).toBe(true);
+    await settle();
+    expect(prOf()?.pullRequest?.merged).toBe(true);
+  });
+
   it("refuses to merge before approval, merges after, and is safe to repeat", async () => {
     await toApproval();
     const pr = prOf();
