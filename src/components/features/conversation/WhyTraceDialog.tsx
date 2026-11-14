@@ -11,6 +11,7 @@ import { requestLabel, requestOrigin } from "@/lib/client/requests";
 import { formatElapsed } from "@/lib/client/format";
 import { buildWhyTrace, type WhySpan, type WhyTraceModel } from "@/lib/client/why-trace";
 import type { MessageId } from "@/lib/types";
+import { HydraContext } from "./HydraContext";
 import { WhyGraph } from "./WhyGraph";
 
 type TraceState =
@@ -144,6 +145,11 @@ export function WhyTraceDialog() {
             <TraceTotal label="Started by" value={origin ? origin.name : "…"} />
           </dl>
           {whyPullRequestId ? <WhyGraph pullRequestId={whyPullRequestId} /> : null}
+          <HydraContext
+            recalls={snapshot.recalls ?? []}
+            messageIds={trace?.spans.map((span) => span.id) ?? [whyMessageId ?? ""]}
+            requestId={snapshot.artifacts.find((a) => a.id === whyPullRequestId)?.requestId ?? null}
+          />
           <div className="trace-body">
             <div className="trace-grid">
               <div className="trace-row trace-axis-row">

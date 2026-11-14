@@ -1,5 +1,6 @@
 import type { State } from "../state";
 import { ensureDatabase, HydraError, hydraConfig, hydraUp, runCypher, type HydraConfig } from "./hydra";
+import { rememberCommit } from "./memory";
 import { toGraph, type GraphEdge, type GraphNode, type NodeKind } from "./schema";
 
 /**
@@ -62,6 +63,7 @@ function schedule(m: Mirror, delay: number): void {
 /** Called by the store on every commit. Only schedules a sync, and does nothing unless the graph store is on. */
 export function mirrorCommit(state: State): void {
   if (!hydraConfig()) return;
+  rememberCommit(state);
   const m = mirror();
   m.latest = state;
   schedule(m, DEBOUNCE_MS);
