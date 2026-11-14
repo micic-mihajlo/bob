@@ -24,12 +24,12 @@ const DIR = process.env.CHAOS_DIR ?? "";
 const STALL_MS = Number(process.env.CHAOS_STALL_MS ?? 20_000);
 
 const REQUESTS = [
-  "Customers want to export invoices as CSV: all invoices, columns id, customer, amount, status and due date. Done when invoicesToCsv returns a header row and one row per invoice.",
-  "Add isOverdue(invoice, today) in src/overdue.ts: true when the invoice is not paid and its dueDate is before today. Done means a vitest test passes for a paid invoice, an unpaid one past due, and one due today.",
-  "Customers want to export invoices as CSV.",
-  "Make the invoices page feel faster.",
+  "Users want to export their tasks as CSV: all tasks, columns id, title, hours, status and due date. Done when tasksToCsv returns a header row and one row per task.",
+  "Add isOverdue(task, today) in src/overdue.ts: true when the task is not paid and its dueDate is before today. Done means a vitest test passes for a paid task, an unpaid one past due, and one due today.",
+  "Users want to export their tasks as CSV.",
+  "Make the tasks page feel faster.",
 ];
-const ANSWERS = ["Done when a test shows a header row and one row per invoice.", "go ahead", "Yes, exactly as written."];
+const ANSWERS = ["Done when a test shows a header row and one row per task.", "go ahead", "Yes, exactly as written."];
 const NUDGES = ["Keep the change small, and say what you changed.", "Also check that the existing tests still pass."];
 
 /** mulberry32: a small seeded generator, so a seed replays the same choices from the same state. */
@@ -166,7 +166,7 @@ function eventFor(r: () => number, progress: Progress): Event | null {
   }
   options.push({ weight: 6, make: () => { const item = pick(r, SAMPLE_INBOX)!; return { kind: "inbox", detail: item.source, run: () => addInboxItem(item) }; } });
   if (promotable.length) options.push({ weight: 8, make: () => { const order = pick(r, promotable)!; return { kind: "promote", detail: order.id, run: () => promoteInboxOrder(order.id) }; } });
-  options.push({ weight: 4, make: () => { const name = r() < 0.5 ? "chaos-two" : "invoices-app"; return { kind: "project", detail: name, run: () => openProject({ name }) }; } });
+  options.push({ weight: 4, make: () => { const name = r() < 0.5 ? "chaos-two" : "tasks-app"; return { kind: "project", detail: name, run: () => openProject({ name }) }; } });
   if (running.length && progress.restarts < 4) options.push({ weight: 5, make: () => ({ kind: "restart", detail: `${running.length} turn(s) running`, run: () => undefined }) });
   options.push({ weight: 12, make: () => ({ kind: "wait", detail: "", run: () => undefined }) });
   const total = options.reduce((n, o) => n + o.weight, 0);

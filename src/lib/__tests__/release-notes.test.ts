@@ -6,7 +6,7 @@ import { settle } from "../turns";
 import { freshTeam } from "./helpers";
 
 const REQUEST =
-  "Customers want to export invoices as CSV: all invoices, columns id, customer, amount, status and due date. Done when invoicesToCsv returns a header row and one row per invoice.";
+  "Users want to export their tasks as CSV: all tasks, columns id, title, hours, status and due date. Done when tasksToCsv returns a header row and one row per task.";
 
 describe("telling users what shipped", { timeout: 60_000 }, () => {
   beforeEach(freshTeam);
@@ -23,10 +23,10 @@ describe("telling users what shipped", { timeout: 60_000 }, () => {
     await settle();
 
     const [note] = buildSnapshot(getState()).releaseNotes ?? [];
-    expect(note).toMatchObject({ number: 1, text: "CSV export for invoices is now available.", source: "factory" });
+    expect(note).toMatchObject({ number: 1, text: "CSV export for tasks is now available.", source: "factory" });
     expect(note.workOrderId).toMatch(/^wo_/);
     const changelog = getState().drive.find((f) => f.name === "CHANGELOG.md")?.content;
-    expect(changelog).toBe(`# Changelog\n\n## ${note.at.slice(0, 10)}\n- CSV export for invoices is now available. (#1)\n`);
+    expect(changelog).toBe(`# Changelog\n\n## ${note.at.slice(0, 10)}\n- CSV export for tasks is now available. (#1)\n`);
     expect(getState().roadmap.stageTitle).toBe("Learn");
   });
 });

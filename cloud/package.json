@@ -9,12 +9,19 @@
     "test": "node --test test/namespace.test.mjs"
   },
   "devDependencies": {
-    "wrangler": "4.152.0",
     "@cloudflare/workers-types": "^5.20261029.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "4.152.0"
   },
   "allowScripts": {
     "workerd@1.20261019.1": true,
     "esbuild@0.28.2": true
+  },
+  "dependencies": {
+    "@earendil-works/chord": "1.5.2",
+    "@earendil-works/pi-ai": "1.5.2",
+    "@earendil-works/pi-durable": "1.5.2",
+    "@earendil-works/pi-schema": "1.5.2",
+    "agents": "0.33.0"
   }
 }

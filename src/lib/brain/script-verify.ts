@@ -1,5 +1,5 @@
 /**
- * What the scripted crew writes for verify_change on the invoices sample: a contract, fast-check properties
+ * What the scripted crew writes for verify_change on the scripted sample: a contract, fast-check properties
  * and a Lean model per change. The first set of properties leaves one mutant alive on purpose, as a real
  * first draft would; the fix adds the property that kills it.
  */
@@ -15,84 +15,84 @@ const contract = (acceptance: string, propertiesFile: string, properties: Proper
 
 const OVERDUE_HEAD = `import fc from "fast-check";
 import { it } from "vitest";
-import { overdueInvoices, type Invoice } from "./invoices";
+import { overdueTasks, type Task } from "./tasks";
 
 const day = fc.date({ min: new Date("2020-01-01"), max: new Date("2030-12-31"), noInvalidDate: true }).map((d) => d.toISOString().slice(0, 10));
-const invoice: fc.Arbitrary<Invoice> = fc.record({
-  id: fc.stringMatching(/^INV-[0-9]{4}$/),
-  customer: fc.string({ maxLength: 12 }),
-  amountCents: fc.integer({ min: 0, max: 10_000_000 }),
-  status: fc.constantFrom("draft", "sent", "paid"),
-  issuedDate: day,
+const task: fc.Arbitrary<Task> = fc.record({
+  id: fc.stringMatching(/^T-[0-9]{4}$/),
+  title: fc.string({ maxLength: 12 }),
+  estimateMinutes: fc.integer({ min: 0, max: 10_000 }),
+  status: fc.constantFrom("draft", "open", "done"),
+  createdDate: day,
   dueDate: day,
 });
-const invoices = fc.array(invoice, { maxLength: 12 });
+const tasks = fc.array(task, { maxLength: 12 });
 
-it("only sent invoices come back", () => {
-  fc.assert(fc.property(invoices, day, (list, today) => overdueInvoices(list, today).every((i) => i.status === "sent")));
+it("only open tasks come back", () => {
+  fc.assert(fc.property(tasks, day, (list, today) => overdueTasks(list, today).every((t) => t.status === "open")));
 });
 
 it("oldest due date first", () => {
   fc.assert(
-    fc.property(invoices, day, (list, today) => {
-      const due = overdueInvoices(list, today).map((i) => i.dueDate);
+    fc.property(tasks, day, (list, today) => {
+      const due = overdueTasks(list, today).map((t) => t.dueDate);
       return due.every((d, k) => k === 0 || due[k - 1] <= d);
     }),
   );
 });
 
-it("every sent invoice past its due date comes back", () => {
+it("every open task past its due date comes back", () => {
   fc.assert(
-    fc.property(invoices, day, (list, today) => {
-      const result = overdueInvoices(list, today);
-      return list.filter((i) => i.status === "sent" && i.dueDate < today).every((i) => result.includes(i));
+    fc.property(tasks, day, (list, today) => {
+      const result = overdueTasks(list, today);
+      return list.filter((t) => t.status === "open" && t.dueDate < today).every((t) => result.includes(t));
     }),
   );
 });
 `;
 
 const OVERDUE_FIX = `
-it("an invoice due today is not overdue yet", () => {
-  fc.assert(fc.property(invoice, day, (i, today) => overdueInvoices([{ ...i, status: "sent", dueDate: today }], today).length === 0));
+it("a task due today is not overdue yet", () => {
+  fc.assert(fc.property(task, day, (t, today) => overdueTasks([{ ...t, status: "open", dueDate: today }], today).length === 0));
 });
 `;
 
 const OVERDUE_PROPERTIES: Property[] = [
-  { name: "only sent invoices come back", criterion: "returns the sent invoices" },
+  { name: "only open tasks come back", criterion: "returns the open tasks" },
   { name: "oldest due date first", criterion: "oldest due date first" },
-  { name: "every sent invoice past its due date comes back", criterion: "whose due date is before today" },
+  { name: "every open task past its due date comes back", criterion: "whose due date is before today" },
 ];
 
 const OVERDUE_LEAN = `namespace Overdue
 
 inductive Status where
-  | draft | sent | paid
+  | draft | open | done
   deriving DecidableEq
 
-/-- An invoice as overdueInvoices reads it: its status, and its due date as a day number. -/
-structure Invoice where
+/-- A task as overdueTasks reads it: its status, and its due date as a day number. -/
+structure Task where
   status : Status
   due : Nat
 
-/-- The model of overdueInvoices before sorting: sent, and due strictly before today. -/
-def overdue (l : List Invoice) (today : Nat) : List Invoice :=
-  l.filter (fun i => i.status = .sent ∧ i.due < today)
+/-- The model of overdueTasks before sorting: open, and due strictly before today. -/
+def overdue (l : List Task) (today : Nat) : List Task :=
+  l.filter (fun i => i.status = .open ∧ i.due < today)
 
-/-- Everything it returns is sent and past due. -/
-theorem overdue_sound (l : List Invoice) (today : Nat) :
-    ∀ i ∈ overdue l today, i.status = .sent ∧ i.due < today := by
+/-- Everything it returns is open and past due. -/
+theorem overdue_sound (l : List Task) (today : Nat) :
+    ∀ i ∈ overdue l today, i.status = .open ∧ i.due < today := by
   intro i h
   simp [overdue, List.mem_filter] at h
   exact h.2
 
-/-- Every sent invoice past due comes back. -/
-theorem overdue_complete (l : List Invoice) (today : Nat) :
-    ∀ i ∈ l, i.status = .sent → i.due < today → i ∈ overdue l today := by
+/-- Every open task past due comes back. -/
+theorem overdue_complete (l : List Task) (today : Nat) :
+    ∀ i ∈ l, i.status = .open → i.due < today → i ∈ overdue l today := by
   intro i h hs hd
   simp [overdue, List.mem_filter, h, hs, hd]
 
-/-- An invoice due today is not overdue yet. -/
-theorem due_today_not_overdue (l : List Invoice) (today : Nat) :
+/-- A task due today is not overdue yet. -/
+theorem due_today_not_overdue (l : List Task) (today : Nat) :
     ∀ i ∈ overdue l today, i.due ≠ today := by
   intro i h
   have := (overdue_sound l today i h).2
@@ -112,7 +112,7 @@ export const OVERDUE_VERIFICATION: ScriptedVerification = {
   fix: (path, acceptance) => [
     {
       path,
-      content: contract(acceptance, "src/overdue.properties.test.ts", [...OVERDUE_PROPERTIES, { name: "an invoice due today is not overdue yet", criterion: "before today" }], OVERDUE_THEOREMS),
+      content: contract(acceptance, "src/overdue.properties.test.ts", [...OVERDUE_PROPERTIES, { name: "a task due today is not overdue yet", criterion: "before today" }], OVERDUE_THEOREMS),
     },
     { path: "src/overdue.properties.test.ts", content: OVERDUE_HEAD + OVERDUE_FIX },
   ],
@@ -120,25 +120,24 @@ export const OVERDUE_VERIFICATION: ScriptedVerification = {
 
 const CSV_HEAD = `import fc from "fast-check";
 import { it } from "vitest";
-import { csvCell, invoicesToCsv } from "./csv";
-import type { Invoice } from "./invoices";
+import { csvCell, tasksToCsv, type Task } from "./csv";
 
 const word = fc.stringMatching(/^[A-Za-z ]{0,12}$/);
-const invoice: fc.Arbitrary<Invoice> = fc.record({
-  id: fc.stringMatching(/^INV-[0-9]{4}$/),
-  customer: word,
-  amountCents: fc.integer({ min: 0, max: 10_000_000 }),
-  status: fc.constantFrom("draft", "sent", "paid"),
-  issuedDate: fc.constant("2026-11-01"),
+const task: fc.Arbitrary<Task> = fc.record({
+  id: fc.stringMatching(/^T-[0-9]{4}$/),
+  title: word,
+  estimateMinutes: fc.integer({ min: 0, max: 10_000 }),
+  status: fc.constantFrom("draft", "open", "done"),
+  createdDate: fc.constant("2026-11-01"),
   dueDate: fc.constant("2026-12-01"),
 });
 
-it("one row per invoice", () => {
-  fc.assert(fc.property(fc.array(invoice, { maxLength: 20 }), (list) => invoicesToCsv(list).split("\\n").length === list.length + 1));
+it("one row per task", () => {
+  fc.assert(fc.property(fc.array(task, { maxLength: 20 }), (list) => tasksToCsv(list).split("\\n").length === list.length + 1));
 });
 
-it("amounts in dollars with two decimals", () => {
-  fc.assert(fc.property(invoice, (i) => invoicesToCsv([i]).split("\\n")[1].split(",")[2] === (i.amountCents / 100).toFixed(2)));
+it("estimates in hours with two decimals", () => {
+  fc.assert(fc.property(task, (t) => tasksToCsv([t]).split("\\n")[1].split(",")[2] === (t.estimateMinutes / 60).toFixed(2)));
 });
 
 it("a cell with a comma, quote or line break is quoted", () => {
@@ -170,9 +169,9 @@ it("reading a cell back gives the value", () => {
 `;
 
 const CSV_PROPERTIES: Property[] = [
-  { name: "one row per invoice", criterion: "one row per invoice" },
-  { name: "amounts in dollars with two decimals", criterion: "the amount in dollars" },
-  { name: "a cell with a comma, quote or line break is quoted", criterion: "a customer name with a comma" },
+  { name: "one row per task", criterion: "one row per task" },
+  { name: "estimates in hours with two decimals", criterion: "the estimate in hours" },
+  { name: "a cell with a comma, quote or line break is quoted", criterion: "a title with a comma" },
 ];
 
 const CSV_LEAN = `namespace Csv
@@ -226,7 +225,7 @@ export const CSV_VERIFICATION: ScriptedVerification = {
   fix: (path, acceptance) => [
     {
       path,
-      content: contract(acceptance, "src/csv.properties.test.ts", [...CSV_PROPERTIES, { name: "reading a cell back gives the value", criterion: "a customer name with a comma" }], CSV_THEOREMS),
+      content: contract(acceptance, "src/csv.properties.test.ts", [...CSV_PROPERTIES, { name: "reading a cell back gives the value", criterion: "a title with a comma" }], CSV_THEOREMS),
     },
     { path: "src/csv.properties.test.ts", content: CSV_HEAD + CSV_FIX },
   ],

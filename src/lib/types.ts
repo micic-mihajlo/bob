@@ -35,7 +35,7 @@ export interface Agent {
   parentAgentId?: AgentId;
   /** A subagent works in its parent's workspace ("same") or in its own copy of it ("copy"). */
   workspaceMode?: "same" | "copy";
-  /** Short handle shown everywhere, such as "INV-12". Crew threads only. */
+  /** Short handle shown everywhere, such as "TAS-12". Crew threads only. */
   code?: string;
   crewRole?: CrewRole;
   /** The work order this thread exists for. */
@@ -106,7 +106,7 @@ export interface Message {
 
 /** The files and merged pull requests HydraDB recalled for a crew brief, and how long the recall took. */
 export interface KnowledgeContext {
-  files: { path: string; snippet: string }[];
+  files: { path: string; snippet: string; facts?: string[] }[];
   prs: { number: number; title: string; files: string[] }[];
   ms: number;
 }
@@ -209,7 +209,7 @@ export interface Approval {
 /** Something an agent produced: a pull request, a note, a review. */
 export interface Artifact {
   id: string;
-  kind: "pull_request" | "review" | "note";
+  kind: "pull_request" | "review" | "note" | "comment";
   title: string;
   detail: string;
   status: "open" | "approved" | "merged" | "closed";
@@ -223,6 +223,19 @@ export interface Artifact {
   pullRequest?: PullRequestData;
   /** Present on a review: what the reviewer concluded about one pull request. */
   review?: ReviewData;
+  /** Present on a comment: the lines of a pull request the person commented on. */
+  lineComment?: LineComment;
+}
+
+/** A person's comment on lines of a pull request's diff. It counts as resolved once the pull request has a newer head. */
+export interface LineComment {
+  pullRequestId: string;
+  path: string;
+  /** Line numbers in the new version of the file, or the old one for removed lines. */
+  startLine: number;
+  endLine: number;
+  /** The head the person commented on. */
+  headSha: string;
 }
 
 export interface ChangedFile {
@@ -429,15 +442,17 @@ export interface Roadmap {
   updatedAt: string;
 }
 
-/** The starting point of a project made without a repository: the invoices sample or a blank TypeScript project. */
-export type ProjectTemplate = "invoices" | "blank-ts";
+/** The starting point of a project made without a repository: a blank TypeScript project. */
+export type ProjectTemplate = "blank-ts";
 
 export interface Project {
   id: string;
   name: string;
   repo: string | null;
-  /** Which template a project without a repository was made from. Missing on projects saved before templates: the invoices sample. */
+  /** Which template a project without a repository was made from. Missing on projects saved before templates: blank TypeScript. */
   template?: ProjectTemplate;
+  /** The branch of `repo` the project starts from, as its main. The repository's own main when missing. */
+  branch?: string;
 }
 
 /** False before a project is chosen, when Bob opens on the Open a project choice. */
@@ -500,12 +515,14 @@ export interface Snapshot {
   claude?: ClaudeStatus;
   /** What HydraDB recalled for the person's recent messages to the captain, oldest first. */
   recalls?: MemoryRecall[];
+  /** What HydraDB recalled for each crew brief, by the brief's message id. */
+  knowledge?: Record<MessageId, KnowledgeContext>;
 }
 
 /** One memory HydraDB recalled: a lesson from a finished request, or something the person decided. */
 export interface RecalledMemory {
   id: string;
-  source: "lesson" | "person";
+  source: "lesson" | "person" | "code";
   title: string;
   text: string;
   /** HydraDB's relevancy score, 0 to 1. */
@@ -712,4 +729,5 @@ export const API = {
   inbox: "/api/inbox",
   inboxPromote: "/api/inbox/promote",
   inboxLinearSync: "/api/inbox/linear/sync",
+  pullRequestComments: (id: string) => `/api/pull-requests/${id}/comments`,
 } as const;

@@ -19,10 +19,10 @@ const step = (id: string, turnId: string, minute: number): ThreadItem => ({
 const ITEMS: ThreadItem[] = [
   { kind: "user_text", id: "u1", text: "customers want CSV", at: at(0) },
   step("s1", "t1", 1),
-  { kind: "message_out", id: "o1", turnId: "t1", messageId: "m1", to: ["inv-1"], text: "Build it", expectsReply: true, at: at(1, 30) },
+  { kind: "message_out", id: "o1", turnId: "t1", messageId: "m1", to: ["tas-1"], text: "Build it", expectsReply: true, at: at(1, 30) },
   step("s2", "t1", 2),
-  { kind: "agent_text", id: "a1", turnId: "t1", text: "INV-1 is building it.", at: at(3) },
-  { kind: "message_in", id: "i1", messageId: "m2", from: "inv-1", text: "Opened #1", isReply: true, at: at(10) },
+  { kind: "agent_text", id: "a1", turnId: "t1", text: "TAS-1 is building it.", at: at(3) },
+  { kind: "message_in", id: "i1", messageId: "m2", from: "tas-1", text: "Opened #1", isReply: true, at: at(10) },
   step("s3", "t2", 11),
   { kind: "approval", id: "p1", approvalId: "apr", at: at(12) },
 ];
@@ -38,7 +38,7 @@ const pullRequest = (agentId: string, turnId: string, minute: number): Artifact 
   requestId: "r1",
   messageId: "m1",
   at: at(minute),
-  pullRequest: { number: 1, branch: "inv-1-csv", headSha: "abc", files: [], patch: "", merged: false },
+  pullRequest: { number: 1, branch: "tas-1-csv", headSha: "abc", files: [], patch: "", merged: false },
 });
 
 describe("buildConversationRows", () => {
@@ -60,17 +60,17 @@ describe("buildConversationRows", () => {
   it("places a pull request after the turn that opened it, and after its author's next message elsewhere", () => {
     const own = buildConversationRows(ITEMS, null, "bob", [pullRequest("bob", "t1", 2)]);
     expect(own.map((row) => row.kind)).toEqual(["user", "sent", "agent", "artifact", "received", "steps", "approval"]);
-    const other = buildConversationRows(ITEMS, null, "bob", [pullRequest("inv-1", "tx", 9)]);
+    const other = buildConversationRows(ITEMS, null, "bob", [pullRequest("tas-1", "tx", 9)]);
     expect(other.map((row) => row.kind)).toEqual(["user", "sent", "agent", "received", "artifact", "steps", "approval"]);
   });
 
   it("shows a review only in the reviewer's own thread", () => {
     const review: Artifact = {
-      ...pullRequest("inv-2", "tx", 9),
+      ...pullRequest("tas-2", "tx", 9),
       id: "rv",
       kind: "review",
       pullRequest: undefined,
-      review: { pullRequestId: "pr-inv-1", verdict: "approve", findings: [] },
+      review: { pullRequestId: "pr-tas-1", verdict: "approve", findings: [] },
     };
     expect(buildConversationRows(ITEMS, null, "bob", [review]).some((row) => row.kind === "artifact")).toBe(false);
   });
@@ -101,34 +101,34 @@ describe("buildWhyTrace", () => {
 
   it("lays the hops on one axis from the person's sentence to the newest message", () => {
     const trace = buildWhyTrace([
-      hop("m3", 40, { kind: "agent", agentId: "inv-1" }, "INV-1", ["Bob"], "Opened #1"),
-      hop("m2", 10, { kind: "agent", agentId: "bob" }, "Bob", ["INV-1"], "Build it"),
-      hop("m1", 0, { kind: "user" }, "You", ["Bob"], "customers want to export invoices as CSV"),
+      hop("m3", 40, { kind: "agent", agentId: "tas-1" }, "TAS-1", ["Bob"], "Opened #1"),
+      hop("m2", 10, { kind: "agent", agentId: "bob" }, "Bob", ["TAS-1"], "Build it"),
+      hop("m1", 0, { kind: "user" }, "You", ["Bob"], "users want to export their tasks as CSV"),
     ]);
     expect(trace.durationMs).toBe(40_000);
     expect(trace.agentCount).toBe(2);
-    expect(trace.spans.at(-1)).toMatchObject({ fromPerson: true, text: "customers want to export invoices as CSV", at: 0, width: 0.25, label: "10s" });
+    expect(trace.spans.at(-1)).toMatchObject({ fromPerson: true, text: "users want to export their tasks as CSV", at: 0, width: 0.25, label: "10s" });
     expect(trace.spans[0]).toMatchObject({ at: 1, width: 0, label: "" });
     expect(trace.ticks.map((tick) => tick.label)).toEqual(["0s", "10s", "20s", "30s", "40s"]);
   });
 
   it("counts an agent that only received a message on the path", () => {
     const trace = buildWhyTrace([
-      hop("m2", 10, { kind: "agent", agentId: "bob" }, "Bob", ["FIR-1"], "Goal: export invoices as CSV"),
-      hop("m1", 0, { kind: "user" }, "You", ["Bob"], "customers want to export invoices as CSV"),
+      hop("m2", 10, { kind: "agent", agentId: "bob" }, "Bob", ["FIR-1"], "Goal: export tasks as CSV"),
+      hop("m1", 0, { kind: "user" }, "You", ["Bob"], "users want to export their tasks as CSV"),
     ]);
     expect(trace.agentCount).toBe(2);
   });
 });
 
 describe("threadStatusOf", () => {
-  const agent = { id: "inv-1", kind: "crew" } as Agent;
+  const agent = { id: "tas-1", kind: "crew" } as Agent;
   const snapshot = (threadState: Snapshot["threadState"]) => ({ activity: {}, threadState }) as unknown as Snapshot;
 
   it("prefers threadState: closed, then needs you, then the run status", () => {
-    expect(threadStatusOf(snapshot({ "inv-1": { status: "working", needsYou: true, closed: true } }), agent)).toBe("closed");
-    expect(threadStatusOf(snapshot({ "inv-1": { status: "working", needsYou: true, closed: false } }), agent)).toBe("needs_you");
-    expect(threadStatusOf(snapshot({ "inv-1": { status: "failed", needsYou: false, closed: false } }), agent)).toBe("failed");
+    expect(threadStatusOf(snapshot({ "tas-1": { status: "working", needsYou: true, closed: true } }), agent)).toBe("closed");
+    expect(threadStatusOf(snapshot({ "tas-1": { status: "working", needsYou: true, closed: false } }), agent)).toBe("needs_you");
+    expect(threadStatusOf(snapshot({ "tas-1": { status: "failed", needsYou: false, closed: false } }), agent)).toBe("failed");
   });
 });
 

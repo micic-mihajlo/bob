@@ -1,13 +1,15 @@
-# Bob
+# Bob and B(l)obs
 
-A software factory turns a person's request into shipped code through fixed stations, and every station leaves a record. Bob is one you run by talking to its captain. The captain inspects the intent and pushes back until the request can be tested. It writes the spec as work orders with IDs on the request's own five-stage track and starts a build thread for each one. Every build thread works in its own git workspace, runs the tests, and opens a pull request. A review thread runs that PR's tests on its own branch and either sends findings back or approves the exact head. Then the person approves the merge at a gate the code enforces. The merge writes a release note, and Learn feeds the result back into the plan, including closing the production errors it fixed. Every commit, PR and message traces back to the sentence the person typed, and Why? on any PR shows that chain.
+Bob and his lil builders.
+
+A software factory turns a person's request into shipped code through fixed stations, and every station leaves a record. Bob and B(l)obs is one you run by talking to Bob, the captain. Bob inspects the intent and pushes back until the request can be tested. He writes the spec as work orders with IDs on the request's own five-stage track and starts a Blob, one of his lil builders, for each one. Every build Blob works in its own git workspace, runs the tests, and opens a pull request. A review Blob runs that PR's tests on its own branch and either sends findings back or approves the exact head. Then the person approves the merge at a gate the code enforces. The merge writes a release note, and Learn feeds the result back into the plan, including closing the production errors it fixed. Every commit, PR and message traces back to the sentence the person typed, and Why? on any PR shows that chain.
 
 ```mermaid
 flowchart LR
-  P["Person<br/>chat, voice or inbox"] --> I["Intent<br/>captain inspects the ask,<br/>asks until it is testable"]
+  P["Person<br/>chat, voice or inbox"] --> I["Intent<br/>Bob inspects the ask,<br/>asks until it is testable"]
   I --> S["Spec<br/>work orders with IDs<br/>on the roadmap"]
-  S --> B["Build<br/>crew thread in its own<br/>git workspace, runs tests,<br/>opens a PR"]
-  B --> R["Review<br/>review thread runs the<br/>PR's tests on its branch"]
+  S --> B["Build<br/>a Blob in its own<br/>git workspace, runs tests,<br/>opens a PR"]
+  B --> R["Review<br/>a review Blob runs the<br/>PR's tests on its branch"]
   R -- "findings" --> B
   R -- "approves this head" --> G{"Merge gate<br/>person approves<br/>the exact head"}
   G --> M["Merge<br/>release note in CHANGELOG.md"]
@@ -28,8 +30,8 @@ pnpm demo                         # checks the machine, resets to a warm seed, s
 
 ## What's in it
 
-- **Captain, crew and subagents.** The captain plans and talks to you. Crew threads (build, review, research) each own one work order and a branch, and a build thread can hand one focused task to a subagent. You can open any thread and type into it, or steer it, queue for it, or stop it.
-- **Real workspaces.** Each thread gets its own clone of the project. `run` executes commands there with a scrubbed environment (no API keys). On Linux a user and mount namespace also confines it to that clone. The project's dependencies install once and are linked into every thread.
+- **Bob, his Blobs and subagents.** Bob is the captain: he plans and talks to you. Blobs (build, review, research) each own one work order and a branch, and a build Blob can hand one focused task to a subagent. You can open any Blob's thread and type into it, or steer it, queue for it, or stop it.
+- **Real workspaces.** Each Blob gets its own clone of the project. `run` executes commands there with a scrubbed environment (no API keys). On Linux a user and mount namespace also confines it to that clone. The project's dependencies install once and are linked into every thread.
 - **Gates in code.** A stage won't advance until its exit criteria hold. A merge needs a review that approves the current head, and then the person's approval at that same head. The message budgets stop agent loops. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) says where each rule lives.
 - **Traceability.** Commits carry `Bob-Request`, `Bob-Work-Order` and `Bob-Thread` trailers, every PR body has a trace block, and Why? follows `causedBy` back to the typed sentence. A PR that started in the inbox traces back to the quoted line of its source, such as a customer call or a production error.
 - **Inbox.** Meeting notes, feedback and production errors become quoted backlog work orders, and vague asks become questions for the person. Nothing builds until you promote an order. A merge that fixes an error marks it resolved.
@@ -37,13 +39,13 @@ pnpm demo                         # checks the machine, resets to a warm seed, s
 
 ## Numbers
 
-From [docs/perf.md](docs/perf.md), with the live model (kimi-k3.1-pro as captain, deepseek-v4.1-flash as crew):
+From [docs/perf.md](docs/perf.md), with the live model (kimi-k3.1-pro for Bob, deepseek-v4.1-flash for the Blobs):
 
 | | Result |
 | --- | --- |
 | Typed sentence to merge approval, ten runs back to back | median 63 s, p90 81 s, worst 87 s; 10 of 10 completed, no failed turns, no stalls |
 | The same request before the runtime work | 508 s |
-| Two requests at once | both merged by 198 s, including a conflict the build thread resolved by merging main |
+| Two requests at once | both merged by 198 s, including a conflict the build Blob resolved by merging main |
 | `pnpm walkthrough --live` (the ten demo checks) | 10 of 10 hold, 63 s of work |
 
 ## Sponsor integrations
@@ -53,11 +55,11 @@ Each one sits behind a switch and is off by default, so Bob runs the same withou
 | Service | What Bob uses it for | Switch | Status |
 | --- | --- | --- | --- |
 | Vercel AI Gateway | Every model call, with retries and a fallback model | `AI_GATEWAY_API_KEY` | Live: every run above |
-| GitHub (gh) | Publishes each PR, posts reviews with inline comments, merges at the approved head | `BOB_GITHUB=gh` | Ran live: bob#46, #49 and #51 on `demo/invoices-main` |
+| GitHub (gh) | Publishes each PR, posts reviews with inline comments, merges at the approved head | `BOB_GITHUB=gh` | Ran live: bob#46, #49 and #51 on the earlier demo base branch |
 | Composio | The same GitHub steps through Composio's toolkit | `BOB_GITHUB=composio`, `COMPOSIO_API_KEY` | Built and unit-tested against the API docs; no key yet |
-| Vercel previews | The review thread loads the PR head's preview deployment | `BOB_PREVIEWS=vercel` | Built and unit-tested; no Vercel project yet |
+| Vercel previews | The review Blob loads the PR head's preview deployment | `BOB_PREVIEWS=vercel` | Built and unit-tested; no Vercel project yet |
 | HydraDB | State mirrored as a graph; Why? is one Cypher path query | `BOB_STORE=hydra`, `HYDRADB_API_KEY` | Every statement run on FalkorDB and a local HydraDB API shim; no key yet |
-| ElevenLabs | Call Bob by voice; your words land in the captain's thread | `BOB_VOICE=elevenlabs`, `ELEVENLABS_API_KEY` | Built and unit-tested; browser speech works without a key |
+| ElevenLabs | Call Bob by voice; your words land in Bob's thread | `BOB_VOICE=elevenlabs`, `ELEVENLABS_API_KEY` | Built and unit-tested; browser speech works without a key |
 
 ## Proved rules
 
@@ -70,9 +72,9 @@ The factory rules are proved in Lean 4 under `formal/`. Conformance tests run th
 
 `pnpm verify` checks them. [docs/formal.md](docs/formal.md) has every theorem and the two gaps the proofs found and fixed, and `GET /api/verification` reports their status in the app.
 
-## Agents and models
+## Bob, Blobs and models
 
-Without a key the agents decide from a script. The mailbox, the tools, the turn loop and the roadmap rules are the real ones either way; only the decision-maker changes.
+Without a key Bob and the Blobs decide from a script. The mailbox, the tools, the turn loop and the roadmap rules are the real ones either way; only the decision-maker changes.
 
 To use a live model, create `.env.local` with `AI_GATEWAY_API_KEY` set and restart. The sidebar footer shows which one is active.
 
@@ -82,7 +84,7 @@ BOB_MODEL_STRONG=deepseek/deepseek-v4.1-flash
 BOB_MODEL_LIGHT=deepseek/deepseek-v4.1-flash
 ```
 
-`BOB_MODEL_STRONG` is the captain's model and `BOB_MODEL_LIGHT` is every crew thread's. A Vercel Token Pass key can only call Token Pass models: `moonshotai/kimi-k3.1-pro`, `moonshotai/kimi-k3`, `moonshotai/kimi-k3-fast`, `zai/glm-5.3-fast`, `zai/glm-5.3-flash`, `deepseek/deepseek-v4.1-flash` and `deepseek/deepseek-v4.1-flash-fast`. After changing models, `POST /api/reset` reseeds the team so stored threads pick them up. `BOB_PROJECT_REPO` brings in your own repository in place of the invoices template.
+`BOB_MODEL_STRONG` is Bob's model and `BOB_MODEL_LIGHT` is every Blob's. A Vercel Token Pass key can only call Token Pass models: `moonshotai/kimi-k3.1-pro`, `moonshotai/kimi-k3`, `moonshotai/kimi-k3-fast`, `zai/glm-5.3-fast`, `zai/glm-5.3-flash`, `deepseek/deepseek-v4.1-flash` and `deepseek/deepseek-v4.1-flash-fast`. After changing models, `POST /api/reset` reseeds Bob and the Blobs so stored threads pick them up. `BOB_PROJECT_REPO` brings in your own repository in place of the built-in templates.
 
 ## Factory policy
 

@@ -14,7 +14,7 @@ const asBob = { agentId: "bob", turnId: "turn_test", requestId: "req_test", caus
 
 /** Runs the scripted flow until the captain has started its build thread, and returns that thread. */
 async function buildThread(): Promise<Agent> {
-  postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+  postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
   await settle();
   const build = getState().agents.find((a) => a.kind === "crew" && a.crewRole === "build");
   if (!build) throw new Error("no build thread");
@@ -78,19 +78,19 @@ describe("crew runtime", { timeout: GIT_TIMEOUT }, () => {
     await buildThread();
     setBrainOverride(
       brainFrom({
-        "inv-1": (ctx) => {
+        "tas-1": (ctx) => {
           inputs.push(ctx.input);
           return { text: "Status: done\nResult: looked\nEvidence: none", toolCalls: [] };
         },
       }),
     );
-    send({ from: { kind: "user" }, to: ["inv-1"], text: "What does src/invoices.ts export?", expectsReply: false, replyTo: null, causedBy: null, requestId: "req_look" });
+    send({ from: { kind: "user" }, to: ["tas-1"], text: "What does src/index.ts export?", expectsReply: false, replyTo: null, causedBy: null, requestId: "req_look" });
     const { drain } = await import("../turns");
-    drain("inv-1");
+    drain("tas-1");
     await settle();
     expect(inputs[0]).toContain("Files in your workspace");
-    expect(inputs[0]).toContain("--- src/invoices.ts ---");
-    expect(inputs[0]).toContain("export function totalCents");
+    expect(inputs[0]).toContain("--- src/index.ts ---");
+    expect(inputs[0]).toContain("export function greet");
     expect(inputs[0]).toContain("npm test");
   });
 

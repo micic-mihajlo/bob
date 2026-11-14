@@ -17,8 +17,8 @@ describe("one request, readable at every station", { timeout: 60_000 }, () => {
   afterAll(freshTeam);
 
   it("stamps the thread's commits and opens the pull request body with the trace", async () => {
-    await say("customers want to export invoices as CSV");
-    await say("All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.");
+    await say("users want to export their tasks as CSV");
+    await say("All tasks, columns id, title, hours, status and due date. Done when the file has one row per task.");
     const opened = pr();
     const builder = getState().agents.find((a) => a.crewRole === "build");
     expect(opened && builder).toBeTruthy();
@@ -32,12 +32,12 @@ describe("one request, readable at every station", { timeout: 60_000 }, () => {
     const body = opened!.detail;
     expect(body.startsWith("<!-- bob-trace -->")).toBe(true);
     expect(body).toContain(`request \`${opened!.requestId}\``);
-    expect(body).toContain('- Asked: "customers want to export invoices as CSV"');
-    expect(body).toMatch(/- Bob asked: ".*columns.*" The person answered: "All invoices/);
-    expect(body).toMatch(/- Work order: CSV export for invoices\. Acceptance: /);
+    expect(body).toContain('- Asked: "users want to export their tasks as CSV"');
+    expect(body).toMatch(/- Bob asked: ".*columns.*" The person answered: "All tasks/);
+    expect(body).toMatch(/- Work order: CSV export for tasks\. Acceptance: /);
     expect(body).toContain("- Review: approved, 1 finding");
     expect(body).toContain("- Approval: waiting on the person");
-    expect(body).toContain("Adds invoicesToCsv");
+    expect(body).toContain("Adds tasksToCsv");
 
     const approval = getState().approvals.find((a) => a.status === "pending");
     expect(decideApproval(approval!.id, "approved").ok).toBe(true);

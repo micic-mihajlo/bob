@@ -47,7 +47,7 @@ function buildPlan(ctx: TurnContext, brief: string): Plan {
   const criteria = acceptanceIn(brief) ?? goal;
   return {
     steps: [
-      () => [call("read_files", { paths: ["src/invoices.ts"] })],
+      () => [call("read_files", { paths: ["src/index.ts"] })],
       () => [call("write_files", { files: files.slice(0, 1) })],
       () => [call("run", { command: `npx vitest run ${acceptance}` })],
       () => [call("write_files", { files: files.slice(1) })],
@@ -116,7 +116,7 @@ function researchPlan(_ctx: TurnContext, brief: string): Plan {
       () => [call("list_files", {})],
       (done) => {
         const files = (resultOf(done, "list_files")?.files as string[] | undefined) ?? [];
-        return [call("record_artifact", { title: `Findings: ${question}`, detail: `The project holds ${files.length} files: ${files.join(", ")}. The invoice logic lives in src/invoices.ts and formatting in src/format.ts.` })];
+        return [call("record_artifact", { title: `Findings: ${question}`, detail: `The project holds ${files.length} files: ${files.join(", ")}. The code starts in src/index.ts, with its tests next to it.` })];
       },
     ],
     reply: (done) => formatted("done", `Wrote up what the code says about: ${question}.`, `note ${String(resultOf(done, "record_artifact")?.artifactId ?? "none")}`),

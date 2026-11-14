@@ -29,7 +29,7 @@ export const SIDE_PANEL_PANES: Readonly<Record<PanelKind, readonly SidePanelPane
 export const PANEL_TAB_LABEL: Readonly<Record<SidePanelPaneId, string>> = {
   roadmap: "Roadmap",
   inbox: "Inbox",
-  crew: "Crew",
+  crew: "Blobs",
   drive: "Drive",
   activity: "Activity",
   verified: "Verified",

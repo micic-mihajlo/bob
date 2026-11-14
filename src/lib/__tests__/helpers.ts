@@ -13,7 +13,7 @@ import type { AgentId } from "../types";
 
 let workspaceRoot: string | null = null;
 
-/** The seeded captain alone on the invoices sample, with workspaces in a new temp folder. */
+/** The seeded captain alone on the tasks sample, with workspaces in a new temp folder. */
 export function freshTeam(): void {
   if (workspaceRoot) rmSync(workspaceRoot, { recursive: true, force: true });
   workspaceRoot = mkdtempSync(path.join(os.tmpdir(), "bob-crew-"));

@@ -13,8 +13,8 @@ import type { GraphView } from "../types";
 import { answerWhy, traceWhy, WHY_QUERY } from "../why";
 import { freshTeam } from "./helpers";
 
-const VAGUE = "customers want to export invoices as CSV";
-const ANSWER = "All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.";
+const VAGUE = "users want to export their tasks as CSV";
+const ANSWER = "All tasks, columns id, title, hours, status and due date. Done when the file has one row per task.";
 
 /**
  * Recorded from HydraDB: a state from the CSV walkthrough (ask, one pushback, answer, PR, review, approval) plus a
@@ -39,7 +39,7 @@ function fakeHydra(answer: (call: Call) => { status: number; json: unknown } = (
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string, init: RequestInit) => {
-      const call = { url, headers: init.headers as Record<string, string>, body: JSON.parse(String(init.body)) };
+      const call = { url, headers: init.headers as Record<string, string>, body: init.body === undefined ? undefined : JSON.parse(String(init.body)) };
       calls.push(call);
       const { status, json } = answer(call);
       return new Response(JSON.stringify(json), { status, headers: { "content-type": "application/json" } });
@@ -226,7 +226,7 @@ describe("Why? from HydraDB", () => {
   it("adds the Linear issue to an inbox source the graph returns", async () => {
     replay();
     switchOn();
-    const linear = { issueId: "issue_1", identifier: "MIH-5", title: "Show the invoice count in the page header", url: "https://linear.app/mihajlo-bob/issue/MIH-5", teamId: "team_1" };
+    const linear = { issueId: "issue_1", identifier: "MIH-5", title: "Show the task count in the page header", url: "https://linear.app/mihajlo-bob/issue/MIH-5", teamId: "team_1" };
     const withLinear = { ...recordedState, inbox: (recordedState.inbox ?? []).map((i) => ({ ...i, linear })) };
     const brief = recorded.whyInbox.request.params.messageId;
     const answer = await answerWhy(withLinear, brief);
@@ -249,7 +249,7 @@ describe("Why? from HydraDB", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((url: string, init: RequestInit) => {
-        calls.push({ url, headers: {}, body: JSON.parse(String(init.body)) });
+        calls.push({ url, headers: {}, body: init.body === undefined ? undefined : JSON.parse(String(init.body)) });
         return new Promise((_, reject) => init.signal?.addEventListener("abort", () => reject(init.signal?.reason)));
       }),
     );

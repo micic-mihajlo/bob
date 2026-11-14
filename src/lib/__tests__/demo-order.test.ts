@@ -15,9 +15,9 @@ import { traceWhy } from "../why";
 import { freshTeam } from "./helpers";
 
 const OVERDUE =
-  "List overdue invoices: add overdueInvoices(invoices, today) in src/invoices.ts that returns the sent invoices whose due date is before today, oldest due date first. Done means a vitest test passes for one overdue, one paid and one not-yet-due invoice.";
+  "List overdue tasks: add overdueTasks(tasks, today) in src/tasks.ts that returns the sent tasks whose due date is before today, oldest due date first. Done means a vitest test passes for one overdue, one paid and one not-yet-due task.";
 const CSV =
-  "Add invoicesToCsv(invoices) in src/csv.ts: one header row id,customer,amount,status,dueDate, then one row per invoice. Done means a vitest test in src/csv.test.ts passes for a plain row and for a customer name with a comma.";
+  "Add tasksToCsv(tasks) in src/csv.ts: one header row id,customer,amount,status,dueDate, then one row per task. Done means a vitest test in src/csv.test.ts passes for a plain row and for a customer name with a comma.";
 
 const pending = () => getState().approvals.filter((a) => a.status === "pending");
 
@@ -99,7 +99,7 @@ describe("two requests in demo order", { timeout: 120_000 }, () => {
     await settle();
     const first = pending()[0];
     update((s) => patchApproval(s, first.id, { status: "approved" }));
-    const again = await callTool("request_approval", { title: "Merge #1: Overdue invoices", detail: "Again.", pullRequestId: first.pullRequestId }, { agentId: "bob", turnId: "turn_test", requestId: first.requestId, causedBy: null });
+    const again = await callTool("request_approval", { title: "Merge #1: Overdue tasks", detail: "Again.", pullRequestId: first.pullRequestId }, { agentId: "bob", turnId: "turn_test", requestId: first.requestId, causedBy: null });
     expect(again.result.approvalId).toBe(first.id);
     expect(getState().approvals).toHaveLength(1);
     expect(needsYou(getState()).filter((n) => n.kind === "approval")).toHaveLength(0);

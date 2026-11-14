@@ -10,12 +10,12 @@ import { settle } from "../src/lib/turns";
 /** Two requests in one team: the second is typed while the first is being built, and every merge approval is granted. */
 const REQUESTS = [
   {
-    text: "Customers want to export invoices as CSV.",
-    answer: "An accountant exports every invoice from the invoices module as CSV: id, customer, amount in dollars, status, issued and due date. Done when a test shows a header row, one row per invoice, and a customer name with a comma comes out quoted.",
+    text: "Users want to export their tasks as CSV.",
+    answer: "An accountant exports every task from the tasks module as CSV: id, customer, amount in dollars, status, issued and due date. Done when a test shows a header row, one row per task, and a customer name with a comma comes out quoted.",
   },
   {
-    text: "Finance wants a JSON export of overdue invoices.",
-    answer: "A finance analyst gets every overdue invoice as a JSON array with id, customer, amount in cents and due date, for a given today date. Done when a test shows only sent invoices past their due date come out, and the README documents it.",
+    text: "Finance wants a JSON export of overdue tasks.",
+    answer: "A finance analyst gets every overdue task as a JSON array with id, customer, amount in cents and due date, for a given today date. Done when a test shows only sent tasks past their due date come out, and the README documents it.",
   },
 ];
 const LIMIT_MS = Number(process.env.BOB_LIVE_LIMIT_MS || 15 * 60_000);

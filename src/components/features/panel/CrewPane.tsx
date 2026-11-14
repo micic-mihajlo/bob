@@ -75,18 +75,18 @@ export function CrewPane({ onClose }: { onClose: () => void }) {
   const captainName = captain?.name ?? "The captain";
 
   return (
-    <PaneFrame className="subagents-panel bob-crew-panel" label="Crew">
-      <PaneHeader title="Crew" onClose={onClose} />
-      <section className="subagents-panel-detail" aria-label="Crew threads">
+    <PaneFrame className="subagents-panel bob-crew-panel" label="Blobs">
+      <PaneHeader title="Blobs" onClose={onClose} />
+      <section className="subagents-panel-detail" aria-label="Blob threads">
         {crew.length === 0 ? (
           <div className="bob-pane-empty">
             <Users aria-hidden="true" />
-            <p>{captainName} starts a thread for each piece of work: one to build it, one to review it, one to look things up.</p>
+            <p>{captainName} starts a Blob for each piece of work: one to build it, one to review it, one to look things up.</p>
           </div>
         ) : (
           <div className="subagents-group">
             <Button variant="ghost" className="subagents-group-header" aria-expanded={open ? "true" : "false"} onClick={() => setOpen((value) => !value)}>
-              <span className="subagents-group-title">{crew.length === 1 ? "1 crew thread" : `${crew.length} crew threads`}</span>
+              <span className="subagents-group-title">{crew.length === 1 ? "1 Blob" : `${crew.length} Blobs`}</span>
               <Badge className="subagents-progress">
                 {working} working
                 {needsYou > 0 ? <span className="subagents-progress-failed">· {needsYou} need you</span> : null}

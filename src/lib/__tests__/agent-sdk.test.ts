@@ -37,7 +37,7 @@ function fakeAgent(seen: Seen, hold?: Promise<void>) {
         wakeUp();
       },
       async *[Symbol.asyncIterator]() {
-        yield toolUse("t1", "Read", { file_path: path.join(String(options.cwd), "src/invoices.ts") });
+        yield toolUse("t1", "Read", { file_path: path.join(String(options.cwd), "src/index.ts") });
         yield toolResult("t1");
         if (hold) await Promise.race([hold, interruptedP]);
         if (interrupted) throw new Error("interrupted");
@@ -65,7 +65,7 @@ describe("BOB_ENGINE=sdk runs crew build and review turns as one coding-agent qu
 
   it("maps native tool calls to steps, keeps Bash off, and ends the turn on the report through interrupt", async () => {
     setSdkQuery(fakeAgent(seen));
-    postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+    postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
     await settle();
     const s = getState();
     const options = seen.options[0];
@@ -74,30 +74,30 @@ describe("BOB_ENGINE=sdk runs crew build and review turns as one coding-agent qu
     expect(options.allowedTools).toContain("mcp__bob__report");
     expect(options.allowedTools).not.toContain("mcp__bob__write_files");
     expect(Object.keys(options.env ?? {})).not.toContain("LINEAR_API_KEY");
-    const steps = (s.threads["inv-1"] ?? []).filter((i) => i.kind === "step");
-    const read = steps.find((i) => i.kind === "step" && i.label === "Reading src/invoices.ts");
+    const steps = (s.threads["tas-1"] ?? []).filter((i) => i.kind === "step");
+    const read = steps.find((i) => i.kind === "step" && i.label === "Reading src/index.ts");
     expect(read?.kind === "step" && read.outcome).toBe("ok");
     expect(steps.some((i) => i.kind === "step" && i.tool === "report" && i.outcome === "ok")).toBe(true);
     expect(seen.interrupts).toBeGreaterThanOrEqual(1);
-    const turn = s.turns.find((t) => t.agentId === "inv-1");
+    const turn = s.turns.find((t) => t.agentId === "tas-1");
     expect(turn?.status).toBe("completed");
-    expect(s.messages.some((m) => m.from.kind === "agent" && m.from.agentId === "inv-1" && m.text === REPORT)).toBe(true);
+    expect(s.messages.some((m) => m.from.kind === "agent" && m.from.agentId === "tas-1" && m.text === REPORT)).toBe(true);
   });
 
   it("aborts the query when the person stops the thread", async () => {
     let release: () => void = () => {};
     const hold = new Promise<void>((r) => (release = r));
     setSdkQuery(fakeAgent(seen, hold));
-    postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
-    for (let i = 0; i < 200 && !getState().turns.some((t) => t.agentId === "inv-1" && t.status === "running" && seen.options.length > 0); i++) await new Promise((r) => setTimeout(r, 25));
+    postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
+    for (let i = 0; i < 200 && !getState().turns.some((t) => t.agentId === "tas-1" && t.status === "running" && seen.options.length > 0); i++) await new Promise((r) => setTimeout(r, 25));
     await new Promise((r) => setTimeout(r, 50));
-    expect(interrupt("inv-1").ok).toBe(true);
+    expect(interrupt("tas-1").ok).toBe(true);
     expect(seen.interrupts).toBe(1);
     release();
     await settle();
     const s = getState();
-    expect(s.turns.find((t) => t.agentId === "inv-1")?.status).toBe("interrupted");
-    expect(s.messages.some((m) => m.from.kind === "agent" && m.from.agentId === "inv-1" && m.text === REPORT)).toBe(false);
+    expect(s.turns.find((t) => t.agentId === "tas-1")?.status).toBe("interrupted");
+    expect(s.messages.some((m) => m.from.kind === "agent" && m.from.agentId === "tas-1" && m.text === REPORT)).toBe(false);
   });
 
   it("steers a person's message into the running query instead of queueing it for the next turn", async () => {
@@ -113,7 +113,7 @@ describe("BOB_ENGINE=sdk runs crew build and review turns as one coding-agent qu
         async *[Symbol.asyncIterator]() {
           const input = prompt[Symbol.asyncIterator]();
           heard.push(String((await input.next()).value?.message.content));
-          yield toolUse("t1", "Read", { file_path: "src/invoices.ts" });
+          yield toolUse("t1", "Read", { file_path: "src/index.ts" });
           yield toolResult("t1");
           await hold;
           heard.push(String((await input.next()).value?.message.content));
@@ -122,21 +122,21 @@ describe("BOB_ENGINE=sdk runs crew build and review turns as one coding-agent qu
         },
       };
     });
-    postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+    postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
     for (let i = 0; i < 200 && heard.length === 0; i++) await new Promise((r) => setTimeout(r, 25));
-    const steer = postUserMessage("inv-1", "Also quote names that contain commas.", "steer");
+    const steer = postUserMessage("tas-1", "Also quote names that contain commas.", "steer");
     expect(steer.ok && steer.steered).toBe(true);
     release();
     await settle();
     expect(heard[1]).toMatch(/while you work[\s\S]*Also quote names that contain commas\./);
-    expect(getState().turns.filter((t) => t.agentId === "inv-1")).toHaveLength(1);
-    expect(getState().turns.find((t) => t.agentId === "inv-1")?.status).toBe("completed");
+    expect(getState().turns.filter((t) => t.agentId === "tas-1")).toHaveLength(1);
+    expect(getState().turns.find((t) => t.agentId === "tas-1")?.status).toBe("completed");
   });
 
   it("leaves the captain and the scripted brain on the move loop", async () => {
     setSdkQuery(fakeAgent(seen));
     delete process.env.BOB_ENGINE;
-    postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+    postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
     await settle();
     expect(seen.options).toHaveLength(0);
     process.env.BOB_ENGINE = "sdk";

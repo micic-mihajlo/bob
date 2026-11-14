@@ -10,11 +10,11 @@ import { SAMPLE_PROJECT } from "../src/lib/seed";
 import { configure, getState, resetState, subscribe } from "../src/lib/store";
 import { settle } from "../src/lib/turns";
 
-const REQUEST = process.env.BOB_LIVE_REQUEST || "Customers want to export invoices as CSV.";
+const REQUEST = process.env.BOB_LIVE_REQUEST || "Users want to export their tasks as CSV.";
 /** What the person says when the captain pushes back on the request as too vague to test. */
 const ANSWER =
   process.env.BOB_LIVE_ANSWER ||
-  "Yes. An accountant exports every invoice from the invoices module as CSV: id, customer, amount in dollars, status, issued and due date. Done when a test shows a header row, one row per invoice, and a customer name with a comma comes out quoted.";
+  "Yes. An accountant exports every task from the tasks module as CSV: id, customer, amount in dollars, status, issued and due date. Done when a test shows a header row, one row per task, and a customer name with a comma comes out quoted.";
 const LIMIT_MS = Number(process.env.BOB_LIVE_LIMIT_MS || 15 * 60_000);
 /** With BOB_LIVE_MERGE=1 the harness approves each merge card and runs on until the pull request merged and every crew thread closed. */
 const MERGE = process.env.BOB_LIVE_MERGE === "1";

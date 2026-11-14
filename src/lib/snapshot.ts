@@ -106,5 +106,6 @@ export function buildSnapshot(s: State): Snapshot {
     linear: linearStatus(),
     claude: claudeStatus(),
     recalls: s.recalls ?? [],
+    knowledge: Object.fromEntries(s.messages.flatMap((m) => (m.knowledge ? [[m.id, m.knowledge]] : []))),
   };
 }

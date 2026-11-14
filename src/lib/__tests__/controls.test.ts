@@ -12,7 +12,7 @@ import { projectLayout } from "../workspace";
 import { freshTeam } from "./helpers";
 
 const REQUEST =
-  "Customers want to export invoices as CSV: all invoices, columns id, customer, amount, status and due date. Done when invoicesToCsv returns a header row and one row per invoice.";
+  "Users want to export their tasks as CSV: all tasks, columns id, title, hours, status and due date. Done when tasksToCsv returns a header row and one row per task.";
 const digest = () => getState().drive.find((f) => f.name === "DIGEST.md")?.content ?? "";
 
 /** Commits bob.policy.json onto the project's main branch, as a merged change would. */
@@ -59,7 +59,7 @@ describe("factory controls", { timeout: 60_000 }, () => {
     expect(used).toMatchObject({ modelCalls: 91, inputTokens: 910_000, outputTokens: 91_000 });
     expect(used.costUsd).toBeCloseTo(91 * (0.01 * 0.6 + 0.001 * 2.5), 6);
     expect(digest()).toBe(
-      '1 thing needs you: approve the merge of #1\n\nAlert: "Customers want to export invoices as CSV: all invoices, col…" made 91 model calls, over its budget of 90.\n',
+      '1 thing needs you: approve the merge of #1\n\nAlert: "Users want to export their tasks as CSV: all tasks, columns…" made 91 model calls, over its budget of 90.\n',
     );
 
     const waited = Date.now() + 30 * 60_000;

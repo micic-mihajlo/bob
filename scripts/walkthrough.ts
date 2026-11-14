@@ -5,6 +5,7 @@
  *
  *   pnpm walkthrough                 scripted brain, own server on port 3210
  *   pnpm walkthrough --live          live model, needs AI_GATEWAY_API_KEY in .env.local
+ *   pnpm walkthrough --live --self   Bob builds Bob: its own repository at demo/self-base, PRs to demo/self
  *   pnpm walkthrough --url http://localhost:3000   a running server (no restart check)
  */
 import { spawn, execSync, type ChildProcess } from "node:child_process";
@@ -24,6 +25,7 @@ const { values: opts } = parseArgs({
     out: { type: "string", default: ".data/walkthrough" },
     "no-second": { type: "boolean", default: false },
     "no-restart": { type: "boolean", default: false },
+    self: { type: "boolean", default: false },
     quiet: { type: "boolean", default: false },
   },
 });
@@ -59,16 +61,28 @@ const newRequest = (key: string, vague: string, testable: string): Request => ({
 
 const A = newRequest(
   "A",
-  "customers want to export invoices as CSV",
-  "Add invoicesToCsv(invoices) in src/csv.ts: one header row id,customer,amount,status,dueDate, then one row per invoice with the amount in dollars to two decimals, and quote any cell that holds a comma, quote or line break. Done means a vitest test in src/csv.test.ts passes for a plain row and for a customer name with a comma.",
+  "users want to export their tasks as CSV",
+  "Add tasksToCsv(tasks) in src/csv.ts: one header row id,title,hours,status,dueDate, then one row per task with the estimate in hours to two decimals, and quote any cell that holds a comma, quote or line break. Done means a vitest test in src/csv.test.ts passes for a plain row and for a title with a comma.",
 );
 const B = newRequest(
   "B",
-  "Add isOverdue(invoice, today) in src/overdue.ts: true when the invoice is not paid and its dueDate is before today. Done means a vitest test passes for a paid invoice, an unpaid one past due, and one due today.",
+  "Add isOverdue(task, today) in src/overdue.ts: true when the task is not done and its dueDate is before today. Done means a vitest test passes for a done task, an open one past due, and one due today.",
   "Yes, exactly as written: isOverdue in src/overdue.ts with its vitest test.",
 );
 /** The restart check runs on its own, after a reset, so a restart can't muddy results 1-8. */
 const C = newRequest("C", A.vague, A.testable);
+/** The self demo: Bob's own repository, and two requests that both write src/lib/format-time.ts, so the second merge conflicts. */
+const SELF = { repo: "https://github.com/micic-mihajlo/bob.git", branch: "demo/self-base", name: "bob", prBase: "demo/self" };
+if (opts.self) {
+  for (const r of [A, C]) {
+    r.vague = "Show how long each request has been running on its roadmap card.";
+    r.testable =
+      "Add formatElapsed(ms) in src/lib/format-time.ts: 45s under a minute, 3m 05s under an hour, else 1h 02m, and show it on each roadmap card. Done when a vitest test passes for 45, 185 and 3720 seconds.";
+  }
+  B.vague =
+    "Show when each pull request was opened as relative time on its card: add formatAgo(ms) in src/lib/format-time.ts returning just now under 10 s, then 12s ago, 5m ago, 2h ago, 3d ago. Done when a vitest test passes for 5 s, 12 s, 300 s, 7200 s and 3 days.";
+  B.testable = "Yes, exactly as written: formatAgo in src/lib/format-time.ts with its vitest test.";
+}
 /** The requests of the phase that is running. */
 let requests: Request[] = [A, B];
 
@@ -102,6 +116,7 @@ function startServer(): void {
     env.BOB_ENGINE = ENGINE;
   } else env.BOB_BRAIN = "script";
   if (opts.pace) env.BOB_PACE = opts.pace;
+  if (opts.self) env.BOB_GITHUB_BASE = process.env.BOB_GITHUB_BASE?.trim() || SELF.prBase;
   server = spawn(path.join(ROOT, "node_modules/.bin/next"), ["dev", "--port", String(opts.port)], { cwd: ROOT, env, detached: true, stdio: ["ignore", "pipe", "pipe"] });
   server.stdout?.pipe(serverLog, { end: false });
   server.stderr?.pipe(serverLog, { end: false });
@@ -379,7 +394,11 @@ async function boot(): Promise<void> {
 /** Resets, posts the first request, and drives until every request it posted is done or the run stops. */
 async function phase(reqs: Request[], restartAt: Request | null): Promise<{ stopReason: string; final: Snapshot }> {
   requests = reqs;
-  const reset = await post("/api/reset", { sample: true });
+  if (opts.self) {
+    const opened = await post("/api/projects", { repo: SELF.repo, branch: SELF.branch, name: SELF.name });
+    if (!opened.ok) throw new Error(`opening Bob's own repository failed: ${opened.error}`);
+  }
+  const reset = await post("/api/reset", opts.self ? { warm: true } : { sample: true });
   if (!reset.ok) throw new Error(`reset failed: ${reset.error}`);
   let s = await state();
   const captain = captainOf(s);

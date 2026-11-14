@@ -8,8 +8,8 @@ import { getState } from "../store";
 import { settle } from "../turns";
 import { brainFrom, freshTeam, say } from "./helpers";
 
-const CSV = "customers want to export invoices as CSV";
-const OVERDUE = "List overdue invoices: add overdueInvoices(invoices, today) in src/invoices.ts. Done means a vitest test passes for one overdue invoice.";
+const CSV = "users want to export their tasks as CSV";
+const OVERDUE = "List overdue tasks: add overdueTasks(tasks, today) in src/tasks.ts. Done means a vitest test passes for one overdue task.";
 
 const posted = (r: ReturnType<typeof postUserMessage>) => {
   if (!r.ok) throw new Error(r.error);
@@ -29,7 +29,7 @@ describe("a request is never folded into another or dropped without a word", { t
         bob: (ctx: TurnContext) => {
           if (!ctx.inbound.some((i) => i.text === OVERDUE)) return say("Which columns should the file have?");
           return ctx.moves.length === 0
-            ? { toolCalls: [{ name: "set_goal", input: { title: "Overdue invoices", user: "accountant", behaviour: "sees overdue invoices", acceptance: "one overdue invoice listed" } }] }
+            ? { toolCalls: [{ name: "set_goal", input: { title: "Overdue tasks", user: "accountant", behaviour: "sees overdue tasks", acceptance: "one overdue task listed" } }] }
             : say("Recorded the overdue request.");
         },
       }),
@@ -54,7 +54,7 @@ describe("a request is never folded into another or dropped without a word", { t
           inputs.push(ctx.input);
           if (inputs.length > 1) return say("Noted.");
           return ctx.moves.length === 0
-            ? { toolCalls: [{ name: "set_goal", input: { title: "CSV export", user: "accountant", behaviour: "downloads invoices", acceptance: "one row per invoice" } }] }
+            ? { toolCalls: [{ name: "set_goal", input: { title: "CSV export", user: "accountant", behaviour: "downloads tasks", acceptance: "one row per task" } }] }
             : say("Recorded.");
         },
       }),

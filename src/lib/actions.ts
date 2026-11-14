@@ -2,6 +2,7 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { openAsk, openFollowUp, openInboxQuestion } from "./brain/intake";
 import { globals } from "./globals";
+import { withCodebase } from "./graph/knowledge";
 import { startRecall, withRecall } from "./graph/memory";
 import { newId, nowIso } from "./ids";
 import { isThreadModel, unknownModel } from "./models";
@@ -86,7 +87,7 @@ export function postUserMessage(agentId: AgentId, text: string, mode: SendMode =
   });
   if (!sent.ok) return { ok: false, error: sent.error.message };
   const steered = mode === "steer" && steerInto(agentId, sent.message.id, sent.deliveries[0].id, sent.message.text, via);
-  const recalling = agent.kind === "captain" ? startRecall(text, getState().project.id) : null;
+  const recalling = agent.kind === "captain" ? withCodebase(startRecall(text, getState().project.id), text, getState()) : null;
   if (!recalling) {
     if (!steered) drain(agentId);
   } else {
@@ -189,7 +190,7 @@ export function setThreadModelByPerson(agentId: AgentId, model: string): ActionR
 }
 
 /**
- * Back to the seed on the same project, or on the invoices sample with sample, with that project's repository and every
+ * Back to the seed on the same project, or on the scripted sample with sample, with that project's repository and every
  * thread's clone removed. With warm, the repository and its dependencies are made again before it answers.
  */
 export async function resetAll(options: { warm?: boolean; sample?: boolean } = {}): Promise<ActionResult<{ deps?: DepsState }>> {

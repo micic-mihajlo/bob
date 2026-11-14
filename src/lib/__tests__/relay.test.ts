@@ -18,7 +18,7 @@ async function leadAsksCoder(coder: Parameters<typeof brainFrom>[0][string], exp
       coder,
     }),
   );
-  postUserMessage("lead", "please export invoices");
+  postUserMessage("lead", "please export tasks");
   await settle();
 }
 
@@ -114,7 +114,7 @@ describe("loops and fan-out", () => {
     setBrainOverride(
       brainFrom({
         coder: (ctx) => (ctx.inbound[0].rule === "person" && ctx.moves.length === 0 ? ask("reviewer", "What should the CSV columns be?") : say("Using those columns.")),
-        reviewer: (ctx) => (ctx.inbound[0].rule === "request" && ctx.moves.length === 0 ? ask("coder", "Which invoices are in scope?") : say("Date, number, total.")),
+        reviewer: (ctx) => (ctx.inbound[0].rule === "request" && ctx.moves.length === 0 ? ask("coder", "Which tasks are in scope?") : say("Date, number, total.")),
       }),
     );
     postUserMessage("coder", "build csv export");

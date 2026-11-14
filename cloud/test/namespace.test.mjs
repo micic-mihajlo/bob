@@ -14,8 +14,8 @@ const call = (path, ns, init = {}) =>
 const put = (ns, id, rev, state) => call(`/projects/${id}/state`, ns, { method: "PUT", headers: { "x-bob-rev": String(rev) }, body: JSON.stringify(state) });
 
 test("two namespaces writing the same project never see each other", async () => {
-  assert.equal((await put("stage", "invoices-app", 10, { rev: 10, who: "stage" })).status, 200);
-  assert.equal((await put("crew-1", "invoices-app", 3, { rev: 3, who: "crew-1" })).status, 200);
+  assert.equal((await put("stage", "tasks-app", 10, { rev: 10, who: "stage" })).status, 200);
+  assert.equal((await put("crew-1", "tasks-app", 3, { rev: 3, who: "crew-1" })).status, 200);
 
   const stage = await (await call("/latest", "stage")).json();
   const crew = await (await call("/latest", "crew-1")).json();

@@ -31,7 +31,7 @@ describe("the review and fix loop conforms to BobFormal.Mailbox.handoffs_within_
 
   it.each(SEEDS.slice(0, 10))("random review and fix cascade %i never passes the fix cap or the hand-off budget", async (seed) => {
     const rand = seeded(seed);
-    postUserMessage("bob", "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.");
+    postUserMessage("bob", "Customers want to export all tasks as CSV. Done when a test shows one row per task.");
     await settle();
     setBrainOverride(brainFrom({}));
     const pending = getState().approvals.find((a) => a.status === "pending");
@@ -42,10 +42,10 @@ describe("the review and fix loop conforms to BobFormal.Mailbox.handoffs_within_
     for (let i = 0; i < 14; i++) {
       const step = pick(rand, STEPS);
       if (step === "approve" || step === "request_changes") {
-        await callTool("record_review", { pullRequestId: "#1", verdict: step, findings: step === "approve" ? [] : [finding] }, as("inv-2"));
+        await callTool("record_review", { pullRequestId: "#1", verdict: step, findings: step === "approve" ? [] : [finding] }, as("tas-2"));
       } else if (step === "push" || step === "reopen") {
-        if (step === "push") await callTool("write_files", { files: [{ path: "src/csv.ts", content: `export const v = ${seed * 100 + i};\n` }] }, as("inv-1"));
-        await callTool("open_pull_request", { title: "Add CSV export", body: "Next head." }, as("inv-1"));
+        if (step === "push") await callTool("write_files", { files: [{ path: "src/csv.ts", content: `export const v = ${seed * 100 + i};\n` }] }, as("tas-1"));
+        await callTool("open_pull_request", { title: "Add CSV export", body: "Next head." }, as("tas-1"));
       } else {
         const asked = await callTool("request_approval", { title: "Merge #1", detail: "x", pullRequestId: "#1" }, asBob);
         const s = getState();
@@ -55,8 +55,8 @@ describe("the review and fix loop conforms to BobFormal.Mailbox.handoffs_within_
         expect(!!asked.result.approvalId, step).toBe(gateOpen);
       }
 
-      const toBuilder = handoffsTo("inv-1");
-      const toReviewer = handoffsTo("inv-2");
+      const toBuilder = handoffsTo("tas-1");
+      const toReviewer = handoffsTo("tas-2");
       expect(toBuilder.filter((t) => /fix round \d of/.test(t)).length).toBeLessThanOrEqual(MAX_FIX_ROUNDS);
       expect(toBuilder.filter((t) => /report with Status: blocked/.test(t)).length).toBeLessThanOrEqual(1);
       const heads = toReviewer.map((t) => /new head (\w+)/.exec(t)?.[1]);

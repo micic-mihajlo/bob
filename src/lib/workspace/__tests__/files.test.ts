@@ -57,7 +57,7 @@ describe("file confinement", { timeout: GIT_TEST_TIMEOUT }, () => {
 
     const listed = await listFiles(ws);
     if (!listed.ok) throw new Error(listed.error);
-    expect(listed.files).toContain("src/format.ts");
+    expect(listed.files).toContain("src/index.ts");
     expect(listed.files).toContain("src/new/totals.ts");
     expect(listed.files.some((f) => f.startsWith(".git/"))).toBe(false);
   });
@@ -66,22 +66,22 @@ describe("file confinement", { timeout: GIT_TEST_TIMEOUT }, () => {
 describe("editFile", { timeout: GIT_TEST_TIMEOUT }, () => {
   it("replaces text that occurs exactly once", async () => {
     const ws = await templateWorkspace(temp.root);
-    const result = await editFile(ws, "src/format.ts", "toFixed(2)", "toFixed(3)");
+    const result = await editFile(ws, "src/index.ts", "Hello, ", "Hi, ");
     expect(result.ok).toBe(true);
-    expect(await readFs(path.join(ws.root, "src/format.ts"), "utf8")).toContain("toFixed(3)");
+    expect(await readFs(path.join(ws.root, "src/index.ts"), "utf8")).toContain("Hi, ");
   });
 
   it("refuses text that is missing or occurs more than once, and leaves the file alone", async () => {
     const ws = await templateWorkspace(temp.root);
-    const before = await readFs(path.join(ws.root, "src/invoices.ts"), "utf8");
+    const before = await readFs(path.join(ws.root, "src/index.ts"), "utf8");
 
-    const missing = await editFile(ws, "src/invoices.ts", "no such text", "x");
-    const repeated = await editFile(ws, "src/invoices.ts", "list: readonly Invoice[]", "x");
-    const empty = await editFile(ws, "src/invoices.ts", "", "x");
+    const missing = await editFile(ws, "src/index.ts", "no such text", "x");
+    const repeated = await editFile(ws, "src/index.ts", "name", "x");
+    const empty = await editFile(ws, "src/index.ts", "", "x");
 
     expect(missing).toMatchObject({ ok: false, error: expect.stringContaining("not found") });
-    expect(repeated).toMatchObject({ ok: false, error: expect.stringContaining("matches 4 places") });
+    expect(repeated).toMatchObject({ ok: false, error: expect.stringContaining("matches 2 places") });
     expect(empty.ok).toBe(false);
-    expect(await readFs(path.join(ws.root, "src/invoices.ts"), "utf8")).toBe(before);
+    expect(await readFs(path.join(ws.root, "src/index.ts"), "utf8")).toBe(before);
   });
 });

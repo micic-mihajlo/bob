@@ -35,7 +35,7 @@ export const DEMO_LABEL = "demo";
 export const TITLE_PREFIX = "[demo] ";
 
 const SHIPPING_REPO = "micic-mihajlo/bob";
-const DEFAULT_BASE = "demo/invoices-main";
+const DEFAULT_BASE = "demo/self";
 const REPO_PATTERN = /^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/;
 
 export const headBranch = (branch: string) => `${HEAD_PREFIX}${branch}`;

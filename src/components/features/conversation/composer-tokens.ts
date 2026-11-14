@@ -44,7 +44,7 @@ function drawStaticMentionAvatar(avatar: HTMLElement, agent: Pick<Agent, "id" | 
     canvas.height = Math.round(size * ratio);
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
     const identity = asciiFaceIdentity(agent.id, agent.kind === "captain" ? null : agent.hue);
-    drawAsciiFace(context, size, identity, asciiFaceFrame("idle", identity.phase, false, 0, null));
+    drawAsciiFace(context, size, identity, asciiFaceFrame("idle", identity.phase, false, 0, null), true);
   });
 }
 

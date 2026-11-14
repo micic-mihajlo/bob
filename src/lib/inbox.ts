@@ -18,13 +18,13 @@ export const SAMPLE_INBOX: { kind: InboxKind; source: string; text: string }[] =
     kind: "meeting",
     source: "customer call, Nov 13",
     text: [
-      "Customer call with Dana Reyes, finance lead at Northwind Supply, Nov 13.",
-      "Dana: At month end our accountant exports every invoice to a spreadsheet for the books. Right now she copies them out by hand.",
-      "Dana: A CSV export of all invoices with id, customer, amount, status and due date would save her most of a day.",
+      "Customer call with Dana Reyes, operations lead at Northwind Supply, Nov 13.",
+      "Dana: Every Friday our project lead copies every task into a spreadsheet for the weekly report. Right now she does it by hand.",
+      "Dana: A CSV export of all tasks with id, title, hours, status and due date would save her most of a day.",
       "Mihajlo: What counts as done for you?",
-      "Dana: She opens the file and sees one row per invoice under a header row, and names like \"Acme, Inc.\" stay in one column.",
-      "Dana: Second thing: nobody notices when an invoice goes overdue. We'd like a list of every sent invoice past its due date, so someone can chase it the next morning.",
-      "Dana: And honestly the invoices page just feels slow and clunky.",
+      "Dana: She opens the file and sees one row per task under a header row, and titles like \"Plan, then build\" stay in one column.",
+      "Dana: Second thing: nobody notices when a task goes overdue. We'd like a list of every open task past its due date, so someone can chase it the next morning.",
+      "Dana: And honestly the tasks page just feels slow and clunky.",
       "Mihajlo: Thanks, I'll take these back to the team.",
     ].join("\n"),
   },
@@ -32,9 +32,9 @@ export const SAMPLE_INBOX: { kind: InboxKind; source: string; text: string }[] =
     kind: "error",
     source: "production error, Nov 14 09:12 UTC",
     text: [
-      "Error: CSV import rejected the invoices export: row 3 has 6 columns, expected 5.",
-      "The customer name \"Acme, Inc.\" was written without quotes, so its comma split the row.",
-      "    at exportInvoices (src/invoices.ts:31:18)",
+      "Error: CSV import rejected the tasks export: row 3 has 6 columns, expected 5.",
+      "The title \"Plan, then build\" was written without quotes, so its comma split the row.",
+      "    at exportTasks (src/tasks.ts:31:18)",
     ].join("\n"),
   },
 ];
@@ -50,14 +50,14 @@ const patchItem = (s: State, id: string, patch: Partial<InboxItem>): State => ({
 /** A request that only an inbox item started: nothing in it may start a thread until the person promotes the work. */
 export const isInboxRequest = (s: State, requestId: RequestId): boolean => inboxItems(s).some((i) => messageById(s, i.messageId)?.requestId === requestId);
 
-/** File names an item mentions, such as invoices.ts from "at toCsv (src/invoices.ts:31:18)". */
+/** File names an item mentions, such as tasks.ts from "at toCsv (src/tasks.ts:31:18)". */
 function mentionedFiles(text: string): string[] {
   return [...new Set([...text.matchAll(/[\w./-]*?([\w-]+\.(?:tsx?|jsx?|mjs|py|go|rb|css|json))\b/g)].map((m) => m[1]))];
 }
 
 const baseName = (path: string) => path.split("/").pop() ?? path;
 
-/** Function names in the item's stack frames, such as exportInvoices in "at exportInvoices (src/invoices.ts:31:18)". */
+/** Function names in the item's stack frames, such as exportTasks in "at exportTasks (src/tasks.ts:31:18)". */
 const framedFunctions = (text: string): string[] => [...text.matchAll(/\bat (?:[\w$]+\.)*([\w$]+) \(/g)].map((m) => m[1]);
 
 const STOP_WORDS = new Set(["the", "and", "for", "with", "add", "has", "was", "not", "its", "from", "into", "this", "that"]);

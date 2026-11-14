@@ -11,8 +11,8 @@ import { agentId, agentRequest, conversationToken, createAgent, elevenLabsKey, R
 import { SEND_TO_BOB, speakable, utteranceFor } from "../speech";
 import { STILL_WORKING, TURN_FAILED, voiceTurn } from "../turn";
 
-const VAGUE = "customers want to export invoices as CSV";
-const ANSWER = "All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.";
+const VAGUE = "users want to export their tasks as CSV";
+const ANSWER = "All tasks, columns id, title, hours, status and due date. Done when the file has one row per task.";
 
 describe("a call with the captain", { timeout: 60_000 }, () => {
   beforeEach(freshTeam);
@@ -140,9 +140,9 @@ describe("the ElevenLabs switch and requests", () => {
 
 describe("speech helpers", () => {
   it("sends the person's own words, falling back to the tool text", () => {
-    expect(utteranceFor(["customers want", " to export invoices as CSV "], "users need CSV export")).toBe("customers want to export invoices as CSV");
-    expect(utteranceFor([], " export invoices ")).toBe("export invoices");
-    expect(utteranceFor(["Every invoice with the columns i d, customer and a c s v file."], "")).toBe("Every invoice with the columns ID, customer and a CSV file.");
+    expect(utteranceFor(["users want", " to export their tasks as CSV "], "users need CSV export")).toBe("users want to export their tasks as CSV");
+    expect(utteranceFor([], " export tasks ")).toBe("export tasks");
+    expect(utteranceFor(["Every task with the columns i d, customer and a c s v file."], "")).toBe("Every task with the columns ID, customer and a CSV file.");
     expect(utteranceFor(["So I a"], "")).toBe("So I a");
   });
 

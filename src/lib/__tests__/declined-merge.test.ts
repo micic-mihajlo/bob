@@ -7,7 +7,7 @@ import { getState } from "../store";
 import { settle } from "../turns";
 import { freshTeam } from "./helpers";
 
-const ASK = "Customers want to export all invoices as CSV. Done when a test shows one row per invoice.";
+const ASK = "Customers want to export all tasks as CSV. Done when a test shows one row per task.";
 const CHANGE = "Use semicolons as the separator so Excel in Europe opens it.";
 
 describe("the answer to what should change after a declined merge", { timeout: 60_000 }, () => {

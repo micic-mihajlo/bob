@@ -4,7 +4,7 @@ import { answeringQuote, requestLabel, requestUsage, requestUsageLine } from "..
 
 const request: RequestControl = {
   requestId: "req_1",
-  ask: "customers want to export invoices as CSV",
+  ask: "users want to export their tasks as CSV",
   startedAt: "2026-11-14T09:26:27.265Z",
   seconds: 97,
   running: false,
@@ -69,7 +69,7 @@ describe("requestLabel", () => {
   });
 
   it("keeps a typed request as the person wrote it", () => {
-    expect(requestLabel("customers want to export invoices as CSV", [call])).toBe("customers want to export invoices as CSV");
+    expect(requestLabel("users want to export their tasks as CSV", [call])).toBe("users want to export their tasks as CSV");
   });
 });
 
@@ -80,7 +80,7 @@ describe("answeringQuote", () => {
   });
 
   it("takes the first line that asks, without its list marker", () => {
-    const question = "Two quick ones before I plan it.\n- I'd put every invoice in the file. Is that the right set of columns?\n- Who opens it?";
+    const question = "Two quick ones before I plan it.\n- I'd put every task in the file. Is that the right set of columns?\n- Who opens it?";
     expect(answeringQuote({ ask: "Add CSV export", question })).toBe("Is that the right set of columns?");
   });
 

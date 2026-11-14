@@ -110,7 +110,7 @@ export function ProjectMenu() {
               className="server-menu-row"
               aria-current={project.id === active.id ? "true" : undefined}
               disabled={pendingId !== null}
-              title={project.repo ?? TEMPLATE_LABELS[project.template ?? "invoices"]}
+              title={project.repo ?? TEMPLATE_LABELS[project.template ?? "blank-ts"]}
               onClick={() => void choose(project)}
             >
               <span className="ui-menu-check" data-checked={project.id === active.id ? "" : undefined} aria-hidden="true">

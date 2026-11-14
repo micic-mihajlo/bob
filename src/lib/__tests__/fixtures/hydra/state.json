@@ -1,7 +1,7 @@
 {
  "project": {
-  "id": "invoices-app",
-  "name": "invoices-app",
+  "id": "tasks-app",
+  "name": "tasks-app",
   "repo": null
  },
  "agents": [
@@ -20,16 +20,16 @@
    }
   },
   {
-   "id": "inv-1",
-   "name": "INV-1",
-   "title": "CSV export for invoices",
+   "id": "tas-1",
+   "name": "TAS-1",
+   "title": "CSV export for tasks",
    "description": "You make one change in your workspace on your own branch, commit it, read the diff, and open a pull request. You never merge.",
    "role": "teammate",
    "kind": "crew",
-   "code": "INV-1",
+   "code": "TAS-1",
    "crewRole": "build",
    "workOrderId": "wo_91161aa1",
-   "branch": "inv-1-csv-export-for-invoices",
+   "branch": "tas-1-csv-export-for-tasks",
    "closedAt": null,
    "hue": 211,
    "model": "deepseek/deepseek-v4.1-flash",
@@ -40,13 +40,13 @@
    }
   },
   {
-   "id": "inv-2",
-   "name": "INV-2",
+   "id": "tas-2",
+   "name": "TAS-2",
    "title": "Review #1",
    "description": "You read one pull request's real diff in your workspace and record a verdict with concrete findings. You never change code.",
    "role": "teammate",
    "kind": "crew",
-   "code": "INV-2",
+   "code": "TAS-2",
    "crewRole": "review",
    "workOrderId": "wo_91161aa1",
    "branch": null,
@@ -60,16 +60,16 @@
    }
   },
   {
-   "id": "inv-3",
-   "name": "INV-3",
+   "id": "tas-3",
+   "name": "TAS-3",
    "title": "CSV export from the call",
    "description": "You make one change in your workspace on your own branch, commit it, read the diff, and open a pull request. You never merge.",
    "role": "teammate",
    "kind": "crew",
-   "code": "INV-3",
+   "code": "TAS-3",
    "crewRole": "build",
    "workOrderId": "wo_a13c36dd",
-   "branch": "inv-3-export-all-invoices-as-csv",
+   "branch": "tas-3-export-all-tasks-as-csv",
    "closedAt": null,
    "hue": 213,
    "model": "deepseek/deepseek-v4.1-flash",
@@ -91,7 +91,7 @@
    "to": [
     "bob"
    ],
-   "text": "customers want to export invoices as CSV",
+   "text": "users want to export their tasks as CSV",
    "expectsReply": false,
    "replyTo": null,
    "at": "2026-11-14T16:56:45.278Z"
@@ -106,7 +106,7 @@
    "to": [
     "bob"
    ],
-   "text": "All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.",
+   "text": "All tasks, columns id, title, hours, status and due date. Done when the file has one row per task.",
    "expectsReply": false,
    "replyTo": null,
    "continues": "msg_e3ed5119",
@@ -121,9 +121,9 @@
     "agentId": "bob"
    },
    "to": [
-    "inv-1"
+    "tas-1"
    ],
-   "text": "Goal: CSV export for invoices.\nContext: the person wrote \"customers want to export invoices as CSV\" then \"All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.\". User: Customers. Acceptance: Done when the file has one row per invoice..\nArea: the invoices module under src/, next to src/invoices.ts and src/format.ts.\nYou can rely on: the Invoice type in src/invoices.ts and the project's test setup.\nOut of scope: the UI and any change to existing behaviour.\nDone means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.\nAcceptance test: src/acceptance/wo_91161aa1.test.ts. Write it first, on its own, so it asserts: Done when the file has one row per invoice.. Run that file alone, without a pipe (npx vitest run src/acceptance/wo_91161aa1.test.ts), and show it failing, then implement, then run the whole suite (npm test) and show it passing.",
+   "text": "Goal: CSV export for tasks.\nContext: the person wrote \"users want to export their tasks as CSV\" then \"All tasks, columns id, title, hours, status and due date. Done when the file has one row per task.\". User: Customers. Acceptance: Done when the file has one row per task..\nArea: the tasks module under src/, next to src/tasks.ts and src/format.ts.\nYou can rely on: the Task type in src/tasks.ts and the project's test setup.\nOut of scope: the UI and any change to existing behaviour.\nDone means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.\nAcceptance test: src/acceptance/wo_91161aa1.test.ts. Write it first, on its own, so it asserts: Done when the file has one row per task.. Run that file alone, without a pipe (npx vitest run src/acceptance/wo_91161aa1.test.ts), and show it failing, then implement, then run the whole suite (npm test) and show it passing.",
    "expectsReply": true,
    "replyTo": null,
    "at": "2026-11-14T16:56:45.461Z"
@@ -134,12 +134,12 @@
    "causedBy": "msg_34e2c77b",
    "from": {
     "kind": "agent",
-    "agentId": "inv-1"
+    "agentId": "tas-1"
    },
    "to": [
     "bob"
    ],
-   "text": "Status: done\nResult: Opened pull request #1 (id art_18239850) on branch inv-1-csv-export-for-invoices: Add CSV export for invoices.\nEvidence: src/acceptance/wo_91161aa1.test.ts, src/csv.ts; src/acceptance/wo_91161aa1.test.ts failed on its own first; npm test failed (Failed: exit code 127.); read the diff against main",
+   "text": "Status: done\nResult: Opened pull request #1 (id art_18239850) on branch tas-1-csv-export-for-tasks: Add CSV export for tasks.\nEvidence: src/acceptance/wo_91161aa1.test.ts, src/csv.ts; src/acceptance/wo_91161aa1.test.ts failed on its own first; npm test failed (Failed: exit code 127.); read the diff against main",
    "expectsReply": false,
    "replyTo": "msg_34e2c77b",
    "at": "2026-11-14T16:56:47.264Z"
@@ -153,9 +153,9 @@
     "agentId": "bob"
    },
    "to": [
-    "inv-2"
+    "tas-2"
    ],
-   "text": "Review pull request #1 (id art_18239850) \"Add CSV export for invoices\" on branch inv-1-csv-export-for-invoices.\nChanged files: src/acceptance/wo_91161aa1.test.ts (+14 -0), src/csv.ts (+13 -0).\nRead it with git fetch origin, then git diff origin/main...origin/inv-1-csv-export-for-invoices.\nCheck: correct output, quoting of odd values, tests that cover the new code, no change to existing behaviour.\nDone means: record_review with your verdict and every finding, then a report with Status / Result / Evidence.\nAcceptance test: src/acceptance/wo_91161aa1.test.ts should assert: Done when the file has one row per invoice.. Confirm it does. If it is missing or checks something else, record a finding with category tests.",
+   "text": "Review pull request #1 (id art_18239850) \"Add CSV export for tasks\" on branch tas-1-csv-export-for-tasks.\nChanged files: src/acceptance/wo_91161aa1.test.ts (+14 -0), src/csv.ts (+13 -0).\nRead it with git fetch origin, then git diff origin/main...origin/tas-1-csv-export-for-tasks.\nCheck: correct output, quoting of odd values, tests that cover the new code, no change to existing behaviour.\nDone means: record_review with your verdict and every finding, then a report with Status / Result / Evidence.\nAcceptance test: src/acceptance/wo_91161aa1.test.ts should assert: Done when the file has one row per task.. Confirm it does. If it is missing or checks something else, record a finding with category tests.",
    "expectsReply": true,
    "replyTo": null,
    "at": "2026-11-14T16:56:47.346Z"
@@ -166,12 +166,12 @@
    "causedBy": "msg_42938c0e",
    "from": {
     "kind": "agent",
-    "agentId": "inv-2"
+    "agentId": "tas-2"
    },
    "to": [
     "bob"
    ],
-   "text": "Status: done\nResult: Approved #1 with one low finding: No case for an empty list. It returns the header alone, which is right; a test would keep it that way.\nEvidence: review art_e99fbd95, git diff origin/main...origin/inv-1-csv-export-for-invoices",
+   "text": "Status: done\nResult: Approved #1 with one low finding: No case for an empty list. It returns the header alone, which is right; a test would keep it that way.\nEvidence: review art_e99fbd95, git diff origin/main...origin/tas-1-csv-export-for-tasks",
    "expectsReply": false,
    "replyTo": "msg_42938c0e",
    "at": "2026-11-14T16:56:47.453Z"
@@ -186,7 +186,7 @@
    "to": [
     "bob"
    ],
-   "text": "Inbox item inb_660c21ae: a meeting from \"customer call, Nov 13\".\nTriage it: pull out every ask it holds and record them with one triage_inbox call. Do not start threads, set the goal or plan today; the person promotes work from the backlog.\n---\nCustomer call with Dana Reyes, finance lead at Northwind Supply, Nov 13.\nDana: At month end our accountant exports every invoice to a spreadsheet for the books. Right now she copies them out by hand.\nDana: A CSV export of all invoices with id, customer, amount, status and due date would save her most of a day.\nMihajlo: What counts as done for you?\nDana: She opens the file and sees one row per invoice under a header row, and names like \"Acme, Inc.\" stay in one column.\nDana: Second thing: nobody notices when an invoice goes overdue. We'd like a list of every sent invoice past its due date, so someone can chase it the next morning.\nDana: And honestly the invoices page just feels slow and clunky.\nMihajlo: Thanks, I'll take these back to the team.",
+   "text": "Inbox item inb_660c21ae: a meeting from \"customer call, Nov 13\".\nTriage it: pull out every ask it holds and record them with one triage_inbox call. Do not start threads, set the goal or plan today; the person promotes work from the backlog.\n---\nCustomer call with Dana Reyes, finance lead at Northwind Supply, Nov 13.\nDana: At month end our accountant exports every task to a spreadsheet for the books. Right now she copies them out by hand.\nDana: A CSV export of all tasks with id, customer, amount, status and due date would save her most of a day.\nMihajlo: What counts as done for you?\nDana: She opens the file and sees one row per task under a header row, and names like \"Acme, Inc.\" stay in one column.\nDana: Second thing: nobody notices when a task goes overdue. We'd like a list of every sent task past its due date, so someone can chase it the next morning.\nDana: And honestly the tasks page just feels slow and clunky.\nMihajlo: Thanks, I'll take these back to the team.",
    "expectsReply": false,
    "replyTo": null,
    "inboxId": "inb_660c21ae",
@@ -202,10 +202,10 @@
    "to": [
     "bob"
    ],
-   "text": "Build work order wo_a13c36dd now: \"Export all invoices as CSV\". It came from customer call, Nov 13: \"Dana: A CSV export of all invoices with id, customer, amount, status and due date would save her most of a day.\". It is already in the backlog, so don't plan it again with set_roadmap: put wo_a13c36dd in today with set_today and start its build thread with workOrderId wo_a13c36dd.",
+   "text": "Build work order wo_a13c36dd now: \"Export all tasks as CSV\". It came from customer call, Nov 13: \"Dana: A CSV export of all tasks with id, customer, amount, status and due date would save her most of a day.\". It is already in the backlog, so don't plan it again with set_roadmap: put wo_a13c36dd in today with set_today and start its build thread with workOrderId wo_a13c36dd.",
    "expectsReply": false,
    "replyTo": null,
-   "shown": "Build this: Export all invoices as CSV",
+   "shown": "Build this: Export all tasks as CSV",
    "at": "2026-11-14T16:56:47.468Z"
   },
   {
@@ -217,12 +217,12 @@
     "agentId": "bob"
    },
    "to": [
-    "inv-3"
+    "tas-3"
    ],
    "text": "Goal: CSV export.",
    "expectsReply": true,
    "replyTo": null,
-   "quote": "Dana: A CSV export of all invoices with id, customer, amount, status and due date would save her most of a day.",
+   "quote": "Dana: A CSV export of all tasks with id, customer, amount, status and due date would save her most of a day.",
    "at": "2026-11-14T16:56:47.590Z"
   }
  ],
@@ -248,7 +248,7 @@
   {
    "id": "dlv_e4eb5be7",
    "messageId": "msg_34e2c77b",
-   "recipientAgentId": "inv-1",
+   "recipientAgentId": "tas-1",
    "status": "completed",
    "queueOrder": 3,
    "turnId": "turn_65e5d35b",
@@ -266,7 +266,7 @@
   {
    "id": "dlv_125fb5d3",
    "messageId": "msg_42938c0e",
-   "recipientAgentId": "inv-2",
+   "recipientAgentId": "tas-2",
    "status": "completed",
    "queueOrder": 5,
    "turnId": "turn_e961bd1b",
@@ -302,7 +302,7 @@
   {
    "id": "dlv_fd91069f",
    "messageId": "msg_071acd37",
-   "recipientAgentId": "inv-3",
+   "recipientAgentId": "tas-3",
    "status": "queued",
    "queueOrder": 9,
    "turnId": null,
@@ -334,7 +334,7 @@
   },
   {
    "id": "turn_65e5d35b",
-   "agentId": "inv-1",
+   "agentId": "tas-1",
    "requestId": "req_08a18c03",
    "messageIds": [
     "msg_34e2c77b"
@@ -356,7 +356,7 @@
   },
   {
    "id": "turn_e961bd1b",
-   "agentId": "inv-2",
+   "agentId": "tas-2",
    "requestId": "req_08a18c03",
    "messageIds": [
     "msg_42938c0e"
@@ -405,20 +405,20 @@
     "kind": "user_text",
     "id": "it_3e6bbf28",
     "at": "2026-11-14T16:56:45.279Z",
-    "text": "customers want to export invoices as CSV"
+    "text": "users want to export their tasks as CSV"
    },
    {
     "kind": "agent_text",
     "id": "it_bbcb24d4",
     "at": "2026-11-14T16:56:45.282Z",
     "turnId": "turn_8b9ca5c3",
-    "text": "Two quick ones before I plan it.\n- I'd put every invoice in the file with id, customer, amount, status and due date. Is that the right set of columns?\n- I'd call it done when a test shows a header row and one row per invoice, amounts in dollars. Is that the check you want?"
+    "text": "Two quick ones before I plan it.\n- I'd put every task in the file with id, customer, amount, status and due date. Is that the right set of columns?\n- I'd call it done when a test shows a header row and one row per task, amounts in dollars. Is that the check you want?"
    },
    {
     "kind": "user_text",
     "id": "it_b6976063",
     "at": "2026-11-14T16:56:45.283Z",
-    "text": "All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice."
+    "text": "All tasks, columns id, title, hours, status and due date. Done when the file has one row per task."
    },
    {
     "kind": "step",
@@ -426,7 +426,7 @@
     "at": "2026-11-14T16:56:45.286Z",
     "turnId": "turn_401b4e93",
     "tool": "set_goal",
-    "label": "Set the goal: CSV export for invoices",
+    "label": "Set the goal: CSV export for tasks",
     "outcome": "ok",
     "seconds": 0
    },
@@ -476,7 +476,7 @@
     "at": "2026-11-14T16:56:45.290Z",
     "turnId": "turn_401b4e93",
     "tool": "start_thread",
-    "label": "Starting a build thread: CSV export for invoices",
+    "label": "Starting a build thread: CSV export for tasks",
     "outcome": "ok",
     "seconds": 0.2
    },
@@ -487,9 +487,9 @@
     "turnId": "turn_401b4e93",
     "messageId": "msg_34e2c77b",
     "to": [
-     "inv-1"
+     "tas-1"
     ],
-    "text": "Goal: CSV export for invoices.\nContext: the person wrote \"customers want to export invoices as CSV\" then \"All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.\". User: Customers. Acceptance: Done when the file has one row per invoice..\nArea: the invoices module under src/, next to src/invoices.ts and src/format.ts.\nYou can rely on: the Invoice type in src/invoices.ts and the project's test setup.\nOut of scope: the UI and any change to existing behaviour.\nDone means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.\nAcceptance test: src/acceptance/wo_91161aa1.test.ts. Write it first, on its own, so it asserts: Done when the file has one row per invoice.. Run that file alone, without a pipe (npx vitest run src/acceptance/wo_91161aa1.test.ts), and show it failing, then implement, then run the whole suite (npm test) and show it passing.",
+    "text": "Goal: CSV export for tasks.\nContext: the person wrote \"users want to export their tasks as CSV\" then \"All tasks, columns id, title, hours, status and due date. Done when the file has one row per task.\". User: Customers. Acceptance: Done when the file has one row per task..\nArea: the tasks module under src/, next to src/tasks.ts and src/format.ts.\nYou can rely on: the Task type in src/tasks.ts and the project's test setup.\nOut of scope: the UI and any change to existing behaviour.\nDone means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.\nAcceptance test: src/acceptance/wo_91161aa1.test.ts. Write it first, on its own, so it asserts: Done when the file has one row per task.. Run that file alone, without a pipe (npx vitest run src/acceptance/wo_91161aa1.test.ts), and show it failing, then implement, then run the whole suite (npm test) and show it passing.",
     "expectsReply": true
    },
    {
@@ -497,15 +497,15 @@
     "id": "it_40d1b1a3",
     "at": "2026-11-14T16:56:45.462Z",
     "turnId": "turn_401b4e93",
-    "text": "INV-1 is building \"CSV export for invoices\" on inv-1-csv-export-for-invoices. Done when done when the file has one row per invoice."
+    "text": "TAS-1 is building \"CSV export for tasks\" on tas-1-csv-export-for-tasks. Done when done when the file has one row per task."
    },
    {
     "kind": "message_in",
     "id": "it_79c103d1",
     "at": "2026-11-14T16:56:47.265Z",
     "messageId": "msg_eb7fb1cb",
-    "from": "inv-1",
-    "text": "Status: done\nResult: Opened pull request #1 (id art_18239850) on branch inv-1-csv-export-for-invoices: Add CSV export for invoices.\nEvidence: src/acceptance/wo_91161aa1.test.ts, src/csv.ts; src/acceptance/wo_91161aa1.test.ts failed on its own first; npm test failed (Failed: exit code 127.); read the diff against main",
+    "from": "tas-1",
+    "text": "Status: done\nResult: Opened pull request #1 (id art_18239850) on branch tas-1-csv-export-for-tasks: Add CSV export for tasks.\nEvidence: src/acceptance/wo_91161aa1.test.ts, src/csv.ts; src/acceptance/wo_91161aa1.test.ts failed on its own first; npm test failed (Failed: exit code 127.); read the diff against main",
     "isReply": true
    },
    {
@@ -525,9 +525,9 @@
     "turnId": "turn_75084dc7",
     "messageId": "msg_42938c0e",
     "to": [
-     "inv-2"
+     "tas-2"
     ],
-    "text": "Review pull request #1 (id art_18239850) \"Add CSV export for invoices\" on branch inv-1-csv-export-for-invoices.\nChanged files: src/acceptance/wo_91161aa1.test.ts (+14 -0), src/csv.ts (+13 -0).\nRead it with git fetch origin, then git diff origin/main...origin/inv-1-csv-export-for-invoices.\nCheck: correct output, quoting of odd values, tests that cover the new code, no change to existing behaviour.\nDone means: record_review with your verdict and every finding, then a report with Status / Result / Evidence.\nAcceptance test: src/acceptance/wo_91161aa1.test.ts should assert: Done when the file has one row per invoice.. Confirm it does. If it is missing or checks something else, record a finding with category tests.",
+    "text": "Review pull request #1 (id art_18239850) \"Add CSV export for tasks\" on branch tas-1-csv-export-for-tasks.\nChanged files: src/acceptance/wo_91161aa1.test.ts (+14 -0), src/csv.ts (+13 -0).\nRead it with git fetch origin, then git diff origin/main...origin/tas-1-csv-export-for-tasks.\nCheck: correct output, quoting of odd values, tests that cover the new code, no change to existing behaviour.\nDone means: record_review with your verdict and every finding, then a report with Status / Result / Evidence.\nAcceptance test: src/acceptance/wo_91161aa1.test.ts should assert: Done when the file has one row per task.. Confirm it does. If it is missing or checks something else, record a finding with category tests.",
     "expectsReply": true
    },
    {
@@ -535,15 +535,15 @@
     "id": "it_c3e97b7c",
     "at": "2026-11-14T16:56:47.349Z",
     "turnId": "turn_75084dc7",
-    "text": "INV-1 opened #1. INV-2 is reviewing it."
+    "text": "TAS-1 opened #1. TAS-2 is reviewing it."
    },
    {
     "kind": "message_in",
     "id": "it_91ac11e5",
     "at": "2026-11-14T16:56:47.454Z",
     "messageId": "msg_68ef8aff",
-    "from": "inv-2",
-    "text": "Status: done\nResult: Approved #1 with one low finding: No case for an empty list. It returns the header alone, which is right; a test would keep it that way.\nEvidence: review art_e99fbd95, git diff origin/main...origin/inv-1-csv-export-for-invoices",
+    "from": "tas-2",
+    "text": "Status: done\nResult: Approved #1 with one low finding: No case for an empty list. It returns the header alone, which is right; a test would keep it that way.\nEvidence: review art_e99fbd95, git diff origin/main...origin/tas-1-csv-export-for-tasks",
     "isReply": true
    },
    {
@@ -562,7 +562,7 @@
     "at": "2026-11-14T16:56:47.458Z",
     "turnId": "turn_6b977e41",
     "tool": "request_approval",
-    "label": "Asking for approval: Merge #1: Add CSV export for invoices",
+    "label": "Asking for approval: Merge #1: Add CSV export for tasks",
     "outcome": "ok",
     "seconds": 0
    },
@@ -600,7 +600,7 @@
     "kind": "user_text",
     "id": "it_8b709976",
     "at": "2026-11-14T16:56:47.469Z",
-    "text": "Build this: Export all invoices as CSV"
+    "text": "Build this: Export all tasks as CSV"
    },
    {
     "kind": "agent_text",
@@ -636,20 +636,20 @@
     "turnId": "turn_test",
     "messageId": "msg_071acd37",
     "to": [
-     "inv-3"
+     "tas-3"
     ],
     "text": "Goal: CSV export.",
     "expectsReply": true
    }
   ],
-  "inv-1": [
+  "tas-1": [
    {
     "kind": "message_in",
     "id": "it_45e84d47",
     "at": "2026-11-14T16:56:45.461Z",
     "messageId": "msg_34e2c77b",
     "from": "bob",
-    "text": "Goal: CSV export for invoices.\nContext: the person wrote \"customers want to export invoices as CSV\" then \"All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.\". User: Customers. Acceptance: Done when the file has one row per invoice..\nArea: the invoices module under src/, next to src/invoices.ts and src/format.ts.\nYou can rely on: the Invoice type in src/invoices.ts and the project's test setup.\nOut of scope: the UI and any change to existing behaviour.\nDone means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.\nAcceptance test: src/acceptance/wo_91161aa1.test.ts. Write it first, on its own, so it asserts: Done when the file has one row per invoice.. Run that file alone, without a pipe (npx vitest run src/acceptance/wo_91161aa1.test.ts), and show it failing, then implement, then run the whole suite (npm test) and show it passing.",
+    "text": "Goal: CSV export for tasks.\nContext: the person wrote \"users want to export their tasks as CSV\" then \"All tasks, columns id, title, hours, status and due date. Done when the file has one row per task.\". User: Customers. Acceptance: Done when the file has one row per task..\nArea: the tasks module under src/, next to src/tasks.ts and src/format.ts.\nYou can rely on: the Task type in src/tasks.ts and the project's test setup.\nOut of scope: the UI and any change to existing behaviour.\nDone means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.\nAcceptance test: src/acceptance/wo_91161aa1.test.ts. Write it first, on its own, so it asserts: Done when the file has one row per task.. Run that file alone, without a pipe (npx vitest run src/acceptance/wo_91161aa1.test.ts), and show it failing, then implement, then run the whole suite (npm test) and show it passing.",
     "isReply": false
    },
    {
@@ -661,7 +661,7 @@
     "label": "Read 13 files",
     "outcome": "ok",
     "seconds": 0,
-    "detail": "Loaded into this turn's first message:\nREADME.md\npackage.json\nsrc/format.test.ts\nsrc/invoices.test.ts\nsrc/format.ts\nsrc/invoices.ts\nsrc/page.test.ts\nsrc/main.ts\nsrc/page.ts\nsrc/style.css\n.gitignore\nindex.html\ntsconfig.json"
+    "detail": "Loaded into this turn's first message:\nREADME.md\npackage.json\nsrc/format.test.ts\nsrc/tasks.test.ts\nsrc/format.ts\nsrc/tasks.ts\nsrc/page.test.ts\nsrc/main.ts\nsrc/page.ts\nsrc/style.css\n.gitignore\nindex.html\ntsconfig.json"
    },
    {
     "kind": "step",
@@ -669,7 +669,7 @@
     "at": "2026-11-14T16:56:45.479Z",
     "turnId": "turn_65e5d35b",
     "tool": "read_files",
-    "label": "Reading src/invoices.ts",
+    "label": "Reading src/tasks.ts",
     "outcome": "ok",
     "seconds": 0
    },
@@ -692,7 +692,7 @@
     "label": "Tests failed (1)",
     "outcome": "failed",
     "seconds": 1.3,
-    "detail": "$ npx vitest run src/acceptance/wo_91161aa1.test.ts   (namespace sandbox)\nRUN  v5.1.0 /tmp/bob-crew-et5flC/invoices-app/agents/inv-1\n\n ❯ src/acceptance/wo_91161aa1.test.ts (0 test)\n\n⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  src/acceptance/wo_91161aa1.test.ts [ src/acceptance/wo_91161aa1.test.ts ]\nError: Cannot find module '../csv' imported from /tmp/bob-crew-et5flC/invoices-app/agents/inv-1/src/acceptance/wo_91161aa1.test.ts\n ❯ src/acceptance/wo_91161aa1.test.ts:2:1\n      1| import { describe, expect, it } from \"vitest\";\n      2| import { invoicesToCsv } from \"../csv\";\n       | ^\n      3|\n      4| describe(\"invoicesToCsv\", () => {\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n\n Test Files  1 failed (1)\n      Tests  no tests\n   Start at  16:56:46\n   Duration  171ms (worker 98%, environment 2%)\nFailed: exit code 1."
+    "detail": "$ npx vitest run src/acceptance/wo_91161aa1.test.ts   (namespace sandbox)\nRUN  v5.1.0 /tmp/bob-crew-et5flC/tasks-app/agents/tas-1\n\n ❯ src/acceptance/wo_91161aa1.test.ts (0 test)\n\n⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  src/acceptance/wo_91161aa1.test.ts [ src/acceptance/wo_91161aa1.test.ts ]\nError: Cannot find module '../csv' imported from /tmp/bob-crew-et5flC/tasks-app/agents/tas-1/src/acceptance/wo_91161aa1.test.ts\n ❯ src/acceptance/wo_91161aa1.test.ts:2:1\n      1| import { describe, expect, it } from \"vitest\";\n      2| import { tasksToCsv } from \"../csv\";\n       | ^\n      3|\n      4| describe(\"tasksToCsv\", () => {\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n\n Test Files  1 failed (1)\n      Tests  no tests\n   Start at  16:56:46\n   Duration  171ms (worker 98%, environment 2%)\nFailed: exit code 1."
    },
    {
     "kind": "step",
@@ -713,7 +713,7 @@
     "label": "Tests failed",
     "outcome": "failed",
     "seconds": 0.2,
-    "detail": "$ npm test   (namespace sandbox)\n> invoices@0.1.0 test\n> vitest run\n\nsh: 1: vitest: not found\nFailed: exit code 127."
+    "detail": "$ npm test   (namespace sandbox)\n> tasks@0.1.0 test\n> vitest run\n\nsh: 1: vitest: not found\nFailed: exit code 127."
    },
    {
     "kind": "step",
@@ -721,7 +721,7 @@
     "at": "2026-11-14T16:56:46.994Z",
     "turnId": "turn_65e5d35b",
     "tool": "open_pull_request",
-    "label": "Opening a pull request: Add CSV export for invoices",
+    "label": "Opening a pull request: Add CSV export for tasks",
     "outcome": "ok",
     "seconds": 0.3
    },
@@ -744,7 +744,7 @@
     "to": [
      "bob"
     ],
-    "text": "Status: done\nResult: Opened pull request #1 (id art_18239850) on branch inv-1-csv-export-for-invoices: Add CSV export for invoices.\nEvidence: src/acceptance/wo_91161aa1.test.ts, src/csv.ts; src/acceptance/wo_91161aa1.test.ts failed on its own first; npm test failed (Failed: exit code 127.); read the diff against main",
+    "text": "Status: done\nResult: Opened pull request #1 (id art_18239850) on branch tas-1-csv-export-for-tasks: Add CSV export for tasks.\nEvidence: src/acceptance/wo_91161aa1.test.ts, src/csv.ts; src/acceptance/wo_91161aa1.test.ts failed on its own first; npm test failed (Failed: exit code 127.); read the diff against main",
     "expectsReply": false
    },
    {
@@ -752,17 +752,17 @@
     "id": "it_5cf71a37",
     "at": "2026-11-14T16:56:47.267Z",
     "turnId": "turn_65e5d35b",
-    "text": "Opened #1 on inv-1-csv-export-for-invoices and reported to the captain."
+    "text": "Opened #1 on tas-1-csv-export-for-tasks and reported to the captain."
    }
   ],
-  "inv-2": [
+  "tas-2": [
    {
     "kind": "message_in",
     "id": "it_f94ad7f0",
     "at": "2026-11-14T16:56:47.348Z",
     "messageId": "msg_42938c0e",
     "from": "bob",
-    "text": "Review pull request #1 (id art_18239850) \"Add CSV export for invoices\" on branch inv-1-csv-export-for-invoices.\nChanged files: src/acceptance/wo_91161aa1.test.ts (+14 -0), src/csv.ts (+13 -0).\nRead it with git fetch origin, then git diff origin/main...origin/inv-1-csv-export-for-invoices.\nCheck: correct output, quoting of odd values, tests that cover the new code, no change to existing behaviour.\nDone means: record_review with your verdict and every finding, then a report with Status / Result / Evidence.\nAcceptance test: src/acceptance/wo_91161aa1.test.ts should assert: Done when the file has one row per invoice.. Confirm it does. If it is missing or checks something else, record a finding with category tests.",
+    "text": "Review pull request #1 (id art_18239850) \"Add CSV export for tasks\" on branch tas-1-csv-export-for-tasks.\nChanged files: src/acceptance/wo_91161aa1.test.ts (+14 -0), src/csv.ts (+13 -0).\nRead it with git fetch origin, then git diff origin/main...origin/tas-1-csv-export-for-tasks.\nCheck: correct output, quoting of odd values, tests that cover the new code, no change to existing behaviour.\nDone means: record_review with your verdict and every finding, then a report with Status / Result / Evidence.\nAcceptance test: src/acceptance/wo_91161aa1.test.ts should assert: Done when the file has one row per task.. Confirm it does. If it is missing or checks something else, record a finding with category tests.",
     "isReply": false
    },
    {
@@ -792,7 +792,7 @@
     "at": "2026-11-14T16:56:47.423Z",
     "turnId": "turn_e961bd1b",
     "tool": "git",
-    "label": "git diff origin/main...origin/inv-1-csv-export-for-invoices",
+    "label": "git diff origin/main...origin/tas-1-csv-export-for-tasks",
     "outcome": "ok",
     "seconds": 0
    },
@@ -811,10 +811,10 @@
     "id": "it_f80e22a5",
     "at": "2026-11-14T16:56:47.451Z",
     "turnId": "turn_e961bd1b",
-    "text": "Status: done\nResult: Approved #1 with one low finding: No case for an empty list. It returns the header alone, which is right; a test would keep it that way.\nEvidence: review art_e99fbd95, git diff origin/main...origin/inv-1-csv-export-for-invoices"
+    "text": "Status: done\nResult: Approved #1 with one low finding: No case for an empty list. It returns the header alone, which is right; a test would keep it that way.\nEvidence: review art_e99fbd95, git diff origin/main...origin/tas-1-csv-export-for-tasks"
    }
   ],
-  "inv-3": []
+  "tas-3": []
  },
  "approvals": [
   {
@@ -822,8 +822,8 @@
    "agentId": "bob",
    "turnId": "turn_6b977e41",
    "requestId": "req_08a18c03",
-   "title": "Merge #1: Add CSV export for invoices",
-   "detail": "Merges #1 (Add CSV export for invoices) from inv-1-csv-export-for-invoices at ae1a3c0 into main. Files: src/acceptance/wo_91161aa1.test.ts (+14 -0), src/csv.ts (+13 -0). INV-2 approved this head with 1 non-blocking finding.",
+   "title": "Merge #1: Add CSV export for tasks",
+   "detail": "Merges #1 (Add CSV export for tasks) from tas-1-csv-export-for-tasks at ae1a3c0 into main. Files: src/acceptance/wo_91161aa1.test.ts (+14 -0), src/csv.ts (+13 -0). TAS-2 approved this head with 1 non-blocking finding.",
    "status": "pending",
    "at": "2026-11-14T16:56:47.459Z",
    "pullRequestId": "art_18239850",
@@ -834,17 +834,17 @@
   {
    "id": "art_18239850",
    "kind": "pull_request",
-   "title": "Add CSV export for invoices",
-   "detail": "<!-- bob-trace -->\n**Trace** request `req_08a18c03` · work order `wo_91161aa1` · thread INV-1\n\n- Asked: \"customers want to export invoices as CSV\"\n- Bob asked: \"Two quick ones before I plan it. - I'd put every invoice in the file with id, customer, amount, status and due date. Is that the right set of columns? - I'd call it done when a test shows a header row and one row per invoice, amounts in dollars. Is that the check you want?\" The person answered: \"All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.\"\n- Work order: CSV export for invoices. Acceptance: Done when the file has one row per invoice.\n- Acceptance test: `src/acceptance/wo_91161aa1.test.ts`: red (`npx vitest run src/acceptance/wo_91161aa1.test.ts`, 1 failed) → not seen passing\n- Review: approved, 1 finding\n- Approval: waiting on the person\n<!-- /bob-trace -->\n\nAdds invoicesToCsv in src/csv.ts: a header row, then one row per invoice with the amount in dollars. Cells with a comma, quote or line break are quoted. The acceptance test covers a plain row and a quoted customer name.",
+   "title": "Add CSV export for tasks",
+   "detail": "<!-- bob-trace -->\n**Trace** request `req_08a18c03` · work order `wo_91161aa1` · thread TAS-1\n\n- Asked: \"users want to export their tasks as CSV\"\n- Bob asked: \"Two quick ones before I plan it. - I'd put every task in the file with id, customer, amount, status and due date. Is that the right set of columns? - I'd call it done when a test shows a header row and one row per task, amounts in dollars. Is that the check you want?\" The person answered: \"All tasks, columns id, title, hours, status and due date. Done when the file has one row per task.\"\n- Work order: CSV export for tasks. Acceptance: Done when the file has one row per task.\n- Acceptance test: `src/acceptance/wo_91161aa1.test.ts`: red (`npx vitest run src/acceptance/wo_91161aa1.test.ts`, 1 failed) → not seen passing\n- Review: approved, 1 finding\n- Approval: waiting on the person\n<!-- /bob-trace -->\n\nAdds tasksToCsv in src/csv.ts: a header row, then one row per task with the amount in dollars. Cells with a comma, quote or line break are quoted. The acceptance test covers a plain row and a quoted customer name.",
    "status": "approved",
-   "agentId": "inv-1",
+   "agentId": "tas-1",
    "turnId": "turn_65e5d35b",
    "requestId": "req_08a18c03",
    "messageId": "msg_34e2c77b",
    "at": "2026-11-14T16:56:47.259Z",
    "pullRequest": {
     "number": 1,
-    "branch": "inv-1-csv-export-for-invoices",
+    "branch": "tas-1-csv-export-for-tasks",
     "headSha": "ae1a3c04c0d6505c306d3d5aab4028eb68a527a0",
     "files": [
      {
@@ -858,17 +858,17 @@
       "deletions": 0
      }
     ],
-    "patch": "diff --git a/src/acceptance/wo_91161aa1.test.ts b/src/acceptance/wo_91161aa1.test.ts\nnew file mode 100644\nindex 0000000..f7c5d0a\n--- /dev/null\n+++ b/src/acceptance/wo_91161aa1.test.ts\n@@ -0,0 +1,14 @@\n+import { describe, expect, it } from \"vitest\";\n+import { invoicesToCsv } from \"../csv\";\n+\n+describe(\"invoicesToCsv\", () => {\n+  it(\"writes a header and one row per invoice\", () => {\n+    const csv = invoicesToCsv([{ id: \"INV-1\", customer: \"Customer A\", amountCents: 5000, status: \"sent\", dueDate: \"2026-12-01\" }]);\n+    expect(csv).toBe(\"id,customer,amount,status,dueDate\\nINV-1,Customer A,50.00,sent,2026-12-01\");\n+  });\n+\n+  it(\"quotes a customer name that holds a comma\", () => {\n+    const csv = invoicesToCsv([{ id: \"INV-2\", customer: \"Smith, Jones\", amountCents: 1, status: \"draft\", dueDate: \"2026-12-02\" }]);\n+    expect(csv.split(\"\\n\")[1]).toBe('INV-2,\"Smith, Jones\",0.01,draft,2026-12-02');\n+  });\n+});\ndiff --git a/src/csv.ts b/src/csv.ts\nnew file mode 100644\nindex 0000000..2857e5a\n--- /dev/null\n+++ b/src/csv.ts\n@@ -0,0 +1,13 @@\n+import type { Invoice } from \"./invoices\";\n+\n+const HEADER = [\"id\", \"customer\", \"amount\", \"status\", \"dueDate\"];\n+\n+function cell(value: string): string {\n+  return /[\",\\n]/.test(value) ? `\"${value.replace(/\"/g, '\"\"')}\"` : value;\n+}\n+\n+/** One header row, then one row per invoice, amounts in dollars with two decimals. */\n+export function invoicesToCsv(list: readonly Invoice[]): string {\n+  const rows = list.map((i) => [i.id, i.customer, (i.amountCents / 100).toFixed(2), i.status, i.dueDate]);\n+  return [HEADER, ...rows].map((row) => row.map(cell).join(\",\")).join(\"\\n\");\n+}\n",
+    "patch": "diff --git a/src/acceptance/wo_91161aa1.test.ts b/src/acceptance/wo_91161aa1.test.ts\nnew file mode 100644\nindex 0000000..f7c5d0a\n--- /dev/null\n+++ b/src/acceptance/wo_91161aa1.test.ts\n@@ -0,0 +1,14 @@\n+import { describe, expect, it } from \"vitest\";\n+import { tasksToCsv } from \"../csv\";\n+\n+describe(\"tasksToCsv\", () => {\n+  it(\"writes a header and one row per task\", () => {\n+    const csv = tasksToCsv([{ id: \"TAS-1\", customer: \"Customer A\", amountCents: 5000, status: \"sent\", dueDate: \"2026-12-01\" }]);\n+    expect(csv).toBe(\"id,customer,amount,status,dueDate\\nINV-1,Customer A,50.00,sent,2026-12-01\");\n+  });\n+\n+  it(\"quotes a customer name that holds a comma\", () => {\n+    const csv = tasksToCsv([{ id: \"TAS-2\", customer: \"Smith, Jones\", amountCents: 1, status: \"draft\", dueDate: \"2026-12-02\" }]);\n+    expect(csv.split(\"\\n\")[1]).toBe('TAS-2,\"Smith, Jones\",0.01,draft,2026-12-02');\n+  });\n+});\ndiff --git a/src/csv.ts b/src/csv.ts\nnew file mode 100644\nindex 0000000..2857e5a\n--- /dev/null\n+++ b/src/csv.ts\n@@ -0,0 +1,13 @@\n+import type { Task } from \"./tasks\";\n+\n+const HEADER = [\"id\", \"customer\", \"amount\", \"status\", \"dueDate\"];\n+\n+function cell(value: string): string {\n+  return /[\",\\n]/.test(value) ? `\"${value.replace(/\"/g, '\"\"')}\"` : value;\n+}\n+\n+/** One header row, then one row per task, amounts in dollars with two decimals. */\n+export function tasksToCsv(list: readonly Task[]): string {\n+  const rows = list.map((i) => [i.id, i.customer, (i.amountCents / 100).toFixed(2), i.status, i.dueDate]);\n+  return [HEADER, ...rows].map((row) => row.map(cell).join(\",\")).join(\"\\n\");\n+}\n",
     "merged": false
    }
   },
   {
    "id": "art_e99fbd95",
    "kind": "review",
-   "title": "Review of #1: Add CSV export for invoices",
+   "title": "Review of #1: Add CSV export for tasks",
    "detail": "Read the diff and the acceptance test, which asserts the work order's check. Correct and safe to merge; one low finding.",
    "status": "approved",
-   "agentId": "inv-2",
+   "agentId": "tas-2",
    "turnId": "turn_e961bd1b",
    "requestId": "req_08a18c03",
    "messageId": "msg_42938c0e",
@@ -925,23 +925,23 @@
   "today": [
    {
     "id": "wo_91161aa1",
-    "title": "CSV export for invoices",
+    "title": "CSV export for tasks",
     "status": "review",
-    "ownerAgentId": "inv-1",
+    "ownerAgentId": "tas-1",
     "artifactId": "art_18239850",
     "requestId": "req_08a18c03"
    },
    {
     "id": "wo_a13c36dd",
-    "title": "Export all invoices as CSV",
+    "title": "Export all tasks as CSV",
     "status": "running",
-    "ownerAgentId": "inv-3",
+    "ownerAgentId": "tas-3",
     "artifactId": null,
     "source": {
      "inboxId": "inb_660c21ae",
      "kind": "meeting",
      "label": "customer call, Nov 13",
-     "quote": "Dana: A CSV export of all invoices with id, customer, amount, status and due date would save her most of a day."
+     "quote": "Dana: A CSV export of all tasks with id, customer, amount, status and due date would save her most of a day."
     },
     "requestId": "req_4f0d2fea"
    }
@@ -952,12 +952,12 @@
     "requestId": "req_08a18c03",
     "messageId": "msg_e3ed5119",
     "goal": {
-     "title": "CSV export for invoices",
+     "title": "CSV export for tasks",
      "why": null,
      "deadline": null,
      "user": "Customers",
-     "behaviour": "Customers want to export invoices as CSV. All invoices, columns id, customer, amount, status and due date. Done when the file has one row per invoice.",
-     "acceptance": "Done when the file has one row per invoice.",
+     "behaviour": "Users want to export their tasks as CSV. All tasks, columns id, title, hours, status and due date. Done when the file has one row per task.",
+     "acceptance": "Done when the file has one row per task.",
      "assumptions": []
     },
     "stage": 4,
@@ -1033,9 +1033,9 @@
  },
  "readMarks": {
   "bob": 0,
-  "inv-1": 0,
-  "inv-2": 0,
-  "inv-3": 0
+  "tas-1": 0,
+  "tas-2": 0,
+  "tas-3": 0
  },
  "relayKeys": [
   "relay:dlv_125fb5d3"
@@ -1059,12 +1059,12 @@
   },
   {
    "name": "CREW.md",
-   "content": "| Thread | Role | Status | Branch | PR | Last report |\n| --- | --- | --- | --- | --- | --- |\n| INV-1 | build | idle | inv-1-csv-export-for-invoices | #1 | Opened pull request #1 (id art_18239850) on branch inv-1-csv-export-for-invoices: Add CSV export fo… |\n| INV-2 | review | idle |  |  | Approved #1 with one low finding: No case for an empty list. It returns the header alone, which is… |\n| INV-3 | build | waiting | inv-3-export-all-invoices-as-csv |  |  |\n",
+   "content": "| Thread | Role | Status | Branch | PR | Last report |\n| --- | --- | --- | --- | --- | --- |\n| TAS-1 | build | idle | tas-1-csv-export-for-tasks | #1 | Opened pull request #1 (id art_18239850) on branch tas-1-csv-export-for-tasks: Add CSV export fo… |\n| TAS-2 | review | idle |  |  | Approved #1 with one low finding: No case for an empty list. It returns the header alone, which is… |\n| TAS-3 | build | waiting | tas-3-export-all-tasks-as-csv |  |  |\n",
    "updatedAt": "2026-11-14T16:56:47.591Z"
   },
   {
    "name": "NOTES.md",
-   "content": "## Plan\n\n### CSV export for invoices\n- Intent: CSV export for invoices, for customers.\n- Acceptance: Done when the file has one row per invoice.\n- Stage 4 of 5: Ship.\n- Today:\n  - wo_91161aa1 CSV export for invoices (review)\n\n### req_4f0d2fea\n- Intent: not recorded yet for req_4f0d2fea.\n- Stage 1 of 5: Intent.\n- Today:\n  - wo_a13c36dd Export all invoices as CSV (running)\n\nBacklog:\n- none\n",
+   "content": "## Plan\n\n### CSV export for tasks\n- Intent: CSV export for tasks, for customers.\n- Acceptance: Done when the file has one row per task.\n- Stage 4 of 5: Ship.\n- Today:\n  - wo_91161aa1 CSV export for tasks (review)\n\n### req_4f0d2fea\n- Intent: not recorded yet for req_4f0d2fea.\n- Stage 1 of 5: Intent.\n- Today:\n  - wo_a13c36dd Export all tasks as CSV (running)\n\nBacklog:\n- none\n",
    "updatedAt": "2026-11-14T16:56:47.591Z"
   }
  ],
@@ -1074,14 +1074,14 @@
    "id": "inb_660c21ae",
    "kind": "meeting",
    "source": "customer call, Nov 13",
-   "text": "Customer call with Dana Reyes, finance lead at Northwind Supply, Nov 13.\nDana: At month end our accountant exports every invoice to a spreadsheet for the books. Right now she copies them out by hand.\nDana: A CSV export of all invoices with id, customer, amount, status and due date would save her most of a day.\nMihajlo: What counts as done for you?\nDana: She opens the file and sees one row per invoice under a header row, and names like \"Acme, Inc.\" stay in one column.\nDana: Second thing: nobody notices when an invoice goes overdue. We'd like a list of every sent invoice past its due date, so someone can chase it the next morning.\nDana: And honestly the invoices page just feels slow and clunky.\nMihajlo: Thanks, I'll take these back to the team.",
+   "text": "Customer call with Dana Reyes, finance lead at Northwind Supply, Nov 13.\nDana: At month end our accountant exports every task to a spreadsheet for the books. Right now she copies them out by hand.\nDana: A CSV export of all tasks with id, customer, amount, status and due date would save her most of a day.\nMihajlo: What counts as done for you?\nDana: She opens the file and sees one row per task under a header row, and names like \"Acme, Inc.\" stay in one column.\nDana: Second thing: nobody notices when a task goes overdue. We'd like a list of every sent task past its due date, so someone can chase it the next morning.\nDana: And honestly the tasks page just feels slow and clunky.\nMihajlo: Thanks, I'll take these back to the team.",
    "at": "2026-11-14T16:56:47.461Z",
    "status": "triaged",
    "candidates": [
     {
      "id": "ask_0a254eab",
-     "quote": "Dana: A CSV export of all invoices with id, customer, amount, status and due date would save her most of a day.",
-     "ask": "Export all invoices as CSV",
+     "quote": "Dana: A CSV export of all tasks with id, customer, amount, status and due date would save her most of a day.",
+     "ask": "Export all tasks as CSV",
      "verdict": "testable",
      "workOrderId": "wo_a13c36dd",
      "question": null

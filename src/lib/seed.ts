@@ -9,8 +9,8 @@ export const CAPTAIN_ID = "bob";
 /** A fresh Bob has no project yet: it opens on the Open a project choice. */
 export const NO_PROJECT: Project = { id: "", name: "No project", repo: null };
 
-/** The invoices sample the demo, the walkthrough and the tests choose explicitly. */
-export const SAMPLE_PROJECT: Project = { id: "invoices-app", name: "invoices-app", repo: null, template: "invoices" };
+/** The scripted sample the scripted demo, the walkthrough and the tests choose explicitly: a blank TypeScript project. */
+export const SAMPLE_PROJECT: Project = { id: "tasks-app", name: "tasks-app", repo: null, template: "blank-ts" };
 
 const CAPTAIN: Omit<Agent, "createdAt" | "createdBy"> = {
   id: CAPTAIN_ID,

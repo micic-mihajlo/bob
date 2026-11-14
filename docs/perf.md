@@ -4,9 +4,9 @@ How long a small request takes to reach the merge approval card with a live mode
 
 ## How to measure
 
-`pnpm live live-run` runs `scripts/live-run.live.ts`: a fresh invoices project in a temp folder, the model brain (the captain on `BOB_MODEL_STRONG`, crew threads on `BOB_MODEL_LIGHT`), and the request "Customers want to export invoices as CSV." When the captain pushes back on the request as untestable, the harness answers once with a testable version. It prints every thread item with a timestamp and a JSON summary, and writes both to `BOB_LIVE_OUT` when that is set. It needs `AI_GATEWAY_API_KEY` in `.env.local`. `BOB_LIVE_REQUEST`, `BOB_LIVE_ANSWER` and `BOB_LIVE_LIMIT_MS` override the defaults. The summary records the two models and, for every model call, its agent, its time and the names of the tools it called.
+`pnpm live live-run` runs `scripts/live-run.live.ts`: a fresh tasks-app project in a temp folder, the model brain (the captain on `BOB_MODEL_STRONG`, crew threads on `BOB_MODEL_LIGHT`), and the request "Users want to export their tasks as CSV." When the captain pushes back on the request as untestable, the harness answers once with a testable version. It prints every thread item with a timestamp and a JSON summary, and writes both to `BOB_LIVE_OUT` when that is set. It needs `AI_GATEWAY_API_KEY` in `.env.local`. `BOB_LIVE_REQUEST`, `BOB_LIVE_ANSWER` and `BOB_LIVE_LIMIT_MS` override the defaults. The summary records the two models and, for every model call, its agent, its time and the names of the tools it called.
 
-`pnpm live live-two` runs `scripts/live-two.live.ts`: it types a CSV export request, then a JSON export of overdue invoices as soon as the first crew thread exists, answers each pushback once, and approves every merge card. It prints each thread's role, branch and work order, each pull request with its files and whether it merged, and anything left running, queued or waiting for approval.
+`pnpm live live-two` runs `scripts/live-two.live.ts`: it types a CSV export request, then a JSON export of overdue tasks as soon as the first crew thread exists, answers each pushback once, and approves every merge card. It prints each thread's role, branch and work order, each pull request with its files and whether it merged, and anything left running, queued or waiting for approval.
 
 Two clocks matter. **Brief to approval** runs from the moment the first crew thread receives the captain's brief to the moment the approval card appears. **Total** runs from the person's first message, so it also counts the captain's intake question, planning, and the person's answer.
 
@@ -73,7 +73,7 @@ Every run planned one work order. On deepseek-v4.1-flash, 3 of 3 runs reached th
 `pnpm live live-two` with the default models, after bob#29:
 
 - The CSV request and the overdue-JSON request each got their own build thread, branch, workspace and review thread (INV-1 to INV-4), and each became one work order.
-- PR #1 (CSV) reached its approval card at 111 s and merged. PR #2 then conflicted with main in `src/invoices.ts` and `src/invoices.test.ts`. The runtime sent that to INV-2, which merged main into its branch and kept both exports. A new head went to INV-4 for review again, and PR #2's card appeared at 168 s.
+- PR #1 (CSV) reached its approval card at 111 s and merged. PR #2 then conflicted with main in the sample's source and test files. The runtime sent that to INV-2, which merged main into its branch and kept both exports. A new head went to INV-4 for review again, and PR #2's card appeared at 168 s.
 - Both PRs merged at 198 s, all four threads closed, and no turn, queued delivery or approval was left behind.
 
 The first run before bob#29 found the one way the second request could strand. Its conflict update and re-reviews used up the request's 12-delivery budget, so the automatic re-review was refused and PR #2 stayed in review. Hand-offs now have a separate budget of their own (24 deliveries per request, see docs/formal.md).
@@ -190,4 +190,4 @@ What earlier runs found, and the fixes:
 
 ## Bringing in a repository
 
-Set `BOB_PROJECT_REPO` to an `https://`, `ssh://` or `git@` URL, or to a local path, before the project's first thread starts. Its `main` branch becomes the project's shared origin in place of the invoices template, and its dependencies are installed once in the same way. A project whose saved state already sets `repo` uses that instead.
+Set `BOB_PROJECT_REPO` to an `https://`, `ssh://` or `git@` URL, or to a local path, before the project's first thread starts. Its `main` branch becomes the project's shared origin in place of the built-in template, and its dependencies are installed once in the same way. A project whose saved state already sets `repo` uses that instead.

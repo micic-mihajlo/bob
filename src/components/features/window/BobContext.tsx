@@ -44,8 +44,6 @@ interface BobContextValue {
   closeWhy: () => void;
   newAgentOpen: boolean;
   setNewAgentOpen: (open: boolean) => void;
-  draftFor: (agentId: AgentId) => string;
-  setDraft: (agentId: AgentId, text: string) => void;
   /** By agent, the message the person just sent and the agent has not answered yet. */
   awaiting: Readonly<Record<AgentId, Awaiting>>;
   setAwaiting: (agentId: AgentId, value: Awaiting | null) => void;
@@ -79,7 +77,6 @@ export function BobProvider({ snapshot, sync, children }: { snapshot: Snapshot; 
     setWhyPullRequestId(pullRequestId);
   }, []);
   const [newAgentOpen, setNewAgentOpen] = useState(false);
-  const [drafts, setDrafts] = useState<Readonly<Record<AgentId, string>>>({});
   const [awaiting, setAwaitingAll] = useState<Readonly<Record<AgentId, Awaiting>>>({});
 
   const agentsById = useMemo(() => new Map(snapshot.agents.map((agent) => [agent.id, agent] as const)), [snapshot.agents]);
@@ -90,11 +87,6 @@ export function BobProvider({ snapshot, sync, children }: { snapshot: Snapshot; 
   const togglePanel = useCallback(() => setPanelOpen((open) => !open), []);
   const closeWhy = useCallback(() => setWhyMessageId(null), []);
   const clearFocus = useCallback(() => setFocusTarget(null), []);
-  const draftFor = useCallback((agentId: AgentId) => drafts[agentId] ?? "", [drafts]);
-  const setDraft = useCallback(
-    (agentId: AgentId, text: string) => setDrafts((previous) => ({ ...previous, [agentId]: text })),
-    [],
-  );
   const setAwaiting = useCallback(
     (agentId: AgentId, value: Awaiting | null) =>
       setAwaitingAll((previous) => {
@@ -150,8 +142,6 @@ export function BobProvider({ snapshot, sync, children }: { snapshot: Snapshot; 
       closeWhy,
       newAgentOpen,
       setNewAgentOpen,
-      draftFor,
-      setDraft,
       awaiting,
       setAwaiting,
     }),
@@ -177,8 +167,6 @@ export function BobProvider({ snapshot, sync, children }: { snapshot: Snapshot; 
       openWhy,
       closeWhy,
       newAgentOpen,
-      draftFor,
-      setDraft,
       awaiting,
       setAwaiting,
     ],
