@@ -86,8 +86,13 @@ function InboxCard({ item, busy, onBuild }: { item: InboxItem; busy: string | nu
         <div className="bob-inbox-title">
           <h3>{item.source}</h3>
           <p>
-            {label} · {formatChatTimestamp(item.at)}
-            {item.followUpOf ? ` · follows up PR #${item.followUpOf.number}` : null}
+            <span>{label}</span> · <span>{formatChatTimestamp(item.at)}</span>
+            {item.followUpOf ? (
+              <>
+                {" "}
+                · <span>follows up PR #{item.followUpOf.number}</span>
+              </>
+            ) : null}
           </p>
         </div>
         <Badge variant={TONE_BADGE[status.tone]}>{status.label}</Badge>
