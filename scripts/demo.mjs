@@ -143,10 +143,24 @@ for (;;) {
 }
 
 try {
-  if (!opts.keep) {
+  if (opts.keep) {
+    const kept = await call("/api/state");
+    if (SELF_MODE && kept.project?.repo !== SELF.repo) {
+      say(`demo: --keep kept ${kept.project?.name ?? "the current project"}, not Bob's own repository. Run pnpm demo without --keep to open Bob's own repository.`);
+    }
+  } else {
     if (SELF_MODE) {
-      say(`demo: opening Bob's own repository at ${SELF.branch} and preparing it (clone, pnpm install); other projects are kept`);
-      await call("/api/projects", { repo: SELF.repo, branch: SELF.branch, name: SELF.name });
+      say(`demo: resetting the current project, then opening Bob's own repository at ${SELF.branch} and preparing it (clone, pnpm install); other projects are kept`);
+      await call("/api/reset", {});
+      for (const opened = Date.now(); ; ) {
+        try {
+          await call("/api/projects", { repo: SELF.repo, branch: SELF.branch, name: SELF.name });
+          break;
+        } catch (error) {
+          if (!/still working/.test(error.message) || Date.now() - opened > 60_000) throw error;
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+      }
     } else say("demo: resetting the scripted sample and preparing it (repository, dependencies); other projects are kept");
     const reset = await call("/api/reset", SELF_MODE ? { warm: true } : { warm: true, sample: true });
     const deps = reset.deps ?? { kind: "none" };
