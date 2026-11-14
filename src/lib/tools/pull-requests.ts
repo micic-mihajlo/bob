@@ -169,7 +169,8 @@ export const mergeSchema = z.object({
 function markMerged(s: State, pr: PullRequestArtifact): { state: State; value: string | null } {
   const merged = patchArtifact(s, pr.id, { status: "merged", pullRequest: { ...pr.pullRequest, merged: true } });
   const owner = agentById(s, pr.agentId);
-  const order = s.roadmap.today.find((w) => w.artifactId === pr.id) ?? s.roadmap.today.find((w) => w.id === owner?.workOrderId);
+  const orders = [...s.roadmap.today, ...(s.roadmap.backlog ?? [])];
+  const order = orders.find((w) => w.artifactId === pr.id) ?? orders.find((w) => w.id === owner?.workOrderId);
   if (!order) return { state: merged, value: null };
   const completed = completeWorkOrder(merged.roadmap, order.id, pr.id);
   return { state: completed.ok ? { ...merged, roadmap: completed.roadmap } : merged, value: order.id };

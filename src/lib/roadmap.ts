@@ -127,8 +127,11 @@ export function updateWorkOrder(r: Roadmap, id: string, patch: WorkOrderPatch, a
   return finalize({ ...r, today: r.today.map((w) => (w.id === id ? { ...w, ...patch } : w)) }, at);
 }
 
+/** Completes a work order wherever it is: set_today may have moved in-flight work back to the backlog before its PR merged. */
 export function completeWorkOrder(r: Roadmap, id: string, artifactId: string | null, at: string = nowIso()): RoadmapResult {
-  return updateWorkOrder(r, id, artifactId ? { status: "done", artifactId } : { status: "done" }, at);
+  const patch: WorkOrderPatch = artifactId ? { status: "done", artifactId } : { status: "done" };
+  if (r.today.some((w) => w.id === id) || !(r.backlog ?? []).some((w) => w.id === id)) return updateWorkOrder(r, id, patch, at);
+  return finalize({ ...r, backlog: (r.backlog ?? []).map((w) => (w.id === id ? { ...w, ...patch } : w)) }, at);
 }
 
 export function unmetCriteria(r: Roadmap): string[] {

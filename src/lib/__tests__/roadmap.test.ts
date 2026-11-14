@@ -34,6 +34,17 @@ describe("roadmap rules", () => {
     expect(today.backlog?.map((w) => w.id)).toEqual([ids[3]]);
   });
 
+  it("completes a work order in review that set_today moved back to the backlog", () => {
+    const road = planned(["a", "b"]);
+    const [a, b] = (road.backlog ?? []).map((w) => w.id);
+    const inReview = unwrap(updateWorkOrder(unwrap(setToday(road, [a])), a, { status: "review", artifactId: "art_pr" }));
+    const moved = unwrap(setToday(inReview, [b]));
+    expect(moved.backlog?.find((w) => w.id === a)?.status).toBe("review");
+    const done = unwrap(completeWorkOrder(moved, a, "art_pr"));
+    expect(done.backlog?.find((w) => w.id === a)).toMatchObject({ status: "done", artifactId: "art_pr" });
+    expect(completeWorkOrder(moved, "wo_missing", null).ok).toBe(false);
+  });
+
   it("keeps a request that is not testable in Intent and names what is missing", () => {
     const vague = unwrap(setGoal(emptyRoadmap(), { title: "Customers want CSV export" }));
     const refused = advanceStage(vague);
