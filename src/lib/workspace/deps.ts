@@ -71,6 +71,11 @@ export function prepareProjectDeps(project: ProjectLayout): Promise<DepsState> {
   return run;
 }
 
+/** Resolves once no install is running for the project, so its directory can be removed safely. */
+export async function depsSettled(project: ProjectLayout): Promise<void> {
+  await inflight.get(project.deps)?.catch(() => undefined);
+}
+
 async function prepare(project: ProjectLayout): Promise<DepsState> {
   const git = (cwd: string, ...args: string[]) => runGit({ cwd, home: project.home, identity: MERGE_IDENTITY, args, timeoutMs: 60_000 });
   if (!(await exists(path.join(project.deps, ".git")))) {

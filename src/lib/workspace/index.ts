@@ -2,7 +2,7 @@ export { ensureProject, ensureWorkspace } from "./setup";
 export { listFiles, readFile, writeFile, editFile } from "./files";
 export { git } from "./git";
 export { runCommand } from "./shell";
-export { ensureWorkspaceDeps, prepareProjectDeps } from "./deps";
+export { depsSettled, ensureWorkspaceDeps, prepareProjectDeps } from "./deps";
 export type { DepsState } from "./deps";
 export { openPullRequest, mergePullRequest, branchChanges, conflictsWithMain } from "./pull-request";
 export { projectLayout, rootOf } from "./layout";
