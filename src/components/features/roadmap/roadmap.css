@@ -271,3 +271,52 @@
   flex: 1;
   margin: 0;
 }
+
+/* What shipped, one release note per merged pull request, and each request against its limits. */
+.bob-roadmap-note,
+.bob-roadmap-request {
+  display: grid;
+  gap: var(--bob-space-0-5);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+  animation: message-in var(--bob-duration-normal) var(--bob-ease-out) both;
+}
+
+.bob-roadmap-note p,
+.bob-roadmap-request p {
+  margin: 0;
+}
+
+.bob-roadmap-request-ask {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--bob-text-primary);
+}
+
+.bob-roadmap-request .z-badge {
+  margin-right: var(--bob-space-1-5);
+  vertical-align: 1px;
+}
+
+.bob-roadmap-request-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--bob-space-1-5);
+  color: var(--bob-warning-text);
+}
+
+.bob-roadmap-request-alert svg {
+  flex: none;
+  width: var(--bob-icon-xs);
+  height: var(--bob-icon-xs);
+  margin-top: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bob-roadmap-note,
+  .bob-roadmap-request {
+    animation: none;
+  }
+}

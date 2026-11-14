@@ -1,14 +1,16 @@
 "use client";
 
 import "./roadmap-panel.css";
-import { Check, Map as MapIcon } from "lucide-react";
+import { Check, Map as MapIcon, TriangleAlert } from "lucide-react";
 import { useBob } from "@/components/features/window/BobContext";
 import { PaneFrame, PaneHeader } from "@/components/features/panel/PaneFrame";
+import { Badge } from "@/components/ui/Badge";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Progress } from "@/components/ui/Progress";
 import { Card } from "@/components/ui/Surface";
 import { displayName } from "@/lib/client/crew";
 import { formatDeadline } from "@/lib/client/format";
+import { requestUsageLine } from "@/lib/client/requests";
 import { hasPlan, roadmapSteps, WORK_ORDER_STATUS_LABEL, workOrderProgress, type StepPhase } from "@/lib/client/roadmap-view";
 import type { WorkOrder } from "@/lib/types";
 
@@ -20,7 +22,7 @@ const PHASE_LABEL: Record<StepPhase, string> = { done: "Done", current: "Now", n
  */
 export function RoadmapPanel({ onClose }: { onClose: () => void }) {
   const { snapshot, agentsById, selectAgent } = useBob();
-  const { roadmap } = snapshot;
+  const { roadmap, releaseNotes = [], requests = [], budgets } = snapshot;
   const goal = roadmap.goal;
   const progress = workOrderProgress(roadmap);
   const steps = roadmapSteps(roadmap);
@@ -128,8 +130,45 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                 </ol>
               </Card>
             ) : null}
+
+            {releaseNotes.length > 0 ? (
+              <Card className="bob-roadmap-card">
+                <h3 className="bob-roadmap-label">Shipped</h3>
+                <ul className="bob-roadmap-list">
+                  {releaseNotes.map((note) => (
+                    <li key={note.pullRequestId} className="bob-roadmap-note">
+                      <span className="bob-roadmap-task-meta">PR #{note.number}</span>
+                      <p>{note.text}</p>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            ) : null}
           </>
         )}
+
+        {requests.length > 0 ? (
+          <Card className="bob-roadmap-card">
+            <h3 className="bob-roadmap-label">Requests</h3>
+            <ul className="bob-roadmap-list">
+              {requests.map((request) => (
+                <li key={request.requestId} className="bob-roadmap-request" data-running={request.running ? "true" : undefined}>
+                  <p className="bob-roadmap-request-ask">{request.ask}</p>
+                  <p className="bob-roadmap-task-meta">
+                    {request.running ? <Badge variant="secondary">Running</Badge> : null}
+                    {requestUsageLine(request, budgets)}
+                  </p>
+                  {request.alerts.map((alert) => (
+                    <p key={alert} className="bob-roadmap-request-alert">
+                      <TriangleAlert aria-hidden="true" />
+                      {alert}
+                    </p>
+                  ))}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        ) : null}
       </div>
     </PaneFrame>
   );
