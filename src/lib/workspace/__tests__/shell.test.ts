@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { ensureWorkspaceDeps, prepareProjectDeps } from "../deps";
 import { gitOrThrow } from "../run-git";
 import { ensureProject, ensureWorkspace } from "../setup";
-import { runCommand, shellEnv } from "../shell";
+import { runCommand, sandboxAvailable, shellEnv } from "../shell";
 import { GIT_TEST_TIMEOUT, templateWorkspace, withTempRoot } from "./fixture";
 
 const temp = withTempRoot();
@@ -48,6 +48,20 @@ describe("runCommand", { timeout: GIT_TEST_TIMEOUT }, () => {
     expect(out.output.startsWith("first")).toBe(true);
     expect(out.output.endsWith("last")).toBe(true);
     expect(out.output).toContain("characters cut");
+  });
+});
+
+describe.runIf(sandboxAvailable())("the sandbox", { timeout: GIT_TEST_TIMEOUT }, () => {
+  it("confines a command to its own workspace: read-only system, no other workspace, no env files", async () => {
+    const a = await templateWorkspace(temp.root, "agent-a");
+    const b = await templateWorkspace(temp.root, "agent-b");
+    const envFile = path.join(process.cwd(), ".env.local");
+    const check = (cmd: string) => runCommand(a, cmd).then((o) => (o.ok ? o : null));
+    expect((await check("echo ok > mine.txt && cat mine.txt"))?.output).toBe("ok");
+    expect((await check(`ls ${b.root}`))?.exitCode).not.toBe(0);
+    expect((await check("touch /usr/bob-sandbox-test"))?.output).toMatch(/Read-only file system/);
+    expect((await check(`test -s ${envFile}`))?.exitCode).not.toBe(0);
+    expect((await check("git switch --quiet --create sandboxed && git push --quiet origin sandboxed && echo pushed"))?.output).toContain("pushed");
   });
 });
 
