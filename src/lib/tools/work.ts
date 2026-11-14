@@ -73,6 +73,8 @@ export function requestApproval(input: ApprovalInput, ctx: ToolContext): ToolOut
     if (unreviewed) return { state: s, value: fail(`${unreviewed} End your turn now.`) };
     const pending = pr && s.approvals.find((a) => a.pullRequestId === pr.id && a.status === "pending");
     if (pending) return { state: s, value: done({ approvalId: pending.id, note: `Already waiting on the person. ${WAIT_NOTE}` }, { endTurn: true }) };
+    const approved = pr && s.approvals.find((a) => a.pullRequestId === pr.id && a.status === "approved" && a.headSha === pr.pullRequest.headSha);
+    if (approved) return { state: s, value: done({ approvalId: approved.id, note: `The person already approved #${pr.pullRequest.number} at this head. Merge it with merge_pull_request; do not ask again.` }) };
     const added = addApproval(s, input, ctx, pr);
     return { state: added.state, value: done({ approvalId: added.value, note: WAIT_NOTE }, { endTurn: true }) };
   });
