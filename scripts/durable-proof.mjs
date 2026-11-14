@@ -77,7 +77,8 @@ if (!durableUrl) {
   await until("the Worker answering /health", async () => (await fetch(`${durableUrl}/health`)).ok);
 }
 if (!secret) fail("no BOB_DURABLE_SECRET");
-const durable = async (route) => (await fetch(durableUrl + route, { headers: { "x-bob-durable-secret": secret } })).json();
+const namespace = `proof-${crypto.randomBytes(4).toString("hex")}`;
+const durable = async (route) => (await fetch(durableUrl + route, { headers: { "x-bob-durable-secret": secret, "x-bob-namespace": namespace } })).json();
 
 // ---------- Bob ----------
 
@@ -87,7 +88,7 @@ if (opts.build || !fs.existsSync(path.join(ROOT, ".next", "BUILD_ID"))) {
   if (spawnSync(next, ["build"], { cwd: ROOT, stdio: "ignore" }).status !== 0) fail("next build failed");
 }
 fs.mkdirSync(BOB_DIR, { recursive: true });
-const bobEnv = { ...process.env, BOB_BRAIN: "script", BOB_DURABLE: "cloudflare", BOB_DURABLE_URL: durableUrl, BOB_DURABLE_SECRET: secret, PORT: opts.port };
+const bobEnv = { ...process.env, BOB_BRAIN: "script", BOB_DURABLE: "cloudflare", BOB_DURABLE_URL: durableUrl, BOB_DURABLE_SECRET: secret, BOB_DURABLE_NAMESPACE: namespace, PORT: opts.port };
 const bobLog = path.join(WORK, "bob.log");
 const startBob = () => start(next, ["start", "--port", opts.port, ROOT], BOB_DIR, bobEnv, bobLog);
 const call = async (route, body) => {
@@ -100,7 +101,7 @@ const crew = (s) => s.agents.filter((a) => a.kind === "crew");
 const pending = (s) => s.approvals.filter((a) => a.status === "pending");
 const asked = (s) => s.roadmap.tracks.some((t) => t.ask && t.ask.includes("export invoices as CSV"));
 
-say(`durable proof: starting Bob on the scripted brain with BOB_DURABLE=cloudflare in ${BOB_DIR}`);
+say(`durable proof: starting Bob on the scripted brain with BOB_DURABLE=cloudflare, namespace ${namespace}, in ${BOB_DIR}`);
 let bob = startBob();
 await until("Bob answering /api/state", () => call("/api/state"), 120_000);
 await call("/api/reset", { sample: true });

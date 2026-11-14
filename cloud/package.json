@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "wrangler dev --port 8787",
     "deploy": "wrangler deploy",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/namespace.test.mjs"
   },
   "devDependencies": {
     "wrangler": "4.152.0",
