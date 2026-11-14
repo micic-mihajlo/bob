@@ -9,7 +9,7 @@ import { decideApproval } from "@/lib/client/api";
 import { changeTotals, pullRequestForApproval, reasonWithoutFiles } from "@/lib/client/pull-requests";
 import type { Approval } from "@/lib/types";
 
-/** An agent asks the person before it acts. Allow and Deny answer it; a decided card shows the answer. */
+/** An agent asks the person before it acts. Allow and Deny answer it, or Merge and Don't merge for a pull request; a decided card shows the answer. */
 export function ApprovalCard({ approval }: { approval: Approval }) {
   const { snapshot } = useBob();
   const [submitting, setSubmitting] = useState(false);
@@ -89,10 +89,10 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
       {pending ? (
         <footer className="approval-card-footer">
           <Button variant="default" className="approval-button" disabled={submitting} onClick={() => void submit("approved")}>
-            {submitting ? "Sending…" : "Allow"}
+            {submitting ? "Sending…" : pullRequest ? `Merge #${pullRequest.pullRequest.number}` : "Allow"}
           </Button>
           <Button variant="secondary" className="approval-button" disabled={submitting} onClick={() => void submit("denied")}>
-            {submitting ? "Waiting…" : "Deny"}
+            {submitting ? "Waiting…" : pullRequest ? "Don't merge" : "Deny"}
           </Button>
         </footer>
       ) : null}
