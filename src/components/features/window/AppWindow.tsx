@@ -52,7 +52,27 @@ function savePanelWidth(key: string, value: number | string) {
   } catch {}
 }
 
+/**
+ * Inside the desktop app (`?embed=1`), whose own sidebar lists the agents: no sidebar here, the classic
+ * look, and the desktop's palette in the scheme it asks for (`&scheme=light` or dark).
+ */
+function useEmbed(): boolean {
+  const [embed, setEmbed] = useState(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("embed") !== "1") return;
+    const root = document.documentElement;
+    root.dataset.embed = "";
+    root.dataset.scheme = params.get("scheme") === "light" ? "light" : "dark";
+    root.dataset.theme = "classic";
+    delete root.dataset.print;
+    setEmbed(true);
+  }, []);
+  return embed;
+}
+
 function WindowFrame({ children }: { children: ReactNode }) {
+  const embed = useEmbed();
   const [width, setWidth] = useState(LEFT_PANEL_DEFAULT);
   const [collapsed, setCollapsed] = useState(false);
   useEffect(() => {
@@ -86,19 +106,23 @@ function WindowFrame({ children }: { children: ReactNode }) {
     <div className="app-window">
       <PageRail />
       <div
-        className={cx("app-frame app-frame-edge", compact && "app-frame-sidebar-compact")}
+        className={cx("app-frame app-frame-edge", compact && "app-frame-sidebar-compact", embed && "app-frame-chat-window")}
         data-window-page="agents"
         data-window-page-kind="agents"
         style={{ "--left-panel-width": `${left}px`, "--panel-fit": `${panelFit}px` } as CSSProperties}
       >
-        <Sidebar compact={compact} onExpand={() => changeCompact(false)} />
-        <LeftPanelResizer
-          value={width}
-          compact={compact}
-          onResize={setWidth}
-          onResizeEnd={(next) => savePanelWidth(LEFT_PANEL_STORAGE_KEY, next)}
-          onCompactChange={changeCompact}
-        />
+        {!embed && (
+          <>
+            <Sidebar compact={compact} onExpand={() => changeCompact(false)} />
+            <LeftPanelResizer
+              value={width}
+              compact={compact}
+              onResize={setWidth}
+              onResizeEnd={(next) => savePanelWidth(LEFT_PANEL_STORAGE_KEY, next)}
+              onCompactChange={changeCompact}
+            />
+          </>
+        )}
         <div className="app-frame-panes server-connection-workspace">
           <div className="server-connection-content">{children}</div>
         </div>
