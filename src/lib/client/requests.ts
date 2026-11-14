@@ -23,6 +23,19 @@ export function requestLabel(ask: string, inbox: readonly InboxItem[]): string {
   return origin.kind === "build" ? `Build: ${origin.title}` : origin.kind === "inbox" ? `Triage: ${origin.source}` : origin.text;
 }
 
+/**
+ * The question the person's next message answers, quoted in the composer: the first line of the
+ * captain's message that asks, cut to its last sentence, so "No one is on a task. What should we
+ * build next?" quotes "What should we build next?". Falls back to the request when nothing asks.
+ */
+export function answeringQuote(answering: { ask: string; question: string | null }): string {
+  const line = answering.question
+    ?.split("\n")
+    .map((text) => text.replace(/^\s*(?:[-*]|\d+[.)])\s+/, "").trim())
+    .find((text) => text.endsWith("?"));
+  return line?.split(/(?<=[.!?])\s+(?=\S)/).pop() ?? answering.ask;
+}
+
 /** One request's use against its limits: "1m 37s of 3m · 12 of 90 model calls · $0.04 of $1.00". */
 export function requestUsageLine(request: RequestControl, budgets?: RequestBudgets): string {
   const time = formatElapsed(request.seconds * 1000);
