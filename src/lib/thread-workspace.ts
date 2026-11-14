@@ -76,6 +76,18 @@ export async function projectFiles(project: Project): Promise<string[]> {
   return stdout.split("\n").filter((f) => f && !SKIPPED.test(f));
 }
 
+const README_LINES = 40;
+const README_CHARS = 3_000;
+
+/** The first lines of the README at the root of the project's main branch, or null when there is none. */
+export async function projectReadme(project: Project, files: string[]): Promise<string | null> {
+  const name = files.find((f) => /^readme(\.md|\.markdown|\.txt)?$/i.test(f));
+  if (!name) return null;
+  const { origin } = await ensureProject(project.id, sourceOf(project), workspaceOptions());
+  const { stdout } = await execFileAsync("git", ["-C", origin, "show", `HEAD:${name}`], { maxBuffer: 4_000_000 });
+  return stdout.split("\n").slice(0, README_LINES).join("\n").slice(0, README_CHARS).trim() || null;
+}
+
 /**
  * Starts the project's one-time dependency install without waiting for it, so it is ready by the time a thread
  * first runs a command.

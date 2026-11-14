@@ -58,15 +58,20 @@ function projectLine(files: string[]): string {
   return `# The project's files on main (data)\nWork orders and briefs name only files, modules and screens in this list. Something the person asks for that is not here gets built inside an existing module, or you tell the person it does not exist yet.\n${files.slice(0, PROJECT_FILES_SHOWN).join("\n")}${more}`;
 }
 
+const readmeLine = (readme: string) =>
+  `# The start of the project's README on main (data)\nWhat the project is, in its own words. Use its terms in your questions, examples and work order titles.\n${asData(readme)}`;
+
 /**
  * The system prompt, rebuilt for every move from the agent's kind and role and the live roadmap. The captain
- * also gets the project's files on main, so it plans only against what exists.
+ * also gets the project's files on main, so it plans only against what exists, and the start of its README, so
+ * its examples come from the project's own domain.
  */
-export function systemPrompt(agent: Agent, state: State, projectFiles: string[] = []): string {
+export function systemPrompt(agent: Agent, state: State, projectFiles: string[] = [], projectReadme: string | null = null): string {
   if (agent.kind === "captain") {
     const playbook = PLAYBOOKS[STAGES[state.roadmap.stage - 1].playbook];
     const rounds = pushbackRounds(state.threads[agent.id] ?? []);
-    return [PERSONA, CAPTAIN_RULES, profileOf(agent), situation(state, rounds), projectLine(projectFiles), `# Playbook for this stage\n\n${playbook}`].join("\n\n");
+    const readme = projectReadme ? [readmeLine(projectReadme)] : [];
+    return [PERSONA, CAPTAIN_RULES, profileOf(agent), situation(state, rounds), projectLine(projectFiles), ...readme, `# Playbook for this stage\n\n${playbook}`].join("\n\n");
   }
   if (agent.kind === "subagent") return [SUBAGENT_RULES, profileOf(agent)].join("\n\n");
   if (agent.kind === "crew" && agent.crewRole) return [CREW_RULES, ROLE_RULES[agent.crewRole], profileOf(agent)].join("\n\n");

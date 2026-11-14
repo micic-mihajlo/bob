@@ -34,7 +34,7 @@ export function recordArtifact(input: z.infer<typeof recordArtifactSchema>, ctx:
 }
 
 export const requestApprovalSchema = z.object({
-  title: z.string().min(1).describe("What the person is approving, such as \"Merge #3: CSV export\"."),
+  title: z.string().min(1).describe("What the person is approving, such as \"Merge #3: dark mode\"."),
   detail: z.string().min(1).describe("What will happen if they approve: for a merge, the branch, the files and the review verdict."),
   pullRequestId: z.string().optional().describe("Set when asking to merge: the pull request's id or number as \"#3\"."),
 });

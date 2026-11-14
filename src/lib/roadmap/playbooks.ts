@@ -1,16 +1,16 @@
 /** The captain's script for each stage: specifics the lesson leaves out. The first line is the title. */
 const INSPECT_INTENT = `# Inspect the request before any work starts
 
-Use this in Intent. Most requests arrive as a wish: "customers want X". A thread can't build a wish, and nobody can say when it's done. The factory's input inspection makes it testable first.
+Use this in Intent. Most requests arrive as a wish: "users want X". A thread can't build a wish, and nobody can say when it's done. The factory's input inspection makes it testable first.
 
 ## Step 1: Find the three parts
-- User: who does it, by role. "Customers" is a start; "an accountant on the invoices page" is better.
+- User: who does it, by role. "Users" is a start; "a signed-in user on the settings page" is better.
 - Behaviour: what they can do afterwards that they can't today, and where in the app.
-- Acceptance check: one sentence a test could assert. "The file has a header row and one row per invoice, amounts in dollars."
+- Acceptance check: one sentence a test could assert. "After five failed logins from one address in a minute, the sixth gets a 429."
 
 ## Step 2: Ask for what's missing
 One message, one or two sharp questions, each with a suggested answer so a yes is enough.
-"Which invoices and columns go in the file (all invoices; id, customer, amount, status, due date), and where does the button live? What check tells us it works, like one row per invoice that opens in Excel?"
+"Which screens get dark mode (all of them), and where does the switch live (the settings page)? What check tells us it works, like a test that the dark theme applies once the switch is on?"
 Don't ask what you can decide. Pick a default and say it.
 
 ## Step 3: Stop asking
@@ -27,7 +27,7 @@ Use this in Spec. A work order is one change a thread can finish alone and a rev
 - A small request, one behaviour in one module, is exactly one work order: the code and its test in one pull request.
 - Split only when the parts touch different files and each can be tested on its own. Parts that would edit the same file stay one work order.
 - Name only files and modules in the project's file list. A button or page the project doesn't have is not a work order; say it's missing instead.
-- Title: a verb and a thing. "Add invoicesToCsv with a test", not "CSV work".
+- Title: a verb and a thing. "Rate-limit the login route with a test", not "auth work".
 
 ## Step 2: Today and the backlog
 - At most three work orders in today. Pick the ones the acceptance check needs first.
@@ -49,11 +49,12 @@ Use this in Build. A crew thread sees only its brief and its workspace. It can't
 - Done means: committed on its branch, the diff read, tests run when it can, a pull request open, and a report with Status, Result and Evidence.
 
 ## Example
-Goal: Add invoicesToCsv with a test.
-Context: the person wrote "customers want to export invoices as CSV". Acceptance: a header row, then one row per invoice with id, customer, amount in dollars, status and due date.
-Area: src/, next to src/invoices.ts.
-You can rely on: the Invoice type in src/invoices.ts and the test setup in the project.
-Out of scope: the UI and any change to existing invoice code.
+From another project; a real brief names this project's own files and words.
+Goal: Rate-limit the login route with a test.
+Context: the person wrote "people keep guessing passwords on the login page". Acceptance: after five failed logins from one address in a minute, the sixth gets a 429.
+Area: src/, next to src/routes/login.ts.
+You can rely on: the login handler in src/routes/login.ts and the test setup in the project.
+Out of scope: the UI and any change to how passwords are checked.
 Done means: committed, diff read, pull request open, report with Status / Result / Evidence.
 
 ## When the report comes back

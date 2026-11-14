@@ -3,7 +3,7 @@ import { modelsToTry } from "../models";
 import { addNotice } from "../state-ops";
 import { update } from "../store";
 import { recordUsage } from "../usage";
-import { projectFiles } from "../thread-workspace";
+import { projectFiles, projectReadme } from "../thread-workspace";
 import type { ToolSpec } from "../tools";
 import { systemPrompt } from "./prompt";
 import type { Brain, LiveSink, MoveRecord, TurnContext } from "./types";
@@ -94,12 +94,13 @@ export async function readStream(parts: AsyncIterable<TextStreamPart<ToolSet>>, 
 export const modelBrain: Brain = {
   async next(ctx, live) {
     const files = ctx.agent.kind === "captain" ? await projectFiles(ctx.state.project).catch(() => []) : [];
+    const readme = files.length > 0 ? await projectReadme(ctx.state.project, files).catch(() => null) : null;
     const timeout = ctx.agent.kind === "captain" ? CAPTAIN_CALL_TIMEOUT_MS : CREW_CALL_TIMEOUT_MS;
     const call = async (model: string, extra: ModelMessage[], reasoning?: "none") => {
       live?.reset();
       const stream = streamText({
         model,
-        instructions: systemPrompt(ctx.agent, ctx.state, files),
+        instructions: systemPrompt(ctx.agent, ctx.state, files, readme),
         messages: [...messages(ctx), ...extra],
         tools: toolSet(ctx.tools),
         maxOutputTokens: MAX_OUTPUT_TOKENS,
