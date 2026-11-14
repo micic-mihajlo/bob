@@ -1,3 +1,4 @@
+import { brainKind } from "./brain";
 import { agentById, type State } from "./state";
 import { getConfig } from "./store";
 import type { PullRequestArtifact } from "./threads";
@@ -107,6 +108,12 @@ export const isVerifiedSource = (file: string): boolean => SOURCE.test(file) && 
 export const needsVerification = (pr: PullRequestArtifact): boolean =>
   getConfig().installDeps && process.env.BOB_VERIFY !== "off" && pr.pullRequest.files.some((f) => isVerifiedSource(f.path));
 
+/**
+ * The gate refuses approval and merge with the scripted brain. With a live model it is advisory: it still runs
+ * and its line shows on the trace and the card, but it never refuses. BOB_VERIFY=block makes it block live too.
+ */
+export const gateBlocks = (): boolean => process.env.BOB_VERIFY === "block" || brainKind() === "script";
+
 /** The newest verification of this pull request's head tree. */
 export function verificationOf(s: State, pr: PullRequestArtifact): Verification | undefined {
   const tree = pr.pullRequest.tree;
@@ -117,12 +124,14 @@ export function verificationOf(s: State, pr: PullRequestArtifact): Verification 
 export function verificationStatus(s: State, pr: PullRequestArtifact): string {
   if (!needsVerification(pr)) return "not needed, no source changes";
   const v = verificationOf(s, pr);
-  return v ? verificationLine(v, s.equivalentMutants ?? []) : "not run on this head";
+  const waivers = s.equivalentMutants ?? [];
+  const line = v ? verificationLine(v, waivers) : "not run on this head";
+  return gateBlocks() || (v && gatePassed(v, waivers)) ? line : `advisory, ${line}`;
 }
 
 /** Refuses an approval or a merge until tiers 1 to 3 pass on the pull request's head. */
 export function verificationRefusal(s: State, pr: PullRequestArtifact): string | null {
-  if (!needsVerification(pr)) return null;
+  if (!needsVerification(pr) || !gateBlocks()) return null;
   const v = verificationOf(s, pr);
   const n = `#${pr.pullRequest.number}`;
   const owner = agentById(s, pr.agentId)?.code ?? "its build thread";

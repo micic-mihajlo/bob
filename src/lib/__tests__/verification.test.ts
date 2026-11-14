@@ -10,7 +10,7 @@ import type { Agent, Artifact } from "../types";
 import type { PullRequestArtifact } from "../threads";
 import { verificationLine, verificationRefusal, verificationStatus, type EquivalentMutant, type Verification } from "../verification";
 import { changedLines, mutantsOf } from "../verify/mutants";
-import { runProof } from "../verify/run";
+import { propertyNames, runProof } from "../verify/run";
 import { freshTeam } from "./helpers";
 import type { Workspace } from "../workspace";
 
@@ -90,6 +90,26 @@ describe("the verification gate", () => {
     expect(verificationStatus(stateWith([]), prOf(["docs/note.md"]))).toBe("not needed, no source changes");
   });
 
+  it("is advisory with a live model: it shows its line but never refuses, unless BOB_VERIFY=block", () => {
+    getConfig().installDeps = true;
+    const env = { BOB_BRAIN: process.env.BOB_BRAIN, BOB_VERIFY: process.env.BOB_VERIFY };
+    process.env.BOB_BRAIN = "model";
+    try {
+      const pr = prOf(["src/csv.ts"]);
+      const failing = verification({ mutation: { ok: false, mutants: [{ file: "src/csv.ts", line: 2, operator: "dropped .replace()", before: "a", after: "b", killed: false }] } });
+      expect(verificationRefusal(stateWith([]), pr)).toBeNull();
+      expect(verificationRefusal(stateWith([failing]), pr)).toBeNull();
+      expect(verificationStatus(stateWith([]), pr)).toBe("advisory, not run on this head");
+      expect(verificationStatus(stateWith([failing]), pr)).toMatch(/^advisory, 4 properties · 1,200 cases · 0\/1 mutants killed/);
+      expect(verificationStatus(stateWith([verification()]), pr)).toBe("4 properties · 1,200 cases · 8/8 mutants killed · proved in Lean");
+      process.env.BOB_VERIFY = "block";
+      expect(verificationRefusal(stateWith([failing]), pr)).toMatch(/fails verification/);
+    } finally {
+      for (const [k, v] of Object.entries(env)) if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  });
+
   it("is off when Bob does not install the project's dependencies", () => {
     getConfig().installDeps = false;
     expect(verificationRefusal(stateWith([]), prOf(["src/csv.ts"]))).toBeNull();
@@ -126,6 +146,13 @@ describe("equivalent mutants", () => {
     expect(marked.result).toMatchObject({ passed: true, line: "4 properties · 1,200 cases · 5/5 mutants killed · 1 equivalent · proved in Lean" });
     expect(getState().equivalentMutants).toEqual([expect.objectContaining({ file: "src/invoices.ts", after: SURVIVOR.after, reason: waiver.reason, by: "inv-2" })]);
     expect(String(markEquivalent({ pullRequestId: "#3", file: "src/invoices.ts", line: 3, reason: "again, same one" }, ctx).result.error)).toMatch(/Survivors: none/);
+  });
+});
+
+describe("the contract written for a thread", () => {
+  it("lists every it() and test() in the properties file, in order", () => {
+    const src = 'it("one row per invoice", () => {});\ntest(\'a "quoted" name\', () => {});\nit(`template name`, () => {});\nfit("not this one", () => {});';
+    expect(propertyNames(src)).toEqual(["one row per invoice", 'a "quoted" name', "template name"]);
   });
 });
 
