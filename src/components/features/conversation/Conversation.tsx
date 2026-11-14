@@ -11,6 +11,7 @@ import { ConversationComposer } from "./ConversationComposer";
 import { ConversationHeader } from "./ConversationHeader";
 import { ConversationTimeline } from "./ConversationTimeline";
 import { WhyTraceDialog } from "./WhyTraceDialog";
+import { setDraftText } from "./composer-drafts";
 
 const EMPTY_THREAD: Omit<ThreadView, "agentId"> = { items: [], waitingOn: [], queued: 0, unread: 0 };
 
@@ -20,7 +21,7 @@ function ClosedNotice({ agent }: { agent: Agent }) {
 
 /** One thread's chat, keyed by agent so its scroll, draft focus and open rows start fresh. */
 function AgentConversation({ agent }: { agent: Agent }) {
-  const { snapshot, captain, setDraft } = useBob();
+  const { snapshot, captain } = useBob();
   const thread = snapshot.threads[agent.id] ?? { agentId: agent.id, ...EMPTY_THREAD };
   const working = snapshot.activity[agent.id]?.state === "working";
   const isCaptain = agent.id === captain?.id;
@@ -36,7 +37,7 @@ function AgentConversation({ agent }: { agent: Agent }) {
       agent={agent}
       disabled={closed}
       onSend={(text) => void sendMessage(agent.id, text)}
-      onPrefill={(text) => setDraft(agent.id, text)}
+      onPrefill={(text) => setDraftText(snapshot.project.id, agent.id, text)}
     />
   ) : (
     <AgentChatEmptyState agent={agent} />

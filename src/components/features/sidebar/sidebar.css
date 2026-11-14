@@ -228,3 +228,10 @@
   );
 }
 
+
+/* A thread with an unsent draft says so in its preview, as a chat app does. */
+.agent-row-draft {
+  color: var(--bob-warning-text);
+  font-weight: var(--bob-weight-medium);
+}
+

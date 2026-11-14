@@ -14,6 +14,7 @@ import type { Agent } from "@/lib/types";
 import { SidebarAgentContextMenu } from "./SidebarAgentContextMenu";
 import { SidebarAgentIndicator, SidebarWaitChip, sidebarStateLabel } from "./SidebarAgentIndicator";
 import { useMenuAnchor } from "./SidebarMenu";
+import { useDraft } from "@/components/features/conversation/composer-drafts";
 import type { useSidebarPins } from "./sidebar-pins";
 
 /** The label beside the name: the captain's part, a crew thread's work, a standing agent's title. */
@@ -51,9 +52,11 @@ export function SidebarAgentRow({
   const parts = status === "closed" ? workParts(agent, snapshot.artifacts, snapshot.approvals) : [];
   const outcome = parts.length > 1 ? parts.join(" · ") : "";
   const menu = useMenuAnchor();
+  const [draft] = useDraft(snapshot.project.id, agent.id);
   const hiddenDetail = userHidden && hiddenSince ? `Paused since ${new Date(hiddenSince).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : "";
   const preview = hiddenDetail || wait?.detail || liveLine(snapshot.live?.[agent.id]) || outcome || threadLine(agent, status, snapshot.activity[agent.id], thread, agentsById);
   const active = selectedAgent?.id === agent.id;
+  const draftLine = !active && !userHidden && draft.trim() ? draft.trim().split("\n")[0] : "";
   const stateLabel = state ? sidebarStateLabel(state) : "";
   const approvalId = wait?.reason === "approval" ? (snapshot.needsYou?.find((item) => item.agentId === agent.id)?.approvalId ?? null) : null;
 
@@ -94,7 +97,15 @@ export function SidebarAgentRow({
             <span className="agent-row-time">{sidebarMessageTime(thread?.items.at(-1)?.at ?? agent.createdAt)}</span>
           )}
         </span>
-        <span className="agent-row-preview">{preview}</span>
+        <span className="agent-row-preview">
+          {draftLine ? (
+            <>
+              <span className="agent-row-draft">Draft</span> {draftLine}
+            </>
+          ) : (
+            preview
+          )}
+        </span>
       </span>
       {state ? <span className="sr-only">{stateLabel}</span> : null}
     </button>
