@@ -37,7 +37,9 @@ interface BobContextValue {
   focusThread: (target: FocusTarget) => void;
   clearFocus: () => void;
   whyMessageId: MessageId | null;
-  openWhy: (messageId: MessageId) => void;
+  /** The pull request the open Why? is about, whose path the dialog draws as a graph. */
+  whyPullRequestId: string | null;
+  openWhy: (messageId: MessageId, pullRequestId?: string | null) => void;
   closeWhy: () => void;
   newAgentOpen: boolean;
   setNewAgentOpen: (open: boolean) => void;
@@ -65,6 +67,11 @@ export function BobProvider({ snapshot, connected, children }: { snapshot: Snaps
   const [panelWidth, setPanelWidth] = useState(380);
   const [focusTarget, setFocusTarget] = useState<FocusTarget | null>(null);
   const [whyMessageId, setWhyMessageId] = useState<MessageId | null>(null);
+  const [whyPullRequestId, setWhyPullRequestId] = useState<string | null>(null);
+  const openWhy = useCallback((messageId: MessageId, pullRequestId: string | null = null) => {
+    setWhyMessageId(messageId);
+    setWhyPullRequestId(pullRequestId);
+  }, []);
   const [newAgentOpen, setNewAgentOpen] = useState(false);
   const [drafts, setDrafts] = useState<Readonly<Record<AgentId, string>>>({});
 
@@ -121,7 +128,8 @@ export function BobProvider({ snapshot, connected, children }: { snapshot: Snaps
       focusThread,
       clearFocus,
       whyMessageId,
-      openWhy: setWhyMessageId,
+      whyPullRequestId,
+      openWhy,
       closeWhy,
       newAgentOpen,
       setNewAgentOpen,
@@ -146,6 +154,8 @@ export function BobProvider({ snapshot, connected, children }: { snapshot: Snaps
       focusThread,
       clearFocus,
       whyMessageId,
+      whyPullRequestId,
+      openWhy,
       closeWhy,
       newAgentOpen,
       draftFor,
