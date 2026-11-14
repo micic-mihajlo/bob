@@ -24,6 +24,14 @@ export function reviewsOf(artifacts: readonly Artifact[], pullRequestId: string)
   return artifacts.filter((artifact): artifact is ReviewArtifact => isReview(artifact) && artifact.review.pullRequestId === pullRequestId).sort(newestFirst);
 }
 
+/** The pull request a thread works on: the newest one it opened, else the one its newest review is about. */
+export function pullRequestOfThread(artifacts: readonly Artifact[], agentId: AgentId): PullRequestArtifact | undefined {
+  const opened = pullRequestsBy(artifacts, agentId)[0];
+  if (opened) return opened;
+  const reviewed = artifacts.filter((artifact): artifact is ReviewArtifact => isReview(artifact) && artifact.agentId === agentId).sort(newestFirst)[0];
+  return artifacts.find((artifact): artifact is PullRequestArtifact => isPullRequest(artifact) && artifact.id === reviewed?.review.pullRequestId);
+}
+
 /** Reviews a thread wrote, and reviews of the pull requests it opened. */
 export function reviewsForThread(artifacts: readonly Artifact[], agentId: AgentId): ReviewArtifact[] {
   const opened = new Set(pullRequestsBy(artifacts, agentId).map((artifact) => artifact.id));

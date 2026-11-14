@@ -16,7 +16,7 @@ import { diffLineText, diffLineToken, splitPath, type DiffFile } from "@/lib/cli
 import { fileCountLabel } from "@/lib/client/files-view";
 import {
   changeTotals,
-  pullRequestsBy,
+  pullRequestOfThread,
   pullRequestState,
   PULL_REQUEST_STATE_LABEL,
   type PullRequestArtifact,
@@ -79,7 +79,7 @@ function PullRequestCard({ pullRequest }: { pullRequest: PullRequestArtifact }) 
 }
 
 /**
- * A crew thread's changes: its pull request when it has one, with that diff, else its branch against
+ * A crew thread's changes: its pull request (or the one it reviewed) when it has one, with that diff, else its branch against
  * main. The changed files list as file rows; each file's diff is a code block below.
  */
 export function ChangesPane({ agent, onClose }: { agent: Agent; onClose: () => void }) {
@@ -87,7 +87,7 @@ export function ChangesPane({ agent, onClose }: { agent: Agent; onClose: () => v
   const source = useWorkspaceSource();
   const load = useCallback((signal: AbortSignal) => source.changes(agent.id, signal), [source, agent.id]);
   const loaded = useKeyedLoad(agent.id, snapshot.rev, load);
-  const pullRequest = pullRequestsBy(snapshot.artifacts, agent.id)[0];
+  const pullRequest = pullRequestOfThread(snapshot.artifacts, agent.id);
   const view = panelChangesView(loaded.data, pullRequest);
   const name = displayName(agent);
   const totals = changeTotals(view?.files ?? []);
