@@ -69,7 +69,6 @@ export function DrivePane({ onClose }: { onClose: () => void }) {
           <FileList
             label={`Files in ${captainName}'s drive`}
             groupByDay
-            summary={`${fileCountLabel(files.length)} · ${formatFileSize(totalBytes)}`}
             emptyTitle="The drive is empty"
             emptyDescription={`${captainName} keeps a digest, the crew list and notes here as the work moves.`}
             rows={files.map((entry) => ({

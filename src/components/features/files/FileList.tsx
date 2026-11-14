@@ -34,8 +34,6 @@ export interface FileListProps {
   groupByDay?: boolean;
   /** Search and type filters above the rows. */
   filters?: boolean;
-  /** The size line under the filters. */
-  summary?: string;
   loading?: boolean;
   error?: string | null;
   onRetry?: () => void;
@@ -46,7 +44,7 @@ export interface FileListProps {
 const LOADING_ROWS = [0, 1, 2, 3, 4];
 
 /** The reference's compact file list: search, type filters, day groups and file rows. */
-export function FileList({ label, rows, groupByDay = false, filters = true, summary, loading, error, onRetry, emptyTitle, emptyDescription }: FileListProps) {
+export function FileList({ label, rows, groupByDay = false, filters = true, loading, error, onRetry, emptyTitle, emptyDescription }: FileListProps) {
   const [query, setQuery] = useState<FileQuery>({ search: "", type: "all" });
   const searched = useMemo(() => queryFiles(rows, { ...query, type: "all" }), [rows, query]);
   const counts = fileTypeCounts(searched);
@@ -126,9 +124,11 @@ export function FileList({ label, rows, groupByDay = false, filters = true, summ
         </div>
       ) : (
         <>
-          <p className="file-list-summary" aria-live="polite">
-            {summary ?? fileCountLabel(visible.length)}
-          </p>
+          {filtered ? (
+            <p className="file-list-summary" aria-live="polite">
+              {fileCountLabel(visible.length)} of {rows.length}
+            </p>
+          ) : null}
           {groups.map((group) => (
             <div key={group.key} className="file-list-group">
               {group.label ? <h3 className="file-list-group-heading">{group.label}</h3> : null}
