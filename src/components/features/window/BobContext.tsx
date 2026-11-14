@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import type { Awaiting } from "@/lib/client/awaiting";
 import { findCaptain } from "@/lib/client/crew";
 import { FIRST_TABS, panelKindOf, type PanelKind, type PanelTab } from "@/lib/client/panel-tabs";
 import { resolveSelectedAgent } from "@/lib/client/selectors";
@@ -45,6 +46,9 @@ interface BobContextValue {
   setNewAgentOpen: (open: boolean) => void;
   draftFor: (agentId: AgentId) => string;
   setDraft: (agentId: AgentId, text: string) => void;
+  /** By agent, the message the person just sent and the agent has not answered yet. */
+  awaiting: Readonly<Record<AgentId, Awaiting>>;
+  setAwaiting: (agentId: AgentId, value: Awaiting | null) => void;
 }
 
 const BobContext = createContext<BobContextValue | null>(null);
@@ -76,6 +80,7 @@ export function BobProvider({ snapshot, sync, children }: { snapshot: Snapshot; 
   }, []);
   const [newAgentOpen, setNewAgentOpen] = useState(false);
   const [drafts, setDrafts] = useState<Readonly<Record<AgentId, string>>>({});
+  const [awaiting, setAwaitingAll] = useState<Readonly<Record<AgentId, Awaiting>>>({});
 
   const agentsById = useMemo(() => new Map(snapshot.agents.map((agent) => [agent.id, agent] as const)), [snapshot.agents]);
   const captain = useMemo(() => findCaptain(snapshot.agents), [snapshot.agents]);
@@ -88,6 +93,16 @@ export function BobProvider({ snapshot, sync, children }: { snapshot: Snapshot; 
   const draftFor = useCallback((agentId: AgentId) => drafts[agentId] ?? "", [drafts]);
   const setDraft = useCallback(
     (agentId: AgentId, text: string) => setDrafts((previous) => ({ ...previous, [agentId]: text })),
+    [],
+  );
+  const setAwaiting = useCallback(
+    (agentId: AgentId, value: Awaiting | null) =>
+      setAwaitingAll((previous) => {
+        const next = { ...previous };
+        if (value) next[agentId] = value;
+        else delete next[agentId];
+        return next;
+      }),
     [],
   );
   const setPanelTab = useCallback(
@@ -137,6 +152,8 @@ export function BobProvider({ snapshot, sync, children }: { snapshot: Snapshot; 
       setNewAgentOpen,
       draftFor,
       setDraft,
+      awaiting,
+      setAwaiting,
     }),
     [
       snapshot,
@@ -162,6 +179,8 @@ export function BobProvider({ snapshot, sync, children }: { snapshot: Snapshot; 
       newAgentOpen,
       draftFor,
       setDraft,
+      awaiting,
+      setAwaiting,
     ],
   );
 
