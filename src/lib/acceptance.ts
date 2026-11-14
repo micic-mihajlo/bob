@@ -127,7 +127,7 @@ export function acceptanceLock(s: State, agentId: AgentId, file: string): string
   if (!own || !isAcceptanceTest(rel)) return null;
   if (rel !== own) return `${rel} is another work order's acceptance test, so it is not yours to change. Leave it as it is.`;
   if (redAt(stepsOf(s, agentId)) < 0) return null;
-  return `${rel} is locked: it is your acceptance test and it has already run red, so it is the check, not the code. Fix the code until it passes. If you think the test itself is wrong, stop and report blocked, saying why.`;
+  return `${rel} is locked: it is your acceptance test and it has already run red, so it is the check, not the code. Fix the code until it passes. If you are sure the test itself is wrong, call propose_acceptance_change with the corrected file and why; only the person can approve it.`;
 }
 
 /** The build thread's acceptance test once it is locked, or null. */

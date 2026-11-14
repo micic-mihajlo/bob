@@ -193,6 +193,8 @@ export interface Approval {
   pullRequestId?: string;
   /** The pull request's head when the person was asked. Merging refuses once the head has moved. */
   headSha?: string;
+  /** Set when a build thread asks to change its locked acceptance test: approving writes exactly this content. */
+  acceptanceChange?: { path: string; content: string };
 }
 
 /** Something an agent produced: a pull request, a note, a review. */

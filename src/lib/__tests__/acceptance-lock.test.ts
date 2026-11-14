@@ -1,7 +1,7 @@
 import path from "node:path";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { acceptanceLock, acceptanceTampering } from "../acceptance";
-import { postUserMessage } from "../actions";
+import { decideApproval, postUserMessage } from "../actions";
 import { workspaceGuard } from "../brain/agent-sdk";
 import { getState, update } from "../store";
 import { threadWorkspace } from "../thread-workspace";
@@ -32,7 +32,7 @@ describe("an acceptance test locks once it has run red", { timeout: 60_000 }, ()
   it("refuses the build thread's edits to its acceptance test, and any write to another work order's", async () => {
     const { build, own } = await builtAndRed();
     const s = getState();
-    expect(acceptanceLock(s, build.id, own)).toMatch(/is locked: .*Fix the code until it passes\. If you think the test itself is wrong, stop and report blocked/);
+    expect(acceptanceLock(s, build.id, own)).toMatch(/is locked: .*Fix the code until it passes\. If you are sure the test itself is wrong, call propose_acceptance_change .* only the person can approve it/);
     expect(acceptanceLock(s, build.id, "src/csv.ts")).toBeNull();
     expect(acceptanceLock(s, build.id, "src/acceptance/wo_other.test.ts")).toMatch(/another work order's acceptance test/);
 
@@ -85,5 +85,50 @@ describe("an acceptance test locks once it has run red", { timeout: 60_000 }, ()
     const stored = getState().artifacts.findLast((a) => a.kind === "review")!.review!;
     expect(stored.verdict).toBe("request_changes");
     expect(stored.findings).toContainEqual(expect.objectContaining({ path: own, category: "tests", severity: "high" }));
+  });
+
+  it("lifts the lock only through one approval card the person approves, writing exactly the proposed file", async () => {
+    const { build, own } = await builtAndRed();
+    const ws = await threadWorkspace(getState().project, build.id);
+    const read = () => import("node:fs/promises").then((fs) => fs.readFile(path.join(ws.root, own), "utf8"));
+    const original = await read();
+    const proposed = `${original}\n// corrected expectation\n`;
+    const ctx = { agentId: build.id, turnId: "t_x", requestId: "r_x", causedBy: null };
+
+    const asked = await callTool("propose_acceptance_change", { content: proposed, reason: "The done-means line says three quotes." }, ctx);
+    expect(asked.endTurn).toBe(true);
+    const again = await callTool("propose_acceptance_change", { content: proposed, reason: "Again." }, ctx);
+    expect(again.result.approvalId).toBe(asked.result.approvalId);
+    const cards = getState().approvals.filter((a) => a.acceptanceChange);
+    expect(cards).toHaveLength(1);
+    expect(cards[0].title).toBe(`Change the acceptance test for ${build.workOrderId}?`);
+    expect(cards[0].detail).toContain("three quotes");
+    expect(cards[0].detail).toContain("+// corrected expectation");
+
+    const captain = getState().agents.find((a) => a.kind === "captain")!;
+    const byCaptain = await callTool("request_approval", { title: "Change the acceptance test", detail: "Approved by the captain." }, { ...ctx, agentId: captain.id });
+    const captainCard = getState().approvals.find((a) => a.id === byCaptain.result.approvalId)!;
+    expect(captainCard.acceptanceChange).toBeUndefined();
+    expect(String((await callTool("edit_files", { edits: [{ path: own, oldText: "a", newText: "b" }] }, ctx)).result.error)).toMatch(/is locked/);
+    expect(await read()).toBe(original);
+
+    expect(decideApproval(String(asked.result.approvalId), "approved").ok).toBe(true);
+    await settle();
+    expect(await read()).toBe(proposed);
+    expect(acceptanceLock(getState(), build.id, own)).toMatch(/is locked/);
+    const decided = getState().messages.find((m) => m.approvalId === asked.result.approvalId)!;
+    expect(decided.text).toMatch(/Bob wrote the approved/);
+  });
+
+  it("leaves the test as it was when the person denies the change", async () => {
+    const { build, own } = await builtAndRed();
+    const ws = await threadWorkspace(getState().project, build.id);
+    const read = () => import("node:fs/promises").then((fs) => fs.readFile(path.join(ws.root, own), "utf8"));
+    const original = await read();
+    const ctx = { agentId: build.id, turnId: "t_x", requestId: "r_x", causedBy: null };
+    const asked = await callTool("propose_acceptance_change", { content: "export {};\n", reason: "Simpler." }, ctx);
+    decideApproval(String(asked.result.approvalId), "denied");
+    await settle();
+    expect(await read()).toBe(original);
   });
 });

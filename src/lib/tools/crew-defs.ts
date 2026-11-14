@@ -12,6 +12,7 @@ import { recordNote, recordNoteSchema, report, reportSchema } from "./report";
 import { PREVIEW_TOOLS } from "../integrations/vercel/check-preview";
 import { startSubagent, startSubagentSchema } from "../subagents";
 import { VERIFY_TOOLS } from "./verify";
+import { proposeAcceptanceChange, proposeAcceptanceChangeSchema } from "./acceptance-change";
 
 const READ_ONLY_GIT = ["status", "diff", "log", "show", "fetch", "switch", "checkout"] as const;
 const MAX_BATCH = 20;
@@ -140,7 +141,7 @@ const runDef = define({
     const restored = locked && kept !== null && (await fs.readFile(path.join(ws.root, locked), "utf8").catch(() => null)) !== kept;
     if (restored) await fs.writeFile(path.join(ws.root, locked), kept);
     if (!out.ok) return { result: { error: out.error } };
-    if (restored) return { result: { error: `That command changed ${locked}, your locked acceptance test, so Bob put it back. Fix the code until it passes. If you think the test itself is wrong, stop and report blocked, saying why.`, output: out.output } };
+    if (restored) return { result: { error: `That command changed ${locked}, your locked acceptance test, so Bob put it back. Fix the code until it passes. If you are sure the test itself is wrong, call propose_acceptance_change with the corrected file and why; only the person can approve it.`, output: out.output } };
     const { ok: _ok, ...rest } = out;
     const failedTestsShown = isTestCommand(i.command) && (failedTests(out.output) ?? 0) > 0;
     const note = out.timedOut
@@ -219,6 +220,15 @@ export const CREW_TOOLS: ToolDef[] = [
     sets: ["build", "research"],
     label: (i) => `Starting a subagent: ${clip(i.title)}`,
     execute: startSubagent,
+  }),
+  define({
+    name: "propose_acceptance_change",
+    description:
+      "Only when your acceptance test is locked and you are sure the test itself is wrong: send the whole corrected file and why, citing the work order's done-means line. A person sees the diff and decides; you cannot change the locked test any other way. Your turn ends here.",
+    schema: proposeAcceptanceChangeSchema,
+    sets: ["build"],
+    label: () => "Asking to change the acceptance test",
+    execute: proposeAcceptanceChange,
   }),
   define({
     name: "report",

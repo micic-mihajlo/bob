@@ -1,3 +1,5 @@
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
 import { openAsk, openFollowUp, openInboxQuestion } from "./brain/intake";
 import { globals } from "./globals";
 import { newId } from "./ids";
@@ -10,11 +12,11 @@ import { agentById, runningTurn } from "./state";
 import { addThreadItem, patchApproval, patchDelivery, patchTurn, stamp } from "./state-ops";
 import { getState, resetState, transact, update } from "./store";
 import { addAgent, type NewAgentInput } from "./team";
-import { removeProjectWorkspaces, warmProject } from "./thread-workspace";
+import { removeProjectWorkspaces, threadWorkspace, warmProject } from "./thread-workspace";
 import { closeThreadState } from "./threads";
 import { drain } from "./turns";
 import { SAMPLE_PROJECT } from "./seed";
-import { hasProject, type AgentId } from "./types";
+import { hasProject, type AgentId, type Approval } from "./types";
 import type { DepsState } from "./workspace";
 
 /** What a person can do. Routes call these after validating the request body. */
@@ -96,21 +98,43 @@ export function createAgentByPerson(input: NewAgentInput): ActionResult<{ agentI
   });
 }
 
+/** Writes the acceptance test a person approved into the thread's workspace: the only way past the lock. */
+async function writeApprovedAcceptance(approval: Approval): Promise<string> {
+  const change = approval.acceptanceChange!;
+  const ws = await threadWorkspace(getState().project, approval.agentId);
+  await writeFile(path.join(ws.root, change.path), change.content);
+  update((s) => addThreadItem(s, approval.agentId, { kind: "step", ...stamp(), turnId: approval.turnId, tool: "acceptance_change", label: "The person approved the acceptance test change", outcome: "ok", seconds: 0, detail: change.path }));
+  return ` Bob wrote the approved ${change.path}. It stays locked; run it again, then fix the code until it passes.`;
+}
+
 export function decideApproval(approvalId: string, decision: "approved" | "denied"): ActionResult {
   const approval = getState().approvals.find((a) => a.id === approvalId);
   if (!approval) return { ok: false, error: `No approval with id ${approvalId}.` };
   if (approval.status !== "pending") return { ok: false, error: `That approval was already ${approval.status}.` };
   update((s) => patchApproval(s, approvalId, { status: decision }));
+  if (approval.acceptanceChange) {
+    const run: Promise<void> = (decision === "approved" ? writeApprovedAcceptance(approval) : Promise.resolve(" Your acceptance test is unchanged and stays locked: fix the code, or report blocked."))
+      .catch((error: unknown) => ` Writing the approved test failed: ${error instanceof Error ? error.message : "unknown error"}.`)
+      .then((note) => void sendDecision(approval, decision, note))
+      .finally(() => globals().inflight.delete(run));
+    globals().inflight.add(run);
+    return { ok: true };
+  }
+  const sent = sendDecision(approval, decision, "");
+  return sent.ok ? { ok: true } : sent;
+}
+
+function sendDecision(approval: Approval, decision: "approved" | "denied", note: string): ActionResult {
   const verb = decision === "approved" ? "Approved" : "Denied";
   const sent = send({
     from: { kind: "user" },
     to: [approval.agentId],
-    text: `${verb}: ${approval.title}`,
+    text: `${verb}: ${approval.title}${note}`,
     expectsReply: false,
     replyTo: null,
     causedBy: null,
     requestId: approval.requestId,
-    approvalId,
+    approvalId: approval.id,
   });
   if (!sent.ok) return { ok: false, error: sent.error.message };
   drain(approval.agentId);
