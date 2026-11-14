@@ -11,13 +11,11 @@ What each definition mirrors:
   no recipients, self-send, a reply that expects a reply, an unknown reply target, over budget).
   The other refusals (empty text, unknown or closed recipient, crew rule) only refuse more, so they
   can only make these bounds tighter.
-- `routeOk`: `route` in `src/lib/tools/messaging.ts` (a reply must answer a message sent to you
-  by an agent, and goes back to that agent).
 - `Box.owed`: the deliveries with `answered = false` of reply-expecting agent messages
   (`Delivery.answered`, set by `markAnswered` in `src/lib/mailbox.ts`).
-- `answersOwed`: the rule the factory's reply paths follow: `planRelays`/`owedDeliveries` in
-  `src/lib/relay.ts` and `owedToCaptain` in `src/lib/tools/report.ts` only reply to an ask that
-  is addressed to the replier and not answered yet, and send that reply to the asker alone.
+- `answersOwed`: `answersOwedAsk` in `src/lib/mailbox.ts`: a reply must answer an ask sent to the
+  replier that nobody has answered yet, and goes to one recipient (the code also requires that
+  recipient to be the asker, which only refuses more).
 -/
 namespace BobFormal.Mailbox
 
@@ -96,7 +94,7 @@ theorem budget_split (ms : List Msg) : budgetUsed ms = firstSends ms + replySend
     obtain ⟨_, s, to, _, rt⟩ := m
     cases s <;> cases rt <;> simp [budgetUsed, firstSends, replySends, Sender.isAgent, ih] <;> omega
 
-/-! ## The factory's reply discipline -/
+/-! ## The mailbox with its reply rule -/
 
 structure Box where
   msgs : List Msg
@@ -187,7 +185,7 @@ theorem first_sends_within_budget (t : List Send) : firstSends (run empty t).msg
   (inv_run empty t inv_empty).1
 
 /-- **Loop termination.** However agents behave, one request sees at most `2 * BUDGET` agent
-deliveries: every reply used up an owed answer, and every owed answer came from budgeted work. -/
+deliveries: every reply uses up an owed answer, and every owed answer came from budgeted work. -/
 theorem deliveries_bounded (t : List Send) : budgetUsed (run empty t).msgs ≤ 2 * BUDGET := by
   have ⟨h1, h2, _⟩ := inv_run empty t inv_empty
   rw [budget_split]
@@ -200,43 +198,19 @@ theorem agent_messages_bounded (t : List Send) : agentMessages (run empty t).msg
   have := deliveries_bounded t
   omega
 
-/-! ## Counterexample: `send_message` replies are not tied to an owed ask -/
-
-/-- Mirrors `route` in `src/lib/tools/messaging.ts`. -/
-def routeOk (ms : List Msg) (i : Send) : Bool :=
-  match i.replyTo with
-  | none => true
-  | some r =>
-    match ms.find? (·.id == r), i.sender with
-    | some m, .agent a =>
-      m.to.contains a &&
-        (match m.sender with
-         | .agent asker => i.to == [asker]
-         | .person => false)
-    | _, _ => false
-
-/-- What the `send_message` tool accepts: `route` and then `applySend`, with no owed check. -/
-def sendMessageStep (ms : List Msg) (i : Send) : List Msg :=
-  if accepts ms i && routeOk ms i then mkMsg ms i :: ms else ms
-
-def runSendMessage (ms : List Msg) : List Send → List Msg
-  | [] => ms
-  | i :: is => runSendMessage (sendMessageStep ms i) is
+/-! ## The reply ping-pong that used to run forever -/
 
 /-- The k-th reply answers message k - 1, which the other teammate sent. -/
 def pingPongReply (k : Nat) : Send :=
   if k % 2 = 1 then ⟨.agent 2, [1], false, some (k - 1)⟩ else ⟨.agent 1, [2], false, some (k - 1)⟩
 
-/-- Teammate 1 asks teammate 2 once, then the two answer each other's last reply. -/
+/-- Teammate 1 asks teammate 2 once, then the two try to answer each other's last reply. -/
 def pingPong (n : Nat) : List Send :=
   ⟨.agent 1, [2], true, none⟩ :: (List.range n).map (fun k => pingPongReply (k + 1))
 
 set_option maxRecDepth 100000 in
-/-- **Known gap.** Through `send_message`, two standing teammates can keep replying to each
-other's replies: 31 deliveries are accepted in one request, past the `2 * BUDGET` bound that holds
-when every reply answers an owed ask. Each reply is exempt from the budget, and `route` only checks
-that the replied-to message was sent to you. -/
-theorem send_message_replies_unbounded :
-    2 * BUDGET < budgetUsed (runSendMessage [] (pingPong 30)) := by decide
+/-- **Replies cannot ping-pong.** Of the ask and 30 replies to replies, only the ask and its one
+answer are accepted: a reply to a reply answers nothing that is owed, so it is refused. -/
+theorem ping_pong_stops : (run empty (pingPong 30)).msgs.length = 2 := by decide
 
 end BobFormal.Mailbox

@@ -39,8 +39,8 @@
       "name": "BobFormal.Mailbox.deliveries_bounded",
       "rule": "Loop termination",
       "kind": "proof",
-      "mirrors": "applySend, markAnswered (src/lib/mailbox.ts), planRelays (src/lib/relay.ts), report (src/lib/tools/report.ts)",
-      "statement": "When every reply answers one owed ask, a request sees at most 24 agent deliveries, so every message cascade ends."
+      "mirrors": "applySend, answersOwedAsk, markAnswered (src/lib/mailbox.ts)",
+      "statement": "A request sees at most 24 agent deliveries, because every reply must answer one unanswered ask, so every message cascade ends."
     },
     {
       "name": "BobFormal.Mailbox.agent_messages_bounded",
@@ -50,11 +50,11 @@
       "statement": "At most 24 agent messages are accepted in one request; after that every agent send is refused."
     },
     {
-      "name": "BobFormal.Mailbox.send_message_replies_unbounded",
+      "name": "BobFormal.Mailbox.ping_pong_stops",
       "rule": "Loop termination",
-      "kind": "gap",
-      "mirrors": "route (src/lib/tools/messaging.ts), overBudget (src/lib/mailbox.ts)",
-      "statement": "Known gap: through send_message, two person-added teammates can keep replying to each other's replies without limit, because replies skip the budget."
+      "kind": "proof",
+      "mirrors": "answersOwedAsk (src/lib/mailbox.ts), route (src/lib/tools/messaging.ts)",
+      "statement": "Two teammates cannot keep answering each other's replies: after the one answer an ask is owed, a reply to a reply is refused."
     },
     {
       "name": "BobFormal.Roadmap.step_shape",
