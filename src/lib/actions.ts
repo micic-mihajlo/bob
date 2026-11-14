@@ -4,6 +4,7 @@ import { newId } from "./ids";
 import { isThreadModel, unknownModel } from "./models";
 import { interrupt, type InterruptResult } from "./interrupt";
 import { send } from "./mailbox";
+import { park } from "./projects";
 import { relayOwed } from "./relay";
 import { agentById, runningTurn } from "./state";
 import { addThreadItem, patchApproval, patchDelivery, patchTurn, stamp } from "./state-ops";
@@ -157,6 +158,7 @@ export function setThreadModelByPerson(agentId: AgentId, model: string): ActionR
  */
 export async function resetAll(options: { warm?: boolean; sample?: boolean } = {}): Promise<ActionResult<{ deps?: DepsState }>> {
   const project = options.sample ? SAMPLE_PROJECT : getState().project;
+  if (getState().project.id !== project.id) park(getState());
   resetState(project);
   if (!hasProject(project)) return { ok: true };
   try {
