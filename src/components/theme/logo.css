@@ -54,3 +54,40 @@
     animation: none;
   }
 }
+
+/* The captain's builder: crisp pixels that fill the avatar box. Working swaps the two hammer frames
+   every 280ms; with reduced motion it rests on the first. */
+.agent-avatar.agent-avatar-builder > svg {
+  width: 100%;
+  height: 100%;
+  translate: none;
+}
+
+.agent-avatar-builder [data-frame="0"] {
+  animation: bob-builder-hammer 560ms steps(1) infinite reverse;
+}
+
+.agent-avatar-builder [data-frame="1"] {
+  animation: bob-builder-hammer 560ms steps(1) infinite;
+}
+
+@keyframes bob-builder-hammer {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-avatar-builder [data-frame="0"] {
+    animation: none;
+  }
+
+  .agent-avatar-builder [data-frame="1"] {
+    animation: none;
+    opacity: 0;
+  }
+}

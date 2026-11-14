@@ -502,12 +502,14 @@ export interface Snapshot {
   claude?: ClaudeStatus;
   /** What HydraDB recalled for the person's recent messages to the captain, oldest first. */
   recalls?: MemoryRecall[];
+  /** What HydraDB recalled for each crew brief, by the brief's message id. */
+  knowledge?: Record<MessageId, KnowledgeContext>;
 }
 
 /** One memory HydraDB recalled: a lesson from a finished request, or something the person decided. */
 export interface RecalledMemory {
   id: string;
-  source: "lesson" | "person";
+  source: "lesson" | "person" | "code";
   title: string;
   text: string;
   /** HydraDB's relevancy score, 0 to 1. */

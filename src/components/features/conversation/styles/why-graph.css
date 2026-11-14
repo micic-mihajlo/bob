@@ -274,3 +274,31 @@
   white-space: nowrap;
 }
 
+
+/* Under a crew brief: what HydraDB recalled for it. */
+.knowledge-line {
+  margin: var(--bob-space-1) 0 0;
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+}
+
+.knowledge-line > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bob-space-1);
+  cursor: pointer;
+  list-style: none;
+}
+
+.knowledge-line > summary::-webkit-details-marker {
+  display: none;
+}
+
+.knowledge-line > summary:hover {
+  color: var(--bob-text-secondary);
+}
+
+.knowledge-line > .hydra-context-list {
+  margin-top: var(--bob-space-2);
+  padding-left: var(--bob-space-4);
+}

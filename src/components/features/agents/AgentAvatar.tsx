@@ -4,14 +4,8 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { prefersReducedMotion } from "@/lib/client/reduced-motion";
 import type { Agent } from "@/lib/types";
 import { avatarBreathe, avatarMoodIsBusy, type AvatarMood } from "./agent-mood";
-import {
-  asciiFaceFrame,
-  asciiFaceIdentity,
-  asciiFaceSettled,
-  drawAsciiFace,
-  easeAsciiFaceFrame,
-  type AsciiFaceFrame,
-} from "./ascii-face";
+import { builderPixels, BUILDER_PALETTE, type BuilderState } from "./builder-sprite";
+import { asciiFaceFrame, asciiFaceIdentity, asciiFaceSettled, drawAsciiFace, easeAsciiFaceFrame, type AsciiFaceFrame } from "./ascii-face";
 
 /**
  * When an avatar animates: `hover` and `idle` rest until a pointer or keyboard focus reaches the control
@@ -20,7 +14,7 @@ import {
 export type AvatarMotion = "hover" | "always" | "idle";
 
 export interface AgentAvatarProps {
-  agent: Pick<Agent, "id" | "hue"> & { kind?: Agent["kind"] } | undefined;
+  agent: (Pick<Agent, "id" | "hue"> & { kind?: Agent["kind"] }) | undefined;
   mood?: AvatarMood;
   motion?: AvatarMotion;
   /** The head turns toward the pointer. Use it only where few avatars show. */
@@ -36,19 +30,66 @@ const PRINT_FPS = 12;
 const HOVER_GROUP = "[data-avatar-hover], button, a, [role='button'], [role='link'], [role='menuitem']";
 const GAZE_DISTANCE = 320;
 
-/** The captain wears the reference product's own face: the grey orb, no hue. */
-function faceHue(agent: AgentAvatarProps["agent"]): number | null {
-  if (!agent || agent.kind === "captain") return null;
-  return agent.hue;
+const BUILDER_STATE: Record<AvatarMood, BuilderState> = {
+  idle: "idle",
+  working: "working",
+  waiting: "needs-you",
+  failed: "error",
+  responded: "idle",
+  connecting: "working",
+  asleep: "idle",
+};
+
+/** One frame of the builder as runs of same-coloured pixels, one rect per run. */
+function BuilderFrame({ state, frame }: { state: BuilderState; frame: 0 | 1 }) {
+  return builderPixels(state, "small", frame).flatMap((row, y) => {
+    const runs = [];
+    for (let x = 0; x < row.length;) {
+      let end = x + 1;
+      while (end < row.length && row[end] === row[x]) end += 1;
+      if (row[x] !== ".") runs.push(<rect key={`${x}-${y}`} x={x} y={y} width={end - x} height={1} fill={BUILDER_PALETTE[row[x]]} />);
+      x = end;
+    }
+    return runs;
+  });
 }
 
-/** The agent's animated ASCII head, drawn on a canvas. Size it with CSS on the element. */
-export function AgentAvatar({ agent, mood = "idle", motion = "hover", followPointer = false, className, style }: AgentAvatarProps) {
+/** The captain is Bob himself: the pixel builder in a hard hat. Working swings the hammer, waiting raises a hand, failed shows X eyes. */
+function BuilderAvatar({ mood, className, style }: { mood: AvatarMood; className?: string; style?: CSSProperties }) {
+  const state = BUILDER_STATE[mood];
+  return (
+    <span className={`agent-avatar agent-avatar-builder ${className ?? ""}`} style={style} data-avatar="builder" data-mood={mood} aria-hidden="true">
+      <svg viewBox="0 0 16 16" shapeRendering="crispEdges">
+        {state === "working" ? (
+          <>
+            <g data-frame="0">
+              <BuilderFrame state={state} frame={0} />
+            </g>
+            <g data-frame="1">
+              <BuilderFrame state={state} frame={1} />
+            </g>
+          </>
+        ) : (
+          <BuilderFrame state={state} frame={0} />
+        )}
+      </svg>
+    </span>
+  );
+}
+
+/** The agent's face: the builder for the captain, an animated ASCII head for the crew. Size it with CSS on the element. */
+export function AgentAvatar(props: AgentAvatarProps) {
+  if (props.agent?.kind === "captain") return <BuilderAvatar mood={props.mood ?? "idle"} className={props.className} style={props.style} />;
+  return <AsciiAvatar {...props} />;
+}
+
+/** The agent's animated ASCII head, drawn on a canvas. */
+function AsciiAvatar({ agent, mood = "idle", motion = "hover", followPointer = false, className, style }: AgentAvatarProps) {
   const element = useRef<HTMLSpanElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [interacting, setInteracting] = useState(false);
   const seed = agent?.id ?? "";
-  const hue = faceHue(agent);
+  const hue = agent?.hue ?? null;
   const live = useRef({ identity: asciiFaceIdentity(seed, hue), mood, moving: false });
   const look = useRef<{ x: number; y: number } | null>(null);
   const wake = useRef<() => void>(() => {});
@@ -80,8 +121,7 @@ export function AgentAvatar({ agent, mood = "idle", motion = "hover", followPoin
     let drawnAt = -Infinity;
     let time = 0;
     let current: AsciiFaceFrame | null = null;
-    const goalFor = (animated: boolean) =>
-      asciiFaceFrame(live.current.mood, time + live.current.identity.phase, animated, 0, look.current);
+    const goalFor = (animated: boolean) => asciiFaceFrame(live.current.mood, time + live.current.identity.phase, animated, 0, look.current);
     const draw = (frame: AsciiFaceFrame) => {
       const surface = canvas.current;
       if (!context || !surface || size === 0) return;
