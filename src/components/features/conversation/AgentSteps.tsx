@@ -5,7 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
-import type { TurnSteps } from "@/lib/client/conversation-rows";
+import { unrecoveredFailures, type TurnSteps } from "@/lib/client/conversation-rows";
 import { formatElapsed, pluralize } from "@/lib/client/format";
 import type { StepItem } from "@/lib/client/thread-rows";
 
@@ -57,16 +57,28 @@ function AgentStepRow({ step, newest }: { step: StepItem; newest: boolean }) {
   const Mark = step.outcome === "failed" ? X : step.outcome === "ok" ? Check : Puzzle;
   const head = (
     <>
-      <Mark className="agent-step-icon" aria-label={step.outcome === "failed" ? "Failed" : step.outcome === "ok" ? "Passed" : undefined} aria-hidden={step.outcome ? undefined : "true"} />
+      <Mark
+        className="agent-step-icon"
+        aria-label={step.outcome === "failed" ? "Failed" : step.outcome === "ok" ? "Passed" : undefined}
+        aria-hidden={step.outcome ? undefined : "true"}
+      />
       <span className={cx("agent-step-text", newest && "agent-activity-label")}>{step.label}</span>
-      {step.seconds !== undefined && step.seconds >= 0.1 ? <span className="agent-step-duration">{step.seconds < 10 ? step.seconds.toFixed(1) : Math.round(step.seconds)}s</span> : null}
+      {step.seconds !== undefined && step.seconds >= 0.1 ? (
+        <span className="agent-step-duration">{step.seconds < 10 ? step.seconds.toFixed(1) : Math.round(step.seconds)}s</span>
+      ) : null}
     </>
   );
   return (
     <li className="agent-step" data-kind="progress" data-step-id={step.id} data-tool={step.tool} data-outcome={step.outcome} data-open={open ? "" : undefined}>
       {step.detail ? (
         <>
-          <button type="button" className="agent-step-toggle" aria-expanded={open ? "true" : "false"} aria-controls={open ? outputId : undefined} onClick={() => setOpen((value) => !value)}>
+          <button
+            type="button"
+            className="agent-step-toggle"
+            aria-expanded={open ? "true" : "false"}
+            aria-controls={open ? outputId : undefined}
+            onClick={() => setOpen((value) => !value)}
+          >
             {head}
             <ChevronRight className="agent-step-chevron" aria-hidden="true" />
           </button>
@@ -87,7 +99,7 @@ function AgentStepRow({ step, newest }: { step: StepItem; newest: boolean }) {
 export function AgentStepsDisclosure({ turn }: { turn: TurnSteps }) {
   const panelId = useId();
   const [open, setOpen] = useState(false);
-  const failed = turn.steps.filter((step) => step.outcome === "failed").length;
+  const failed = unrecoveredFailures(turn.steps);
   return (
     <div className="agent-steps" data-open={open ? "" : undefined}>
       <Button

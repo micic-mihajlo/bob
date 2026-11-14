@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dayMarkerLabel, formatChatTimestamp } from "../chat-time";
-import { buildConversationRows } from "../conversation-rows";
+import { buildConversationRows, unrecoveredFailures } from "../conversation-rows";
 import { threadStatusOf } from "../crew";
 import { buildWhyTrace } from "../why-trace";
 import type { Agent, Artifact, Snapshot, ThreadItem, WhyHop } from "@/lib/types";
@@ -129,5 +129,17 @@ describe("threadStatusOf", () => {
     expect(threadStatusOf(snapshot({ "inv-1": { status: "working", needsYou: true, closed: true } }), agent)).toBe("closed");
     expect(threadStatusOf(snapshot({ "inv-1": { status: "working", needsYou: true, closed: false } }), agent)).toBe("needs_you");
     expect(threadStatusOf(snapshot({ "inv-1": { status: "failed", needsYou: false, closed: false } }), agent)).toBe("failed");
+  });
+});
+
+describe("unrecoveredFailures", () => {
+  const run = (id: string, outcome: "ok" | "failed", tool = "run") => ({ kind: "step" as const, id, turnId: "t1", tool, label: id, outcome, at: at(1) });
+
+  it("skips a failure a later call of the same tool passed", () => {
+    expect(unrecoveredFailures([run("red", "failed"), run("write", "ok", "write_files"), run("green", "ok")])).toBe(0);
+  });
+
+  it("counts a failure nothing passed after", () => {
+    expect(unrecoveredFailures([run("green", "ok"), run("red", "failed"), run("write", "ok", "write_files")])).toBe(1);
   });
 });

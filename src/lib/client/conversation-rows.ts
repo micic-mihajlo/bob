@@ -12,6 +12,15 @@ export interface TurnSteps {
 }
 
 /**
+ * Failed steps the turn never got past. A failure followed by a passing call of the same tool, such
+ * as an acceptance test that runs red first and green after the change, is not counted.
+ */
+export function unrecoveredFailures(steps: readonly StepItem[]): number {
+  return steps.filter((step, index) => step.outcome === "failed" && !steps.slice(index + 1).some((later) => later.tool === step.tool && later.outcome === "ok"))
+    .length;
+}
+
+/**
  * One row of the reference chat. A finished turn's steps sit above its answer, as the reference
  * draws them; a turn with no answer gets a steps row of its own where its last step was.
  */
