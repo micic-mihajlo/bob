@@ -8,7 +8,7 @@ import { agentById, messageById, type State } from "./state";
 import { addNotice, addThreadItem, patchDelivery, patchTurn, stamp } from "./state-ops";
 import { liveMove } from "./live";
 import { getConfig, getState, transact, update } from "./store";
-import { workspaceContext } from "./thread-workspace";
+import { preloadedFiles, workspaceContext } from "./thread-workspace";
 import { callTool } from "./tools";
 import { buildContext } from "./turn-context";
 import { planTurn, type StartedTurn } from "./turn-start";
@@ -82,6 +82,12 @@ const briefOf = (s: State, t: StartedTurn) => t.messageIds.map((id) => messageBy
 async function runTurn(t: StartedTurn): Promise<void> {
   const initial = getState();
   const workspace = await workspaceContext(initial, t.agentId, briefOf(initial, t));
+  const preloaded = preloadedFiles(workspace);
+  if (preloaded.length > 0) {
+    const label = `Read ${preloaded.length} file${preloaded.length === 1 ? "" : "s"}`;
+    const detail = `Loaded into this turn's first message:\n${preloaded.join("\n")}`;
+    update((s) => addThreadItem(s, t.agentId, { kind: "step", ...stamp(), turnId: t.turnId, tool: "read_files", label, outcome: "ok", seconds: 0, detail }));
+  }
   const moves: MoveRecord[] = [];
   let final: string | null = STEP_LIMIT_TEXT;
   const limit = maxMoves(t.agentId);

@@ -114,6 +114,9 @@ async function shownFiles(ws: Workspace, paths: string[]): Promise<string[]> {
   return shown;
 }
 
+/** The files a context from workspaceContext shows in full, by the header shownFiles gives each one. */
+export const preloadedFiles = (context: string | null): string[] => [...(context ?? "").matchAll(/^--- (.+) ---$/gm)].map((m) => m[1]);
+
 async function treeAndFiles(ws: Workspace, brief: string): Promise<string[]> {
   const listed = await listFiles(ws, ".");
   if (!listed.ok) return [];
