@@ -73,14 +73,14 @@
   --bob-provider-current: currentcolor;
   /* Main screen canvas and drawer, used by the native app. The desktop also uses the sidebar, the
      sheet (its menus) and the grouped tokens. */
-  --bob-bg-native-canvas: #000000;
-  --bob-bg-native-sidebar: #0a0a0a;
+  --bob-bg-native-canvas: #09090a;
+  --bob-bg-native-sidebar: #121213;
   /* Grouped sheet surfaces, used by the native app. */
-  --bob-bg-sheet: #0a0a0a;
-  --bob-bg-grouped: #141414;
+  --bob-bg-sheet: #1a1a1b;
+  --bob-bg-grouped: #1a1a1b;
   --bob-text-grouped-secondary: #8c8c8c;
-  --bob-border-grouped: #262626;
-  --bob-radius-grouped: 16px;
+  --bob-border-grouped: rgba(255, 255, 255, 0.08);
+  --bob-radius-grouped: 12px;
   /* The milky chrome of the native app where it has no Liquid Glass: the search field and bar buttons. */
   --bob-bg-chrome-glass: rgba(20, 20, 20, 0.96);
   --bob-border-chrome-glass: rgba(255, 255, 255, 0.08);
@@ -88,25 +88,25 @@
   --bob-bg-chrome-blur: rgba(10, 10, 10, 0.62);
 
   /* Neutral color system. Keep UI colors here, not in components. */
-  --bob-bg-canvas: #0a0a0a;
+  --bob-bg-canvas: #121213;
   /* The window frame around the page card, darker than the card, so the card comes forward. */
-  --bob-bg-frame: #000000;
+  --bob-bg-frame: #09090a;
   /* A rail inside a menu, a step darker than the menu sheet. */
-  --bob-bg-sheet-inset: #050505;
-  --bob-bg-canvas-clear: rgba(10, 10, 10, 0);
-  --bob-bg-sidebar: #0a0a0a;
-  --bob-marketplace-detail-bg: #050505;
-  --bob-bg-surface: #141414;
-  --bob-bg-surface-raised: #1a1a1a;
-  --bob-bg-control: #141414;
-  --bob-bg-control-hover: #1a1a1a;
-  --bob-bg-control-active: #222222;
-  --bob-tabs-bar-bg: #141414;
-  --bob-tabs-pill-bg: #222222;
-  --bob-bg-overlay: rgba(10, 10, 10, 0.92);
-  --bob-dialog-overlay: rgba(0, 0, 0, 0.62);
-  --bob-dialog-ring: rgba(255, 255, 255, 0.08);
-  --bob-bg-glass: rgba(20, 20, 20, 0.76);
+  --bob-bg-sheet-inset: #161617;
+  --bob-bg-canvas-clear: rgba(18, 18, 19, 0);
+  --bob-bg-sidebar: #121213;
+  --bob-marketplace-detail-bg: #121213;
+  --bob-bg-surface: #1a1a1b;
+  --bob-bg-surface-raised: #222223;
+  --bob-bg-control: #1c1c1d;
+  --bob-bg-control-hover: #232324;
+  --bob-bg-control-active: #2a2a2c;
+  --bob-tabs-bar-bg: #1a1a1b;
+  --bob-tabs-pill-bg: #2a2a2c;
+  --bob-bg-overlay: rgba(18, 18, 19, 0.92);
+  --bob-dialog-overlay: rgba(0, 0, 0, 0.55);
+  --bob-dialog-ring: rgba(255, 255, 255, 0.12);
+  --bob-bg-glass: rgba(26, 26, 27, 0.82);
 
   /* Translucent glass surfaces: the landing page, and the browser dock and previews of the desktop. */
   --bob-glass-surface: rgba(255, 255, 255, 0.06);
@@ -136,8 +136,8 @@
   --bob-price-rim: rgba(255, 255, 255, 0.28);
   --bob-price-rim-under: rgba(255, 255, 255, 0.1);
   --bob-price-glow: rgba(180, 200, 255, 0.22);
-  --bob-bg-host-inset: #050505;
-  --bob-bg-notch: #000000;
+  --bob-bg-host-inset: #0d0d0e;
+  --bob-bg-notch: #09090a;
   --bob-mask-solid: #000000;
   --bob-transparent: rgba(0, 0, 0, 0);
   --bob-drawer-scrim: #000000;
@@ -146,19 +146,19 @@
   --bob-queue-border: var(--bob-border-strong);
   --bob-queue-text: var(--bob-text-primary);
   --bob-queue-action: var(--bob-text-muted);
-  --bob-border: rgba(255, 255, 255, 0.06);
-  --bob-border-strong: rgba(255, 255, 255, 0.08);
+  --bob-border: rgba(255, 255, 255, 0.08);
+  --bob-border-strong: rgba(255, 255, 255, 0.12);
   --bob-image-outline: rgba(255, 255, 255, 0.1);
   /* Focus is the white glow: a thin ring, never a halo. It keeps 3:1 against every surface it sits on. */
-  --bob-border-focus: rgba(255, 255, 255, 0.85);
-  --bob-text-primary: #f2f2f2;
-  --bob-text-on-light: #0a0a0a;
-  --bob-surface-light: #f2f2f2;
+  --bob-border-focus: #456af6;
+  --bob-text-primary: #ebebec;
+  --bob-text-on-light: #121213;
+  --bob-surface-light: #ebebec;
   /* Not a duplicate of surface-light/text-on-light: tokens-native.css swaps this pair
      between the mobile light and dark themes, so it is the high-contrast button that
      inverts with the theme. Only mobile's uniwind mapping reads it. */
-  --bob-action: #f2f2f2;
-  --bob-action-foreground: #0a0a0a;
+  --bob-action: #ebebec;
+  --bob-action-foreground: #121213;
   --bob-qr-background: #ffffff;
   /* Ink on paper that is always light, in both themes: a QR code, the onboarding drawing of a
      computer, the profile image that is shared. The on-light tokens above turn dark in the light
@@ -183,27 +183,27 @@
   --bob-sound-off-back: #212121;
   --bob-sound-off-ink: #4c4c4c;
   --bob-onboarding-window: #f3f5f8;
-  --bob-text-secondary: #c2c2c2;
-  --bob-text-muted: #8c8c8c;
-  --bob-text-dim: #6b6b6b;
-  --bob-text-readable: rgba(242, 242, 242, 0.56);
+  --bob-text-secondary: #c4c4c7;
+  --bob-text-muted: #a3a3a6;
+  --bob-text-dim: #7f7f82;
+  --bob-text-readable: #a3a3a6;
   --bob-text-muted-on-light: rgba(10, 10, 10, 0.58);
   --bob-text-dim-on-light: rgba(10, 10, 10, 0.4);
   --bob-download-card-muted: rgba(20, 20, 20, 0.68);
   --bob-download-card-chip: rgba(20, 20, 20, 0.1);
   --bob-download-card-border: rgba(20, 20, 20, 0.16);
   --bob-download-card-focus: rgba(242, 242, 242, 0.86);
-  --bob-text-placeholder: #8c8c8c;
-  --bob-text-on-accent: #0a0a0a;
+  --bob-text-placeholder: #7f7f82;
+  --bob-text-on-accent: #ffffff;
   --bob-text-on-status: #07130c;
   /* Bob's accent is a white glow, with no hue. The fill takes near-black text at 16.5:1;
      accent-text is the white that links, headings and selected rows use, 17.7:1 on the canvas. */
-  --bob-accent: #f2f2f2;
-  --bob-accent-hover: #ffffff;
-  --bob-accent-text: #f2f2f2;
-  --bob-accent-soft: rgba(255, 255, 255, 0.08);
-  --bob-accent-strong: rgba(255, 255, 255, 0.16);
-  --bob-settings-text-muted: rgba(242, 242, 242, 0.6);
+  --bob-accent: #456af6;
+  --bob-accent-hover: #5a7bf7;
+  --bob-accent-text: #7699fb;
+  --bob-accent-soft: rgba(69, 106, 246, 0.14);
+  --bob-accent-strong: rgba(69, 106, 246, 0.24);
+  --bob-settings-text-muted: #a3a3a6;
   --bob-provider-codex: var(--bob-text-primary);
   --bob-provider-claude: #d97757;
   --bob-provider-grok: var(--bob-text-primary);
@@ -236,8 +236,8 @@
      colors: a change to warning or success does not change them. */
   --bob-logo-dev: #e3b866;
   --bob-logo-preview: #61c985;
-  --bob-unread-surface: #f2f2f2;
-  --bob-unread-text: #0a0a0a;
+  --bob-unread-surface: #456af6;
+  --bob-unread-text: #ffffff;
   /* The last hue that had not been retuned with the rest. #61c985 was OKLCH chroma
      0.139 while accent, warning and danger now average 0.205, so green was the one
      family member that still read as a disabled tint beside them. Matching 0.205 is
@@ -245,18 +245,18 @@
      (#00d271) is a neon with no headroom, which every renderer clips differently.
      0.180 is the usable step, and lightness is held at the old 0.756 so contrast on
      the canvas is unchanged at 8.5:1 and no text legibility moves. */
-  --bob-success: #31cf76;
+  --bob-success: #3fb950;
   /* Status text sits on neutral surfaces; status fills have separate contrast needs. */
-  --bob-success-text: #31cf76;
-  --bob-warning-text: #ff9412;
-  --bob-danger-text: #ff6069;
-  --bob-success-soft: rgba(49, 207, 118, 0.12);
-  --bob-success-wash: rgba(49, 207, 118, 0.045);
+  --bob-success-text: #3fb950;
+  --bob-warning-text: #e8c547;
+  --bob-danger-text: #f0716a;
+  --bob-success-soft: rgba(63, 185, 80, 0.14);
+  --bob-success-wash: rgba(63, 185, 80, 0.05);
   /* Both warning marks in the reference measure hue 33 at full saturation (#ff9917 on
      the triangle, #ff9412 on the heading). The palette's #e3b866 was a desaturated gold
      at hue 39, which reads as a disabled state rather than as something needing attention. */
-  --bob-warning: #ff9412;
-  --bob-warning-soft: rgba(255, 148, 18, 0.12);
+  --bob-warning: #e8c547;
+  --bob-warning-soft: rgba(232, 197, 71, 0.14);
   --bob-question-option: #e6e6e6;
   --bob-question-option-soft: rgba(255, 255, 255, 0.08);
   --bob-question-option-hover: rgba(255, 255, 255, 0.12);
@@ -274,19 +274,19 @@
   --bob-beam-teal: var(--bob-file-teal);
   --bob-beam-blue: var(--bob-accent-text);
   --bob-beam-pink: var(--bob-file-pink);
-  --bob-approval-badge-soft: rgba(255, 148, 18, 0.18);
+  --bob-approval-badge-soft: rgba(232, 197, 71, 0.18);
   /* One red. The palette carried four families - danger (#e47d75), danger-strong
      (#ff4058), settings-danger (#eb4145) and button-destructive (oklch, #ff6467) -
      all between hue 352 and 359, i.e. the same red at four saturations, and the
      settings family existed only to re-override button-destructive inside one modal.
      #fd2f3b is the reference's count badge. The five steps below are roles, not
      shades: solid fill, its hover, tinted fill, its hover, ring, border. */
-  --bob-danger: #fd2f3b;
-  --bob-danger-hover: #fd5d67;
-  --bob-danger-soft: rgba(253, 47, 59, 0.16);
-  --bob-danger-soft-hover: rgba(253, 47, 59, 0.28);
-  --bob-danger-focus: rgba(253, 47, 59, 0.4);
-  --bob-danger-border: rgba(253, 47, 59, 0.5);
+  --bob-danger: #e5534b;
+  --bob-danger-hover: #ec6c65;
+  --bob-danger-soft: rgba(229, 83, 75, 0.16);
+  --bob-danger-soft-hover: rgba(229, 83, 75, 0.26);
+  --bob-danger-focus: rgba(229, 83, 75, 0.4);
+  --bob-danger-border: rgba(229, 83, 75, 0.5);
   /* Literal values: the mobile themes repeat these in tokens-native.css, where var() resolves to
    * nothing. They equal warning, question-option, success, danger and accent-text. */
   --bob-file-blue: #74b9ff;
@@ -305,19 +305,19 @@
   --bob-file-pink-soft: rgba(217, 138, 201, 0.14);
   --bob-file-default: #d6d6d6;
   --bob-file-default-soft: rgba(255, 255, 255, 0.1);
-  --bob-data-table-border: #262626;
-  --bob-data-table-header-text: #8c8c8c;
-  --bob-data-table-text: #f2f2f2;
+  --bob-data-table-border: rgba(255, 255, 255, 0.08);
+  --bob-data-table-header-text: #a3a3a6;
+  --bob-data-table-text: #ebebec;
   --bob-data-table-outer-border: rgba(255, 255, 255, 0);
   --bob-data-table-ring: rgba(255, 255, 255, 0.1);
-  --bob-shadow-popover-ambient: rgba(0, 0, 0, 0.24);
-  --bob-shadow-dialog: rgba(0, 0, 0, 0.6);
-  --bob-shadow-menu: rgba(0, 0, 0, 0.56);
+  --bob-shadow-popover-ambient: rgba(0, 0, 0, 0.5);
+  --bob-shadow-dialog: rgba(0, 0, 0, 0.5);
+  --bob-shadow-menu: rgba(0, 0, 0, 0.5);
   --bob-shadow-dynamic-island: rgba(0, 0, 0, 0.6);
   --bob-shadow-ring: rgba(255, 255, 255, 0.04);
   --bob-border-on-light: rgba(10, 10, 10, 0.14);
-  --bob-hover: rgba(255, 255, 255, 0.06);
-  --bob-font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --bob-hover: rgba(255, 255, 255, 0.065);
+  --bob-font-sans: "Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --bob-font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
   /* Six steps, one line-height each, named for the step it pairs with. The scale had
    * sixteen sizes and eight line-heights, four of them a single call site, which is how
@@ -353,9 +353,9 @@
 
   --bob-weight-regular: 400;
   --bob-weight-medium: 500;
-  --bob-weight-semibold: 600;
-  --bob-weight-bold: 700;
-  --bob-tracking-tight: -0.1px;
+  --bob-weight-semibold: 560;
+  --bob-weight-bold: 600;
+  --bob-tracking-tight: -0.01em;
   --bob-tracking-normal: 0;
   --bob-tracking-wide: 0.02em;
   --bob-space-0-5: 2px;
@@ -369,13 +369,13 @@
   --bob-scrollbar-size: 8px;
   --bob-radius-xs: 4px;
   --bob-radius-sm: 6px;
-  --bob-radius-md: 8px;
-  --bob-radius-lg: 12px;
-  --bob-radius-card: 14px;
-  --bob-radius-xl: 20px;
-  --bob-radius-bubble: 22px;
+  --bob-radius-md: 6px;
+  --bob-radius-lg: 8px;
+  --bob-radius-card: 12px;
+  --bob-radius-xl: 12px;
+  --bob-radius-bubble: 16px;
   --bob-radius-bubble-inset: calc(var(--bob-radius-bubble) - var(--bob-space-3) - 1px);
-  --bob-radius-modal: 30px;
+  --bob-radius-modal: 14px;
   --bob-radius-media-preview: calc(var(--bob-radius-lg) - 1px);
   --bob-radius-pill: 999px;
   --bob-radius-logo: 20%;
@@ -416,8 +416,8 @@
   /* Keep container-relative calculations at the CSS use site for native consumers. */
   --bob-chat-marker-width: 680px;
   --bob-duration-fast: 120ms;
-  --bob-duration-hover: 0ms;
-  --bob-duration-dialog: 100ms;
+  --bob-duration-hover: 100ms;
+  --bob-duration-dialog: 150ms;
   --bob-duration-normal: 160ms;
   --bob-duration-slow: 200ms;
   --bob-duration-overlay: 240ms;
@@ -430,9 +430,9 @@
   --bob-loading-indicator-delay: 400ms;
   --bob-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --bob-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --bob-shadow-raised: 0 12px 32px var(--bob-shadow-popover-ambient);
-  --bob-shadow-card: 0 0 0 transparent;
-  --bob-shadow-overlay: 0 12px 32px rgba(0, 0, 0, 0.6);
+  --bob-shadow-raised: 0 0 0 0.5px var(--bob-border-strong), 0 8px 24px var(--bob-shadow-popover-ambient);
+  --bob-shadow-card: 0 0 0 0.5px var(--bob-border), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --bob-shadow-overlay: 0 0 0 0.5px var(--bob-border-strong), 0 8px 24px var(--bob-shadow-dialog);
   --bob-focus-ring: 0 0 0 1px var(--bob-border-focus);
   --bob-layer-dropdown: 40;
   --bob-layer-popover: 60;
@@ -488,4 +488,131 @@
 
 [data-provider="acp"] {
   --bob-provider-current: var(--bob-text-primary);
+}
+
+/* Light. Capy-style neutrals: a light frame, a near-white page, white cards, and one blue accent.
+ * The app sets data-bob-color-scheme on the root from the Appearance setting; dark is the block above. */
+:root[data-bob-color-scheme="light"] {
+  color-scheme: light;
+  --bob-bg-native-canvas: #f2f2f4;
+  --bob-bg-native-sidebar: #fafafb;
+  --bob-bg-sheet: #ffffff;
+  --bob-bg-grouped: #ffffff;
+  --bob-border-grouped: rgba(0, 0, 0, 0.08);
+  --bob-text-grouped-secondary: #6a6a6f;
+  --bob-bg-chrome-glass: rgba(255, 255, 255, 0.96);
+  --bob-border-chrome-glass: rgba(0, 0, 0, 0.08);
+  --bob-bg-chrome-blur: rgba(250, 250, 251, 0.72);
+  --bob-bg-canvas: #fafafb;
+  --bob-bg-frame: #f2f2f4;
+  --bob-bg-sheet-inset: #f5f5f7;
+  --bob-bg-canvas-clear: rgba(250, 250, 251, 0);
+  --bob-bg-sidebar: #fafafb;
+  --bob-marketplace-detail-bg: #fafafb;
+  --bob-bg-surface: #ffffff;
+  --bob-bg-surface-raised: #ffffff;
+  --bob-bg-control: #ffffff;
+  --bob-bg-control-hover: #f7f7f8;
+  --bob-bg-control-active: #ededef;
+  --bob-tabs-bar-bg: rgba(0, 0, 0, 0.04);
+  --bob-tabs-pill-bg: #ffffff;
+  --bob-bg-overlay: rgba(250, 250, 251, 0.92);
+  --bob-dialog-overlay: rgba(0, 0, 0, 0.4);
+  --bob-dialog-ring: rgba(0, 0, 0, 0.11);
+  --bob-bg-glass: rgba(255, 255, 255, 0.82);
+  --bob-glass-surface: rgba(0, 0, 0, 0.04);
+  --bob-glass-surface-hover: rgba(0, 0, 0, 0.06);
+  --bob-glass-border: rgba(0, 0, 0, 0.11);
+  --bob-glass-highlight: rgba(255, 255, 255, 0.6);
+  --bob-glass-shadow: rgba(0, 0, 0, 0.08);
+  --bob-bg-host-inset: #f2f2f4;
+  --bob-bg-notch: #f2f2f4;
+  --bob-scroll-edge-overlay: rgba(250, 250, 251, 0.8);
+  --bob-drawer-scrim: rgba(0, 0, 0, 0.4);
+  --bob-border: rgba(0, 0, 0, 0.08);
+  --bob-border-strong: rgba(0, 0, 0, 0.11);
+  --bob-image-outline: rgba(0, 0, 0, 0.1);
+  --bob-border-focus: #3b5de8;
+  --bob-text-primary: #1e1e20;
+  --bob-text-on-light: #ffffff;
+  --bob-surface-light: #1e1e20;
+  --bob-action: #1e1e20;
+  --bob-action-foreground: #ffffff;
+  --bob-text-secondary: #3d3d40;
+  --bob-text-muted: #6a6a6f;
+  --bob-text-dim: #8a8a8e;
+  --bob-text-readable: #6a6a6f;
+  --bob-text-muted-on-light: rgba(255, 255, 255, 0.72);
+  --bob-text-dim-on-light: rgba(255, 255, 255, 0.5);
+  --bob-text-placeholder: #8a8a8e;
+  --bob-text-on-accent: #ffffff;
+  --bob-text-on-status: #ffffff;
+  --bob-settings-text-muted: #6a6a6f;
+  --bob-border-on-light: rgba(255, 255, 255, 0.2);
+  --bob-accent: #3b5de8;
+  --bob-accent-hover: #3550d6;
+  --bob-accent-text: #3550d6;
+  --bob-accent-soft: rgba(59, 93, 232, 0.1);
+  --bob-accent-strong: rgba(59, 93, 232, 0.18);
+  --bob-unread-surface: #3b5de8;
+  --bob-unread-text: #ffffff;
+  --bob-provider-codex: #1e1e20;
+  --bob-provider-grok: #1e1e20;
+  --bob-chart-series-codex: #4a4a4e;
+  --bob-logo-production: #1e1e20;
+  --bob-logo-eye: #ffffff;
+  --bob-success: #1f9d3a;
+  --bob-success-text: #1a8a33;
+  --bob-success-soft: rgba(31, 157, 58, 0.1);
+  --bob-success-wash: rgba(31, 157, 58, 0.04);
+  --bob-warning: #a87f09;
+  --bob-warning-text: #8f6c07;
+  --bob-warning-soft: rgba(168, 127, 9, 0.12);
+  --bob-approval-badge-soft: rgba(168, 127, 9, 0.14);
+  --bob-question-option: #3d3d40;
+  --bob-question-option-soft: rgba(0, 0, 0, 0.04);
+  --bob-question-option-hover: rgba(0, 0, 0, 0.06);
+  --bob-question-option-pressed: rgba(0, 0, 0, 0.09);
+  --bob-question-badge-text: #3d3d40;
+  --bob-question-badge-soft: rgba(0, 0, 0, 0.05);
+  --bob-message-badge-text: #3d3d40;
+  --bob-message-badge-soft: rgba(0, 0, 0, 0.05);
+  --bob-danger: #c7332f;
+  --bob-danger-text: #b52d29;
+  --bob-danger-hover: #b02c28;
+  --bob-danger-soft: rgba(199, 51, 47, 0.1);
+  --bob-danger-soft-hover: rgba(199, 51, 47, 0.16);
+  --bob-danger-focus: rgba(199, 51, 47, 0.35);
+  --bob-danger-border: rgba(199, 51, 47, 0.4);
+  --bob-file-blue: #2f6fd0;
+  --bob-file-blue-soft: rgba(47, 111, 208, 0.1);
+  --bob-file-yellow: #a87f09;
+  --bob-file-yellow-soft: rgba(168, 127, 9, 0.1);
+  --bob-file-orange: #c2621f;
+  --bob-file-orange-soft: rgba(194, 98, 31, 0.1);
+  --bob-file-teal: #13879c;
+  --bob-file-teal-soft: rgba(19, 135, 156, 0.1);
+  --bob-file-green: #1f9d3a;
+  --bob-file-green-soft: rgba(31, 157, 58, 0.1);
+  --bob-file-red: #c7332f;
+  --bob-file-red-soft: rgba(199, 51, 47, 0.1);
+  --bob-file-pink: #b04d9c;
+  --bob-file-pink-soft: rgba(176, 77, 156, 0.1);
+  --bob-file-default: #6a6a6f;
+  --bob-file-default-soft: rgba(0, 0, 0, 0.05);
+  --bob-data-table-border: rgba(0, 0, 0, 0.08);
+  --bob-data-table-header-text: #6a6a6f;
+  --bob-data-table-text: #1e1e20;
+  --bob-data-table-ring: rgba(0, 0, 0, 0.08);
+  --bob-shadow-popover-ambient: rgba(0, 0, 0, 0.08);
+  --bob-shadow-dialog: rgba(0, 0, 0, 0.1);
+  --bob-shadow-menu: rgba(0, 0, 0, 0.08);
+  --bob-shadow-ring: rgba(0, 0, 0, 0.04);
+  --bob-shadow-dynamic-island: rgba(0, 0, 0, 0.12);
+  --bob-shadow-card: 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --bob-hover: rgba(0, 0, 0, 0.04);
+}
+
+:root[data-bob-color-scheme="dark"] {
+  color-scheme: dark;
 }

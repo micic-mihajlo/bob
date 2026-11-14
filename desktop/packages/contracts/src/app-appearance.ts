@@ -10,8 +10,8 @@ export const APP_APPEARANCES = ["system", "light", "dark"] as const;
 
 export type AppAppearance = (typeof APP_APPEARANCES)[number];
 
-/** Dark: Bob has one, black palette. Light and System stay valid saved values and show it too. */
-export const DEFAULT_APP_APPEARANCE: AppAppearance = "dark";
+/** System: the app follows the computer's light or dark setting until the user picks one. */
+export const DEFAULT_APP_APPEARANCE: AppAppearance = "system";
 
 /** Off: a see-through window is a choice, and only macOS can blur what is behind it. */
 export const DEFAULT_TRANSPARENT_WINDOW = false;

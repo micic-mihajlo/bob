@@ -1227,14 +1227,6 @@
   z-index: calc(var(--bob-layer-dialog) + var(--bob-layer-popover) + 1);
 }
 
-.agent-skills-modal .ui-switch[data-checked] {
-  background: var(--bob-accent);
-}
-
-.agent-skills-modal .ui-switch-thumb[data-checked] {
-  background: var(--bob-text-primary);
-}
-
 .agent-local-library,
 .agent-skill-detail {
   min-height: 0;
