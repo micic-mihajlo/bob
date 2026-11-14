@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { advanceStage, completeWorkOrder, emptyRoadmap, setGoal, setRoadmap, setToday, updateWorkOrder, type GoalInput } from "../roadmap";
+import { addSourcedOrder, advanceStage, completeWorkOrder, emptyRoadmap, setGoal, setRoadmap, setToday, updateWorkOrder, type GoalInput } from "../roadmap";
 import { STAGES } from "../stages";
 import type { Roadmap } from "../types";
 
@@ -32,6 +32,14 @@ describe("roadmap rules", () => {
     const today = unwrap(setToday(road, ids.slice(0, 3)));
     expect(today.today).toHaveLength(3);
     expect(today.backlog?.map((w) => w.id)).toEqual([ids[3]]);
+  });
+
+  it("keeps an inbox work order when set_roadmap repeats its title, instead of adding a copy without its source", () => {
+    const source = { inboxId: "inb_1", kind: "meeting" as const, label: "customer call, Nov 13", quote: "Dana: a CSV export" };
+    const { roadmap, order } = addSourcedOrder(emptyRoadmap(), "Export all invoices as a CSV", source);
+    const planned = unwrap(setRoadmap(roadmap, ["export all invoices as a CSV.", "List overdue invoices"]));
+    expect(planned.backlog?.map((w) => w.title)).toEqual(["Export all invoices as a CSV", "List overdue invoices"]);
+    expect(planned.backlog?.[0]).toMatchObject({ id: order.id, source });
   });
 
   it("completes a work order in review that set_today moved back to the backlog", () => {

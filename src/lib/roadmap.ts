@@ -83,12 +83,18 @@ const newOrder = (title: string): WorkOrder => ({
   artifactId: null,
 });
 
-/** Replaces the planned (not yet scheduled) work. Today is left alone, and so are work orders that came from the inbox. */
+const sameTitle = (a: string) => a.toLowerCase().replace(/[\s.]+/g, " ").trim();
+
+/**
+ * Replaces the planned (not yet scheduled) work. Today is left alone, and so are work orders that came from the
+ * inbox: a title that repeats one of them keeps that order instead of adding a copy without its source.
+ */
 export function setRoadmap(r: Roadmap, titles: string[], at: string = nowIso()): RoadmapResult {
   const clean = titles.map((t) => t.trim()).filter(Boolean);
   if (clean.length === 0) return fail("Give at least one work order title in workOrderTitles.");
   const fromInbox = (r.backlog ?? []).filter((w) => w.source);
-  return finalize({ ...r, backlog: [...fromInbox, ...clean.map(newOrder)] }, at);
+  const fresh = clean.filter((t) => !fromInbox.some((w) => sameTitle(w.title) === sameTitle(t)));
+  return finalize({ ...r, backlog: [...fromInbox, ...fresh.map(newOrder)] }, at);
 }
 
 /** Adds one work order to the backlog, quoting where it came from. */
