@@ -1730,10 +1730,6 @@
   margin: -14% 0 0 -14%;
 }
 
-.reference-chip.message-reference-chip .agent-avatar > .agent-avatar-ascii {
-  margin: -25% 0 0 -25%;
-}
-
 .reference-chip.message-reference-chip .reference-chip-name,
 .message-file-reference .inline-file-reference-name {
   display: inline;
