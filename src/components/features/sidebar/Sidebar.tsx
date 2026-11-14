@@ -9,10 +9,10 @@ import type { Agent, AgentId } from "@/lib/types";
 import { NewAgentDialog } from "./NewAgentDialog";
 import { ProjectMenu } from "./ProjectMenu";
 import { SidebarAgentRow } from "./SidebarAgentRow";
-import { PlusIcon, SearchIcon } from "./SidebarIcons";
+import { PlusIcon, SearchIcon, SidebarToggleIcon } from "./SidebarIcons";
 
 /** The reference sidebar: the project in the top row, "Needs you", then the threads by section. */
-export function Sidebar({ compact = false }: { compact?: boolean }) {
+export function Sidebar({ compact = false, onExpand }: { compact?: boolean; onExpand?: () => void }) {
   const { snapshot, connected, newAgentOpen, setNewAgentOpen } = useBob();
   const [query, setQuery] = useState("");
   const list = sidebarList(snapshot);
@@ -27,11 +27,26 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
   return (
     <aside id="agent-sidebar" aria-label="Agent navigation" className={cx("sidebar panel-edge", compact && "sidebar-compact")}>
       <div className="window-drag sidebar-topbar">
-        <ProjectMenu />
+        {compact ? null : <ProjectMenu />}
         <div className="sidebar-topbar-actions">
+          {compact ? (
+            <button
+              type="button"
+              className="sidebar-icon-button sidebar-toggle-button no-drag"
+              aria-label="Expand sidebar"
+              aria-controls="agent-sidebar"
+              aria-expanded="false"
+              title="Expand sidebar"
+              onClick={onExpand}
+            >
+              <SidebarToggleIcon />
+            </button>
+          ) : null}
           <button
             type="button"
             className="sidebar-icon-button sidebar-new-button no-drag"
+            aria-hidden={compact ? "true" : undefined}
+            tabIndex={compact ? -1 : 0}
             aria-label="New agent"
             title="New agent"
             onClick={() => setNewAgentOpen(true)}
@@ -42,10 +57,27 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
       </div>
 
       <div className="sidebar-search-wrap">
-        <label className="search-field sidebar-search-trigger">
+        <label className="search-field sidebar-search-trigger" aria-hidden={compact ? "true" : undefined}>
           <SearchIcon />
-          <input type="search" placeholder="Search" aria-label="Search threads" value={query} onChange={(event) => setQuery(event.target.value)} />
+          <input
+            type="search"
+            placeholder="Search"
+            aria-label="Search threads"
+            tabIndex={compact ? -1 : 0}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
         </label>
+        <button
+          type="button"
+          className={buttonClass({ variant: "ghost", className: "sidebar-compact-search" })}
+          aria-label="Search threads"
+          aria-hidden={compact ? undefined : "true"}
+          tabIndex={compact ? 0 : -1}
+          onClick={onExpand}
+        >
+          <SearchIcon />
+        </button>
       </div>
 
       <nav aria-label="Chat list" className="agent-list">
@@ -74,7 +106,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
         </div>
       </nav>
 
-      <div className="sidebar-update-island">
+      <div className="sidebar-update-island" hidden={compact}>
         <div className="account-update-island t-panel-slide" data-open="true" data-phase="available">
           <div className="account-update-island__copy" role="status" aria-live="polite">
             <strong>{snapshot.brain === "model" ? "Live model" : "Scripted agents"}</strong>

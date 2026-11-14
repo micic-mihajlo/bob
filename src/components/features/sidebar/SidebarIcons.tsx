@@ -16,3 +16,12 @@ export function PlusIcon() {
     </svg>
   );
 }
+
+export function SidebarToggleIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20" className="sidebar-toggle-icon ui-glyph-20">
+      <rect x="2.75" y="3.25" width="14.5" height="13.5" rx="2.25" />
+      <path d="M7.25 3.75v12.5" />
+    </svg>
+  );
+}
