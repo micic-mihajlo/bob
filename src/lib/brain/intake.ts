@@ -1,3 +1,4 @@
+import { trackOf } from "../roadmap";
 import type { State } from "../state";
 import type { AgentId, Message, ThreadItem } from "../types";
 
@@ -26,15 +27,24 @@ export function pushbackRounds(items: ThreadItem[]): number {
 }
 
 /**
- * The ask a person's next message to the captain answers: the first thing they typed in an intake the
- * captain answered with a question. Null when no question is open, so a new message starts a new request.
+ * The ask a person's next message to the captain answers: the newest thing they typed that the captain answered
+ * with a question and has not recorded as an intent yet. Null when no question is open, so a new message starts a
+ * new request. A request the person started while a question was open does not close that question.
  */
 export function openAsk(s: State, captainId: AgentId): Message | null {
   const items = s.threads[captainId] ?? [];
-  if (pushbackRounds(items) === 0) return null;
-  const since = [...items].reverse().find((i) => i.kind === "step" && i.tool === "set_goal")?.at ?? "";
+  const acted = new Set(items.flatMap((i) => (i.kind === "step" ? [i.turnId] : [])));
+  const questionTurns = new Set(items.flatMap((i) => (i.kind === "agent_text" && i.text.includes("?") && !acted.has(i.turnId) ? [i.turnId] : [])));
+  const requestOf = (id: string) => s.messages.find((m) => m.id === id)?.requestId;
+  const asks = s.messages.filter((m) => m.from.kind === "user" && m.to.includes(captainId) && !m.approvalId && !m.inboxId && !m.continues);
   return (
-    s.messages.find((m) => m.from.kind === "user" && m.to.includes(captainId) && !m.approvalId && !m.inboxId && !m.continues && m.at > since) ?? null
+    [...asks].reverse().find((ask) => {
+      if (trackOf(s.roadmap, ask.requestId)?.goal) return false;
+      const asked = s.turns.map((t, i) => [t, i] as const).filter(([t]) => questionTurns.has(t.id) && t.messageIds.some((id) => requestOf(id) === ask.requestId)).at(-1);
+      if (!asked) return false;
+      const seen = new Set(s.turns.slice(0, asked[1] + 1).flatMap((t) => t.messageIds));
+      return !s.messages.some((m) => m.continues === ask.id && !seen.has(m.id));
+    }) ?? null
   );
 }
 

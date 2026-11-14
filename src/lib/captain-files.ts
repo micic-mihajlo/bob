@@ -4,7 +4,7 @@ import { changelogFile } from "./release-notes";
 import { ordersOf, tracksOf } from "./roadmap";
 import { requestControls } from "./usage";
 import { agentName, type State } from "./state";
-import { needsYou, threadStateOf } from "./thread-status";
+import { needsYou, threadStateOf, unplannedRequests } from "./thread-status";
 import { isPullRequest } from "./threads";
 import type { Agent, DriveFile, NeedsYouItem, Track } from "./types";
 
@@ -34,7 +34,9 @@ export function digestFile(s: State): string {
     .flatMap((r) => r.alerts.map((a) => `Alert: ${a}.`));
   const head =
     asks.length === 0 ? "Nothing needs you right now.\n" : asks.length === 1 ? `1 thing needs you: ${asks[0]}\n` : [`${asks.length} things need you:`, ...asks.map((a) => `- ${a}`)].join("\n") + "\n";
-  return alerts.length ? `${head}\n${alerts.join("\n")}\n` : head;
+  const unplanned = unplannedRequests(s).map((r) => `Not planned yet: "${clip(r.ask, 100)}" has no work order.`);
+  const notes = [...unplanned, ...alerts];
+  return notes.length ? `${head}\n${notes.join("\n")}\n` : head;
 }
 
 function crewRow(s: State, agent: Agent, needs: NeedsYouItem[]): string {

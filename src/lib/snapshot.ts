@@ -1,5 +1,6 @@
 import { liveAsks } from "./asks";
 import { brainKind } from "./brain";
+import { openAsk } from "./brain/intake";
 import { policyFor } from "./policy";
 import { releaseNotesOf } from "./release-notes";
 import { tracksOf } from "./roadmap";
@@ -65,6 +66,15 @@ function threadOf(s: State, agentId: AgentId): ThreadView {
   };
 }
 
+/** The captain's open question, which the person's next message to the captain answers unless they mark it a new request. */
+function answeringOf(s: State): Snapshot["answering"] {
+  const captain = s.agents.find((a) => a.kind === "captain");
+  const ask = captain ? openAsk(s, captain.id) : null;
+  if (!captain || !ask) return null;
+  const question = [...(s.threads[captain.id] ?? [])].reverse().find((i) => i.kind === "agent_text" && i.text.includes("?"));
+  return { agentId: captain.id, requestId: ask.requestId, ask: ask.text, question: question?.kind === "agent_text" ? question.text : null };
+}
+
 export function buildSnapshot(s: State): Snapshot {
   const needs = needsYou(s);
   return {
@@ -85,5 +95,6 @@ export function buildSnapshot(s: State): Snapshot {
     budgets: policyFor(s.project.id).budgets,
     live: s.live ?? {},
     inbox: s.inbox ?? [],
+    answering: answeringOf(s),
   };
 }

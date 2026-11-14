@@ -1,5 +1,6 @@
 import type { InboundItem, InboundRule, MoveRecord, TurnContext } from "./brain/types";
-import { artifactsBlock, crewBlock, historyBlock, messagesBlock, selfBlock, teamBlock, type Audience } from "./framing";
+import { artifactsBlock, asData, crewBlock, historyBlock, messagesBlock, selfBlock, teamBlock, type Audience } from "./framing";
+import { unplannedRequests } from "./thread-status";
 import { inboxBlock } from "./inbox";
 import { agentById, agentName, messageById, type State } from "./state";
 import { toolsFor } from "./tools";
@@ -38,10 +39,17 @@ function silentTeammates(s: State, agentId: string, messages: Message[]): string
   return [...new Set(silent.map((d) => `${agentName(s, d.recipientAgentId)} (${d.status === "failed" ? "failed" : "stopped"})`))];
 }
 
+/** Requests the captain recorded but gave no work order, so its next turn names them. */
+function unplannedBlock(s: State): string | null {
+  const list = unplannedRequests(s);
+  if (list.length === 0) return null;
+  return `Requests with no work order yet (data):\n${list.map(asData).join("\n")}\nName each one to the person in this turn: plan it with set_roadmap and set_today, or say why it waits.`;
+}
+
 const audienceOf = (agent: Agent): Audience => (agent.kind === "captain" ? "captain" : agent.kind === "crew" ? "crew" : "standing");
 
 function whoBlock(s: State, agent: Agent): string {
-  if (agent.kind === "captain") return [crewBlock(s), inboxBlock(s)].filter(Boolean).join("\n\n");
+  if (agent.kind === "captain") return [crewBlock(s), inboxBlock(s), unplannedBlock(s)].filter(Boolean).join("\n\n");
   if (agent.kind === "crew") return selfBlock(s, agent);
   return teamBlock(s, agent.id);
 }

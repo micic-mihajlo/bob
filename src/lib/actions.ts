@@ -57,10 +57,14 @@ function steerInto(agentId: AgentId, messageId: string, deliveryId: string, text
   });
 }
 
-export function postUserMessage(agentId: AgentId, text: string, mode: SendMode = "queue", via?: "voice"): ActionResult<{ messageId: string; steered: boolean }> {
+/**
+ * A person's message. While the captain's question is open, a message to the captain answers it and joins that
+ * request, unless the person marked it a new request.
+ */
+export function postUserMessage(agentId: AgentId, text: string, mode: SendMode = "queue", via?: "voice", newRequest = false): ActionResult<{ messageId: string; steered: boolean }> {
   const agent = agentById(getState(), agentId);
   if (!agent) return unknownAgent(agentId);
-  const ask = agent.kind === "captain" ? openAsk(getState(), agentId) : null;
+  const ask = agent.kind === "captain" && !newRequest ? openAsk(getState(), agentId) : null;
   const sent = send({
     from: { kind: "user" },
     to: [agentId],
