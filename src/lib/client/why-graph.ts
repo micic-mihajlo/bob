@@ -1,4 +1,4 @@
-import type { Artifact, GraphView, GraphViewNode } from "@/lib/types";
+import type { Approval, Artifact, GraphView, GraphViewNode } from "@/lib/types";
 
 /** The pull request whose path Why? draws: the artifact itself, or the one a review is about. */
 export const pullRequestIdOf = (artifact: Artifact): string | null =>
@@ -27,11 +27,22 @@ export interface PathGraph {
 
 const LINK: Record<string, string> = { CAUSED_BY: "because of", CONTINUES: "answers" };
 
+const GATE_STATUS: Record<Approval["status"], string> = { pending: "Waiting for you", approved: "Approved", denied: "Denied" };
+const VERDICT: Record<NonNullable<Artifact["review"]>["verdict"], string> = { approve: "Approved", request_changes: "Changes requested" };
+
+/** What the live snapshot knows about the gate's reviews and approvals, to tell repeated ones apart. */
+export interface GateFacts {
+  approvals: readonly Approval[];
+  artifacts: readonly Artifact[];
+}
+
+const atHead = (word: string, sha: string | undefined) => (sha ? `${word} at ${sha.slice(0, 7)}` : word);
+
 /**
  * A pull request's Why? path, left to right: the PR, the review and approval that gate it, the
  * turn that made it, then each message back to the sentence the person typed.
  */
-export function buildPathGraph(view: GraphView): PathGraph {
+export function buildPathGraph(view: GraphView, facts: GateFacts = { approvals: [], artifacts: [] }): PathGraph {
   const byId = new Map(view.nodes.map((node) => [node.id, node]));
   const edge = (type: string, side: "from" | "to", id: string) => view.edges.filter((e) => e.type === type && e[side] === id);
   const name = (node: GraphViewNode | undefined) => (node?.kind === "User" ? "You" : node?.label.split(" ")[0] ?? "Someone");
@@ -40,8 +51,16 @@ export function buildPathGraph(view: GraphView): PathGraph {
   if (pr) columns.push({ link: null, nodes: [{ id: pr.id, kind: "pull_request", title: "Pull request", label: pr.label }] });
 
   const gate: PathNode[] = [
-    ...edge("REVIEWS", "to", view.prId).map((e) => ({ id: e.from, kind: "review" as const, title: "Review", label: byId.get(e.from)?.label.replace(/^Review:\s*/, "") ?? "" })),
-    ...edge("GATED_BY", "from", view.prId).map((e) => ({ id: e.to, kind: "approval" as const, title: "Merge gate", label: byId.get(e.to)?.label ?? "" })),
+    ...edge("REVIEWS", "to", view.prId).map((e) => {
+      const review = facts.artifacts.find((artifact) => artifact.id === e.from)?.review;
+      const label = review ? atHead(VERDICT[review.verdict], review.headSha) : (byId.get(e.from)?.label.replace(/^Review:\s*/, "") ?? "");
+      return { id: e.from, kind: "review" as const, title: "Review", label };
+    }),
+    ...edge("GATED_BY", "from", view.prId).map((e) => {
+      const approval = facts.approvals.find((candidate) => candidate.id === e.to);
+      const label = approval ? atHead(GATE_STATUS[approval.status], approval.headSha) : (byId.get(e.to)?.label ?? "");
+      return { id: e.to, kind: "approval" as const, title: "Merge gate", label };
+    }),
   ];
   if (gate.length > 0) columns.push({ link: "gated by", nodes: gate });
 
