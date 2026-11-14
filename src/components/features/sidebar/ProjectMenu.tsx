@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useBob } from "@/components/features/window/BobContext";
 import { buttonClass } from "@/components/ui/classes";
 import { listProjects, openProject } from "@/lib/client/api";
@@ -20,16 +20,23 @@ export function ProjectMenu() {
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
   const active = snapshot.project;
 
   useEffect(() => {
     if (!open) return;
+    menu.current?.querySelector<HTMLElement>("[role=menuitem][aria-current=true], [role=menuitem]")?.focus();
     let live = true;
     void listProjects().then((list) => live && list && setProjects(list));
     const close = (event: PointerEvent) => {
       if (!root.current?.contains(event.target as Node)) setOpen(false);
     };
-    const escape = (event: KeyboardEvent) => event.key === "Escape" && setOpen(false);
+    const escape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      trigger.current?.focus();
+    };
     document.addEventListener("pointerdown", close);
     document.addEventListener("keydown", escape);
     return () => {
@@ -38,6 +45,14 @@ export function ProjectMenu() {
       document.removeEventListener("keydown", escape);
     };
   }, [open]);
+
+  const onMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    const items = [...(menu.current?.querySelectorAll<HTMLElement>("[role=menuitem]") ?? [])];
+    const index = items.indexOf(document.activeElement as HTMLElement);
+    items[(index + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus();
+  };
 
   async function choose(project: Project): Promise<void> {
     if (project.id === active.id) return setOpen(false);
@@ -53,6 +68,7 @@ export function ProjectMenu() {
   return (
     <div ref={root} className="sidebar-project-menu">
       <button
+        ref={trigger}
         type="button"
         className={buttonClass({ variant: "ghost", size: "sm", className: "sidebar-server-name no-drag" })}
         data-slot="button"
@@ -71,7 +87,14 @@ export function ProjectMenu() {
         <ChevronsUpDown className="sidebar-server-name-chevron" aria-hidden="true" />
       </button>
       {open ? (
-        <div role="menu" aria-label="Projects" className="ui-action-menu agent-context-menu server-menu sidebar-project-menu-content" data-expanded="">
+        <div
+          ref={menu}
+          role="menu"
+          aria-label="Projects"
+          className="ui-action-menu agent-context-menu server-menu sidebar-project-menu-content"
+          data-expanded=""
+          onKeyDown={onMenuKeyDown}
+        >
           <div className="ui-menu-label" aria-hidden="true">
             Projects
           </div>
