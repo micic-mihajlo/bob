@@ -72,6 +72,9 @@ describe.runIf(sandboxAvailable())("the sandbox", { timeout: GIT_TEST_TIMEOUT },
     expect((await check(`ls ${b.root}`))?.exitCode).not.toBe(0);
     expect((await check("touch /usr/bob-sandbox-test"))?.output).toMatch(/Read-only file system/);
     expect((await check(`test -s ${envFile}`))?.exitCode).not.toBe(0);
+    const bobModules = path.join(process.cwd(), "node_modules");
+    expect((await check(`ls -A ${bobModules}`))?.output).toBe("");
+    expect((await check(`mkdir ${bobModules}/.vitest-cache && echo cache`))?.output).toBe("cache");
     expect((await check("git switch --quiet --create sandboxed && git push --quiet origin sandboxed && echo pushed"))?.output).toContain("pushed");
   });
 });
