@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { joinSpelled, SEND_TO_BOB, speakable, utteranceFor } from "@/lib/voice/speech";
 import type { AgentId } from "@/lib/types";
 import { voiceSession, voiceTurn } from "./api";
+import { checkMic } from "./mic";
 import { quiet, SAMPLE_MS } from "./use-mic-levels";
 import type { VoiceCallState, VoicePanelPhase } from "./VoicePanel";
 
@@ -51,14 +52,17 @@ export function useElevenLabsCall(agentId: AgentId): VoiceCallState {
   const { startSession, endSession, getInputVolume, getOutputVolume } = conversation;
   useEffect(() => {
     let cancelled = false;
-    void voiceSession().then((session) => {
+    const start = async () => {
+      const blocked = await checkMic();
+      const session = blocked ? null : await voiceSession();
       if (cancelled) return;
-      if (!session.ok) {
-        setError(session.error);
+      if (!session?.ok) {
+        setError(blocked ?? (session && !session.ok ? session.error : null));
         return setPhase("offline");
       }
       startSession({ conversationToken: session.conversationToken, connectionType: "webrtc" });
-    });
+    };
+    void start();
     return () => {
       cancelled = true;
       try {

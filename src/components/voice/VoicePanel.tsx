@@ -1,11 +1,12 @@
 "use client";
 
-import { Maximize2, Mic, MicOff, Minimize2, PhoneOff } from "lucide-react";
+import { ExternalLink, Maximize2, Mic, MicOff, Minimize2, PhoneOff } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { AgentAvatar } from "@/components/features/agents/AgentAvatar";
 import { Button } from "@/components/ui/Button";
 import type { Agent } from "@/lib/types";
+import { inFrame, MIC_BLOCKED } from "./mic";
 import { VoiceWaveform } from "./VoiceWaveform";
 
 /** What a voice conversation does now. */
@@ -72,6 +73,7 @@ export function VoicePanel(props: VoicePanelProps) {
   const hearing = phase === "listening" && !muted;
   const level = levels.at(-1) ?? 0;
   const live = hearing || phase === "speaking";
+  const [framed] = useState(inFrame);
 
   const [startedAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
@@ -129,6 +131,22 @@ export function VoicePanel(props: VoicePanelProps) {
     </p>
   );
 
+  const openTab =
+    error === MIC_BLOCKED && framed ? (
+      <Button
+        variant="outline"
+        size="sm"
+        className="bob-voice-open-tab"
+        onClick={() => {
+          window.open(window.location.href, "_blank", "noopener");
+          onEnd();
+        }}
+      >
+        <ExternalLink aria-hidden="true" />
+        Open in new tab
+      </Button>
+    ) : null;
+
   const hangUp = (
     <Button variant="destructive" size="icon-lg" className="bob-voice-hangup" aria-label="End voice conversation" title="End voice conversation" onClick={onEnd}>
       <PhoneOff aria-hidden="true" />
@@ -158,7 +176,10 @@ export function VoicePanel(props: VoicePanelProps) {
       <div className="bob-voice-orb" style={{ ["--bob-voice-level" as string]: String(level) }}>
         <AgentAvatar agent={agent} mood={PHASE_MOODS[phase]} motion="always" className="bob-voice-face" />
       </div>
-      <div className="bob-voice-full-caption">{transcript}</div>
+      <div className="bob-voice-full-caption">
+        {transcript}
+        {openTab}
+      </div>
       {hangUp}
     </section>
   ) : (
@@ -174,6 +195,7 @@ export function VoicePanel(props: VoicePanelProps) {
           {agent.name} · {status} · {elapsed}
         </span>
         {transcript}
+        {openTab}
       </div>
       {muteButton}
       <Button variant="ghost" size="icon-lg" className="bob-voice-round" aria-label="Full screen" title="Full screen" onClick={onExpand}>

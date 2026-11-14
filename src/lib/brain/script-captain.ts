@@ -227,9 +227,34 @@ function withReports(ctx: TurnContext, plan: Plan): Plan {
   return { steps: [...plan.steps, ...reports.steps], reply: (done) => `${plan.reply(done)} ${reports.reply(done)}` };
 }
 
+/** The person's answer to "what should change" after declining a merge: the change goes to the pull request's build thread. */
+function changePlan(text: string, pr: PullRequestArtifact, builder: Agent): Plan {
+  const n = `#${pr.pullRequest.number}`;
+  const brief = `The person did not merge ${n} "${pr.title}" and asked for this change: "${text}". Make it on your branch ${pr.pullRequest.branch}, run the tests, then call open_pull_request again. The review runs again by itself on your new head.`;
+  return {
+    steps: [() => [call("message_thread", { threadId: builder.id, text: brief, expectsReply: false })]],
+    reply: (done) => (succeeded(done, "message_thread") ? `Sent your change to ${builder.code}: it updates ${n} on ${pr.pullRequest.branch}, and ${n} is reviewed again before I ask you to merge.` : `I could not send your change to ${builder.code}: ${String(done[0]?.result.error ?? "unknown error")}`),
+  };
+}
+
+/** A person's message that answers the captain's question after a declined merge, with the pull request it is about. */
+function declinedChange(ctx: TurnContext): { text: string; pr: PullRequestArtifact; builder: Agent } | null {
+  const s = ctx.initial;
+  for (const item of ctx.inbound.filter((i) => i.rule === "person")) {
+    const answered = s.messages.find((m) => m.id === s.messages.find((x) => x.id === item.messageId)?.continues);
+    const approval = s.approvals.find((a) => a.id === answered?.approvalId && a.status === "denied");
+    const pr = s.artifacts.find((a): a is PullRequestArtifact => a.id === approval?.pullRequestId && isPullRequest(a));
+    const builder = s.agents.find((a) => a.id === pr?.agentId && !a.closedAt);
+    if (pr && builder && !pr.pullRequest.merged) return { text: item.text, pr, builder };
+  }
+  return null;
+}
+
 export function captainPlan(ctx: TurnContext): Plan {
   const decision = ctx.inbound.find((i) => i.rule === "decision" && i.decision)?.decision;
   if (decision) return withReports(ctx, decisionPlan(ctx, decision));
+  const change = declinedChange(ctx);
+  if (change) return withReports(ctx, changePlan(change.text, change.pr, change.builder));
   const ask = ctx.inbound.find((i) => i.rule === "person");
   if (ask) return requestPlan(ctx);
   return reportPlan(ctx);
