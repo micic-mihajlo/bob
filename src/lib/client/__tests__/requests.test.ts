@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { RequestControl } from "@/lib/types";
-import { requestUsageLine } from "../requests";
+import type { InboxItem, RequestControl } from "@/lib/types";
+import { requestLabel, requestUsageLine } from "../requests";
 
 const request: RequestControl = {
   requestId: "req_1",
@@ -23,5 +23,28 @@ describe("requestUsageLine", () => {
 
   it("reads the use alone without limits", () => {
     expect(requestUsageLine({ ...request, modelCalls: 1, seconds: 8 })).toBe("8s · 1 model call · $0.04");
+  });
+});
+
+describe("requestLabel", () => {
+  const call = {
+    id: "inb_0ebef1ee",
+    kind: "meeting",
+    source: "customer call, Nov 13",
+    text: "",
+    at: "",
+    messageId: "m1",
+    status: "triaged",
+    candidates: [],
+  } as InboxItem;
+
+  it("names an inbox triage by its source, not by the prompt that handed it over", () => {
+    expect(requestLabel('Inbox item inb_0ebef1ee: a meeting from "customer call, Nov 13".\nTriage it: pull out every ask', [call])).toBe(
+      "Triage: customer call, Nov 13",
+    );
+  });
+
+  it("keeps a typed request as the person wrote it", () => {
+    expect(requestLabel("customers want to export invoices as CSV", [call])).toBe("customers want to export invoices as CSV");
   });
 });
