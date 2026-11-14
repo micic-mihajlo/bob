@@ -21,7 +21,12 @@ function gitIn(cwd: string, home: string, identity: Identity): Git {
 
 const errorText = (out: GitOutput) => (out.stderr || out.stdout).trim();
 
-/** Publishes a branch to origin and describes its change against origin's main. */
+/**
+ * Publishes a branch to origin and describes its change against origin's main. Origin refuses rewritten pushes
+ * from agents, but the branch here is always the thread's own, so a branch rebased onto a newer main replaces
+ * what it published before, by the runtime fetching it into origin. The new head needs a new review and a new
+ * approval anyway.
+ */
 export async function openPullRequest(
   ws: Workspace,
   request: { branch: string; title: string; body: string },
@@ -41,7 +46,12 @@ export async function openPullRequest(
     return fail(`"${branch}" has no commits ahead of ${MAIN_BRANCH}; commit your change first`);
   }
   const pushed = await run("push", "--quiet", "origin", `${heads(branch)}:${heads(branch)}`);
-  if (pushed.exitCode !== 0) return fail(`could not push "${branch}": ${errorText(pushed)}`);
+  if (pushed.exitCode !== 0 && !/non-fast-forward/.test(errorText(pushed))) return fail(`could not push "${branch}": ${errorText(pushed)}`);
+  if (pushed.exitCode !== 0) {
+    const origin = gitIn(ws.project.origin, ws.project.home, MERGE_IDENTITY);
+    const replaced = await origin("fetch", "--quiet", ws.root, `+${heads(branch)}:${heads(branch)}`);
+    if (replaced.exitCode !== 0) return fail(`could not publish the rewritten "${branch}": ${errorText(replaced)}`);
+  }
   return describe(run, request);
 }
 

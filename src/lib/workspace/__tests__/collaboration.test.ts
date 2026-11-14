@@ -47,6 +47,18 @@ describe("two agents on one project", { timeout: GIT_TEST_TIMEOUT }, () => {
     expect(await mustGit(b, ["log", "-1", "--format=%an", "origin/pad-amounts"])).toContain("agent-a");
   });
 
+  it("publishes the thread's branch again after it was rewritten, as a rebase onto a newer main does", async () => {
+    const { a } = await teamOfTwo(temp.root);
+    await commitFormatChange(a, "pad-amounts");
+    const first = await openPullRequest(a, { branch: "pad-amounts", title: "Pad amounts", body: "" });
+    if (!first.ok) throw new Error(first.error);
+    await mustGit(a, ["commit", "--amend", "-m", "Pad amounts, reworded"]);
+    const again = await openPullRequest(a, { branch: "pad-amounts", title: "Pad amounts", body: "" });
+    if (!again.ok) throw new Error(again.error);
+    expect(again.headSha).not.toBe(first.headSha);
+    expect(again.headSha).toBe((await mustGit(a, ["log", "-1", "--format=%H"])).trim());
+  });
+
   it("refuses a pull request from main or from a branch with nothing new", async () => {
     const { a } = await teamOfTwo(temp.root);
     expect(await openPullRequest(a, { branch: "main", title: "t", body: "" })).toMatchObject({ ok: false });
