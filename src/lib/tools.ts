@@ -5,6 +5,7 @@ import { agentById } from "./state";
 import { addThreadItem, stamp } from "./state-ops";
 import { getState, update } from "./store";
 import { CAPTAIN_TOOLS } from "./tools/captain-defs";
+import { SEARCH_CODEBASE } from "./tools/codebase";
 import { fail, type ToolContext, type ToolOutput } from "./tools/context";
 import { CREW_TOOLS } from "./tools/crew-defs";
 import { clip, define, type ToolDef, type ToolSpec } from "./tools/define";
@@ -54,7 +55,7 @@ const SHARED_TOOLS: ToolDef[] = [
   }),
 ];
 
-export const REGISTRY: ToolDef[] = [...CAPTAIN_TOOLS, ...SHARED_TOOLS, ...CREW_TOOLS];
+export const REGISTRY: ToolDef[] = [...CAPTAIN_TOOLS, SEARCH_CODEBASE, ...SHARED_TOOLS, ...CREW_TOOLS];
 
 export function toolsetOf(agent: Agent): Toolset {
   if (agent.kind === "captain") return "captain";
