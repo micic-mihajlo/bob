@@ -242,7 +242,7 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
             ) : (
               <Button
                 variant="ghost"
-                className={cx("voice-button")}
+                className={cx("voice-button", "composer-send")}
                 aria-label="Send message"
                 aria-keyshortcuts="Enter"
                 title="Send (Enter). Shift+Enter adds a new line."
