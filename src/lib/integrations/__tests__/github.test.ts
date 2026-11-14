@@ -8,7 +8,7 @@ import { getConfig, getState } from "../../store";
 import { settle } from "../../turns";
 import { freshTeam } from "../../__tests__/helpers";
 import { projectLayout } from "../../workspace";
-import { composioTransport, ops, setGitHubTransport, type Operation } from "../github/api";
+import { composioConnectTransport, composioTransport, ops, setGitHubTransport, type Operation } from "../github/api";
 import { gitHubSetting } from "../github/config";
 import { commentableLines, reviewBody } from "../github";
 import type { ReviewFinding } from "../../types";
@@ -32,9 +32,13 @@ describe("BOB_GITHUB setting", () => {
     expect(gitHubSetting({ BOB_GITHUB: "gh", BOB_GITHUB_REPO: "acme/invoices", BOB_GITHUB_BASE: "main" })).toMatchObject({ on: true, config: { base: "main" } });
   });
 
+  it("uses Composio Connect's MCP server for a consumer key", () => {
+    expect(gitHubSetting({ BOB_GITHUB: "composio", COMPOSIO_API_KEY: "ck_test" })).toMatchObject({ on: true, config: { via: "composio", composio: { kind: "connect", baseUrl: "https://connect.composio.dev/mcp" } } });
+  });
+
   it("uses Composio when the key is set", () => {
-    const setting = gitHubSetting({ BOB_GITHUB: "composio", COMPOSIO_API_KEY: "ck_test", COMPOSIO_CONNECTED_ACCOUNT_ID: "ca_1", BOB_GITHUB_REPO: "acme/invoices" });
-    expect(setting).toMatchObject({ on: true, config: { via: "composio", composio: { apiKey: "ck_test", userId: "default", connectedAccountId: "ca_1", baseUrl: "https://backend.composio.dev" } } });
+    const setting = gitHubSetting({ BOB_GITHUB: "composio", COMPOSIO_API_KEY: "ak_test", COMPOSIO_CONNECTED_ACCOUNT_ID: "ca_1", BOB_GITHUB_REPO: "acme/invoices" });
+    expect(setting).toMatchObject({ on: true, config: { via: "composio", composio: { kind: "project", apiKey: "ak_test", userId: "default", connectedAccountId: "ca_1", baseUrl: "https://backend.composio.dev" } } });
   });
 });
 
@@ -64,18 +68,51 @@ describe("GitHub operations", () => {
 
   it("send a Composio execute request and unwrap its data", async () => {
     const fetcher = vi.fn(async () => Response.json({ data: { number: 7, html_url: "https://github.com/acme/invoices/pull/7" }, error: null, successful: true }));
-    const call = composioTransport({ apiKey: "ck_test", userId: "bob", connectedAccountId: "ca_1", baseUrl: "https://backend.composio.dev" }, fetcher as typeof fetch);
+    const call = composioTransport({ kind: "project", apiKey: "ak_test", userId: "bob", connectedAccountId: "ca_1", baseUrl: "https://backend.composio.dev" }, fetcher as typeof fetch);
     const op = ops.createPull(repo, { title: "t", body: "b", head: "demo/x", base: "main" });
     await expect(call(op)).resolves.toEqual({ number: 7, html_url: "https://github.com/acme/invoices/pull/7" });
     const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_CREATE_A_PULL_REQUEST");
-    expect(init.headers).toMatchObject({ "x-api-key": "ck_test" });
+    expect(init.headers).toMatchObject({ "x-api-key": "ak_test" });
     expect(JSON.parse(String(init.body))).toEqual({ arguments: op.args, user_id: "bob", connected_account_id: "ca_1" });
+  });
+
+  it("run a toolkit tool through Composio Connect's MCP server with a consumer key", async () => {
+    const sse = (result: unknown) => new Response(`event: message\ndata: ${JSON.stringify({ jsonrpc: "2.0", id: 2, result })}\n\n`, { headers: { "content-type": "text/event-stream" } });
+    const text = (body: unknown) => ({ content: [{ type: "text", text: JSON.stringify(body) }], isError: false });
+    const sent: { headers: Record<string, string>; body: { method: string; params?: { name?: string; arguments?: Record<string, unknown> } } }[] = [];
+    const fetcher = vi.fn(async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body));
+      sent.push({ headers: init.headers as Record<string, string>, body });
+      if (body.method === "initialize") return new Response("{}", { headers: { "mcp-session-id": "sess_1" } });
+      if (body.method === "notifications/initialized") return new Response(null, { status: 202 });
+      return sse(text({ successful: true, data: { results: [{ tool_slug: "GITHUB_CREATE_A_PULL_REQUEST", index: 0, response: { successful: true, data: { number: 9, html_url: "https://github.com/acme/invoices/pull/9" } } }] } }));
+    });
+    const call = composioConnectTransport({ kind: "connect", apiKey: "ck_test", userId: "default", connectedAccountId: "bob-demo", baseUrl: "https://connect.composio.dev/mcp" }, fetcher as unknown as typeof fetch);
+    const op = ops.createPull(repo, { title: "t", body: "b", head: "demo/x", base: "demo/invoices-main" });
+    await expect(call(op)).resolves.toEqual({ number: 9, html_url: "https://github.com/acme/invoices/pull/9" });
+    await call(op);
+    expect(sent.map((s) => s.body.method)).toEqual(["initialize", "notifications/initialized", "tools/call", "tools/call"]);
+    const execute = sent[2];
+    expect(execute.headers).toMatchObject({ "x-consumer-api-key": "ck_test", "mcp-session-id": "sess_1" });
+    expect(execute.body.params?.name).toBe("COMPOSIO_MULTI_EXECUTE_TOOL");
+    expect(execute.body.params?.arguments?.tools).toEqual([{ tool_slug: "GITHUB_CREATE_A_PULL_REQUEST", arguments: op.args, account: "bob-demo" }]);
+  });
+
+  it("turn a failed Composio Connect tool into an error", async () => {
+    const fetcher = async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body));
+      if (body.method !== "tools/call") return new Response("{}");
+      const failed = { successful: false, data: { results: [{ error: "No active connection found for toolkit(s) 'github'", tool_slug: "GITHUB_MERGE_A_PULL_REQUEST", index: 0 }] }, error: "1 out of 1 tools failed" };
+      return new Response(`data: ${JSON.stringify({ jsonrpc: "2.0", id: 2, result: { content: [{ type: "text", text: JSON.stringify(failed) }], isError: true } })}\n\n`);
+    };
+    const call = composioConnectTransport({ kind: "connect", apiKey: "ck_test", userId: "default", connectedAccountId: null, baseUrl: "https://connect.composio.dev/mcp" }, fetcher as unknown as typeof fetch);
+    await expect(call(ops.merge(repo, 7, { sha: "a", merge_method: "merge", commit_title: "m" }))).rejects.toThrow("composio connect GITHUB_MERGE_A_PULL_REQUEST: No active connection found for toolkit(s) 'github'");
   });
 
   it("turn an unsuccessful Composio result into an error", async () => {
     const fetcher = async () => Response.json({ data: {}, error: "Pull Request is not mergeable", successful: false });
-    const call = composioTransport({ apiKey: "k", userId: "bob", connectedAccountId: null, baseUrl: "https://backend.composio.dev" }, fetcher as typeof fetch);
+    const call = composioTransport({ kind: "project", apiKey: "k", userId: "bob", connectedAccountId: null, baseUrl: "https://backend.composio.dev" }, fetcher as typeof fetch);
     await expect(call(ops.merge(repo, 7, { sha: "a", merge_method: "merge", commit_title: "m" }))).rejects.toThrow("composio GITHUB_MERGE_A_PULL_REQUEST: Pull Request is not mergeable");
   });
 });

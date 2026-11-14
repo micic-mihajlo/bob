@@ -7,8 +7,11 @@ export type Env = Record<string, string | undefined>;
 export type GitHubVia = "gh" | "composio";
 
 export interface ComposioAuth {
+  /** `project`: a project API key on the REST execute endpoint. `connect`: a Composio Connect consumer key (ck_…) on its MCP server. */
+  kind: "project" | "connect";
   apiKey: string;
   userId: string;
+  /** A connected account id; on Connect, an account id or alias. */
   connectedAccountId: string | null;
   baseUrl: string;
 }
@@ -54,7 +57,9 @@ export function gitHubSetting(env: Env = process.env): GitHubSetting {
           apiKey,
           userId: env.COMPOSIO_USER_ID?.trim() || "default",
           connectedAccountId: env.COMPOSIO_CONNECTED_ACCOUNT_ID?.trim() || null,
-          baseUrl: (env.COMPOSIO_BASE_URL?.trim() || "https://backend.composio.dev").replace(/\/$/, ""),
+          ...(apiKey.startsWith("ck_")
+            ? { kind: "connect" as const, baseUrl: env.COMPOSIO_BASE_URL?.trim() || "https://connect.composio.dev/mcp" }
+            : { kind: "project" as const, baseUrl: (env.COMPOSIO_BASE_URL?.trim() || "https://backend.composio.dev").replace(/\/$/, "") }),
         }
       : null;
   return {
