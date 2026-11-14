@@ -26,6 +26,11 @@
   overflow-wrap: anywhere;
 }
 
+/* When the card's pull request was opened, beside its number. */
+.chat-action-card-opened-ago {
+  color: var(--bob-text-dim);
+}
+
 .conversation-interaction-status[data-slot="badge"] {
   flex: 0 0 auto;
   gap: var(--bob-space-1-5);
