@@ -75,6 +75,8 @@ describe("roadmap view", () => {
       gates: [],
       today: [order("a", "done")],
       backlog: [order("b", "open"), order("c", "open")],
+      startedAt: null,
+      finishedAt: null,
     };
     expect(trackProgress({ ...track, stage: 3 }, 5)).toEqual({ done: 1, total: 3, followUps: 0 });
     expect(trackProgress({ ...track, stage: 5 }, 5)).toEqual({ done: 1, total: 1, followUps: 2 });
