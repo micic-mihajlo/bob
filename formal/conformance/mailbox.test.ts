@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { freshStandingTeam } from "@/lib/__tests__/helpers";
-import { applySend, budgetUsed, REQUEST_DELIVERY_BUDGET, type SendInput } from "@/lib/mailbox";
+import { applySend, budgetUsed, handoffsUsed, REQUEST_DELIVERY_BUDGET, REQUEST_HANDOFF_BUDGET, type SendInput } from "@/lib/mailbox";
 import { messageById, type State } from "@/lib/state";
 import { getState } from "@/lib/store";
 import { sendMessage } from "@/lib/tools/messaging";
@@ -9,6 +9,8 @@ import { pick, SEEDS, seeded, subset } from "./random";
 
 /** BobFormal.Mailbox.BUDGET */
 const BUDGET = 12;
+/** BobFormal.Mailbox.HANDOFFS */
+const HANDOFFS = 24;
 const REQ = "req_formal";
 const REPLY = "Status: done\nResult: Looked at it.\nEvidence: none";
 
@@ -27,7 +29,9 @@ function modelAccepts(s: State, i: SendInput): boolean {
   if (i.replyTo && i.expectsReply) return false;
   if (i.replyTo && !messageById(s, i.replyTo)) return false;
   if (i.replyTo && i.from.kind === "agent" && !owedTo(s, i.from.agentId).some((d) => d.messageId === i.replyTo)) return false;
-  return !(i.from.kind === "agent" && !i.replyTo && budgetUsed(s, i.requestId) + to.length > BUDGET);
+  if (i.from.kind !== "agent") return true;
+  if (i.automatic) return handoffsUsed(s, i.requestId) + to.length <= HANDOFFS;
+  return !(!i.replyTo && budgetUsed(s, i.requestId) + to.length > BUDGET);
 }
 
 const deliveriesWhere = (s: State, test: (m: Message) => boolean) =>
@@ -40,19 +44,23 @@ const deliveriesWhere = (s: State, test: (m: Message) => boolean) =>
 function counters(s: State) {
   const fromAgent = (m: Message) => m.from.kind === "agent";
   return {
-    firstSends: deliveriesWhere(s, (m) => fromAgent(m) && !m.replyTo).length,
-    replySends: deliveriesWhere(s, (m) => fromAgent(m) && !!m.replyTo).length,
+    firstSends: deliveriesWhere(s, (m) => fromAgent(m) && !m.automatic && !m.replyTo).length,
+    replySends: deliveriesWhere(s, (m) => fromAgent(m) && !m.automatic && !!m.replyTo).length,
+    autoSends: deliveriesWhere(s, (m) => fromAgent(m) && !!m.automatic).length,
     owed: deliveriesWhere(s, (m) => fromAgent(m) && m.expectsReply).filter((d) => !d.answered).length,
     agentMessages: s.messages.filter((m) => m.requestId === REQ && fromAgent(m)).length,
   };
 }
 
-/** A random send. Replies go back to the sender of the replied-to message, as `route` does, and are sometimes not owed. */
+/**
+ * A random send. Replies go back to the sender of the replied-to message, as `route` does, and are sometimes not owed.
+ * About a third are automatic hand-offs, the way `sendForCaptain` sends them.
+ */
 function randomSend(s: State, rand: () => number, ids: string[]): SendInput {
   const sender = pick(rand, ids);
   const causedBy = s.messages.length > 0 ? pick(rand, s.messages).id : null;
   const owed = owedTo(s, sender);
-  const base = { from: { kind: "agent" as const, agentId: sender }, causedBy, requestId: REQ };
+  const base = { from: { kind: "agent" as const, agentId: sender }, causedBy, requestId: REQ, ...(rand() < 0.35 ? { automatic: true } : {}) };
   const replyTo = owed.length > 0 && rand() < 0.5 ? messageById(s, pick(rand, owed).messageId) : s.messages.length > 0 && rand() < 0.2 ? pick(rand, s.messages) : undefined;
   if (replyTo?.from.kind === "agent" && replyTo.from.agentId !== sender) {
     return { ...base, to: [replyTo.from.agentId], text: REPLY, replyTo: replyTo.id, expectsReply: rand() < 0.1 };
@@ -63,25 +71,29 @@ function randomSend(s: State, rand: () => number, ids: string[]): SendInput {
 describe("mailbox conforms to BobFormal.Mailbox", () => {
   beforeEach(freshStandingTeam);
 
-  it("uses the same budget as the model", () => {
+  it("uses the same budgets as the model", () => {
     expect(REQUEST_DELIVERY_BUDGET).toBe(BUDGET);
+    expect(REQUEST_HANDOFF_BUDGET).toBe(HANDOFFS);
   });
 
   it.each(SEEDS)("random cascade %i: accepts what the model accepts and stays inside the proven bounds", (seed) => {
     const rand = seeded(seed);
     let s = getState();
     const ids = s.agents.map((a) => a.id);
-    for (let step = 0; step < 120; step++) {
+    for (let step = 0; step < 200; step++) {
       const input = randomSend(s, rand, ids);
       const expected = modelAccepts(s, input);
       const applied = applySend(s, input);
       expect(applied.result.ok, JSON.stringify(input)).toBe(expected);
       s = applied.state;
       const c = counters(s);
+      const all = budgetUsed(s, REQ) + handoffsUsed(s, REQ);
       expect(c.firstSends).toBeLessThanOrEqual(BUDGET);
-      expect(c.replySends + c.owed).toBeLessThanOrEqual(c.firstSends);
-      expect(c.agentMessages).toBeLessThanOrEqual(budgetUsed(s, REQ));
-      expect(budgetUsed(s, REQ)).toBeLessThanOrEqual(2 * BUDGET);
+      expect(c.autoSends).toBe(handoffsUsed(s, REQ));
+      expect(c.autoSends).toBeLessThanOrEqual(HANDOFFS);
+      expect(c.replySends + c.owed).toBeLessThanOrEqual(c.firstSends + c.autoSends);
+      expect(c.agentMessages).toBeLessThanOrEqual(all);
+      expect(all).toBeLessThanOrEqual(2 * (BUDGET + HANDOFFS));
     }
   });
 

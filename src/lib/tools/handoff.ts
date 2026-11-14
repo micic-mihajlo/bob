@@ -48,11 +48,13 @@ function sendForCaptain(to: AgentId, text: string, expectsReply: boolean, reques
 
 /**
  * After a review requests changes: the findings go straight to the build thread that owns the pull
- * request. After MAX_FIX_ROUNDS rounds it is told to stop and report blocked with what is still open.
+ * request. After MAX_FIX_ROUNDS rounds it is told once to stop and report blocked with what is still open,
+ * and later change requests on that pull request hand nothing more to it.
  */
 export function handFindingsToBuilder(pr: PullRequestArtifact, reviewerName: string, findings: ReviewFinding[]): { to: AgentId | null; round: number } {
   const s = getState();
   const round = reviewsOf(s, pr.id).filter((r) => r.review.verdict === "request_changes").length;
+  if (round > MAX_FIX_ROUNDS + 1) return { to: null, round };
   const n = `#${pr.pullRequest.number}`;
   const list = findings.length ? findings.map(findingLine).join("\n") : "- (the reviewer listed no findings; read its summary)";
   const text =
@@ -62,11 +64,13 @@ export function handFindingsToBuilder(pr: PullRequestArtifact, reviewerName: str
   return { to: sendForCaptain(pr.agentId, text, round > MAX_FIX_ROUNDS, pr.requestId), round };
 }
 
-/** After a pull request gets a new head: its last reviewer checks it again, so approval always follows a review of the current head. */
+/** After a pull request gets a new head: its last reviewer checks it again, once per head, so approval always follows a review of the current head. */
 export function askForReReview(pr: PullRequestArtifact): AgentId | null {
   const s = getState();
   const last = latestReview(s, pr.id);
   if (!last || last.review.headSha === pr.pullRequest.headSha) return null;
+  const head = `new head ${pr.pullRequest.headSha.slice(0, 7)}`;
+  if (s.messages.some((m) => m.automatic && m.to.includes(last.agentId) && m.text.includes(`(id ${pr.id},`) && m.text.includes(head))) return null;
   const n = `#${pr.pullRequest.number}`;
   const open = last.review.findings.filter((f) => f.severity !== "low");
   const check = open.length ? `Check these findings are fixed:\n${open.map(findingLine).join("\n")}\n` : "";

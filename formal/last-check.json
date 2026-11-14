@@ -1,7 +1,7 @@
 {
   "ok": true,
   "lean": "Lean (version 4.35.0, x86_64-unknown-linux-gnu, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
-  "sourceHash": "0d7fbafa7904d67377a7727f78aa37437b373896780b8f372394b5c3f1e43738",
+  "sourceHash": "c4ceeb3449a86aecd41197b7355430a1e9bb9b7e45421afd4bc042cc99666abe",
   "theorems": [
     {
       "name": "BobFormal.MergeGate.merge_needs_approval",
@@ -32,6 +32,14 @@
     },
     {
       "name": "BobFormal.Mailbox.first_sends_within_budget",
+      "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+      ]
+    },
+    {
+      "name": "BobFormal.Mailbox.handoffs_within_budget",
       "axioms": [
         "propext",
         "Classical.choice",

@@ -31,14 +31,19 @@ Mirrors `openPullRequestTool`, `recordReview` and `mergePullRequestTool` in `src
 
 ### Loop termination (`formal/BobFormal/Mailbox.lean`)
 
-Mirrors `applySend`, `validate`, `overBudget`, `budgetUsed`, `answersOwedAsk` and `markAnswered` in `src/lib/mailbox.ts`.
+Mirrors `applySend`, `validate`, `overBudget`, `budgetUsed`, `handoffsUsed`, `answersOwedAsk` and `markAnswered` in `src/lib/mailbox.ts`, and `sendForCaptain` in `src/lib/tools/handoff.ts`.
 
-- `first_sends_within_budget`: in one request, agents start at most 12 deliveries of new work.
-- `deliveries_bounded`: a request sees at most 24 agent deliveries, because every reply must answer one unanswered ask, so every message cascade ends.
-- `agent_messages_bounded`: at most 24 agent messages are accepted in one request, and after that every agent send is refused.
+The review loop sends some messages for the captain by itself: findings go to the build thread, a new head goes to the last reviewer, and a branch that conflicts after a merge goes to its owner. These automatic hand-offs carry `automatic: true`. They do not spend the 12-delivery budget the agents share, because a hand-off the budget refused would leave a pull request stuck in review. They spend a separate hand-off budget of 24 deliveries per request instead, so they stay bounded however the loop goes.
+
+- `first_sends_within_budget`: in one request, agents start at most 12 deliveries of new work; automatic hand-offs are counted apart.
+- `handoffs_within_budget`: in one request, the automatic hand-offs make at most 24 deliveries.
+- `deliveries_bounded`: a request sees at most 72 agent deliveries, hand-offs included, because every reply must answer one unanswered ask, so every message cascade ends.
+- `agent_messages_bounded`: at most 72 agent messages, hand-offs included, are accepted in one request, and after that every agent send is refused.
 - `ping_pong_stops`: two teammates cannot keep answering each other's replies: after the one answer an ask is owed, a reply to a reply is refused.
 
-The mailbox enforces the reply rule for every sender: `send_message`, the automatic relay and `report` all go through it.
+The mailbox enforces the reply rule for every sender: `send_message`, the automatic relay, `report` and the hand-offs all go through it.
+
+The review loop is also tighter than the budget. A build thread gets at most two fix rounds on one pull request (`MAX_FIX_ROUNDS`), then one message telling it to report blocked, and later change requests hand it nothing more. A reviewer is asked at most once to review each head. The property test below checks both on the real tools.
 
 ### Stage order (`formal/BobFormal/Roadmap.lean`)
 
@@ -66,9 +71,10 @@ The first versions of these models found two gaps, each proved as a counterexamp
 
 ## How the proofs stay tied to the code
 
-`formal/conformance/` holds one test file per model. Each checks the constants the model hard-codes (budget 12, five stages, three work orders in today), writes the model's decision function against the real state, and runs 40 seeded random histories through the real functions:
+`formal/conformance/` holds one test file per model. Each checks the constants the model hard-codes (budget 12, hand-off budget 24, five stages, three work orders in today), writes the model's decision function against the real state, and runs 40 seeded random histories through the real functions:
 
-- `mailbox.test.ts`: random sends through `applySend`: the model accepts exactly what the code accepts, and the invariant from the proof holds after every step.
+- `mailbox.test.ts`: random sends through `applySend`, about a third of them automatic hand-offs: the model accepts exactly what the code accepts, and the invariant from the proof holds after every step.
+- `handoff.test.ts`: random review and fix cascades through the real `record_review`, `open_pull_request` and `request_approval` tools (10 seeds of 14 steps): the build thread never gets more than two fix rounds or more than one blocked message, no head is sent for review twice, the hand-offs stay within 24, and an approval card appears exactly when the latest review approves the current head.
 - `loop.test.ts`: random teammates on the real turn loop: every cascade settles within 24 deliveries, and every message traces back to the person through `traceWhy`.
 - `roadmap.test.ts`: random roadmap calls: the model's gate matches `unmetCriteria`, only `advanceStage` moves the stage, and only by one.
 - `merge-gate.test.ts`: random approvals, reviews and decisions: merge refuses exactly when the model's gate is shut, and only the person approves.

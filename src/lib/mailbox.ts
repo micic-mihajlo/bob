@@ -6,6 +6,8 @@ import { transact } from "./store";
 import type { AgentId, Delivery, Message, MessageId, RequestId, Sender } from "./types";
 
 export const REQUEST_DELIVERY_BUDGET = 12;
+/** Deliveries of automatic hand-offs one request may get, counted apart from what the agents spend. */
+export const REQUEST_HANDOFF_BUDGET = 24;
 
 export interface SendInput {
   from: Sender;
@@ -47,6 +49,12 @@ export function budgetUsed(s: State, requestId: RequestId): number {
     s.messages.filter((m) => m.requestId === requestId && m.from.kind === "agent" && !m.automatic).map((m) => m.id),
   );
   return s.deliveries.filter((d) => sentByAgents.has(d.messageId)).length;
+}
+
+/** Deliveries of automatic hand-offs in one request, which the hand-off budget counts. */
+export function handoffsUsed(s: State, requestId: RequestId): number {
+  const handoffs = new Set(s.messages.filter((m) => m.requestId === requestId && m.automatic).map((m) => m.id));
+  return s.deliveries.filter((d) => handoffs.has(d.messageId)).length;
 }
 
 /** Crew threads talk only to the captain, and only the captain or a person talks to them. */
@@ -103,16 +111,16 @@ function answersOwedAsk(s: State, replier: AgentId, replyTo: MessageId, to: Agen
 const nextQueueOrder = (s: State) => s.deliveries.reduce((max, d) => Math.max(max, d.queueOrder), 0) + 1;
 
 function overBudget(s: State, input: SendInput, count: number): boolean {
+  if (input.from.kind !== "agent") return false;
+  if (input.automatic) return handoffsUsed(s, input.requestId) + count > REQUEST_HANDOFF_BUDGET;
   // Replies are exempt: refusing one would leave the asker waiting, and a reply cannot start more work.
-  return input.from.kind === "agent" && !input.replyTo && !input.automatic && budgetUsed(s, input.requestId) + count > REQUEST_DELIVERY_BUDGET;
+  return !input.replyTo && budgetUsed(s, input.requestId) + count > REQUEST_DELIVERY_BUDGET;
 }
 
 function budgetRefusal(s: State, input: SendInput): { state: State; result: SendResult } {
-  const result = refuse(
-    "budget_exhausted",
-    `This request has used all ${REQUEST_DELIVERY_BUDGET} message deliveries. Stop messaging and end your turn with what you have.`,
-  );
-  const note = `Message not sent: this request reached its budget of ${REQUEST_DELIVERY_BUDGET} deliveries.`;
+  const [limit, what] = input.automatic ? [REQUEST_HANDOFF_BUDGET, "automatic hand-offs"] : [REQUEST_DELIVERY_BUDGET, "message deliveries"];
+  const result = refuse("budget_exhausted", `This request has used all ${limit} ${what}. Stop messaging and end your turn with what you have.`);
+  const note = `${input.automatic ? "Automatic hand-off" : "Message"} not sent: this request reached its budget of ${limit} ${input.automatic ? "hand-offs" : "deliveries"}.`;
   const state = input.from.kind === "agent" ? addNotice(s, input.from.agentId, "warning", note) : s;
   return { state, result };
 }

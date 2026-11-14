@@ -83,7 +83,7 @@ export interface Message {
   approvalId?: string;
   /** Optional: on a person's answer to the captain's question, the ask it answers. The answer joins that request. */
   continues?: MessageId;
-  /** Optional: set on a hand-off the runtime sends for the captain. It is bounded by the review loop, so the request budget neither counts nor refuses it. */
+  /** Optional: set on a hand-off the runtime sends for the captain. It spends the request's hand-off budget instead of its delivery budget. */
   automatic?: true;
   at: string;
 }
