@@ -1,9 +1,14 @@
 import { claudeCodeLogin, claudeStatus, clearClaudeConnection, credentialProblem, readClaudeConnection, saveClaudeConnection } from "./claude-connection";
-import { isClaudeModel, LIGHT_MODEL } from "./models";
+import { claudeCheckError } from "./brain/agent-sdk";
+import { isClaudeModel, LIGHT_MODEL, STRONG_MODEL } from "./models";
+import { addNotice } from "./state-ops";
 import { update } from "./store";
-import type { ClaudeMethod, ClaudeStatus } from "./types";
+import type { Agent, AgentId, ClaudeMethod, ClaudeStatus } from "./types";
 
 export type ClaudeResult = { ok: true; status: ClaudeStatus } | { ok: false; error: string };
+
+/** Threads on a Claude model go back to the default gateway model for their kind. */
+const offClaude = (agents: Agent[]): Agent[] => agents.map((a) => (isClaudeModel(a.model) ? { ...a, model: a.kind === "captain" ? STRONG_MODEL : LIGHT_MODEL } : a));
 
 /** Commits an unchanged copy of the state, so every open event stream fetches the new Claude status. */
 const announce = () => update((s) => ({ ...s }));
@@ -17,6 +22,11 @@ export async function connectClaude(method: ClaudeMethod, secret?: string): Prom
     if (!login.ok) return login;
   }
   saveClaudeConnection(method, secret);
+  const failed = await claudeCheckError();
+  if (failed) {
+    clearClaudeConnection();
+    return { ok: false, error: `Claude did not answer a test call: ${failed}` };
+  }
   announce();
   return { ok: true, status: claudeStatus() };
 }
@@ -30,6 +40,20 @@ export function disconnectClaude(): ClaudeResult {
   if (readClaudeConnection()?.from === "env") {
     return { ok: false, error: "Claude is connected through CLAUDE_CODE_OAUTH_TOKEN or BOB_ANTHROPIC_API_KEY in the server's environment. Remove it there and restart Bob." };
   }
-  update((s) => (s.agents.some((a) => isClaudeModel(a.model)) ? { ...s, agents: s.agents.map((a) => (isClaudeModel(a.model) ? { ...a, model: LIGHT_MODEL } : a)) } : { ...s }));
+  update((s) => ({ ...s, agents: offClaude(s.agents) }));
   return { ok: true, status: claudeStatus() };
+}
+
+/**
+ * A turn on Claude failed to sign in: Claude is disconnected, every thread on it goes back to its gateway model,
+ * and the thread says so once, so the turn can run again on the gateway instead of failing.
+ */
+export function dropClaude(agentId: AgentId, error: string): void {
+  clearClaudeConnection();
+  update((s) => {
+    const agents = offClaude(s.agents);
+    const model = (agents.find((a) => a.id === agentId)?.kind === "captain" ? STRONG_MODEL : LIGHT_MODEL).split("/").at(-1);
+    const reason = error.replace(/^The coding agent stopped on a model error:\s*/, "").split("\n")[0].slice(0, 80);
+    return addNotice({ ...s, agents }, agentId, "info", `Claude could not sign in (${reason}), so Bob disconnected it and ran this turn on ${model}.`);
+  });
 }

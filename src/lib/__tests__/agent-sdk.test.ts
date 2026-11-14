@@ -2,8 +2,11 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { Options, SdkMcpToolDefinition, SDKMessage, SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
-import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
-import { postUserMessage } from "../actions";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { postUserMessage, setThreadModelByPerson } from "../actions";
+import { connectClaude } from "../claude-actions";
+import { claudeStatus } from "../claude-connection";
+import { STRONG_MODEL } from "../models";
 import { NATIVE_TOOLS, setSdkQuery, workspaceGuard } from "../brain/agent-sdk";
 import { interrupt } from "../interrupt";
 import { getState } from "../store";
@@ -141,6 +144,86 @@ describe("BOB_ENGINE=sdk runs crew build and review turns as one coding-agent qu
     expect(seen.options).toHaveLength(0);
     process.env.BOB_ENGINE = "sdk";
     expect(getState().turns.some((t) => t.agentId === "bob" && t.status === "completed")).toBe(true);
+  });
+});
+
+describe("a thread set to a Claude model runs on the person's Claude", { timeout: 60_000 }, () => {
+  beforeEach(() => {
+    freshTeam();
+    vi.stubEnv("BOB_CLAUDE_FILE", path.join(mkdtempSync(path.join(os.tmpdir(), "bob-claude-")), "claude.json"));
+    vi.stubEnv("CLAUDE_CODE_OAUTH_TOKEN", "");
+    vi.stubEnv("BOB_ANTHROPIC_API_KEY", "");
+    vi.stubEnv("BOB_ENGINE", "");
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    setSdkQuery(null);
+  });
+  afterAll(freshTeam);
+
+  it("runs the captain's next turn as an SDK query on the chosen Claude model with the connected credential", async () => {
+    expect((await connectClaude("oauth-token", "sk-ant-oat01-test")).ok).toBe(true);
+    expect(setThreadModelByPerson("bob", "claude-opus")).toEqual({ ok: true });
+    const seen: Options[] = [];
+    setSdkQuery(({ options }) => {
+      seen.push(options);
+      return {
+        async interrupt() {},
+        async *[Symbol.asyncIterator]() {
+          yield msg({ type: "result", subtype: "success", result: "On Claude.", usage: { input_tokens: 1, output_tokens: 1 } });
+        },
+      };
+    });
+    postUserMessage("bob", "What is everyone doing?");
+    await settle();
+    expect(seen).toHaveLength(1);
+    expect(seen[0].model).toBe("opus");
+    expect(Object.keys(seen[0].env ?? {})).toContain("CLAUDE_CODE_OAUTH_TOKEN");
+    expect(Object.keys(seen[0].env ?? {})).not.toContain("ANTHROPIC_BASE_URL");
+    expect(getState().turns.some((t) => t.agentId === "bob" && t.status === "completed")).toBe(true);
+  });
+
+  it("drops Claude and runs the turn on the gateway when Claude will not sign in", async () => {
+    expect((await connectClaude("oauth-token", "sk-ant-oat01-test")).ok).toBe(true);
+    expect(setThreadModelByPerson("bob", "claude-opus")).toEqual({ ok: true });
+    setSdkQuery(() => ({
+      async interrupt() {},
+      async *[Symbol.asyncIterator]() {
+        yield msg({ type: "result", subtype: "success", is_error: true, result: "Not logged in · Please run /login", usage: { input_tokens: 0, output_tokens: 0 } });
+      },
+    }));
+    postUserMessage("bob", "What is everyone doing?");
+    await settle();
+    const s = getState();
+    expect(claudeStatus().connected).toBe(false);
+    expect(s.agents.find((a) => a.id === "bob")?.model).toBe(STRONG_MODEL);
+    const notice = (s.threads.bob ?? []).find((i) => i.kind === "notice");
+    expect(notice?.kind === "notice" && notice.text).toMatch(/^Claude could not sign in \(.*Not logged in.*\), so Bob disconnected it and ran this turn on /);
+    expect(s.turns.some((t) => t.agentId === "bob" && t.status === "completed")).toBe(true);
+  });
+
+  it("refuses to connect a Claude that fails a test call, with Claude's own error", async () => {
+    setSdkQuery(() => ({
+      async interrupt() {},
+      async *[Symbol.asyncIterator]() {
+        yield msg({ type: "result", subtype: "success", is_error: true, result: "Invalid API key · Fix external API key", usage: { input_tokens: 0, output_tokens: 0 } });
+      },
+    }));
+    const result = await connectClaude("api-key", "sk-ant-api03-test");
+    expect(result.ok ? null : result.error).toBe("Claude did not answer a test call: Invalid API key · Fix external API key");
+    expect(claudeStatus().connected).toBe(false);
+  });
+
+  it("keeps the captain on the move loop while its model is a gateway model", async () => {
+    expect((await connectClaude("oauth-token", "sk-ant-oat01-test")).ok).toBe(true);
+    const seen: Options[] = [];
+    setSdkQuery(({ options }) => {
+      seen.push(options);
+      return { async interrupt() {}, async *[Symbol.asyncIterator]() {} };
+    });
+    postUserMessage("bob", "What is everyone doing?");
+    await settle();
+    expect(seen).toHaveLength(0);
   });
 });
 
