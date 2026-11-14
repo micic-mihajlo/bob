@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/Progress";
 import { Card } from "@/components/ui/Surface";
 import { displayName } from "@/lib/client/crew";
 import { formatDeadline } from "@/lib/client/format";
-import { requestUsageLine } from "@/lib/client/requests";
+import { requestLabel, requestUsageLine } from "@/lib/client/requests";
 import {
   forUserLine,
   hasPlan,
@@ -32,7 +32,7 @@ const PHASE_LABEL: Record<StepPhase, string> = { done: "Done", current: "Now", n
  */
 export function RoadmapPanel({ onClose }: { onClose: () => void }) {
   const { snapshot, agentsById, selectAgent, captain, openThreadTab } = useBob();
-  const { roadmap, releaseNotes = [], requests = [], budgets } = snapshot;
+  const { roadmap, releaseNotes = [], requests = [], budgets, inbox = [] } = snapshot;
   const { tracks, backlog } = trackViews(roadmap);
   const started = tracks.some((track) => track.goal !== null) || roadmap.today.length > 0 || (roadmap.backlog?.length ?? 0) > 0;
 
@@ -200,7 +200,7 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
               {requests.map((request) => (
                 <li key={request.requestId} className="bob-roadmap-request" data-running={request.running ? "true" : undefined}>
                   <div className="bob-roadmap-request-head">
-                    <p className="bob-roadmap-request-ask">{request.ask}</p>
+                    <p className="bob-roadmap-request-ask">{requestLabel(request.ask, inbox)}</p>
                     {request.running ? <Badge variant="secondary">Running</Badge> : null}
                   </div>
                   <p className="bob-roadmap-task-meta">
