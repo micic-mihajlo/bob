@@ -96,6 +96,15 @@ describe("the captain inspects a request before work starts", { timeout: 60_000 
     expect(getState().roadmap.goal?.assumptions).toHaveLength(2);
   });
 
+  for (const answer of ["Yes, go with your defaults.", "That's right, both.", "Sounds right to me."]) {
+    it(`goes ahead when the person answers "${answer}"`, async () => {
+      await say(VAGUE);
+      await say(answer);
+      expect(crew()[0]?.crewRole).toBe("build");
+      expect(getState().roadmap.goal?.assumptions).toHaveLength(2);
+    });
+  }
+
   it("tells the live captain how many rounds it has used and what the stage needs", async () => {
     await say(VAGUE);
     const prompt = systemPrompt(getState().agents[0], getState());
