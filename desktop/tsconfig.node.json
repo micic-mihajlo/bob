@@ -24,7 +24,6 @@
     "scripts/bob-desktop-smoke.ts",
     "scripts/cline-free-models-e2e.ts",
     "scripts/desktop-notifications-e2e.ts",
-    "scripts/generate-bob-icons.ts",
     "scripts/nix-sources.ts"
   ]
 }

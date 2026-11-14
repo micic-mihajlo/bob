@@ -12,12 +12,7 @@
     "./tokens-native.css": "./src/tokens-native.css",
     "./article-gradient": "./src/article-gradient.ts",
     "./file-reference": "./src/file-reference.ts",
-    "./app-logo-shape": "./src/app-logo-shape.ts",
-    "./bob-mark-paths": "./src/bob-mark-paths.ts",
-    "./bob-face": "./src/BobFace.tsx",
-    "./bob-face-shape": "./src/bob-face-shape.ts",
     "./bob-builder-sprite": "./src/bob-builder-sprite.ts",
-    "./wordmark-shape": "./src/wordmark-shape.ts",
     "./provider-logo-shape": "./src/provider-logo-shape.ts",
     "./connector-mark-shape": "./src/connector-mark-shape.ts"
   },

@@ -1,8 +1,6 @@
 // Provider marks as plain data, so that a canvas, the desktop SVG and the mobile app draw the same
 // mark. The comparisons in apps/auth-api draw them on a canvas.
 
-import { BODY, PUPIL, SPIRAL, VIEW_H, VIEW_W } from "./bob-mark-paths";
-
 // The path of claude.ai/favicon.svg, on a 248 by 248 grid.
 
 export const CLAUDE_PATH =
@@ -81,7 +79,8 @@ export interface ProviderLogoShape {
 
 const GRID_24 = "0 0 24 24";
 
-export function providerLogoShape(provider: ProviderLogoVariant): ProviderLogoShape {
+/** Bob's own mark is the pixel builder of `bob-builder-sprite.ts`, which `ProviderLogo` draws. */
+export function providerLogoShape(provider: Exclude<ProviderLogoVariant, "bob">): ProviderLogoShape {
   switch (provider) {
     case "claude":
       return { viewBox: "0 0 248 248", paths: [{ d: CLAUDE_PATH }] };
@@ -111,9 +110,6 @@ export function providerLogoShape(provider: ProviderLogoVariant): ProviderLogoSh
     case "muse":
     case "inception":
       return { viewBox: GRID_24, paths: [{ d: ACP_PROMPT_PATH }, { d: ACP_CURSOR_PATH }] };
-    // Wider than tall: an SVG's default aspect handling centers it in a square box.
-    case "bob":
-      return { viewBox: `0 0 ${VIEW_W} ${VIEW_H}`, paths: [{ d: SPIRAL }, { d: BODY }, { d: PUPIL }] };
     case "unknown":
       return { viewBox: GRID_24, paths: [{ d: UNKNOWN_PATH, evenOdd: true }] };
   }
