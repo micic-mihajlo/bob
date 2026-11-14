@@ -49,6 +49,8 @@ export function glyphCells(f: FaceFrame): Glyph[] {
   const out: Glyph[] = [];
   const at = (c: number, r: number) => inside(f.traits.head, (((c + 0.5) / n) * 2 - 1) / 0.9, (((r + 0.5) / n) * 2 - 1.08) / 0.9);
   const sag = f.expr.droop;
+  // At 24px the cell texture turns to mud, so only code cells survive and the features carry the face.
+  const tiny = f.size <= 28;
   const ripple = f.shown === "responded" ? Math.max(0, 1 - f.moodT / 1.4) : 0;
 
   for (let r = 0; r < n; r++) {
@@ -59,6 +61,7 @@ export function glyphCells(f: FaceFrame): Glyph[] {
       const y = (r + 0.5) * cell + sag * Math.max(0, v + 0.3) * cell * 0.5 - ripple * Math.sin(f.moodT * 14 - c * 0.9) * cell * 0.25;
       const id = r * n + c;
       const hit = at(c, r);
+      if (tiny && !(hit && noise(hash, id, tick) < level)) continue;
       if (!hit) {
         if (level > 0.3 && noise(hash, id, tick) < 0.06) out.push({ ch: CODE[Math.floor(noise(hash, id, tick + 1) * CODE.length)], tone: "spill", x, y, scale: 0.8 });
         continue;
@@ -113,11 +116,11 @@ function features(f: FaceFrame, cell: number): Glyph[] {
   const lx = f.look.x * cell * 0.4;
   const ly = f.look.y * cell * 0.35;
   const [left, right] = eyeChars(f);
-  const eyeScale = tiny ? 2 : 1.55;
+  const eyeScale = tiny ? 2.6 : 1.55;
   const out: Glyph[] = [
     { ch: left, tone: "eye", x: 50 - gap + lx, y: eyeY + ly, scale: eyeScale },
     { ch: right, tone: "eye", x: 50 + gap + lx, y: eyeY + ly, scale: eyeScale },
-    { ch: mouthChar(f), tone: "mouth", x: 50 + lx * 0.4, y: 66 + f.expr.droop * 7, scale: tiny ? 1.9 : 1.5 },
+    { ch: mouthChar(f), tone: "mouth", x: 50 + lx * 0.4, y: 66 + f.expr.droop * 7, scale: tiny ? 2.4 : 1.5 },
   ];
   const acc = ACCESSORY[f.traits.accessory];
   if (acc && !tiny) out.push({ ch: acc, tone: "accessory", x: acc === "+" ? 50 + gap + cell : 50, y: acc === "+" ? 58 : cell * 0.5, scale: 1.1 });

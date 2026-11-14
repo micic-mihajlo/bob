@@ -1,7 +1,7 @@
 import { blinkAt, expressionAt, restingGaze } from "./expression";
 import type { FaceFrame, FaceRenderer, Mood, Traits, Vec } from "./types";
 
-export type MoodMark = { readonly mood: Mood; readonly prev: Mood; readonly since: number };
+export type MoodMark = { readonly mood: Mood; readonly prev: Mood; readonly since: number; readonly key?: string | number };
 
 export type FaceInput = {
   readonly size: number;

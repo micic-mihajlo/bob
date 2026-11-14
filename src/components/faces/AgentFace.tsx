@@ -30,9 +30,10 @@ export function AgentFace({ seed, hue, mood, size, style = "print", reducedMotio
   const traits = useMemo(() => traitsFor(seed), [seed]);
 
   useEffect(() => {
-    const current = markRef.current?.mood;
-    const prev: Mood = current === undefined ? mood : current === mood ? "idle" : current;
-    markRef.current = { mood, prev, since: performance.now() };
+    const current = markRef.current;
+    if (current && current.mood === mood && current.key === moodKey) return;
+    const prev: Mood = current === null ? mood : current.mood === mood ? "idle" : current.mood;
+    markRef.current = { mood, prev, since: performance.now(), key: moodKey };
   }, [mood, moodKey]);
 
   useEffect(() => {
@@ -42,8 +43,8 @@ export function AgentFace({ seed, hue, mood, size, style = "print", reducedMotio
     if (!canvas || !ctx || !mark) return;
     const renderer = RENDERERS[style];
     const pixels = Math.round(size * Math.min(window.devicePixelRatio || 1, 3));
-    canvas.width = pixels;
-    canvas.height = pixels;
+    if (canvas.width !== pixels) canvas.width = pixels;
+    if (canvas.height !== pixels) canvas.height = pixels;
     const input = (): FaceInput => ({ size, hue, traits, mark: markRef.current ?? mark });
 
     if (still) {
