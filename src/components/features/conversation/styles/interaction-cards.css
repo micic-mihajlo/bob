@@ -8,6 +8,13 @@
   padding: var(--bob-space-4);
 }
 
+/* The opened time beside the card's eyebrow. It must stay readable: --bob-text-muted is 5.9:1 on
+   the card's --bob-bg-canvas, while --bob-text-dim would be 3.7:1, below AA at this size. */
+.pull-request-opened-time {
+  color: var(--bob-text-muted);
+  white-space: nowrap;
+}
+
 .conversation-interaction-header {
   display: flex;
   min-width: 0;

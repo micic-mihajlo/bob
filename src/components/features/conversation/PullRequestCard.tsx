@@ -6,6 +6,7 @@ import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import { displayName } from "@/lib/client/crew";
+import { formatAgo, openedTimeSuffix } from "@/lib/format-time";
 import {
   changeTotals,
   isPullRequest,
@@ -116,6 +117,8 @@ function PullRequestCardView({ artifact, animate }: { artifact: PullRequestArtif
   const state = pullRequestState(artifact, snapshot.approvals);
   const [mergedOnMount] = useState(state === "merged");
   const titleId = `pull-request-${artifact.id}-title`;
+  const openedAt = Date.parse(artifact.at);
+  const openedAgo = Number.isNaN(openedAt) ? null : formatAgo(openedAt);
   return (
     <article aria-labelledby={titleId} className={cx("conversation-interaction-card chat-action-card", animate && "chat-action-entry-animated")} data-artifact-id={artifact.id}>
       <header className="chat-action-card-header">
@@ -123,7 +126,10 @@ function PullRequestCardView({ artifact, animate }: { artifact: PullRequestArtif
           <GitPullRequest />
         </span>
         <div className="chat-action-card-heading">
-          <span className="chat-action-card-eyebrow">Opened pull request #{artifact.pullRequest.number}</span>
+          <span className="chat-action-card-eyebrow">
+            Opened pull request #{artifact.pullRequest.number}
+            <span className="pull-request-opened-time">{openedTimeSuffix(openedAgo)}</span>
+          </span>
           <h3 className="chat-action-card-title" id={titleId}>
             {artifact.title}
           </h3>

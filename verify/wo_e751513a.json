@@ -1,0 +1,34 @@
+{
+  "acceptance": "A vitest test passes that asserts the pull request card's opened-time colour token reaches at least 4.5:1 contrast against the card surface token, and that formatAgo() called with no clock argument under fake timers returns \"12s ago\" for a 12000 ms gap.",
+  "propertiesFile": "src/lib/format-time.properties.test.ts",
+  "properties": [
+    {
+      "name": "says just now for every gap under ten seconds",
+      "criterion": "A vitest test passes that asserts the pull request card's opened-time colour token reaches at least 4.5:1 contrast against the card surface token, and that formatAgo() called with no clock argument under fake timers returns \"12s ago\" for a 12000 ms gap."
+    },
+    {
+      "name": "says just now for a timestamp in the future",
+      "criterion": "A vitest test passes that asserts the pull request card's opened-time colour token reaches at least 4.5:1 contrast against the card surface token, and that formatAgo() called with no clock argument under fake timers returns \"12s ago\" for a 12000 ms gap."
+    },
+    {
+      "name": "counts whole seconds under a minute",
+      "criterion": "A vitest test passes that asserts the pull request card's opened-time colour token reaches at least 4.5:1 contrast against the card surface token, and that formatAgo() called with no clock argument under fake timers returns \"12s ago\" for a 12000 ms gap."
+    },
+    {
+      "name": "drops the part of a second that has not finished",
+      "criterion": "A vitest test passes that asserts the pull request card's opened-time colour token reaches at least 4.5:1 contrast against the card surface token, and that formatAgo() called with no clock argument under fake timers returns \"12s ago\" for a 12000 ms gap."
+    },
+    {
+      "name": "counts whole minutes under an hour",
+      "criterion": "A vitest test passes that asserts the pull request card's opened-time colour token reaches at least 4.5:1 contrast against the card surface token, and that formatAgo() called with no clock argument under fake timers returns \"12s ago\" for a 12000 ms gap."
+    },
+    {
+      "name": "counts whole hours under a day",
+      "criterion": "A vitest test passes that asserts the pull request card's opened-time colour token reaches at least 4.5:1 contrast against the card surface token, and that formatAgo() called with no clock argument under fake timers returns \"12s ago\" for a 12000 ms gap."
+    },
+    {
+      "name": "counts whole days beyond that",
+      "criterion": "A vitest test passes that asserts the pull request card's opened-time colour token reaches at least 4.5:1 contrast against the card surface token, and that formatAgo() called with no clock argument under fake timers returns \"12s ago\" for a 12000 ms gap."
+    }
+  ]
+}
