@@ -3,6 +3,7 @@ import { artifactsBlock, asData, crewBlock, historyBlock, messagesBlock, selfBlo
 import { unplannedRequests } from "./thread-status";
 import { inboxBlock } from "./inbox";
 import { agentById, agentName, messageById, type State } from "./state";
+import { clientToolSpecs } from "./client-tools";
 import { toolsFor } from "./tools";
 import type { StartedTurn } from "./turn-start";
 import type { Agent, Message } from "./types";
@@ -71,5 +72,5 @@ export function buildContext(s: State, initial: State, t: StartedTurn, moves: Mo
   ]
     .filter((x): x is string => !!x)
     .join("\n\n");
-  return { agent, state: s, initial, turnId: t.turnId, requestId: t.requestId, inbound, input, moves, tools: toolsFor(agent) };
+  return { agent, state: s, initial, turnId: t.turnId, requestId: t.requestId, inbound, input, moves, tools: [...toolsFor(agent), ...clientToolSpecs(agent.id)] };
 }
