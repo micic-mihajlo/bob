@@ -7,7 +7,7 @@ import { fileBadge, fileReferenceTone } from "../file-reference";
 import { fileDayLabel, fileTypeCounts, groupFilesByDay, queryFiles } from "../files-view";
 import { parseMarkdown } from "../markdown";
 import { openPanes, paneAfterClose, PANEL_TABS, selectedPane } from "../panel-tabs";
-import { currentStep, forUserLine, hasPlan, roadmapSteps, workOrderProgress } from "../roadmap-view";
+import { currentStep, forUserLine, hasPlan, roadmapSteps, trackViews, workOrderProgress } from "../roadmap-view";
 import { groupTheorems } from "../verification";
 import type { Agent, Roadmap, Snapshot, WorkOrder } from "@/lib/types";
 
@@ -64,6 +64,48 @@ describe("roadmap view", () => {
   it("counts finished work orders over every planned one", () => {
     expect(workOrderProgress(roadmap)).toEqual({ done: 1, total: 3 });
     expect(hasPlan({ ...roadmap, goal: null, gates: [], today: [], backlog: [] })).toBe(false);
+  });
+});
+
+describe("trackViews", () => {
+  const track = (requestId: string, stage: number) => ({
+    requestId,
+    messageId: null,
+    ask: `ask ${requestId}`,
+    goal: { title: requestId, why: null, deadline: null },
+    stage,
+    stageTitle: "",
+    gates: [],
+    startedAt: "",
+    updatedAt: "",
+  });
+  const owned = (id: string, status: WorkOrder["status"], requestId?: string): WorkOrder => ({ ...order(id, status), requestId });
+
+  it("shows one track per moving request with its own work orders, and the backlog nobody shown owns", () => {
+    const view = trackViews({
+      ...roadmap,
+      tracks: [track("r1", 5), track("r2", 3), track("r3", 2)],
+      today: [owned("a", "done", "r1"), owned("b", "running", "r2"), owned("c", "open", "r3")],
+      backlog: [owned("d", "open", "r2"), owned("e", "open"), owned("f", "open", "r1")],
+    });
+    expect(view.tracks.map((t) => [t.key, t.ask, t.today.map((o) => o.id), t.backlog.map((o) => o.id)])).toEqual([
+      ["r2", "ask r2", ["b"], ["d"]],
+      ["r3", "ask r3", ["c"], []],
+    ]);
+    expect(view.backlog.map((o) => o.id)).toEqual(["e", "f"]);
+  });
+
+  it("shows the newest track when every request is finished", () => {
+    const view = trackViews({ ...roadmap, tracks: [track("r1", 5), track("r2", 5)], today: [owned("a", "done", "r2")], backlog: [owned("e", "open")] });
+    expect(view.tracks.map((t) => [t.key, t.today.map((o) => o.id)])).toEqual([["r2", ["a"]]]);
+    expect(view.backlog.map((o) => o.id)).toEqual(["e"]);
+  });
+
+  it("shows a roadmap saved before tracks as one track", () => {
+    const view = trackViews(roadmap);
+    expect(view.tracks).toHaveLength(1);
+    expect(view.tracks[0]).toMatchObject({ ask: null, stage: 3, today: roadmap.today, backlog: roadmap.backlog });
+    expect(view.backlog).toEqual([]);
   });
 });
 

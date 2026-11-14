@@ -1,4 +1,4 @@
-import type { Roadmap, StageGate, WorkOrder, WorkOrderStatus } from "@/lib/types";
+import type { Goal, RequestId, Roadmap, StageGate, WorkOrder, WorkOrderStatus } from "@/lib/types";
 
 export type StepPhase = "done" | "current" | "next";
 
@@ -7,24 +7,68 @@ export interface RoadmapStep {
   phase: StepPhase;
 }
 
-/** The stage the work is in: the gate of the roadmap's stage, else the first one not done. */
-export function currentStep(roadmap: Roadmap): number {
-  const byStage = roadmap.gates.findIndex((gate) => gate.stage === roadmap.stage);
-  return byStage >= 0 ? byStage : roadmap.gates.findIndex((gate) => !gate.done);
+/** One request's part of the roadmap: its goal, its stages, and its own work orders. */
+export interface TrackView {
+  key: string;
+  /** The sentence the person typed, when the snapshot has it. */
+  ask: string | null;
+  goal: Goal | null;
+  stage: number;
+  stageTitle: string;
+  gates: StageGate[];
+  /** Its work orders scheduled for today. */
+  today: WorkOrder[];
+  /** Its work orders not yet scheduled. */
+  backlog: WorkOrder[];
+}
+
+/**
+ * The tracks to show, one per request still moving (or the newest one when every request is
+ * finished), and the backlog no shown track owns. A roadmap saved before tracks shows as one track.
+ */
+export function trackViews(roadmap: Roadmap): { tracks: TrackView[]; backlog: WorkOrder[] } {
+  const backlog = roadmap.backlog ?? [];
+  const tracks = roadmap.tracks ?? [];
+  if (tracks.length === 0) {
+    const { goal, stage, stageTitle, gates, today } = roadmap;
+    return { tracks: [{ key: "roadmap", ask: null, goal, stage, stageTitle, gates, today, backlog }], backlog: [] };
+  }
+  const active = tracks.filter((track) => track.stage < roadmap.totalStages);
+  const shown = active.length > 0 ? active : tracks.slice(-1);
+  const owns = (requestId: RequestId) => (order: WorkOrder) => order.requestId === requestId;
+  return {
+    tracks: shown.map((track) => ({
+      key: track.requestId,
+      ask: track.ask ?? null,
+      goal: track.goal,
+      stage: track.stage,
+      stageTitle: track.stageTitle,
+      gates: track.gates,
+      today: roadmap.today.filter(owns(track.requestId)),
+      backlog: backlog.filter(owns(track.requestId)),
+    })),
+    backlog: backlog.filter((order) => !shown.some((track) => order.requestId === track.requestId)),
+  };
+}
+
+/** The stage the work is in: the gate of the track's stage, else the first one not done. */
+export function currentStep(track: Pick<TrackView, "stage" | "gates">): number {
+  const byStage = track.gates.findIndex((gate) => gate.stage === track.stage);
+  return byStage >= 0 ? byStage : track.gates.findIndex((gate) => !gate.done);
 }
 
 /** One step per gate, in the roadmap panel's three phases. */
-export function roadmapSteps(roadmap: Roadmap): RoadmapStep[] {
-  const current = currentStep(roadmap);
-  return roadmap.gates.map((gate, index) => ({
+export function roadmapSteps(track: Pick<TrackView, "stage" | "gates">): RoadmapStep[] {
+  const current = currentStep(track);
+  return track.gates.map((gate, index) => ({
     gate,
     phase: gate.done ? "done" : index === current ? "current" : "next",
   }));
 }
 
-/** How far the goal is: finished work orders over every planned one. */
-export function workOrderProgress(roadmap: Roadmap): { done: number; total: number } {
-  const orders: WorkOrder[] = [...roadmap.today, ...(roadmap.backlog ?? [])];
+/** How far a track is: its finished work orders over every one it planned. */
+export function workOrderProgress(track: { today: readonly WorkOrder[]; backlog?: readonly WorkOrder[] }): { done: number; total: number } {
+  const orders = [...track.today, ...(track.backlog ?? [])];
   return { done: orders.filter((order) => order.status === "done").length, total: orders.length };
 }
 
