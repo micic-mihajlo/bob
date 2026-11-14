@@ -33,6 +33,17 @@ describe("runCommand", { timeout: GIT_TEST_TIMEOUT }, () => {
     }
   });
 
+  it("puts only the workspace's own node_modules/.bin on PATH", async () => {
+    const ws = await templateWorkspace(temp.root);
+    const saved = process.env.PATH;
+    process.env.PATH = ["/srv/bob/node_modules/.bin", "/srv/node_modules/.bin", "/usr/bin", "/bin"].join(path.delimiter);
+    try {
+      expect(shellEnv(ws).PATH.split(path.delimiter)).toEqual([path.join(ws.root, "node_modules", ".bin"), "/usr/bin", "/bin"]);
+    } finally {
+      process.env.PATH = saved;
+    }
+  });
+
   it("kills the whole process group at the timeout", async () => {
     const ws = await templateWorkspace(temp.root);
     const out = await runCommand(ws, "sleep 30 & sleep 30", 1_000);
