@@ -357,6 +357,7 @@
   min-width: 0;
   flex-direction: column;
   gap: var(--bob-space-3);
+  font-size: var(--bob-text-md);
 }
 
 .file-list-toolbar {
