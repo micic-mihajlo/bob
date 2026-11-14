@@ -502,6 +502,30 @@
   color: var(--bob-bg-sidebar);
 }
 
+/* The send button is orange in every theme. It follows the light circles above, so it wins on specificity. */
+.voice-button.composer-send {
+  background: var(--bob-send);
+  color: var(--bob-send-text);
+}
+
+.voice-button.composer-send.ui-button {
+  background: var(--bob-send);
+  color: var(--bob-send-text);
+}
+
+.voice-button.composer-send:hover:not(:disabled),
+.voice-button.composer-send.ui-button:hover:not(:disabled) {
+  background: var(--bob-send-hover);
+  color: var(--bob-send-text);
+}
+
+.voice-button.composer-send:disabled,
+.voice-button.composer-send.ui-button:disabled {
+  /* Muted toward white, not the sidebar, so the dark label stays readable in dark themes too. */
+  background: color-mix(in srgb, var(--bob-send) 55%, white);
+  color: var(--bob-send-text);
+}
+
 .composer-input-label,
 .composer-editor-root {
   --composer-editor-max-height: max(48px, 33dvh);

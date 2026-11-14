@@ -1,0 +1,14 @@
+{
+  "acceptance": "The composer's send button renders with an orange background (via a theme token in composer.css), in both ink and newsprint themes, with readable text/icon contrast.",
+  "propertiesFile": "src/send-button.properties.test.ts",
+  "properties": [
+    {
+      "name": "label contrast is readable on the orange and its hover, for any state",
+      "criterion": "The composer's send button renders with an orange background (via a theme token in composer.css), in both ink and newsprint themes, with readable text/icon contrast."
+    },
+    {
+      "name": "every send-button state is painted from a send token, never a literal colour",
+      "criterion": "The composer's send button renders with an orange background (via a theme token in composer.css), in both ink and newsprint themes, with readable text/icon contrast."
+    }
+  ]
+}
