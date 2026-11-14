@@ -1,0 +1,113 @@
+import { newId, nowIso } from "./ids";
+import { MAX_TODAY, STAGES } from "./stages";
+import type { Roadmap, WorkOrder, WorkOrderStatus } from "./types";
+
+export type RoadmapResult = { ok: true; roadmap: Roadmap } | { ok: false; error: string };
+
+const fail = (error: string): RoadmapResult => ({ ok: false, error });
+
+/** Recomputes the fields that depend on `stage`, so callers never set them by hand. */
+function finalize(r: Roadmap, at: string): RoadmapResult {
+  const stage = STAGES[r.stage - 1];
+  return {
+    ok: true,
+    roadmap: {
+      ...r,
+      stageTitle: stage.title,
+      totalStages: STAGES.length,
+      gates: STAGES.map((s, i) => ({ stage: i + 1, title: s.gateTitle, done: i + 1 < r.stage })),
+      updatedAt: at,
+    },
+  };
+}
+
+export function emptyRoadmap(at: string = nowIso()): Roadmap {
+  const base: Roadmap = {
+    goal: null,
+    stage: 1,
+    stageTitle: "",
+    totalStages: STAGES.length,
+    gates: [],
+    today: [],
+    backlog: [],
+    updatedAt: at,
+  };
+  const done = finalize(base, at);
+  return done.ok ? done.roadmap : base;
+}
+
+export interface GoalInput {
+  title: string;
+  why?: string | null;
+  deadline?: string | null;
+}
+
+/** Sets or renames the goal. Stage, today and backlog are kept, so setting it twice loses no progress. */
+export function setGoal(r: Roadmap, input: GoalInput, at: string = nowIso()): RoadmapResult {
+  const title = input.title.trim();
+  if (!title) return fail("A goal needs a title. Call set_goal again with a short title.");
+  const goal = { title, why: input.why ?? null, deadline: input.deadline ?? null };
+  return finalize({ ...r, goal }, at);
+}
+
+const newOrder = (title: string): WorkOrder => ({
+  id: newId("wo"),
+  title,
+  status: "open",
+  ownerAgentId: null,
+  artifactId: null,
+});
+
+/** Replaces the planned (not yet scheduled) work. Today is left alone. */
+export function setRoadmap(r: Roadmap, titles: string[], at: string = nowIso()): RoadmapResult {
+  const clean = titles.map((t) => t.trim()).filter(Boolean);
+  if (clean.length === 0) return fail("Give at least one work order title in workOrderTitles.");
+  return finalize({ ...r, backlog: clean.map(newOrder) }, at);
+}
+
+/** Picks today's work by id from today and the backlog. Unpicked open work goes back to the backlog. */
+export function setToday(r: Roadmap, ids: string[], at: string = nowIso()): RoadmapResult {
+  const wanted = [...new Set(ids)];
+  if (wanted.length > MAX_TODAY) {
+    return fail(`At most ${MAX_TODAY} work orders fit in today. Pick ${MAX_TODAY} or fewer ids.`);
+  }
+  const pool = [...r.today, ...(r.backlog ?? [])];
+  const unknown = wanted.filter((id) => !pool.some((w) => w.id === id));
+  if (unknown.length > 0) {
+    return fail(`Unknown work order: ${unknown.join(", ")}. Use ids returned by set_roadmap or shown in the roadmap.`);
+  }
+  const today = wanted.map((id) => pool.find((w) => w.id === id) as WorkOrder);
+  const backlog = pool.filter((w) => !wanted.includes(w.id) && w.status !== "done");
+  return finalize({ ...r, today, backlog }, at);
+}
+
+export interface WorkOrderPatch {
+  ownerAgentId?: string | null;
+  status?: WorkOrderStatus;
+  artifactId?: string | null;
+}
+
+export function updateWorkOrder(r: Roadmap, id: string, patch: WorkOrderPatch, at: string = nowIso()): RoadmapResult {
+  if (!r.today.some((w) => w.id === id)) {
+    return fail(`Work order ${id} is not in today. Call set_today to schedule it first.`);
+  }
+  return finalize({ ...r, today: r.today.map((w) => (w.id === id ? { ...w, ...patch } : w)) }, at);
+}
+
+export function completeWorkOrder(r: Roadmap, id: string, artifactId: string | null, at: string = nowIso()): RoadmapResult {
+  return updateWorkOrder(r, id, artifactId ? { status: "done", artifactId } : { status: "done" }, at);
+}
+
+export function unmetCriteria(r: Roadmap): string[] {
+  return (STAGES[r.stage - 1]?.criteria ?? []).filter((c) => !c.met(r)).map((c) => c.label);
+}
+
+export function advanceStage(r: Roadmap, at: string = nowIso()): RoadmapResult {
+  if (r.stage >= STAGES.length) return fail("The roadmap is already at its last stage. Nothing to advance.");
+  const unmet = unmetCriteria(r);
+  if (unmet.length > 0) {
+    const title = STAGES[r.stage - 1].title;
+    return fail(`Cannot leave ${title} yet. First make these true: ${unmet.join("; ")}.`);
+  }
+  return finalize({ ...r, stage: r.stage + 1 }, at);
+}
