@@ -103,6 +103,11 @@ export function changeTotals(files: readonly ChangedFile[]): { additions: number
   });
 }
 
+/** A merge approval's reason without its "Files: a (+1 -0), b (+2 -2)." sentence, which the card lists as rows instead. */
+export function reasonWithoutFiles(detail: string): string {
+  return detail.replace(/\s*Files: (?:.+? \(\+\d+ -\d+\)(?:, )?)+\./, "").trim();
+}
+
 const SEVERITY_RANK: Record<ReviewFinding["severity"], number> = { high: 0, medium: 1, low: 2 };
 
 /** High severity first, then the findings the reviewer is surest of. */

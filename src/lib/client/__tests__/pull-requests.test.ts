@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PULL_REQUEST_STATE_LABEL, previewStatus, pullRequestState, type PullRequestArtifact } from "../pull-requests";
+import { PULL_REQUEST_STATE_LABEL, previewStatus, pullRequestState, reasonWithoutFiles, type PullRequestArtifact } from "../pull-requests";
 import type { Approval, PreviewDeployment, PullRequestData } from "@/lib/types";
 
 const pullRequest = (status: PullRequestArtifact["status"], merged = false): PullRequestArtifact => ({
@@ -65,7 +65,15 @@ describe("pull request state", () => {
 });
 
 describe("previewStatus", () => {
-  const data = (preview?: PreviewDeployment): PullRequestData => ({ number: 1, branch: "inv-1/csv", headSha: "abc1234", files: [], patch: "", merged: false, preview });
+  const data = (preview?: PreviewDeployment): PullRequestData => ({
+    number: 1,
+    branch: "inv-1/csv",
+    headSha: "abc1234",
+    files: [],
+    patch: "",
+    merged: false,
+    preview,
+  });
   const deployment = (overrides: Partial<PreviewDeployment> = {}): PreviewDeployment => ({
     url: "https://invoices-abc.vercel.app",
     state: "ready",
@@ -80,7 +88,10 @@ describe("previewStatus", () => {
 
   it("reads the check once a review ran it", () => {
     expect(previewStatus(data(deployment({ check: { ok: true, status: 200, detail: "", at: "" } })))).toEqual({ label: "Check passed (200)", tone: "passed" });
-    expect(previewStatus(data(deployment({ check: { ok: false, status: null, detail: "timeout", at: "" } })))).toEqual({ label: "Check failed", tone: "failed" });
+    expect(previewStatus(data(deployment({ check: { ok: false, status: null, detail: "timeout", at: "" } })))).toEqual({
+      label: "Check failed",
+      tone: "failed",
+    });
   });
 
   it("calls a preview of another head stale, whatever its check said", () => {
@@ -90,5 +101,23 @@ describe("previewStatus", () => {
   it("reads the deployment state before any check", () => {
     expect(previewStatus(data(deployment({ state: "building", url: null })))?.label).toBe("Building");
     expect(previewStatus(data(deployment({ state: "error" })))?.tone).toBe("failed");
+  });
+});
+
+describe("reasonWithoutFiles", () => {
+  it("drops the files sentence and keeps the rest", () => {
+    expect(
+      reasonWithoutFiles(
+        "Merges #2 (Add a filter) from fir-3-filter at a7c2c58 into main. Files: src/invoices.ts (+2 -2), src/main.test.ts (+23 -0). FIR-4 approved this head with 3 non-blocking findings.",
+      ),
+    ).toBe("Merges #2 (Add a filter) from fir-3-filter at a7c2c58 into main. FIR-4 approved this head with 3 non-blocking findings.");
+  });
+
+  it("drops a files sentence at the end", () => {
+    expect(reasonWithoutFiles("Merges #1 into main. Files: a.ts (+1 -0).")).toBe("Merges #1 into main.");
+  });
+
+  it("leaves a reason without files alone", () => {
+    expect(reasonWithoutFiles("Deploy the preview.")).toBe("Deploy the preview.");
   });
 });

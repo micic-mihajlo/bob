@@ -716,6 +716,30 @@
   overflow-wrap: anywhere;
 }
 
+.approval-file-list {
+  display: grid;
+  gap: var(--bob-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.approval-file-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--bob-space-3);
+  min-width: 0;
+}
+
+.approval-file-counts {
+  flex: none;
+  color: var(--bob-text-muted);
+  font-family: var(--bob-font-mono);
+  font-size: var(--bob-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
 /* The pull request's GitHub link and its preview, with the preview check's mark. */
 .approval-detail-row strong:has(.pull-request-note) {
   display: flex;
