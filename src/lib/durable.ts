@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import type { State } from "./state";
 
@@ -12,13 +13,18 @@ import type { State } from "./state";
 export interface DurableConfig {
   url: string;
   secret: string;
+  /** This Bob instance's objects: BOB_DURABLE_NAMESPACE, else the machine's hostname. */
+  namespace: string;
 }
+
+export const durableNamespace = (): string =>
+  (process.env.BOB_DURABLE_NAMESPACE?.trim() || os.hostname()).replace(/[^A-Za-z0-9._-]/g, "-").slice(0, 100) || "bob";
 
 export function durableConfig(): DurableConfig | null {
   if (process.env.BOB_DURABLE !== "cloudflare") return null;
   const url = process.env.BOB_DURABLE_URL?.trim().replace(/\/+$/, "");
   const secret = process.env.BOB_DURABLE_SECRET?.trim();
-  return url && secret ? { url, secret } : null;
+  return url && secret ? { url, secret, namespace: durableNamespace() } : null;
 }
 
 const WRITE_TIMEOUT_MS = 5_000;
@@ -40,7 +46,7 @@ const writer = (): Writer => {
   return (g[slot] ??= { latest: null, running: false, timer: null, failures: 0, heldRev: -1 });
 };
 
-const headers = (c: DurableConfig, extra: Record<string, string> = {}) => ({ "x-bob-durable-secret": c.secret, ...extra });
+const headers = (c: DurableConfig, extra: Record<string, string> = {}) => ({ "x-bob-durable-secret": c.secret, "x-bob-namespace": c.namespace, ...extra });
 
 async function send(c: DurableConfig, state: State): Promise<"ok" | "stale"> {
   const response = await fetch(`${c.url}/projects/${encodeURIComponent(state.project.id || "unassigned")}/state`, {

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { flushDurable, mirrorDurable, restoreFromDurable } from "../durable";
+import { durableNamespace, flushDurable, mirrorDurable, restoreFromDurable } from "../durable";
 import type { State } from "../state";
 
 const state = (rev: number, id = "p1") => ({ rev, project: { id } }) as unknown as State;
@@ -74,6 +74,24 @@ describe("write-through to the Durable Object", () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(JSON.parse((fetchMock.mock.calls[2] as [string, RequestInit])[1].body as string).rev).toBe(8);
     expect(info).toHaveBeenCalledWith(expect.stringContaining("rev 8"));
+  });
+});
+
+describe("the instance namespace", () => {
+  it("defaults to the hostname and is sent with every write and restore", async () => {
+    vi.stubEnv("BOB_DURABLE_NAMESPACE", "");
+    fetchMock.mockImplementation(async () => reply(404, {}));
+    mirrorDurable(state(1));
+    await flushDurable();
+    await restoreFromDurable(path.join(os.tmpdir(), "bob-durable-none", "state.json"));
+    const sent = fetchMock.mock.calls.map(([, init]) => (init as RequestInit).headers as Record<string, string>);
+    expect(sent).toHaveLength(2);
+    for (const headers of sent) expect(headers["x-bob-namespace"]).toBe(os.hostname().replace(/[^A-Za-z0-9._-]/g, "-"));
+  });
+
+  it("takes BOB_DURABLE_NAMESPACE, made safe for the Worker", () => {
+    vi.stubEnv("BOB_DURABLE_NAMESPACE", " stage machine/1 ");
+    expect(durableNamespace()).toBe("stage-machine-1");
   });
 });
 

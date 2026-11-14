@@ -16,6 +16,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
+import os from "node:os";
 import path from "node:path";
 import { parseArgs } from "node:util";
 
@@ -154,7 +155,7 @@ try {
       "Durable state",
       env.BOB_DURABLE === "cloudflare"
         ? has("BOB_DURABLE_URL") && has("BOB_DURABLE_SECRET")
-          ? `Cloudflare Durable Object at ${env.BOB_DURABLE_URL}, local file kept`
+          ? `Cloudflare Durable Object at ${env.BOB_DURABLE_URL}, namespace ${(env.BOB_DURABLE_NAMESPACE?.trim() || os.hostname()).replace(/[^A-Za-z0-9._-]/g, "-").slice(0, 100)}, local file kept`
           : "BOB_DURABLE=cloudflare but no BOB_DURABLE_URL or BOB_DURABLE_SECRET, so the local file only"
         : "local file .data/state.json (BOB_DURABLE=cloudflare for a Durable Object)",
     ],
