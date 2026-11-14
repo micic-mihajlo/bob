@@ -33,12 +33,8 @@
 @import "@bob/ui/features/channels/channel-avatar.css";
 @import "./features/channels/channels.css";
 @import "@bob/ui/features/channels/channel-activity.css";
-@import "@bob/ui/features/diagrams/diagrams.css";
-@import "@bob/ui/features/workflows/workflow-nodes.css";
-@import "@bob/ui/features/workflows/workflows.css";
 @import "@bob/ui/features/usage/agent-usage-report.css";
 @import "./features/usage/usage.css";
-@import "./features/schedule/schedule.css";
 @import "@bob/ui/features/tasks/tasks.css";
 @import "@bob/ui/styles/chart.css";
 @import "@bob/ui/features/files/files.css";
