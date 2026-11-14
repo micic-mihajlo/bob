@@ -92,7 +92,7 @@ A project can put `bob.policy.json` at the root of its main branch. Every field 
 {
   "approvalPaths": ["package.json", "**/*.lock", ".github/**"],
   "maxFixRounds": 2,
-  "budgets": { "maxMinutes": 3, "maxModelCalls": 60, "maxCostUsd": 1 },
+  "budgets": { "maxMinutes": 3, "maxModelCalls": 90, "maxCostUsd": 1 },
   "prices": { "moonshotai/kimi-k3.1-pro": [0.6, 2.5] }
 }
 ```

@@ -18,7 +18,7 @@ const request: RequestControl = {
 
 describe("requestUsageLine", () => {
   it("reads each use against its limit", () => {
-    expect(requestUsageLine(request, { maxMinutes: 3, maxModelCalls: 60, maxCostUsd: 1 })).toBe("1m 37s of 3m · 12 of 60 model calls · $0.04 of $1.00");
+    expect(requestUsageLine(request, { maxMinutes: 3, maxModelCalls: 90, maxCostUsd: 1 })).toBe("1m 37s of 3m · 12 of 90 model calls · $0.04 of $1.00");
   });
 
   it("reads the use alone without limits", () => {

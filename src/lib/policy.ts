@@ -30,7 +30,7 @@ export interface Policy {
 export const DEFAULT_POLICY: Policy = {
   approvalPaths: ["package.json", "**/*.lock", "pnpm-lock.yaml", "package-lock.json", ".github/**", "bob.policy.json"],
   maxFixRounds: 2,
-  budgets: { maxMinutes: 3, maxModelCalls: 60, maxCostUsd: 1 },
+  budgets: { maxMinutes: 3, maxModelCalls: 90, maxCostUsd: 1 },
   prices: DEFAULT_PRICES,
 };
 

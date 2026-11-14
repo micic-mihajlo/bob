@@ -54,12 +54,12 @@ describe("factory controls", { timeout: 60_000 }, () => {
     expect(buildSnapshot(getState()).budgets).toEqual(DEFAULT_POLICY.budgets);
     expect(digest()).toBe("1 thing needs you: approve the merge of #1\n");
 
-    for (let i = 0; i < 61; i++) recordUsage(request.requestId, "moonshotai/kimi-k3.1-pro", { inputTokens: 10_000, outputTokens: 1_000 });
+    for (let i = 0; i < 91; i++) recordUsage(request.requestId, "moonshotai/kimi-k3.1-pro", { inputTokens: 10_000, outputTokens: 1_000 });
     const [used] = buildSnapshot(getState()).requests ?? [];
-    expect(used).toMatchObject({ modelCalls: 61, inputTokens: 610_000, outputTokens: 61_000 });
-    expect(used.costUsd).toBeCloseTo(61 * (0.01 * 0.6 + 0.001 * 2.5), 6);
+    expect(used).toMatchObject({ modelCalls: 91, inputTokens: 910_000, outputTokens: 91_000 });
+    expect(used.costUsd).toBeCloseTo(91 * (0.01 * 0.6 + 0.001 * 2.5), 6);
     expect(digest()).toBe(
-      '1 thing needs you: approve the merge of #1\n\nAlert: "Customers want to export invoices as CSV: all invoices, col…" made 61 model calls, over its budget of 60.\n',
+      '1 thing needs you: approve the merge of #1\n\nAlert: "Customers want to export invoices as CSV: all invoices, col…" made 91 model calls, over its budget of 90.\n',
     );
 
     const waited = Date.now() + 30 * 60_000;
