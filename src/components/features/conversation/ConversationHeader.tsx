@@ -60,7 +60,7 @@ export function ConversationHeader({ agent }: { agent: Agent }) {
             {THREAD_STATUS_LABEL[status]}
           </Badge>
         ) : null}
-        {agent.kind === "crew" && snapshot.brain !== "script" ? (
+        {agent.kind === "crew" && snapshot.brain !== "script" && status !== "closed" ? (
           <ModelPicker agent={agent} />
         ) : (
           <div className="provider-model-picker">
