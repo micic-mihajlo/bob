@@ -67,7 +67,7 @@ export function ActivityPane({ onClose }: { onClose: () => void }) {
               at: artifact.at,
               badge: KIND[artifact.kind].badge,
               tone: KIND[artifact.kind].tone,
-              meta: [formatClock(artifact.at), nameOf(agentsById, artifact.agentId)].filter(Boolean),
+              meta: [formatClock(artifact.at), nameOf(agentsById, artifact.agentId), artifact.review?.headSha?.slice(0, 7) ?? ""].filter(Boolean),
               status: statusOf(artifact),
               actionLabel: `Open the thread of ${artifact.title}`,
               disabled: !agentsById.has(artifact.agentId),
