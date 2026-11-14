@@ -2,8 +2,9 @@
 
 ## Read this first
 
-- **What works end to end.** A one-sentence ask gets a pushback question. Then come a per-request roadmap track, a build thread on the Claude Agent SDK that writes a locked acceptance test (red, then green), a verification gate (properties, mutants, Lean), a PR, a review, your approval, the merge, and Why? back to your sentence. HydraDB, ElevenLabs voice, Composio GitHub and Linear have each run live. Bob's state can also live in a Cloudflare Durable Object per project (#224).
-- **Live model.** Live runs now use deepseek/deepseek-v4.1-flash for the captain and the crew. The measured times below had the captain on kimi-k3.1-pro.
+- **Name.** The product is Bob and B(l)obs, "Bob and his lil builders". Bob is the captain, and the build and review agents are Blobs. The UI copy follows; code, ids and API routes keep their old names.
+- **What works end to end.** A one-sentence ask gets a pushback question. Then come a per-request roadmap track, a build Blob on the Claude Agent SDK that writes a locked acceptance test (red, then green), a verification gate (properties, mutants, Lean), a PR, a review, your approval, the merge, and Why? back to your sentence. HydraDB, ElevenLabs voice, Composio GitHub and Linear have each run live. Bob's state can also live in a Cloudflare Durable Object per project (#224).
+- **Live model.** Live runs now use deepseek/deepseek-v4.1-flash for Bob and the Blobs. The measured times below had Bob on kimi-k3.1-pro.
 - **Measured speed.** On the move loop, 10/10 back-to-back live runs reached the approval card with a p90 of 81 s. The DEMO.md order took 111-147 s with both PRs merged. On the coding agent with the verification gate, the CSV request took 100-118 s to approval (BOB-5, eight live runs).
 - **Tonight's walkthrough on main f17240b.** The scripted run holds 10/10. The live run is blocked: the AI Gateway key is over its $40 budget (see Needs).
 - **Demo video**, final cut (2:48): https://api.capy.ai/pr-assets/v_AUjZ2l2OGi8snfhM5tC8z7DD2xkOGDwUBikwjErwpro.mp4. Earlier 2:35 cut: https://api.capy.ai/pr-assets/v_H9A1bttisENyHKFhgBSYqgc7oR08Ft6ip0O_BnO4feU.mp4
@@ -252,18 +253,18 @@ Nothing has been reverted. These approaches were tried overnight and replaced:
 
 `pnpm walkthrough` runs the ten steps against its own server and prints this table. Add `--live` to use the model, which needs `.env.local`. JSON for each run goes to `.data/walkthrough/`. The run resets the server, sends "customers want to export invoices as CSV", answers the pushback with a testable version, and sends the overdue request once the first thread takes its first step (the DEMO.md order). Then it resets and runs one more request, restarting the server mid-turn. Times are seconds from the request.
 
-Live runs use the crew engine `pnpm demo` uses: the coding agent, unless `BOB_ENGINE` says otherwise. When a build asks to change its acceptance test, the driver approves the card and prints `acceptance changes approved: n`.
+Live runs put the Blobs on the engine `pnpm demo` uses: the coding agent, unless `BOB_ENGINE` says otherwise. When a build asks to change its acceptance test, the driver approves the card and prints `acceptance changes approved: n`.
 
-Latest scripted run, main f17240b: 10/10 in 78 s, with 0 acceptance changes approved. The CSV request goes through the verification gate (a contract, properties and mutants) and reaches approval at 33 s. The overdue request merged at 19.8 s from its own post, in its own thread.
+Latest scripted run, main f17240b: 10/10 in 78 s, with 0 acceptance changes approved. The CSV request goes through the verification gate (a contract, properties and mutants) and reaches approval at 33 s. The overdue request merged at 19.8 s from its own post, in its own Blob.
 
 **Live: blocked at f17240b.** The captain's first call failed with "API key budget exceeded. Current spend: $40.06, limit: $40.00", and the fallback model failed the same way. Live numbers since my last live run, as the crew reports them:
 - BOB-5: three live walkthroughs on the coding-agent engine held 10/10, with the CSV request at 72-77 s to approval. After the verification gate landed, eight live walkthroughs took 100-118 s to approval, and up to 153 s to closed when a merge-with-main round was needed. About 1 build in 6 raised an acceptance-change card.
 - BOB-7: the verification gate adds 6.9 s at p90 to time-to-card in scripted runs (8.8-9.2 s with it, 2.0-2.3 s without, BOB_PACE=0).
-- My last live run (19bc326, move loop) held 7. The review thread left open after a merge has since been fixed by #130.
+- My last live run (19bc326, move loop) held 7. The review Blob left open after a merge has since been fixed by #130.
 
 ## Needs Mihajlo's decision
 
-- **Raise the AI Gateway budget now.** The key hit its $40.00 limit at 19:44 UTC, so every live captain and crew call fails, and the live demo can't run. Raise it under AI Gateway → Budgets & Spend in the Vercel team, or put a key with budget in `.env.local`. `pnpm demo --scripted` still works. Once it's raised, live runs use deepseek/deepseek-v4.1-flash for the captain and the crew, as `secrets/bob.env.local` now sets.
+- **Raise the AI Gateway budget now.** The key hit its $40.00 limit at 19:44 UTC, so every live call from Bob and the Blobs fails, and the live demo can't run. Raise it under AI Gateway → Budgets & Spend in the Vercel team, or put a key with budget in `.env.local`. `pnpm demo --scripted` still works. Once it's raised, live runs use deepseek/deepseek-v4.1-flash for Bob and the Blobs, as `secrets/bob.env.local` now sets.
 - **Sponsor keys.** All four integrations have run live tonight on keys added during the night. Where Bob runs, set:
   - HydraDB: `BOB_STORE=hydra` and `HYDRADB_API_KEY`. The key in the drive expires in about 3 days.
   - ElevenLabs: `BOB_VOICE=elevenlabs` and `ELEVENLABS_API_KEY`. Set `ELEVENLABS_AGENT_ID=agent_8901m7dfr1pzet1vjhk3n0cnedgp`, or the first call makes a new agent.
@@ -272,6 +273,6 @@ Latest scripted run, main f17240b: 10/10 in 78 s, with 0 acceptance changes appr
   - Linear: `BOB_LINEAR=on` and `LINEAR_API_KEY`.
 - **The demo repository.** Create micic-mihajlo/bob-invoices-demo; gh on the crew machines can't create repositories. Until then, the real-GitHub demo PRs run against micic-mihajlo/bob on the orphan branch `demo/invoices-main`.
 - **A Mac dry run.** Run `pnpm demo` once on your Mac before the demo, ideally on the venue wifi. No macOS run has happened. On a Mac, `run` has no namespace sandbox and says "plain shell".
-- **Connect your Claude (optional).** In the project menu, choose Connect your Claude and pick a Claude subscription token, an API key, or Claude Code on this computer. Build and review threads then run on your Claude. Without it, they use Token Pass.
+- **Connect your Claude (optional).** In the project menu, choose Connect your Claude and pick a Claude subscription token, an API key, or Claude Code on this computer. Build and review Blobs then run on your Claude. Without it, they use Token Pass.
 - **Rotate keys after the event.** Rotate `AI_GATEWAY_API_KEY`, because it was pasted in chat, and `LINEAR_API_KEY`.
 - **DevPost.** Review the draft at handoffs/devpost.md in the Captain drive.
