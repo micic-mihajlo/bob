@@ -40,7 +40,6 @@ import type { UnloadedHistory } from "@bob/ui/features/conversation/ChatScrollRa
 import type { ThreadHeaderProps } from "@bob/ui/features/conversation/threads/thread-types";
 import type { SidebarAgentWait } from "@bob/ui/features/sidebar/sidebar-agent-states";
 import type { JSX } from "@solidjs/web";
-import type { ConnectorRegistry } from "../connectors/connector-registry";
 import type { ConversationRuntime } from "./conversation-runtime";
 import type { TurnStepLines } from "./turn-step-lines";
 
@@ -138,8 +137,6 @@ export interface ConversationProps {
    * pressed Connect or Install on the card: the page then starts the connect step.
    */
   onOpenMarketplaceApp?: ((request: { appId: string; connect: boolean }) => void) | undefined;
-  /** The connectors of the server on screen, which a suggestion card for a connector reads. */
-  connectors?: ConnectorRegistry | undefined;
   /**
    * Opens Server settings, MCP, and signs in to the row that an agent's sign-in card names. Absent
    * where this client cannot sign in for the server on screen; the card then says where to sign in.

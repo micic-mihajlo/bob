@@ -30,7 +30,7 @@ export function AppBootstrap() {
   const { centralAuth } = useAuth();
   const { setupState, pendingInviteUrl, setPendingInviteUrl } = useSetup();
   const { setJoinServerOpen } = useServers();
-  const { setPendingAgentTemplateId, setPendingPluginSlug, setSkillsMarketplaceOpen } = useSettings();
+  const { setPendingAgentTemplateId, setPendingPluginSlug } = useSettings();
 
   onSettled(() => {
     const receiveInvite = (inviteUrl: string) => {
@@ -45,7 +45,6 @@ export function AppBootstrap() {
     const receivePluginSlug = (slug: string) => {
       flush(() => {
         setPendingPluginSlug(slug);
-        setSkillsMarketplaceOpen(true);
       });
     };
     const unsubscribePlugin = appPort().plugins.onOpenListing((slug) => {

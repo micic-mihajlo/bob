@@ -7,7 +7,6 @@ import { useTurns } from "../../turns";
 import { useAuth } from "../account/account-context";
 import { useAgents } from "../agents/agents-context";
 import { useBrowserTabs } from "../browser/browser-context";
-import { useConnectors } from "../connectors/connectors-context";
 import { Conversation } from "../conversation/Conversation";
 import { useRemoteDesktop } from "../remote-desktop/remote-desktop-context";
 import { useServerScope } from "../servers/server-scope";
@@ -38,7 +37,6 @@ export function WorkspaceChannelConversation(props: { account: () => CentralAuth
 function DesktopChannelConversation(props: { channelId: string; account: () => CentralAuthUser }) {
   const platform = usePlatform();
   const scope = useServerScope();
-  const connectors = useConnectors();
   const { selectAgent, messageFocusRequest, globalSearchOpen } = useNavigation();
   const auth = useAuth();
   const { teamPresence, currentTeamMember } = usePresence();
@@ -84,7 +82,6 @@ function DesktopChannelConversation(props: { channelId: string; account: () => C
       channel={view.source}
       notice={<ChannelErrorNotice />}
       platform={platform.appInfo()?.platform}
-      connectors={connectors.active}
       agentStatus={scope.loaded() ? agentStatus() : { ...agentStatus(), phase: "starting" }}
       agent={undefined}
       agents={agentList()}

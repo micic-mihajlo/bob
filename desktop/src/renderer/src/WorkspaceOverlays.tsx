@@ -12,14 +12,13 @@ import { providerDiagnosticsText } from "@bob/ui/features/provider-diagnostics/p
 import { LeaveServerDialog } from "@bob/ui/features/servers/LeaveServerDialog";
 import { RestartServerDialog } from "@bob/ui/features/servers/RestartServerDialog";
 import { currentText } from "@bob/ui/text";
-import { createEffect, createMemo, Loading, Show, untrack } from "solid-js";
+import { createMemo, Loading, Show, untrack } from "solid-js";
 import { actionToast } from "./action-toast";
 import { appPort } from "./app-port";
 import { BOB_SINGLE_BOT } from "./bob";
 import { useAgents } from "./features/agents/agents-context";
 import { desktopBrowserProfileCalls } from "./features/browser/browser-profiles-port";
 import { createBrowserProfilesStore } from "./features/browser/stores/browser-profiles-store";
-import { useConnectors } from "./features/connectors/connectors-context";
 import { conversationPort } from "./features/conversation/conversation-port";
 import { useCustomAgents } from "./features/custom-agents/custom-agents-context";
 import { useCustomProviders } from "./features/custom-providers/custom-providers-context";
@@ -47,7 +46,6 @@ import { useProviders } from "./providers";
 import {
   ChannelCreateOverlay,
   GlobalSearchOverlay,
-  MarketplaceOverlay,
   ServerSettingsOverlay,
 } from "./WorkspaceOverlayViews";
 
@@ -68,14 +66,6 @@ import {
  * the components here read the desktop contexts and pass them on.
  */
 export function WorkspaceOverlays() {
-  const { skillsMarketplaceOpen } = useSettings();
-  const connectors = useConnectors();
-  /* The overlays mount with the app. A first read that failed then must not hide a connector for
-     good, and a sign-in can change outside this window, so the Marketplace reads them again when it opens. */
-  createEffect(skillsMarketplaceOpen, (open) => {
-    if (!open) return;
-    connectors.active.reload();
-  });
   return (
     <>
       <LeaveServer />
@@ -86,64 +76,6 @@ export function WorkspaceOverlays() {
       <RemoteDesktop />
       <ChannelCreateOverlay />
     </>
-  );
-}
-
-/**
- * Skills and marketplace agents, which install into an Agent's workspace on the host. The picker
- * lists the agents of this computer, or of a joined server this account administers; a member
- * browses and installs nothing. A marketplace agent is added to that joined server when its host
- * serves `agent-install-v1`, otherwise to this computer. An agent of a joined server is updated from
- * its listing only when its host serves `agent-update-v1`.
- *
- * It is a page of the window, so the shell shows it in the card rather than over the workspace.
- */
-export function SkillsMarketplace() {
-  const {
-    skillsMarketplaceOpen,
-    setSkillsMarketplaceOpen,
-    pendingPluginSlug,
-    setPendingPluginSlug,
-    pendingPluginConnect,
-    setPendingPluginConnect,
-  } = useSettings();
-  const { agentList, activeAgent, agentStatus, agentSetupOpen, creatingAgent } = useAgents();
-  const { selectAgent } = useNavigation();
-  const { activeServer } = useServers();
-  const { openInstalledMarketplaceAgent } = useServerSelection();
-  const { openMcpAdd } = useServerSettings();
-  const connectors = useConnectors();
-  const platform = usePlatform();
-  const { remoteDesktopWorkspaceVisible, hideRemoteDesktopWorkspace } = useRemoteDesktop();
-  // The remote desktop covers the window card, so a link or a search that opens the page hides it.
-  // The remote desktop session stays.
-  createEffect(skillsMarketplaceOpen, (open) => {
-    if (open && untrack(remoteDesktopWorkspaceVisible)) hideRemoteDesktopWorkspace();
-  });
-
-  return (
-    <MarketplaceOverlay
-      open={skillsMarketplaceOpen()}
-      onOpenChange={setSkillsMarketplaceOpen}
-      server={activeServer()}
-      agents={agentList()}
-      activeAgentId={activeAgent()?.id ?? ""}
-      composerAvailable={agentStatus().phase === "ready" && !(agentSetupOpen() && creatingAgent())}
-      onOpenAgent={selectAgent}
-      onAgentInstalled={openInstalledMarketplaceAgent}
-      pluginSlug={pendingPluginSlug()}
-      pluginConnect={pendingPluginConnect()}
-      onPluginSlugConsumed={() => {
-        setPendingPluginSlug(null);
-        setPendingPluginConnect(false);
-      }}
-      connectors={connectors.active}
-      macOS={platform.appInfo()?.platform === "darwin"}
-      onAddServer={(serverId) => {
-        setSkillsMarketplaceOpen(false);
-        openMcpAdd(serverId, null);
-      }}
-    />
   );
 }
 

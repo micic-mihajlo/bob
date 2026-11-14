@@ -52,7 +52,6 @@ import { conversationRuntime } from "./conversation-runtime";
 import { useConversationViewScope } from "./conversation-scope";
 import { BobChatEmptyState } from "./BobQuickActions";
 import { agentSkillsMode } from "./installed-skills-source";
-import { MarketplaceSuggestionChatCard, marketplaceSuggestionKnown } from "./MarketplaceSuggestionChatCard";
 import { McpSignInChatCard } from "./McpSignInChatCard";
 import { createMessageImageFiles } from "./message-image-files";
 import { RoutineChatCard } from "./RoutineChatCard";
@@ -449,9 +448,6 @@ export function ConversationTimeline() {
     const routine = webhookRoutines.state.routines.find((candidate) => candidate.id === cardMarker.routineId);
     return routine && { api: source.api, action: cardMarker.action, routine };
   };
-  /** A suggestion this client can draw is a card. One for an app it does not know keeps the marker. */
-  const suggestionMarker = (marker: ChatActionMarkerModel) =>
-    marker.kind === "marketplace-suggestion" && marketplaceSuggestionKnown(marker.appId) ? marker : undefined;
   /** The saved http row a sign-in card names. A row this client cannot read keeps the marker. */
   const mcpSignInConfig = (marker: ChatActionMarkerModel) =>
     marker.kind === "mcp-sign-in"
@@ -779,78 +775,63 @@ export function ConversationTimeline() {
                               <Show
                                 when={routineCard(message() ?? initialMessage, marker())}
                                 fallback={
-                                  <Show
-                                    when={suggestionMarker(marker())}
-                                    fallback={
-                                      <Show
-                                        when={mcpSignInConfig(marker())}
-                                        fallback={
-                                          <Show
-                                            when={webhookRoutineCard(message() ?? initialMessage, marker())}
-                                            fallback={
-                                              <ChatActionMarker
-                                                onOpenSkill={
-                                                  agentSkillsMode(props.server, props.runtime) === "hidden"
-                                                    ? undefined
-                                                    : openSkillSettings
-                                                }
-                                                marker={marker()}
-                                                agents={props.agents}
-                                                announce={arrives}
-                                                routineAvailable={routineMarkerAvailable(
-                                                  marker(),
-                                                  availableRoutineIds(),
-                                                )}
-                                                onSelectAgent={props.onSelectAgent}
-                                                onOpenRoutine={openRoutineSettings}
-                                                onOpenHostedSite={(url) => void openExternalMessageUrl(url)}
-                                                onToggleRoutineRun={toggleRoutineRun}
-                                                onToggleAgentMessage={toggleAgentMessage}
-                                                agentMessageText={agentMessageText}
-                                              />
-                                            }
-                                          >
-                                            {(card) => (
-                                              <RoutineWebhookChatCard
-                                                api={card().api}
-                                                action={card().action}
-                                                routine={card().routine}
-                                                connected={webhookRoutines.state.connected}
-                                                secret={webhookRoutines.state.secrets[card().routine.id] ?? null}
-                                                onSecret={(secret) =>
-                                                  webhookRoutines.setSecret(card().routine.id, secret)
-                                                }
-                                                onOpenRoutine={openRoutineSettings}
-                                              />
-                                            )}
-                                          </Show>
-                                        }
-                                      >
-                                        {(config) => (
-                                          <McpSignInChatCard
-                                            config={config()}
-                                            signedIn={props.mcpSignedIn?.(config().id) ?? false}
-                                            onSignIn={
-                                              props.onOpenMcpSignIn
-                                                ? (trigger) => props.onOpenMcpSignIn?.(config().id, trigger)
-                                                : undefined
-                                            }
-                                            onContinue={sendCardMessage}
-                                          />
-                                        )}
-                                      </Show>
-                                    }
-                                  >
-                                    {(suggestion) => (
-                                      <MarketplaceSuggestionChatCard
-                                        messageId={message()?.id ?? initialMessage.id}
-                                        appId={suggestion().appId}
-                                        connectors={props.connectors}
-                                        mcpServers={mcpServers()}
-                                        onOpenMarketplaceApp={props.onOpenMarketplaceApp}
-                                      />
-                                    )}
-                                  </Show>
+                                    <Show
+                                      when={mcpSignInConfig(marker())}
+                                      fallback={
+                                        <Show
+                                          when={webhookRoutineCard(message() ?? initialMessage, marker())}
+                                          fallback={
+                                            <ChatActionMarker
+                                              onOpenSkill={
+                                                agentSkillsMode(props.server, props.runtime) === "hidden"
+                                                  ? undefined
+                                                  : openSkillSettings
+                                              }
+                                              marker={marker()}
+                                              agents={props.agents}
+                                              announce={arrives}
+                                              routineAvailable={routineMarkerAvailable(
+                                                marker(),
+                                                availableRoutineIds(),
+                                              )}
+                                              onSelectAgent={props.onSelectAgent}
+                                              onOpenRoutine={openRoutineSettings}
+                                              onOpenHostedSite={(url) => void openExternalMessageUrl(url)}
+                                              onToggleRoutineRun={toggleRoutineRun}
+                                              onToggleAgentMessage={toggleAgentMessage}
+                                              agentMessageText={agentMessageText}
+                                            />
+                                          }
+                                        >
+                                          {(card) => (
+                                            <RoutineWebhookChatCard
+                                              api={card().api}
+                                              action={card().action}
+                                              routine={card().routine}
+                                              connected={webhookRoutines.state.connected}
+                                              secret={webhookRoutines.state.secrets[card().routine.id] ?? null}
+                                              onSecret={(secret) =>
+                                                webhookRoutines.setSecret(card().routine.id, secret)
+                                              }
+                                              onOpenRoutine={openRoutineSettings}
+                                            />
+                                          )}
+                                        </Show>
+                                      }
+                                    >
+                                      {(config) => (
+                                        <McpSignInChatCard
+                                          config={config()}
+                                          signedIn={props.mcpSignedIn?.(config().id) ?? false}
+                                          onSignIn={
+                                            props.onOpenMcpSignIn
+                                              ? (trigger) => props.onOpenMcpSignIn?.(config().id, trigger)
+                                              : undefined
+                                          }
+                                          onContinue={sendCardMessage}
+                                        />
+                                      )}
+                                    </Show>
                                 }
                               >
                                 {(card) => {

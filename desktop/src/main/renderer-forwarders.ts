@@ -490,18 +490,6 @@ export function createRendererForwarders({
     for (const window of appWindows()) sendToRenderer(window, IPC_ENDPOINTS.providerRuntimes.event, snapshot);
   }
 
-  function forwardGitHubConnectorStatus(status: import("@bob/contracts/ipc").GitHubConnectorStatus): void {
-    for (const window of appWindows()) sendToRenderer(window, IPC_ENDPOINTS.githubConnector.changed, status);
-  }
-
-  function forwardOnePasswordConnectorStatus(status: import("@bob/contracts/ipc").OnePasswordConnectorStatus): void {
-    for (const window of appWindows()) sendToRenderer(window, IPC_ENDPOINTS.onePasswordConnector.changed, status);
-  }
-
-  function forwardBitwardenConnectorStatus(status: import("@bob/contracts/ipc").BitwardenConnectorStatus): void {
-    for (const window of appWindows()) sendToRenderer(window, IPC_ENDPOINTS.bitwardenConnector.changed, status);
-  }
-
   function forwardVaultState(state: import("@bob/contracts/ipc").VaultState): void {
     for (const window of appWindows()) sendToRenderer(window, IPC_ENDPOINTS.vault.changed, state);
   }
@@ -559,9 +547,6 @@ export function createRendererForwarders({
     forwardVoiceStreamTranscript,
     forwardSpeechModelStatus,
     forwardProviderRuntimeStatus,
-    forwardGitHubConnectorStatus,
-    forwardOnePasswordConnectorStatus,
-    forwardBitwardenConnectorStatus,
     forwardVaultState,
     forwardHostStatus,
     forwardRemoteDesktopSessions,

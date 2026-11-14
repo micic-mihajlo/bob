@@ -58,7 +58,6 @@ import { agentImportIpcHandlers } from "./ipc/agent-import-handlers";
 import { agentTemplateIpcHandlers } from "./ipc/agent-template-handlers";
 import { appIpcHandlers } from "./ipc/app-handlers";
 import { attachmentIpcHandlers } from "./ipc/attachment-handlers";
-import { bitwardenConnectorIpcHandlers } from "./ipc/bitwarden-connector-handlers";
 import { browserDockIpcHandlers } from "./ipc/browser-dock-handlers";
 import { browserIpcHandlers } from "./ipc/browser-handlers";
 import { channelMemoryIpcHandlers } from "./ipc/channel-memory-handlers";
@@ -72,7 +71,6 @@ import { bobOnboardingIpcHandlers } from "./ipc/bob-onboarding-handlers";
 import { eventsIpcHandlers } from "./ipc/events-handlers";
 import { ComposioConnect } from "./composio-connect";
 import { composioIpcHandlers } from "./ipc/composio-handlers";
-import { githubConnectorIpcHandlers } from "./ipc/github-connector-handlers";
 import { hostAdminIpcHandlers } from "./ipc/host-admin-handlers";
 import { hostedServerIpcHandlers } from "./ipc/hosted-server-handlers";
 import { hostedSiteIpcHandlers } from "./ipc/hosted-site-handlers";
@@ -83,7 +81,6 @@ import { mcpServerIpcHandlers } from "./ipc/mcp-server-handlers";
 import { memoryIpcHandlers } from "./ipc/memory-handlers";
 import { messagingIpcHandlers } from "./ipc/messaging-handlers";
 import { notificationIpcHandlers } from "./ipc/notification-handlers";
-import { onePasswordConnectorIpcHandlers } from "./ipc/onepassword-connector-handlers";
 import { pluginIpcHandlers } from "./ipc/plugin-handlers";
 import { providerAdminIpcHandlers } from "./ipc/provider-admin-handlers";
 import { providerDetectionIpcHandlers } from "./ipc/provider-detection-handlers";
@@ -382,9 +379,6 @@ const {
   forwardVoiceStreamTranscript,
   forwardSpeechModelStatus,
   forwardProviderRuntimeStatus,
-  forwardGitHubConnectorStatus,
-  forwardOnePasswordConnectorStatus,
-  forwardBitwardenConnectorStatus,
   forwardVaultState,
   forwardHostStatus,
   forwardRemoteDesktopSessions,
@@ -590,9 +584,6 @@ function registerIpcHandlers({
   centralAuth,
   skills,
   hostedSites,
-  githubConnector,
-  onePasswordConnector,
-  bitwardenConnector,
   vault,
   hostedServers,
   routineFeed,
@@ -696,9 +687,6 @@ function registerIpcHandlers({
       translate: language.translate,
     }),
     ...composioIpcHandlers({ composio }),
-    ...githubConnectorIpcHandlers({ githubConnector, remoteServers, openExternal: openLink }),
-    ...onePasswordConnectorIpcHandlers({ onePasswordConnector, remoteServers }),
-    ...bitwardenConnectorIpcHandlers({ bitwardenConnector, remoteServers }),
     ...vaultIpcHandlers({ vault, getMainWindow: getDialogParent, translate: language.translate, remoteServers }),
     ...routineFeedIpcHandlers({ routineFeed }),
     ...bobOnboardingIpcHandlers({ service, userDataPath: app.getPath("userData") }),
@@ -1258,9 +1246,6 @@ if (!hasSingleInstanceLock) {
       host.on("directMessage", (event) => forwardDirectMessage("local", event));
       host.on("directTyping", (event) => forwardDirectTyping("local", event));
       remoteDesktop.on("changed", forwardRemoteDesktopSessions);
-      built.githubConnector.onChanged(forwardGitHubConnectorStatus);
-      built.onePasswordConnector.onChanged(forwardOnePasswordConnectorStatus);
-      built.bitwardenConnector.onChanged(forwardBitwardenConnectorStatus);
       built.vault.onChanged(forwardVaultState);
       remoteServers.on("changed", forwardServers);
       remoteServers.on("agent", (serverId, event, bufferedLive) => {

@@ -1,29 +1,21 @@
-import type { AddedAgent, McpServerConfig, ServerSummary } from "@bob/contracts/ipc";
+import type { McpServerConfig } from "@bob/contracts/ipc";
 import { MCP_SERVERS_CAPABILITY } from "@bob/contracts/ipc";
 import type { ComponentProps } from "@solidjs/web";
-import { createMemo, Loading, omit, Show } from "solid-js";
+import { Loading, omit, Show } from "solid-js";
 import { ChannelCreateDialog } from "./features/channels/ChannelCreateDialog";
 import { useChannels } from "./features/channels/channels-context";
-import type { ConnectorRegistry } from "./features/connectors/connector-registry";
-import { useConversationController } from "./features/conversation/conversation-controller-context";
 import type { ServerStorageOptions } from "./features/files/ServerStoragePanel";
 import { canManageStorage, serverHasStorage } from "./features/files/storage-usage";
 import type { ServerSettingsModalProps } from "./features/servers/ServerSettingsModal";
 import type { ServerUpdateOptions } from "./features/servers/ServerUpdatePanel";
 import {
-  remoteAdminServer,
   remoteUpdateServer,
   serverCanAdminister,
   serverRoleCanAdminister,
-  serverSupportsCapability,
 } from "./features/servers/server-capabilities";
-import type { MarketplaceCalls } from "./features/settings/marketplace-calls";
-import type { MarketplaceAgentRow } from "./features/settings/marketplace-controller";
-import { MARKETPLACE_PLUGINS } from "./features/settings/marketplace-plugin-catalog";
 import {
   GlobalSearch,
   JoinServerDialog,
-  MarketplaceModal,
   ServerSettingsModal,
 } from "./lazy-views";
 
@@ -47,124 +39,6 @@ export function JoinServerOverlay(props: { open: boolean } & ComponentProps<type
     </Show>
   );
 }
-
-/**
- * Skills and marketplace agents, which install into an Agent's workspace on the host. The picker
- * lists the agents of this computer, or of a joined server this account administers; a member
- * browses and installs nothing. A marketplace agent is added to that joined server when its host
- * serves `agent-install-v1`, otherwise to this computer. An agent of a joined server is updated from
- * its listing only when its host serves `agent-update-v1`.
- */
-export function MarketplaceOverlay(props: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  server: ServerSummary | undefined;
-  agents: readonly MarketplaceAgentRow[];
-  activeAgentId: string;
-  /** Whether the client could take another line into a composer, before the controller is asked. */
-  composerAvailable: boolean;
-  /** Opens an agent's conversation before an example is added to its draft. */
-  onOpenAgent: (agentId: string) => void;
-  onAgentInstalled: (agent: AddedAgent, serverId?: string) => void | Promise<void>;
-  /** The listing a plugin link named. Closing the marketplace forgets it too. */
-  pluginSlug?: string | null | undefined;
-  /** The person pressed Connect for `pluginSlug` on a chat card. */
-  pluginConnect?: boolean | undefined;
-  onPluginSlugConsumed: () => void;
-  /** The connectors of `server`. Each one that this account can connect is an app. */
-  connectors?: ConnectorRegistry | undefined;
-  /** What the Marketplace calls. Absent: this computer's bridge. */
-  calls?: MarketplaceCalls | undefined;
-  /** This computer runs macOS. The web client leaves it out: it cannot ask macOS for anything. */
-  macOS?: boolean | undefined;
-  /** Opens the form that adds a custom MCP server to the server with this ID. */
-  onAddServer?: ((serverId: string) => void) | undefined;
-}) {
-  const controller = useConversationController();
-  const manage = createMemo(() => serverCanAdminister(props.server, "skills-admin-v1"));
-  /* A plugin's app is an MCP server, which the host holds. A joined server takes one over
-     `mcp-servers-v1` from an admin, as the agents list does; a member browses the listings
-     and installs nothing. */
-  const pluginServerId = createMemo(() =>
-    manage() && serverCanAdminister(props.server, MCP_SERVERS_CAPABILITY) ? props.server?.id : undefined,
-  );
-  /** Add custom, for a user who can add a server to the host. */
-  const addServer = () => {
-    const serverId = pluginServerId();
-    const open = props.onAddServer;
-    if (serverId === undefined || !open) return undefined;
-    return () => open(serverId);
-  };
-  /* What both example controls need: a managed agent whose composer is free to take another line. */
-  const composerFree = createMemo(
-    () =>
-      manage() &&
-      props.composerAvailable &&
-      !controller.submitting() &&
-      controller.voicePhase() === "idle" &&
-      !controller.editingDeliveryId(),
-  );
-  /** Adds a marketplace example to an agent's draft, then shows that agent's conversation. */
-  const appendExample = (agentId: string, append: (target: { serverId: string; agentId: string }) => void) => {
-    const server = props.server;
-    if (!serverCanAdminister(server, "skills-admin-v1") || !props.agents.some((agent) => agent.id === agentId)) return;
-    props.onOpenAgent(agentId);
-    append({ serverId: server.id, agentId });
-    props.onOpenChange(false);
-  };
-
-  return (
-    <Show when={props.open}>
-      <Loading>
-        <MarketplaceModal
-          open={true}
-          calls={props.calls}
-          macOS={props.macOS}
-          connectors={props.connectors}
-          agents={manage() ? props.agents : []}
-          activeAgentId={manage() ? props.activeAgentId : ""}
-          hostServerId={remoteAdminServer(props.server, "skills-admin-v1")?.id}
-          agentServerId={remoteAdminServer(props.server, "agent-install-v1")?.id}
-          agentUpdateServerId={remoteAdminServer(props.server, "agent-update-v1")?.id}
-          onOpenChange={(open) => {
-            /* The slug is consumed by opening, so closing forgets it: reopening the marketplace by
-               hand lands on the catalog rather than on the listing a link once named. */
-            if (!open) props.onPluginSlugConsumed();
-            props.onOpenChange(open);
-          }}
-          onTrySkill={
-            composerFree()
-              ? (agentId, skill) => appendExample(agentId, (target) => controller.appendSkillExample(target, skill))
-              : undefined
-          }
-          onCreateSkill={
-            composerFree()
-              ? (agentId) => appendExample(agentId, (target) => controller.startSkillCreation(target))
-              : undefined
-          }
-          onAgentInstalled={props.onAgentInstalled}
-          plugins={MARKETPLACE_PLUGINS}
-          initialPluginSlug={props.pluginSlug ?? undefined}
-          initialPluginConnect={props.pluginConnect}
-          onInitialPluginSlugConsumed={props.onPluginSlugConsumed}
-          pluginServerId={pluginServerId()}
-          onAddServer={addServer()}
-          pluginHostName={manage() ? remoteAdminServer(props.server, MCP_SERVERS_CAPABILITY)?.name : undefined}
-          pluginSignInRelay={
-            props.server?.kind === "remote" && serverSupportsCapability(props.server, "sign-in-relay-v1")
-          }
-          onRunPluginPrompt={
-            composerFree()
-              ? (agentId, prompt) =>
-                  appendExample(agentId, (target) => controller.appendPluginPrompt(target, prompt.text))
-              : undefined
-          }
-        />
-      </Loading>
-    </Show>
-  );
-}
-
 
 /**
  * Settings for one server. The MCP and Storage sections are gated on the server here: a remote host

@@ -201,7 +201,6 @@ import { routeAgentSessionSettings } from "./team-api/route-agent-session-settin
 import { routeAgentTasks } from "./team-api/route-agent-tasks";
 import { routeAgentThreadFiles, routeAgentThreadReads, routeAgentThreads } from "./team-api/route-agent-threads";
 import { routeAgents } from "./team-api/route-agents";
-import { routeBitwardenConnector } from "./team-api/route-bitwarden-connector";
 import { routeBrowser } from "./team-api/route-browser";
 import { routeBrowserProfiles } from "./team-api/route-browser-profiles";
 import { routeChannels } from "./team-api/route-channels";
@@ -224,7 +223,6 @@ import { routeMcpServers } from "./team-api/route-mcp";
 import { routeMcpSignIn } from "./team-api/route-mcp-sign-in";
 import { routeMcpSignInApp } from "./team-api/route-mcp-sign-in-app";
 import { routeMemoryReview } from "./team-api/route-memory-review";
-import { routeOnePasswordConnector } from "./team-api/route-onepassword-connector";
 import { routePromptCacheTtl } from "./team-api/route-prompt-cache-ttl";
 import { routeProviderAccounts } from "./team-api/route-provider-accounts";
 import { routeProviderDefault } from "./team-api/route-provider-default";
@@ -896,8 +894,6 @@ export class TeamApiServer {
         return;
       if ((await routeConnectors(context, this.#options.connectors)) === "handled") return;
       if ((await routeDiscordAccess(context, this.#options.connectors)) === "handled") return;
-      if ((await routeOnePasswordConnector(context, this.#options.onePasswordConnector)) === "handled") return;
-      if ((await routeBitwardenConnector(context, this.#options.bitwardenConnector)) === "handled") return;
       if ((await routeVault(context, this.#options.vault)) === "handled") return;
       if ((await routeVaultImport(context, this.#options.vault)) === "handled") return;
       if ((await routeProviderHostSignIn(context, this.#options.providerHostSignIns)) === "handled") return;
@@ -1961,8 +1957,8 @@ export class TeamApiServer {
           );
         if (capability === CONNECTORS_CAPABILITY) return this.#options.connectors !== undefined;
         if (capability === DISCORD_ACCESS_CAPABILITY) return this.#options.connectors !== undefined;
-        if (capability === ONEPASSWORD_CONNECTOR_CAPABILITY) return this.#options.onePasswordConnector !== undefined;
-        if (capability === BITWARDEN_CONNECTOR_CAPABILITY) return this.#options.bitwardenConnector !== undefined;
+        if (capability === ONEPASSWORD_CONNECTOR_CAPABILITY) return false;
+        if (capability === BITWARDEN_CONNECTOR_CAPABILITY) return false;
         if (capability === VAULT_CAPABILITY) return this.#options.vault !== undefined;
         if (capability === BROWSER_SECRET_VAULT_CAPABILITY) return this.#options.vault !== undefined;
         if (capability === VAULT_IMPORT_CAPABILITY) return this.#options.vault !== undefined;
