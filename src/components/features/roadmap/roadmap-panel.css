@@ -68,3 +68,25 @@ button.bob-roadmap-source:focus-visible {
 .bob-roadmap-request-head .z-badge {
   margin-right: 0;
 }
+
+/* One request's card: the goal, then its today and its stages, each under a rule. */
+.bob-roadmap-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bob-space-2);
+  margin-top: var(--bob-space-2);
+  padding-top: var(--bob-space-3);
+  border-top: 1px solid var(--bob-border);
+}
+
+.bob-roadmap-section > :is(h4, ol) {
+  margin: 0;
+}
+
+/* The sentence the person typed, which every change for the request traces back to. */
+.bob-roadmap-ask {
+  color: var(--bob-text-secondary);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+  overflow-wrap: anywhere;
+}
