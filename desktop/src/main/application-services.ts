@@ -24,12 +24,6 @@ import { agentDisplayEnvironment, hasSeparateAgentDisplay } from "./agent-displa
 import { type AgentHostSettingsService, createAgentHostSettings } from "./agent-host-settings";
 import { type BrowserProfileService, createBrowserProfileService } from "./browser-profile-service";
 import { HostReleaseService, readInstallationMode } from "./host-release-service";
-import {
-  CONTAINER_UPDATE_PATHS,
-  CONTAINER_UPDATE_TRIGGER,
-  HOSTED_UPDATE_TRIGGER,
-  HostedUpdateAdapter,
-} from "./hosted-update-adapter";
 import { LocalSignInWindows } from "./local-sign-in-window";
 import { LocalSkillLibrary } from "./local-skill-library";
 import { localSkillTools } from "./local-skill-tools";
@@ -294,9 +288,6 @@ import { readUpdatePreference, writeUpdatePreference } from "./update-preference
 import { checkRestartReadiness, type RestartReadiness } from "./update-readiness";
 import {
   createDisabledUpdateAdapter,
-  isNixStoreInstall,
-  isValidSemver,
-  supportsInstalledUpdates,
   type UpdateAdapter,
   UpdateService,
 } from "./update-service";
@@ -622,12 +613,6 @@ function computerUseCapability(state: ComputerUseState): CapabilityState {
   return "unavailable";
 }
 
-/** The base cache path of electron-updater 6.8.9 (`getAppCacheDir`), which differs from Electron's. */
-function electronUpdaterCacheRoot(): string {
-  if (process.platform === "win32") return process.env.LOCALAPPDATA || join(homedir(), "AppData", "Local");
-  if (process.platform === "darwin") return join(homedir(), "Library", "Caches");
-  return process.env.XDG_CACHE_HOME || join(homedir(), ".cache");
-}
 
 interface MessagingServicesContext {
   teardown: TeardownRegistry;
@@ -2668,60 +2653,11 @@ export async function createApplicationServices({
   teardown.push(TEARDOWN_ORDER.speech, "speech", () => Effect.runPromise(speech.shutdown()));
   speech.on("modelStatus", forwardSpeechModelStatus);
   const currentVersion = app.getVersion();
-  // Skip the file check in dev: unpacked runs never enable updates, so avoid touching resourcesPath.
-  const updateMetadataAvailable = app.isPackaged && existsSync(join(process.resourcesPath, "app-update.yml"));
-  // A hosted or self-installed server runs a release that root owns. Root installs updates for it
-  // when bob-hosted-update has installed its request units. A container of bob-instance asks
-  // the host instead, which pulls the image. Other containers have neither.
-  const containerInstaller =
-    app.isPackaged &&
-    process.platform === "linux" &&
-    installationMode === "container" &&
-    existsSync(CONTAINER_UPDATE_TRIGGER);
-  const hostedInstaller =
-    containerInstaller ||
-    (app.isPackaged &&
-      process.platform === "linux" &&
-      (process.env.BOB_HOSTED_SERVER === "1" || installationMode === "self") &&
-      existsSync(HOSTED_UPDATE_TRIGGER));
-  // Bob has no update feed yet, so the app never checks Bob's or GitHub's release servers.
-  const updatesEnabled =
-    process.env.BOB_UPDATES === "1" &&
-    app.isPackaged &&
-    !isNixStoreInstall() &&
-    (hostedInstaller || (supportsInstalledUpdates(process.platform) && updateMetadataAvailable)) &&
-    isValidSemver(currentVersion);
-  if (app.isPackaged && updateMetadataAvailable && !isValidSemver(currentVersion)) {
-    logger.warn(`Bob updates are disabled because the application version is not valid SemVer: ${currentVersion}`);
-  }
-  let updateAdapter: UpdateAdapter = createDisabledUpdateAdapter();
-  let updaterEnabled = updatesEnabled;
-  let updaterCacheDirectory: string | undefined;
-  if (updatesEnabled && hostedInstaller) {
-    updateAdapter = new HostedUpdateAdapter({
-      currentVersion,
-      arch: process.arch,
-      ...(containerInstaller ? { paths: CONTAINER_UPDATE_PATHS } : {}),
-    });
-  } else if (updatesEnabled) {
-    try {
-      const updaterModule = await import("electron-updater");
-      const realAdapter = updaterModule.autoUpdater ?? updaterModule.default?.autoUpdater ?? updaterModule.default;
-      if (realAdapter) {
-        updateAdapter = realAdapter;
-        updaterCacheDirectory = join(electronUpdaterCacheRoot(), "bob-updater");
-      } else {
-        updaterEnabled = false;
-        logger.warn("Bob updates are disabled: electron-updater did not export autoUpdater");
-      }
-    } catch {
-      updaterEnabled = false;
-      logger.warn("Bob updates are disabled: electron-updater failed to load");
-    }
-  }
+  // Bob has no update feed, so the app never checks for or installs a new version of itself.
+  const updateAdapter: UpdateAdapter = createDisabledUpdateAdapter();
   const updater = new UpdateService(updateAdapter, {
     currentVersion,
-    enabled: updaterEnabled,
+    enabled: false,
     autoDownload: updatePreference.autoDownload,
     beforeInstall: prepareForUpdateInstall,
     // Packaged runs share one application bundle across macOS users. Installing while another
@@ -2753,7 +2689,6 @@ export async function createApplicationServices({
     ...(process.platform === "darwin"
       ? { shipItDirectory: join(homedir(), "Library", "Caches", "dev.micic.bob.desktop.ShipIt") }
       : {}),
-    updaterCacheDirectory,
   });
   teardown.push(TEARDOWN_ORDER.updater, "the update service", () => Effect.runPromise(updater.stop()));
   const agentInitialization = new AgentInitializationGate(() =>
