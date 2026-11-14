@@ -395,6 +395,8 @@ async function boot(): Promise<void> {
 async function phase(reqs: Request[], restartAt: Request | null): Promise<{ stopReason: string; final: Snapshot }> {
   requests = reqs;
   if (opts.self) {
+    const cleared = await post("/api/reset", {});
+    if (!cleared.ok) throw new Error(`reset before opening Bob's own repository failed: ${cleared.error}`);
     const opened = await post("/api/projects", { repo: SELF.repo, branch: SELF.branch, name: SELF.name });
     if (!opened.ok) throw new Error(`opening Bob's own repository failed: ${opened.error}`);
   }
