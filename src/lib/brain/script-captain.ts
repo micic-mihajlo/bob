@@ -25,7 +25,8 @@ function buildBrief(intent: IntentDraft, texts: string[], workTitle: string): st
 function requestPlan(ctx: TurnContext): Plan {
   const road = ctx.initial.roadmap;
   const items = ctx.initial.threads[ctx.agent.id] ?? [];
-  const texts = intakeTexts(items);
+  const shown = intakeTexts(items);
+  const texts = shown.length > 0 ? shown : ctx.inbound.filter((i) => i.rule === "person").map((i) => i.text);
   const change = changeFor(texts.join("\n"));
   const decision = inspectRequest(texts, pushbackRounds(items), change);
   if (decision.kind === "ask") return { steps: [], reply: () => decision.reply };
@@ -136,7 +137,21 @@ const REPORT_RULES: Rule[] = [
   },
 ];
 
+/** A thread the restart cut off mid-work gets its brief again, to finish from what its workspace holds. */
+function restartPlan(ctx: TurnContext): Plan | null {
+  const s = ctx.initial;
+  const cut = ctx.inbound.find((i) => i.from.kind === "agent" && /^Status: blocked/m.test(i.text) && /server restarted/i.test(i.text));
+  const from = cut?.from.kind === "agent" ? cut.from.agentId : null;
+  const thread = from ? s.agents.find((a) => a.id === from && a.kind === "crew" && !a.closedAt) : undefined;
+  const brief = thread && s.messages.find((m) => m.from.kind === "agent" && m.from.agentId === ctx.agent.id && m.to.includes(thread.id));
+  if (!thread || !brief) return null;
+  const text = `The server restarted while you were working. Check what your workspace and branch already have, then finish this brief and report.\n\n${brief.text}`;
+  return { steps: [() => [call("message_thread", { threadId: thread.id, text })]], reply: () => `The server restarted while ${thread.code} was working. I sent it its brief again to finish.` };
+}
+
 function reportPlan(ctx: TurnContext): Plan {
+  const restarted = restartPlan(ctx);
+  if (restarted) return restarted;
   const facts = factsOf(ctx.initial);
   const rule = REPORT_RULES.find((r) => r.when(facts));
   if (rule) return rule.plan(facts);
