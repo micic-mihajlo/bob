@@ -78,8 +78,8 @@ export function ConversationHeader({ agent }: { agent: Agent }) {
             <ScrollText aria-hidden="true" />
             Scripted
           </span>
-        ) : agent.kind === "crew" && status !== "closed" ? (
-          <ModelPicker agent={agent} />
+        ) : agent.kind === "captain" || agent.kind === "crew" ? (
+          <ModelPicker agent={agent} disabled={status === "closed"} />
         ) : (
           <div className="provider-model-picker">
             <span className="provider-model-trigger" aria-label={`Agent model: ${modelName(agent.model)}`} title={agent.model}>

@@ -1,5 +1,5 @@
 import { readClaudeConnection } from "./claude-connection";
-import { CLAUDE_MODELS, THREAD_MODELS, type Agent, type ClaudeModel } from "./types";
+import { CLAUDE_MODELS, type Agent, type ClaudeModel } from "./types";
 
 /**
  * Gateway model ids: a strong model for the captain, a lighter one for every crew role and standing
@@ -15,15 +15,15 @@ export type { ClaudeModel } from "./types";
 
 export const isClaudeModel = (model: string | undefined): model is ClaudeModel => (CLAUDE_MODELS as readonly string[]).includes(model ?? "");
 
-/** A model a thread may run on: either configured model, one from THREAD_MODELS, or a Claude model while the person's Claude is connected. */
+/** The gateway models Bob runs on: the configured models and their fallbacks, each once. */
+export const gatewayModels = (): string[] => [...new Set([STRONG_MODEL, LIGHT_MODEL, STRONG_FALLBACK, LIGHT_FALLBACK])];
+
+/** A model a thread may run on: a gateway model, or a Claude model while the person's Claude is connected. */
 export const isThreadModel = (model: string): boolean =>
-  model === STRONG_MODEL ||
-  model === LIGHT_MODEL ||
-  (THREAD_MODELS as readonly string[]).includes(model) ||
-  (isClaudeModel(model) && readClaudeConnection() !== null);
+  gatewayModels().includes(model) || (isClaudeModel(model) && readClaudeConnection() !== null);
 
 export const unknownModel = (model: string): string => {
-  const models = readClaudeConnection() ? [...THREAD_MODELS, ...CLAUDE_MODELS] : THREAD_MODELS;
+  const models = readClaudeConnection() ? [...gatewayModels(), ...CLAUDE_MODELS] : gatewayModels();
   return `${model} is not a model Bob can call. Pick one of: ${models.join(", ")}.`;
 };
 

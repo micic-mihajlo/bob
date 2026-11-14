@@ -181,11 +181,13 @@
   margin-right: 0;
 }
 
-/* The sidebar clips what passes its edge, so the menu stays inside it and long names end in an ellipsis. */
+/* The sidebar clips what passes its edge, so the menu stays inside it and long names end in an ellipsis.
+ * It spans the sidebar, so no row of the thread list shows beside it. */
 .sidebar-project-menu-content {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
+  width: calc(100cqi - 24px);
   max-width: calc(100cqi - 24px);
   transform-origin: top left;
 }

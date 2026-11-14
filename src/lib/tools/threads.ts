@@ -10,8 +10,8 @@ import { agentById, captainOf, isClosed, runningTurn, type State } from "../stat
 import { getState, transact, update } from "../store";
 import { checkoutBranch, prewarmProject, stampThread, threadWorkspace } from "../thread-workspace";
 import { busyThreads, closeThreadState, closeWhenIdle, findPullRequest, findThread, isBusy, isPullRequest, openThreads, requestAsk, threadRequestId } from "../threads";
-import { isThreadModel, unknownModel } from "../models";
-import { THREAD_MODELS, type Agent, type CrewRole } from "../types";
+import { gatewayModels, isThreadModel, unknownModel } from "../models";
+import type { Agent, CrewRole } from "../types";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
 import { recordOutgoing } from "./messaging";
 import { causeIn, planningRequest } from "./planning";
@@ -21,7 +21,7 @@ export const startThreadSchema = z.object({
   title: z.string().min(1).max(80).describe("What the thread does, in a few words, such as \"Rate-limit the login route\"."),
   brief: z.string().min(1).describe("The thread's first message. It sees nothing else, so it must stand alone."),
   workOrderId: z.string().optional().describe("The work order in today this thread serves."),
-  model: z.string().optional().describe(`The model the thread runs on, one of ${THREAD_MODELS.join(", ")}. Leave it out for the default.`),
+  model: z.string().optional().describe(`The model the thread runs on, one of ${gatewayModels().join(", ")}. Leave it out for the default.`),
 });
 type StartInput = z.infer<typeof startThreadSchema>;
 

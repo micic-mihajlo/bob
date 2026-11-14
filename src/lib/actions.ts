@@ -183,7 +183,7 @@ export function setThreadModelByPerson(agentId: AgentId, model: string): ActionR
   return transact<ActionResult>((s) => {
     const agent = agentById(s, agentId);
     if (!agent) return { state: s, value: unknownAgent(agentId) };
-    if (agent.kind !== "crew") return { state: s, value: { ok: false, error: `${agent.name} is not a crew thread.` } };
+    if (agent.kind !== "crew" && agent.kind !== "captain") return { state: s, value: { ok: false, error: `${agent.name} runs no model you can pick.` } };
     if (!isThreadModel(model)) return { state: s, value: { ok: false, error: unknownModel(model) } };
     return { state: { ...s, agents: s.agents.map((a) => (a.id === agentId ? { ...a, model } : a)) }, value: { ok: true } };
   });
