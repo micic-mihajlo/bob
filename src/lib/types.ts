@@ -106,7 +106,7 @@ export interface Message {
 
 /** The files and merged pull requests HydraDB recalled for a crew brief, and how long the recall took. */
 export interface KnowledgeContext {
-  files: { path: string; snippet: string }[];
+  files: { path: string; snippet: string; facts?: string[] }[];
   prs: { number: number; title: string; files: string[] }[];
   ms: number;
 }
@@ -438,6 +438,8 @@ export interface Project {
   repo: string | null;
   /** Which template a project without a repository was made from. Missing on projects saved before templates: the invoices sample. */
   template?: ProjectTemplate;
+  /** The branch of `repo` the project starts from, as its main. The repository's own main when missing. */
+  branch?: string;
 }
 
 /** False before a project is chosen, when Bob opens on the Open a project choice. */

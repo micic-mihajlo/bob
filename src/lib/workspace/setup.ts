@@ -40,7 +40,7 @@ export async function ensureProject(
   await mkdir(layout.home, { recursive: true });
   await buildThenRename(layout.origin, async (tmp) => {
     if (source.kind === "template") await seedTemplate(layout, tmp, TEMPLATES[source.template ?? "invoices"]);
-    else await cloneSource(layout, source.url, tmp);
+    else await cloneSource(layout, source.url, tmp, source.branch);
     await protectMain(layout, tmp);
   });
   return { origin: layout.origin };
@@ -93,10 +93,16 @@ async function seedTemplate(layout: ProjectLayout, bare: string, template: (type
   }
 }
 
-async function cloneSource(layout: ProjectLayout, url: string, bare: string): Promise<void> {
-  const problem = checkSourceUrl(url);
+/** Clones the repository bare. With a branch, only that branch, renamed to main: the project starts from it. */
+async function cloneSource(layout: ProjectLayout, url: string, bare: string, branch?: string): Promise<void> {
+  const problem = checkSourceUrl(url) ?? (branch !== undefined && !/^[A-Za-z0-9._][A-Za-z0-9._/-]*$/.test(branch) ? `unsupported branch name "${branch}"` : null);
   if (problem) throw new Error(problem);
   const run = { cwd: layout.dir, home: layout.home, identity: MERGE_IDENTITY, timeoutMs: CLONE_TIMEOUT_MS };
+  if (branch && branch !== MAIN_BRANCH) {
+    await gitOrThrow({ ...run, args: ["clone", "--quiet", "--bare", "--single-branch", "--branch", branch, "--", url, bare] });
+    await gitOrThrow({ ...run, cwd: bare, args: ["branch", "-m", branch, MAIN_BRANCH] });
+    return;
+  }
   await gitOrThrow({ ...run, args: ["clone", "--quiet", "--bare", "--", url, bare] });
   try {
     await gitOrThrow({ ...run, cwd: bare, args: ["rev-parse", "--verify", `refs/heads/${MAIN_BRANCH}`] });

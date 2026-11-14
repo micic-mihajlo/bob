@@ -146,6 +146,23 @@ describe("setup is idempotent", { timeout: GIT_TEST_TIMEOUT }, () => {
     await expect(ensureWorkspace("nope", "coder", options)).rejects.toThrow();
     expect(path.relative(temp.root, ws.root)).toBe(path.join("copy", "agents", "coder"));
   });
+
+  it("starts a project from one branch of a repository, as its main", async () => {
+    const options = { root: temp.root };
+    const { origin } = await ensureProject("demo", { kind: "template" }, options);
+    const writer = await ensureWorkspace("demo", "writer", options);
+    await git(writer, ["switch", "--create", "demo/self"]);
+    await writeFile(writer, "NOTES.md", "only on the demo branch\n");
+    await git(writer, ["add", "NOTES.md"]);
+    await git(writer, ["commit", "-m", "Notes"]);
+    expect((await git(writer, ["push", "origin", "demo/self"])).ok).toBe(true);
+
+    await ensureProject("self", { kind: "git", url: origin, branch: "demo/self" }, options);
+    const ws = await ensureWorkspace("self", "coder", options);
+    expect(await readFile(ws, "NOTES.md")).toMatchObject({ ok: true, content: "only on the demo branch\n" });
+    expect(await git(ws, ["branch", "-r"])).toMatchObject({ ok: true, output: expect.not.stringContaining("demo/self") });
+    await expect(ensureProject("bad", { kind: "git", url: origin, branch: "--upload-pack=x" }, options)).rejects.toThrow(/unsupported branch/);
+  });
 });
 
 describe("workspaceTools", { timeout: GIT_TEST_TIMEOUT }, () => {

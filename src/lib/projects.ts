@@ -91,8 +91,9 @@ function busy(s: State): boolean {
  * a template (the invoices sample unless another is named). Its shared repository is made once,
  * before the switch, so a bad URL leaves the active project as it was.
  */
-export async function openProject(input: { repo?: string; name?: string; template?: ProjectTemplate }): Promise<ActionResult<{ project: Project }>> {
-  const wanted = projectFor(input);
+export async function openProject(input: { repo?: string; branch?: string; name?: string; template?: ProjectTemplate }): Promise<ActionResult<{ project: Project }>> {
+  const found = projectFor(input);
+  const wanted = found && found.repo && input.branch?.trim() ? { ...found, branch: input.branch.trim() } : found;
   if (!wanted) return { ok: false, error: "Give a repository URL, a local path, or a project name." };
   const current = getState();
   if (wanted.id === current.project.id) return { ok: true, project: current.project };

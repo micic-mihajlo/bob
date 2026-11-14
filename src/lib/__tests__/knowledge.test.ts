@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { knowledgeCollection, knowledgeIngested, recallKnowledge, resetKnowledge, scheduleKnowledgeIngest, sourcesOfFile, withCodebase } from "../graph/knowledge";
+import { knowledgeCollection, knowledgeIngested, recallKnowledge, resetKnowledge, scheduleKnowledgeIngest, sourcesOfFile, withCodebase, factLines } from "../graph/knowledge";
 import { knowledgeSummary } from "../knowledge-format";
 import { getState } from "../store";
 import { sourceOf, workspaceOptions } from "../thread-workspace";
@@ -121,5 +121,21 @@ describe("HydraDB knowledge", { timeout: 60_000 }, () => {
     expect(recall?.items[1].text).toBe("Summary of src/lib/tools/pull-requests.ts");
     vi.stubEnv("BOB_STORE", "");
     expect(withCodebase(null, "anything", getState())).toBeNull();
+  });
+
+  it("turns what the graph knows about a file into brief lines", () => {
+    const lines = factLines({
+      path: "src/lib/tools/pull-requests.ts",
+      symbols: [],
+      tests: [{ path: "formal/conformance/merge-gate.test.ts", count: 3 }],
+      theorems: [{ name: "BobFormal.MergeGate.merge_needs_approval", statement: "No merge without approval.", symbol: "mergePullRequestTool" }],
+      prs: [{ number: 9, title: "Merge approvals pin the pull request head", bob: false, findings: ["[high bug] x.ts:3: stale head"] }],
+    });
+    expect(lines).toEqual([
+      "tests: formal/conformance/merge-gate.test.ts",
+      "proved by BobFormal.MergeGate.merge_needs_approval (mergePullRequestTool): No merge without approval.",
+      "changed by #9 Merge approvals pin the pull request head",
+      "review of #9 caught: [high bug] x.ts:3: stale head",
+    ]);
   });
 });
