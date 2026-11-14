@@ -18,6 +18,7 @@
 @import "../features/window/window.css";
 @import "../features/window/panes.css";
 @import "./reference-chip.css";
+@import "./embed.css";
 @import "./print.css";
 @import "./print-texture.css";
 @import "./print-devices.css";

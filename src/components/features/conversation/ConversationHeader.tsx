@@ -6,6 +6,8 @@ import { agentMood } from "@/components/features/agents/agent-mood";
 import { useBob } from "@/components/features/window/BobContext";
 import { ModelPicker, modelName } from "@/components/features/conversation/ModelPicker";
 import { SidePanelToggle } from "@/components/features/panel/SidePanel";
+import { ProjectMenu } from "@/components/features/sidebar/ProjectMenu";
+import { useEmbedded } from "@/components/features/window/embed";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { BadgeVariant } from "@/components/ui/classes";
@@ -37,9 +39,11 @@ export function ConversationHeader({ agent }: { agent: Agent }) {
   const status = threadStatusOf(snapshot, agent);
   const variant = STATUS_BADGE[status];
   const subtitle = agent.kind === "captain" ? null : agent.title;
+  const embedded = useEmbedded();
   return (
     <header className="window-drag conversation-header">
       <div className="conversation-heading-group">
+        {embedded ? <ProjectMenu /> : null}
         <Button
           variant="ghost"
           size="sm"
