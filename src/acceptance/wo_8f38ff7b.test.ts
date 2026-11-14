@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatElapsed } from "@/lib/format-time";
+import { formatElapsed } from "../lib/format-time";
 
 describe("formatElapsed", () => {
   it("shows 45s under a minute, 3m 05s under an hour, and 1h 02m from an hour", () => {
