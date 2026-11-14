@@ -7,6 +7,8 @@ import { agentById } from "./state";
 import { patchApproval } from "./state-ops";
 import { getState, resetState, transact, update } from "./store";
 import { addAgent, type NewAgentInput } from "./team";
+import { removeProjectWorkspaces } from "./thread-workspace";
+import { closeThreadState } from "./threads";
 import { drain } from "./turns";
 import type { AgentId } from "./types";
 
@@ -97,7 +99,24 @@ export function stopAgent(agentId: AgentId): InterruptResult {
   return interrupt(agentId);
 }
 
-export function resetAll(): ActionResult {
+export function closeThreadByPerson(agentId: AgentId): ActionResult {
+  return transact<ActionResult>((s) => {
+    const agent = agentById(s, agentId);
+    if (!agent) return { state: s, value: unknownAgent(agentId) };
+    if (agent.kind !== "crew") return { state: s, value: { ok: false, error: `${agent.name} is not a crew thread.` } };
+    if (agent.closedAt) return { state: s, value: { ok: true } };
+    return { state: closeThreadState(s, agentId, "you"), value: { ok: true } };
+  });
+}
+
+/** Back to the seed, with the project's repository and every thread's clone removed. */
+export async function resetAll(): Promise<ActionResult> {
+  const projectId = getState().project.id;
   resetState();
+  try {
+    await removeProjectWorkspaces(projectId);
+  } catch (error) {
+    return { ok: false, error: `State was reset, but the workspaces could not be removed: ${error instanceof Error ? error.message : "unknown error"}` };
+  }
   return { ok: true };
 }

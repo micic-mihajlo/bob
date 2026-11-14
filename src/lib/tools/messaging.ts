@@ -4,9 +4,8 @@ import { send } from "../mailbox";
 import { REPLY_FORMAT_HELP, isFormattedReply } from "../reply-format";
 import { updateWorkOrder } from "../roadmap";
 import { addThreadItem, stamp } from "../state-ops";
-import { getState, transact, update } from "../store";
+import { getState, update } from "../store";
 import type { Message } from "../types";
-import { addAgent } from "../team";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
 
 export const listAgentsSchema = z.object({});
@@ -82,30 +81,3 @@ export function sendMessage(input: SendMessageInput, ctx: ToolContext): ToolOutp
   return done({ messageId: message.id, to: message.to, expectsReply: message.expectsReply, next: after }, { wake: message.to });
 }
 
-export const createAgentSchema = z.object({
-  name: z.string().min(1).max(40),
-  title: z.string().min(1).max(80),
-  description: z.string().min(1).max(1000).describe("Standing instructions for the new teammate."),
-  initialMessage: z.string().min(1).describe("Their first task. It must stand alone."),
-});
-
-export function createAgent(input: z.infer<typeof createAgentSchema>, ctx: ToolContext): ToolOutput {
-  const added = transact((s) => {
-    const result = addAgent(s, input, { kind: "agent", agentId: ctx.agentId });
-    return { state: result.ok ? result.state : s, value: result };
-  });
-  if (!added.ok) return fail(added.error);
-  const sent = send({
-    from: { kind: "agent", agentId: ctx.agentId },
-    to: [added.agent.id],
-    text: input.initialMessage,
-    expectsReply: true,
-    replyTo: null,
-    causedBy: ctx.causedBy,
-    requestId: ctx.requestId,
-  });
-  if (!sent.ok) return done({ agentId: added.agent.id, warning: sent.error.message });
-  update((s) => recordOutgoing(s, ctx, sent.message));
-  const next = "Your first message is already delivered. Do not message them again for it; end your turn.";
-  return done({ agentId: added.agent.id, messageId: sent.message.id, next }, { wake: [added.agent.id] });
-}

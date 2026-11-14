@@ -1,15 +1,37 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { liveAsks } from "../asks";
 import { setBrainOverride } from "../brain";
 import type { Brain, Move, TurnContext } from "../brain/types";
 import { messageById, type State } from "../state";
-import { configure, getState, resetState } from "../store";
+import { configure, getState, resetState, update } from "../store";
+import { addAgent } from "../team";
 import { buildSnapshot } from "../snapshot";
 import type { AgentId } from "../types";
 
+let workspaceRoot: string | null = null;
+
+/** The seeded captain alone, with workspaces in a new temp folder. */
 export function freshTeam(): void {
-  configure({ pace: 0, persist: false });
+  if (workspaceRoot) rmSync(workspaceRoot, { recursive: true, force: true });
+  workspaceRoot = mkdtempSync(path.join(os.tmpdir(), "bob-crew-"));
+  configure({ pace: 0, persist: false, workspaceRoot });
   setBrainOverride(null);
   resetState();
+}
+
+export const STANDING = ["Lead", "Coder", "Reviewer", "Researcher"] as const;
+
+/** The captain plus standing agents a person added, which keep the plain messaging tools. */
+export function freshStandingTeam(): void {
+  freshTeam();
+  update((s) =>
+    STANDING.reduce((acc, name) => {
+      const added = addAgent(acc, { name, title: `${name} work`, description: `You do ${name.toLowerCase()} work.` }, { kind: "user" });
+      return added.ok ? added.state : acc;
+    }, s),
+  );
 }
 
 type Behavior = (ctx: TurnContext) => Move | Promise<Move>;

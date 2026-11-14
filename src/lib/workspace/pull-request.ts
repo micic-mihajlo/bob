@@ -45,6 +45,24 @@ export async function openPullRequest(
   return describe(run, request);
 }
 
+export type BranchChangesResult = Result<{ files: ChangedFile[]; patch: string; patchTruncated: boolean; headSha: string }>;
+
+/** A local branch's committed change against origin's main, without publishing anything. */
+export async function branchChanges(ws: Workspace, branch: string): Promise<BranchChangesResult> {
+  const problem = checkBranch(branch);
+  if (problem) return fail(problem);
+  const run = gitIn(ws.root, ws.project.home, agentIdentity(ws.agentId));
+  if ((await run("rev-parse", "--verify", "--quiet", heads(branch))).exitCode !== 0) {
+    return fail(`there is no local branch "${branch}"`);
+  }
+  const fetched = await run("fetch", "--quiet", "origin", `+${heads(MAIN_BRANCH)}:${ORIGIN_MAIN}`);
+  if (fetched.exitCode !== 0) return fail(`could not fetch ${MAIN_BRANCH}: ${errorText(fetched)}`);
+  const described = await describe(run, { branch, title: branch, body: "" });
+  if (!described.ok) return described;
+  const { files, patch, patchTruncated, headSha } = described;
+  return { ok: true, files, patch, patchTruncated, headSha };
+}
+
 async function describe(
   run: Git,
   request: { branch: string; title: string; body: string },

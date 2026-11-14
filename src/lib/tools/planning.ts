@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { advanceStage, completeWorkOrder, setGoal, setRoadmap, setToday, unmetCriteria, type RoadmapResult } from "../roadmap";
 import type { State } from "../state";
-import { patchArtifact } from "../state-ops";
 import { transact } from "../store";
 import type { Roadmap } from "../types";
 import { done, fail, type ToolOutput } from "./context";
@@ -43,17 +42,26 @@ export const setTodayTool = (i: z.infer<typeof setTodaySchema>) => view(change((
 
 export const completeSchema = z.object({
   workOrderId: z.string(),
-  artifactId: z.string().optional().describe("The merged pull request. It is marked merged."),
+  artifactId: z.string().optional().describe("The artifact that finished it, such as the merged pull request."),
 });
+
+function artifactRefusal(s: State, artifactId: string | undefined): string | null {
+  if (!artifactId) return null;
+  const artifact = s.artifacts.find((a) => a.id === artifactId);
+  if (!artifact) return `Unknown artifact ${artifactId}. Use an artifact id from this request.`;
+  if (artifact.kind === "pull_request" && !artifact.pullRequest?.merged) {
+    return `That pull request is not merged. Merge it with merge_pull_request after the person approves; that also completes the work order.`;
+  }
+  return null;
+}
+
 export function completeWorkOrderTool(i: z.infer<typeof completeSchema>): ToolOutput {
   return transact((s) => {
-    if (i.artifactId && !s.artifacts.some((a) => a.id === i.artifactId)) {
-      return { state: s, value: fail(`Unknown artifact ${i.artifactId}. Use an artifact id from this request.`) };
-    }
+    const refused = artifactRefusal(s, i.artifactId);
+    if (refused) return { state: s, value: fail(refused) };
     const applied = applyRoadmap(s, (road) => completeWorkOrder(road, i.workOrderId, i.artifactId ?? null));
     if (!applied.value.ok) return { state: s, value: fail(applied.value.error) };
-    const state = i.artifactId ? patchArtifact(applied.state, i.artifactId, { status: "merged" }) : applied.state;
-    return { state, value: view(applied.value) };
+    return { state: applied.state, value: view(applied.value) };
   });
 }
 

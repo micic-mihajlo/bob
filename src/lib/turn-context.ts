@@ -1,9 +1,9 @@
 import type { InboundItem, InboundRule, MoveRecord, TurnContext } from "./brain/types";
-import { artifactsBlock, historyBlock, messagesBlock, teamBlock } from "./framing";
+import { artifactsBlock, crewBlock, historyBlock, messagesBlock, selfBlock, teamBlock, type Audience } from "./framing";
 import { agentById, agentName, messageById, type State } from "./state";
 import { toolsFor } from "./tools";
 import type { StartedTurn } from "./turn-start";
-import type { Message } from "./types";
+import type { Agent, Message } from "./types";
 
 function ruleFor(s: State, m: Message): InboundRule {
   if (m.from.kind === "user") return m.approvalId ? "decision" : "person";
@@ -37,6 +37,14 @@ function silentTeammates(s: State, agentId: string, messages: Message[]): string
   return [...new Set(silent.map((d) => `${agentName(s, d.recipientAgentId)} (${d.status === "failed" ? "failed" : "stopped"})`))];
 }
 
+const audienceOf = (agent: Agent): Audience => (agent.kind === "captain" ? "captain" : agent.kind === "crew" ? "crew" : "standing");
+
+function whoBlock(s: State, agent: Agent): string {
+  if (agent.kind === "captain") return crewBlock(s);
+  if (agent.kind === "crew") return selfBlock(s, agent);
+  return teamBlock(s, agent.id);
+}
+
 export function buildContext(s: State, initial: State, t: StartedTurn, moves: MoveRecord[]): TurnContext | null {
   const agent = agentById(s, t.agentId);
   const turn = s.turns.find((x) => x.id === t.turnId);
@@ -45,12 +53,12 @@ export function buildContext(s: State, initial: State, t: StartedTurn, moves: Mo
   const inbound = messages.map((m) => inboundItem(s, m));
   const requestIds = [...new Set(messages.map((m) => m.requestId))];
   const input = [
-    teamBlock(s, agent.id),
+    whoBlock(s, agent),
     historyBlock(s.threads[agent.id] ?? [], t.turnId, turn.startedAt),
     artifactsBlock(s, requestIds),
-    messagesBlock(inbound, silentTeammates(s, agent.id, messages)),
+    messagesBlock(inbound, silentTeammates(s, agent.id, messages), audienceOf(agent)),
   ]
     .filter((x): x is string => !!x)
     .join("\n\n");
-  return { agent, state: s, initial, turnId: t.turnId, requestId: t.requestId, inbound, input, moves, tools: toolsFor(agent.role) };
+  return { agent, state: s, initial, turnId: t.turnId, requestId: t.requestId, inbound, input, moves, tools: toolsFor(agent) };
 }

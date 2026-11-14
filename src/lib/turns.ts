@@ -4,7 +4,7 @@ import { globals } from "./globals";
 import { newId, nowIso } from "./ids";
 import type { ReplyStatus } from "./reply-format";
 import { relayOwed } from "./relay";
-import { messageById, type State } from "./state";
+import { agentById, messageById, type State } from "./state";
 import { addNotice, addThreadItem, patchDelivery, patchTurn, stamp } from "./state-ops";
 import { getConfig, getState, transact, update } from "./store";
 import { callTool } from "./tools";
@@ -12,7 +12,17 @@ import { buildContext } from "./turn-context";
 import { planTurn, type StartedTurn } from "./turn-start";
 import type { AgentId, DeliveryStatus } from "./types";
 
+/** Moves per turn. Crew threads read, write, commit and check in their workspace, so they get more. */
 export const MAX_MOVES = 8;
+export const MAX_CAPTAIN_MOVES = 12;
+export const MAX_CREW_MOVES = 24;
+
+const STEP_LIMIT_TEXT = "I reached the step limit for this turn before finishing.";
+
+function maxMoves(agentId: AgentId): number {
+  const kind = agentById(getState(), agentId)?.kind;
+  return kind === "crew" ? MAX_CREW_MOVES : kind === "captain" ? MAX_CAPTAIN_MOVES : MAX_MOVES;
+}
 
 const sleep = (ms: number) => (ms > 0 ? new Promise<void>((r) => setTimeout(r, ms)) : Promise.resolve());
 const isRunning = (turnId: string) => getState().turns.find((t) => t.id === turnId)?.status === "running";
@@ -47,8 +57,9 @@ function addAgentText(t: StartedTurn, text: string): void {
 async function runTurn(t: StartedTurn): Promise<void> {
   const initial = getState();
   const moves: MoveRecord[] = [];
-  let final: string | null = "I reached the step limit for this turn before finishing.";
-  for (let i = 0; i < MAX_MOVES; i++) {
+  let final: string | null = STEP_LIMIT_TEXT;
+  const limit = maxMoves(t.agentId);
+  for (let i = 0; i < limit; i++) {
     await sleep(getConfig().pace);
     const ctx = isRunning(t.turnId) ? buildContext(getState(), initial, t, moves) : null;
     if (!ctx) return finishStopped(t);
@@ -79,7 +90,7 @@ async function executeMove(t: StartedTurn, calls: ToolCallRequest[]): Promise<{ 
   for (const call of calls) {
     if (!isRunning(t.turnId)) return null;
     update((s) => markActed(s, t.turnId));
-    const out = callTool(call.name, call.input, ctx);
+    const out = await callTool(call.name, call.input, ctx);
     records.push({ id: call.id ?? newId("call"), name: call.name, input: call.input, result: out.result });
     out.wake?.forEach((id) => woken.add(id));
     endTurn = endTurn || !!out.endTurn;
@@ -110,6 +121,7 @@ function relayAndDrain(t: StartedTurn, text: string, status: ReplyStatus, unbloc
 function finishTurn(t: StartedTurn, text: string | null): void {
   if (text) addAgentText(t, text);
   closeTurn(t, "completed", "completed");
+  if (text === STEP_LIMIT_TEXT) return relayAndDrain(t, text, "blocked", "Ask me to continue, or narrow the work.");
   relayAndDrain(t, text ?? "", "done");
 }
 

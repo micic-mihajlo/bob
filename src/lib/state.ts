@@ -4,6 +4,7 @@ import type {
   Approval,
   Artifact,
   Delivery,
+  DriveFile,
   Message,
   Project,
   Roadmap,
@@ -30,8 +31,15 @@ export interface State {
   actedTurnIds: TurnId[];
   /** Deliveries put back in the queue once after a turn that did nothing. */
   requeuedDeliveryIds: string[];
+  /** The captain's own files: DIGEST.md, CREW.md, NOTES.md. */
+  drive: DriveFile[];
   rev: number;
 }
+
+export const isCaptain = (a: Agent | undefined): boolean => a?.kind === "captain";
+export const isCrew = (a: Agent | undefined): a is Agent & { kind: "crew" } => a?.kind === "crew";
+export const isClosed = (a: Agent | undefined): boolean => !!a?.closedAt;
+export const captainOf = (s: State): Agent | undefined => s.agents.find((a) => a.kind === "captain");
 
 export const agentById = (s: State, id: AgentId) => s.agents.find((a) => a.id === id);
 export const messageById = (s: State, id: string) => s.messages.find((m) => m.id === id);

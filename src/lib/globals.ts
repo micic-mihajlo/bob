@@ -5,6 +5,8 @@ export interface Config {
   /** Milliseconds between steps, so the UI can show work in progress. */
   pace: number;
   persist: boolean;
+  /** Where thread workspaces live. Unset means `<cwd>/.data/workspaces`. */
+  workspaceRoot?: string;
 }
 
 export interface BobGlobals {

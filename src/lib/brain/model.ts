@@ -1,4 +1,5 @@
 import { generateText, tool, type ModelMessage, type ToolSet } from "ai";
+import { modelFor } from "../models";
 import type { ToolSpec } from "../tools";
 import { systemPrompt } from "./prompt";
 import type { Brain, MoveRecord, TurnContext } from "./types";
@@ -38,12 +39,11 @@ function messages(ctx: TurnContext): ModelMessage[] {
 export const modelBrain: Brain = {
   async next(ctx) {
     const result = await generateText({
-      model: ctx.agent.model,
-      instructions: systemPrompt(ctx.agent, ctx.state.roadmap),
+      model: modelFor(ctx.agent),
+      instructions: systemPrompt(ctx.agent, ctx.state),
       messages: messages(ctx),
       tools: toolSet(ctx.tools),
       maxOutputTokens: MAX_OUTPUT_TOKENS,
-      reasoning: "low",
     });
     if (result.toolCalls.length === 0 && !result.text.trim()) {
       throw new Error(`The model returned no text and no tool calls (finish reason: ${result.finishReason}).`);

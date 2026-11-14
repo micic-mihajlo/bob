@@ -1,6 +1,4 @@
-import { messageById, type State } from "../state";
-import type { Agent, Artifact, RequestId } from "../types";
-import type { CallRecord, InboundItem, Move, MoveRecord, ToolCallRequest } from "./types";
+import type { CallRecord, Move, MoveRecord, ToolCallRequest } from "./types";
 
 /**
  * A scripted turn is a plan fixed at turn start: steps that each become one move, then a closing reply.
@@ -45,24 +43,6 @@ export function summarize(text: string): string {
   const clipped = first.length > 70 ? `${first.slice(0, 69).trimEnd()}…` : first;
   return clipped.charAt(0).toUpperCase() + clipped.slice(1);
 }
-
-export function requestIdsOf(s: State, inbound: InboundItem[]): Set<RequestId> {
-  return new Set(inbound.map((i) => messageById(s, i.messageId)?.requestId).filter((x): x is string => !!x));
-}
-
-export function latestArtifact(s: State, requests: Set<RequestId>, kind: Artifact["kind"]): Artifact | undefined {
-  return [...s.artifacts].reverse().find((a) => a.kind === kind && requests.has(a.requestId));
-}
-
-export interface AgentRow {
-  id: string;
-  name: string;
-  title: string;
-}
-
-/** Finds a teammate whose name or title fits a skill, the way a person reading the team list would. */
-export const findTeammate = (team: readonly AgentRow[] | readonly Agent[], pattern: RegExp, selfId: string) =>
-  team.find((a) => a.id !== selfId && (pattern.test(a.name) || pattern.test(a.title)));
 
 /** The `Result:` line of a formatted answer, or the whole text when it has none. */
 export function resultLine(text: string): string {

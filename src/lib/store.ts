@@ -33,14 +33,18 @@ function readSaved(): State | null {
 /** Loads saved state through the boot sweep. The sweep's follow-up runs in `boot()`. */
 export function loadState(saved: State | null): State {
   if (!saved) return seedState();
-  const swept = sweepOrphans(saved);
+  const swept = sweepOrphans(withDefaults(saved));
   globals().pendingBoot = swept.orphanTurnIds;
   return swept.state;
 }
 
+/** Fills fields added after a state was saved, or held in memory across a hot reload. */
+const withDefaults = (s: State): State => (Array.isArray(s.drive) ? s : { ...s, drive: [] });
+
 export function getState(): State {
   const g = globals();
   if (!g.state) g.state = loadState(g.config.persist ? readSaved() : null);
+  if (!Array.isArray(g.state.drive)) g.state = withDefaults(g.state);
   return g.state;
 }
 

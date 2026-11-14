@@ -10,8 +10,8 @@ export const GIT_OUTPUT_LIMIT = 20_000;
 export type GitResult = Result<{ output: string; truncated: boolean }>;
 
 /** Runs one allow-listed git command in the agent's workspace. */
-export async function git(ws: Workspace, args: readonly string[]): Promise<GitResult> {
-  const check = checkGitArgs(args);
+export async function git(ws: Workspace, args: readonly string[], allowed?: readonly string[]): Promise<GitResult> {
+  const check = checkGitArgs(args, allowed);
   if (!check.ok) return check;
   // Without its own .git, git would search upward and find whatever repository holds the data directory.
   const hasRepo = await stat(path.join(ws.root, ".git")).then(

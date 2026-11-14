@@ -1,6 +1,6 @@
 import { newId, nowIso } from "./ids";
 import { hasSubstance } from "./reply-format";
-import { agentById, messageById, type State } from "./state";
+import { agentById, isCaptain, isClosed, isCrew, messageById, type State } from "./state";
 import { addNotice, patchDelivery } from "./state-ops";
 import { transact } from "./store";
 import type { AgentId, Delivery, Message, MessageId, RequestId, Sender } from "./types";
@@ -25,6 +25,8 @@ export type SendErrorCode =
   | "unknown_recipient"
   | "unknown_reply_target"
   | "reply_expects_reply"
+  | "closed_recipient"
+  | "crew_rule"
   | "budget_exhausted";
 
 export interface SendError {
@@ -44,6 +46,18 @@ export function budgetUsed(s: State, requestId: RequestId): number {
   return s.deliveries.filter((d) => sentByAgents.has(d.messageId)).length;
 }
 
+/** Crew threads talk only to the captain, and only the captain or a person talks to them. */
+function crewRefusal(s: State, from: Sender, to: AgentId[]): string | null {
+  if (from.kind !== "agent") return null;
+  const sender = agentById(s, from.agentId);
+  if (isCaptain(sender)) return null;
+  if (isCrew(sender) && to.some((id) => !isCaptain(agentById(s, id)))) {
+    return "A crew thread reaches only the captain. Put what another thread needs in your report and the captain passes it on.";
+  }
+  if (to.some((id) => isCrew(agentById(s, id)))) return "Only the captain or a person can message a crew thread.";
+  return null;
+}
+
 function validate(s: State, input: SendInput, to: AgentId[]): SendResult | null {
   if (!hasSubstance(input.text)) return refuse("empty_text", "A message needs words. Write the text and send again.");
   if (to.length === 0) return refuse("no_recipients", "Name at least one recipient id from list_agents.");
@@ -54,6 +68,10 @@ function validate(s: State, input: SendInput, to: AgentId[]): SendResult | null 
   if (unknown.length > 0) {
     return refuse("unknown_recipient", `Unknown recipient: ${unknown.join(", ")}. Call list_agents for valid ids.`);
   }
+  const closed = to.filter((id) => isClosed(agentById(s, id))).map((id) => agentById(s, id)?.name ?? id);
+  if (closed.length > 0) return refuse("closed_recipient", `${closed.join(", ")} is closed. Closed threads stay readable but take no messages.`);
+  const crewRule = crewRefusal(s, input.from, to);
+  if (crewRule) return refuse("crew_rule", crewRule);
   if (input.replyTo && input.expectsReply) {
     return refuse(
       "reply_expects_reply",

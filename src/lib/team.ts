@@ -1,5 +1,5 @@
 import { hashText, nowIso, slugify } from "./ids";
-import { LIGHT_MODEL } from "./seed";
+import { LIGHT_MODEL } from "./models";
 import { agentById, type State } from "./state";
 import type { Agent } from "./types";
 

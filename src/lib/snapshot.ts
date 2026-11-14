@@ -1,6 +1,7 @@
 import { liveAsks } from "./asks";
 import { brainKind } from "./brain";
 import { messageById, runningTurn, type State } from "./state";
+import { needsYou, threadStatusOf } from "./thread-status";
 import type { AgentActivity, AgentId, Delivery, Snapshot, ThreadView, WaitingOn } from "./types";
 
 function activityOf(s: State, agentId: AgentId): AgentActivity {
@@ -10,7 +11,7 @@ function activityOf(s: State, agentId: AgentId): AgentActivity {
   if (turn) {
     const steps = (s.threads[agentId] ?? []).filter((i) => i.kind === "step" && i.turnId === turn.id);
     const last = steps[steps.length - 1];
-    return { state: "working", since: turn.startedAt, step: last?.kind === "step" ? last.label : null };
+    return { state: "working", since: turn.startedAt, step: last?.kind === "step" ? last.label : null, turnId: turn.id };
   }
   const asks = liveAsks(s, agentId);
   if (asks.length > 0) return { state: "waiting", onAgentIds: [...new Set(asks.map((d) => d.recipientAgentId))] };
@@ -41,7 +42,11 @@ function waitingOn(s: State, agentId: AgentId): WaitingOn[] {
       if (!m || !m.expectsReply || m.from.kind !== "agent" || m.from.agentId !== agentId) return false;
       return live.has(d.id) || replyUnhandled(s, d);
     })
-    .map((d) => ({ messageId: d.messageId, agentId: d.recipientAgentId, state: waitingState(d) }));
+    .map((d) => {
+      const reply = s.messages.find((m) => m.replyTo === d.messageId && m.from.kind === "agent" && m.from.agentId === d.recipientAgentId);
+      const askedAt = messageById(s, d.messageId)?.at;
+      return { messageId: d.messageId, agentId: d.recipientAgentId, state: waitingState(d), ...(askedAt ? { askedAt } : {}), ...(reply ? { repliedAt: reply.at } : {}) };
+    });
 }
 
 function threadOf(s: State, agentId: AgentId): ThreadView {
@@ -56,6 +61,7 @@ function threadOf(s: State, agentId: AgentId): ThreadView {
 }
 
 export function buildSnapshot(s: State): Snapshot {
+  const needs = needsYou(s);
   return {
     rev: s.rev,
     project: s.project,
@@ -66,5 +72,8 @@ export function buildSnapshot(s: State): Snapshot {
     artifacts: s.artifacts,
     roadmap: s.roadmap,
     brain: brainKind(),
+    threadStatus: Object.fromEntries(s.agents.map((a) => [a.id, threadStatusOf(s, a, needs)])),
+    needsYou: needs,
+    drive: s.drive ?? [],
   };
 }

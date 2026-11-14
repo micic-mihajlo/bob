@@ -6,7 +6,7 @@ import { buildSnapshot } from "../snapshot";
 import { getState, replaceState, transact, update } from "../store";
 import { planTurn } from "../turn-start";
 import { settle } from "../turns";
-import { agentMessages, ask, brainFrom, expectQuiet, freshTeam, gate, say } from "./helpers";
+import { agentMessages, ask, brainFrom, expectQuiet, freshStandingTeam, gate, say } from "./helpers";
 
 /** Queues a person's message without starting a turn, as if the server stopped right after. */
 function queueFromPerson(agentId: string, text: string): void {
@@ -23,7 +23,7 @@ function claim(agentId: string): string {
 }
 
 describe("boot sweep", () => {
-  beforeEach(freshTeam);
+  beforeEach(freshStandingTeam);
 
   it("closes turns a restart cut off, replays only those that did nothing, and keeps approvals", async () => {
     postUserMessage("researcher", "find invoice formats");
@@ -70,42 +70,42 @@ describe("boot sweep", () => {
 });
 
 describe("interrupt", () => {
-  beforeEach(freshTeam);
+  beforeEach(freshStandingTeam);
 
   it("stops the agent and the teammate turns its messages started, without restarting it", async () => {
     const hold = gate();
     setBrainOverride(
       brainFrom({
-        bob: (ctx) => (ctx.moves.length === 0 ? ask("coder", "Build the export.") : say("Asked Coder.")),
+        lead: (ctx) => (ctx.moves.length === 0 ? ask("coder", "Build the export.") : say("Asked Coder.")),
         coder: async () => {
           await hold.wait;
           return say("Built it");
         },
       }),
     );
-    postUserMessage("bob", "export invoices");
+    postUserMessage("lead", "export invoices");
     await new Promise((r) => setTimeout(r, 20));
     expect(buildSnapshot(getState()).activity.coder.state).toBe("working");
 
-    const result = stopAgent("bob");
-    expect(result.ok && result.stopped.sort()).toEqual(["bob", "coder"]);
+    const result = stopAgent("lead");
+    expect(result.ok && result.stopped.sort()).toEqual(["coder", "lead"]);
     hold.open();
     await settle();
     const s = getState();
     expect(s.turns.find((t) => t.agentId === "coder")?.status).toBe("interrupted");
-    expect(s.turns.filter((t) => t.agentId === "bob")).toHaveLength(1);
+    expect(s.turns.filter((t) => t.agentId === "lead")).toHaveLength(1);
     expect(agentMessages(s, "coder")).toHaveLength(0);
-    const notice = s.threads.bob.find((i) => i.kind === "notice");
+    const notice = s.threads.lead.find((i) => i.kind === "notice");
     expect(notice?.kind === "notice" && notice.text).toMatch(/Coder/);
     expectQuiet(s);
   });
 
-  /** Bob asks Coder; Coder asks Reviewer and ends its turn; Reviewer is held mid-turn. */
+  /** Lead asks Coder; Coder asks Reviewer and ends its turn; Reviewer is held mid-turn. */
   async function chainHeldAtReviewer() {
     const hold = gate();
     setBrainOverride(
       brainFrom({
-        bob: (ctx) => (ctx.inbound[0].rule === "person" && ctx.moves.length === 0 ? ask("coder", "Build the export.") : say("Noted.")),
+        lead: (ctx) => (ctx.inbound[0].rule === "person" && ctx.moves.length === 0 ? ask("coder", "Build the export.") : say("Noted.")),
         coder: (ctx) => (ctx.inbound[0].rule === "request" && ctx.moves.length === 0 ? ask("reviewer", "Check the export.") : say("Built and checked.")),
         reviewer: async () => {
           await hold.wait;
@@ -113,7 +113,7 @@ describe("interrupt", () => {
         },
       }),
     );
-    postUserMessage("bob", "export invoices");
+    postUserMessage("lead", "export invoices");
     await new Promise((r) => setTimeout(r, 20));
     expect(buildSnapshot(getState()).activity.reviewer.state).toBe("working");
     expect(buildSnapshot(getState()).activity.coder.state).toBe("waiting");
@@ -122,8 +122,8 @@ describe("interrupt", () => {
 
   it("reaches work further down the chain when the agent in between is idle", async () => {
     const hold = await chainHeldAtReviewer();
-    const result = stopAgent("bob");
-    expect(result.ok && result.stopped.sort()).toEqual(["bob", "reviewer"]);
+    const result = stopAgent("lead");
+    expect(result.ok && result.stopped.sort()).toEqual(["lead", "reviewer"]);
     hold.open();
     await settle();
     const s = getState();
@@ -138,7 +138,7 @@ describe("interrupt", () => {
     hold.open();
     await settle();
     const s = getState();
-    const answer = agentMessages(s, "coder").find((m) => m.to.includes("bob"));
+    const answer = agentMessages(s, "coder").find((m) => m.to.includes("lead"));
     expect(answer?.text).toMatch(/^Status: blocked$/m);
     expectQuiet(s);
   });

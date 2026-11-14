@@ -59,12 +59,13 @@ export type GitArgsCheck = { ok: true } | { ok: false; error: string };
 
 const refuse = (error: string): GitArgsCheck => ({ ok: false, error });
 
-export function checkGitArgs(args: readonly string[]): GitArgsCheck {
+/** `allowed` narrows the subcommands further, such as to read-only ones for a reviewer. */
+export function checkGitArgs(args: readonly string[], allowed: readonly string[] = ALLOWED_SUBCOMMANDS): GitArgsCheck {
   const [subcommand, ...rest] = args;
   if (subcommand === undefined) return refuse("give a git subcommand, such as status");
-  const rule = SUBCOMMANDS[subcommand];
+  const rule = allowed.includes(subcommand) ? SUBCOMMANDS[subcommand] : undefined;
   if (!rule) {
-    return refuse(`git ${subcommand} is not allowed. Allowed: ${ALLOWED_SUBCOMMANDS.join(", ")}`);
+    return refuse(`git ${subcommand} is not allowed. Allowed: ${allowed.join(", ")}`);
   }
   for (const arg of rest) {
     const problem = checkArg(arg, rule);

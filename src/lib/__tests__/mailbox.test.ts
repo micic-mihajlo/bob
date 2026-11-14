@@ -5,12 +5,12 @@ import { send } from "../mailbox";
 import { buildSnapshot } from "../snapshot";
 import { getState } from "../store";
 import { settle } from "../turns";
-import { brainFrom, freshTeam, say } from "./helpers";
+import { brainFrom, freshStandingTeam, say } from "./helpers";
 
 const base = { expectsReply: true, replyTo: null, causedBy: null, requestId: "req_test" };
 
 describe("mailbox rules", () => {
-  beforeEach(freshTeam);
+  beforeEach(freshStandingTeam);
 
   it("refuses a message to yourself", () => {
     const sent = send({ ...base, from: { kind: "agent", agentId: "coder" }, to: ["coder"], text: "hi me" });
