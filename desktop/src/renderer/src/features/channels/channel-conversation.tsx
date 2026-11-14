@@ -22,7 +22,6 @@ import {
   ChannelAboveComposer,
   ChannelEmptyState,
   ChannelHeaderTitle,
-  type ChannelRoutineHost,
   ChannelSettingsPane,
 } from "./ChannelConversationParts";
 import {
@@ -45,7 +44,6 @@ export interface ChannelConversationEnvironment {
   isOwnSender: (senderId: string) => boolean;
   /** Whether the host answers. Until it does, no command goes to it. */
   connectionReady: () => boolean;
-  routines: ChannelRoutineHost;
   /** Every approval that waits on the host. The channel shows the ones of its own work. */
   approvals: () => readonly AgentApproval[];
   /** Every browser takeover that waits on the host. */
@@ -251,7 +249,6 @@ export function createChannelConversation(env: ChannelConversationEnvironment) {
     SettingsPane: (props) => (
       <ChannelSettingsPane
         channelId={channelId}
-        routines={env.routines}
         maxWidth={props.maxWidth}
         onWidthChange={props.onWidthChange}
         onClose={props.onClose}

@@ -27,9 +27,7 @@ import { matchesAgentSearch, toggleChannelMember } from "./channels-draft";
 
 interface ChannelEditorProps {
   memoryCount: number;
-  routineCount: number;
   onOpenMemories: () => void;
-  onOpenRoutines: () => void;
 }
 
 /**
@@ -331,11 +329,6 @@ export function ChannelEditor(props: ChannelEditorProps) {
           label={t("channel.settings.memories")}
           value={t("channel.settings.memoryCount", { count: props.memoryCount })}
           onClick={props.onOpenMemories}
-        />
-        <SettingsLinkRow
-          label={t("channel.settings.routines")}
-          value={t("channel.settings.routineCount", { count: props.routineCount })}
-          onClick={props.onOpenRoutines}
         />
       </SettingsLinkGroup>
       <section class="channel-members" aria-label={t("channel.members.title")}>

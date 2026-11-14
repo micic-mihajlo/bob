@@ -12,26 +12,12 @@ import { useText } from "@bob/ui/text";
 import { createEffect, createMemo, createStore, Show } from "solid-js";
 import { createSettingsPanelWidth, saveSettingsPanelWidth } from "../../components/settings-panel-width";
 import { AgentMemoriesModal } from "../conversation/AgentMemoriesModal";
-import { AgentRoutinesSettings } from "../conversation/AgentRoutinesSettings";
 import type { ConversationChannelSettingsPaneProps } from "../conversation/conversation-types";
 import { channelMemoriesPort } from "../conversation/memories-port";
-import { desktopEventRoutinesApi } from "../conversation/routine-webhooks-api";
-import { channelRoutinesPort, eventRoutinesPort } from "../conversation/routines-port";
 import { ChannelEditor } from "./ChannelEditor";
 import { stoppedChannelTasks } from "./channel-conversation-rows";
 import { useChannels } from "./channels-context";
 
-/** Where the routines of a channel are kept, as for an agent. */
-export interface ChannelRoutineHost {
-  /** The host is this computer, so it keeps the routine settings that the released Team API drops. */
-  localHost: () => boolean;
-  /** The desktop server whose event API this window may manage: owner, admin or this computer. */
-  eventsServerId: () => string | undefined;
-  /** Whether the `eventsServerId` host has `routine-recovery-v1`. */
-  routineRecovery: () => boolean;
-  /** Whether the `eventsServerId` host sends a test event to a webhook routine. */
-  webhookTests: () => boolean;
-}
 
 function useOpenChannel(channelId: string) {
   const channels = useChannels();
@@ -143,12 +129,10 @@ export function ChannelAboveComposer(props: { channelId: string }) {
 }
 
 /**
- * The channel settings in the settings pane of the view. Memories and routines live here rather than
- * in `ChannelEditor`, because the routines view covers the whole pane: its own header replaces the
- * pane header, as in the agent settings.
+ * The channel settings in the settings pane of the view, with the channel's memories.
  */
 export function ChannelSettingsPane(
-  props: ConversationChannelSettingsPaneProps & { channelId: string; routines: ChannelRoutineHost },
+  props: ConversationChannelSettingsPaneProps & { channelId: string },
 ) {
   const channels = useChannels();
   const { t } = useText();
@@ -167,22 +151,11 @@ export function ChannelSettingsPane(
   );
   const [panel, setPanel] = createStore({
     memories: { open: false, count: 0 },
-    routines: { open: false, count: 0 },
   });
   const channelName = createMemo(() => page()?.channel.name ?? "");
   // Memoised on the name alone: a port rebuilt on every revision would drop and remake its event
   // subscription each time a message arrives.
   const memoriesPort = createMemo(() => channelMemoriesPort(props.channelId, channelName(), runtime().agent));
-  const routinesPort = createMemo(() => {
-    const legacy = channelRoutinesPort(props.channelId, runtime().agent, props.routines.localHost());
-    const serverId = props.routines.eventsServerId();
-    const eventApi =
-      runtime().eventRoutines ??
-      (serverId
-        ? desktopEventRoutinesApi(serverId, props.routines.routineRecovery(), props.routines.webhookTests())
-        : undefined);
-    return eventApi ? eventRoutinesPort({ kind: "channel", id: props.channelId }, eventApi, legacy) : legacy;
-  });
   // The settings rows show both counts before either view opens, so the pane loads them and follows
   // the events that those views follow.
   createEffect(memoriesPort, (port) => {
@@ -190,17 +163,6 @@ export function ChannelSettingsPane(
       void port.list().then((entries) => {
         setPanel((state) => {
           state.memories.count = entries.length;
-        });
-      });
-    };
-    load();
-    return port.subscribe(load);
-  });
-  createEffect(routinesPort, (port) => {
-    const load = () => {
-      void port.list().then((entries) => {
-        setPanel((state) => {
-          state.routines.count = entries.length;
         });
       });
     };
@@ -216,63 +178,37 @@ export function ChannelSettingsPane(
       maxWidth={props.maxWidth}
       onResize={setPanelWidth}
     >
-      <Show
-        when={panel.routines.open}
-        fallback={
-          <>
-            <SettingsPanelHeader
-              title={t("channel.settings.title")}
-              onClose={props.onClose}
-              closeLabel={t("channel.panel.close")}
-            />
-            <SettingsPanelContent>
-              <ChannelEditor
-                memoryCount={panel.memories.count}
-                routineCount={panel.routines.count}
-                onOpenMemories={() =>
-                  setPanel((state) => {
-                    state.memories.open = true;
-                  })
-                }
-                onOpenRoutines={() =>
-                  setPanel((state) => {
-                    state.routines.open = true;
-                  })
-                }
-              />
-            </SettingsPanelContent>
-            <AgentMemoriesModal
-              port={memoriesPort()}
-              open={panel.memories.open}
-              onOpenChange={(open) =>
-                setPanel((state) => {
-                  state.memories.open = open;
-                })
-              }
-              onCountChange={(count) =>
-                setPanel((state) => {
-                  state.memories.count = count;
-                })
-              }
-            />
-          </>
-        }
-      >
-        <AgentRoutinesSettings
-          port={routinesPort()}
+      <>
+        <SettingsPanelHeader
+          title={t("channel.settings.title")}
+          onClose={props.onClose}
+          closeLabel={t("channel.panel.close")}
+        />
+        <SettingsPanelContent>
+          <ChannelEditor
+            memoryCount={panel.memories.count}
+            onOpenMemories={() =>
+              setPanel((state) => {
+                state.memories.open = true;
+              })
+            }
+          />
+        </SettingsPanelContent>
+        <AgentMemoriesModal
+          port={memoriesPort()}
+          open={panel.memories.open}
+          onOpenChange={(open) =>
+            setPanel((state) => {
+              state.memories.open = open;
+            })
+          }
           onCountChange={(count) =>
             setPanel((state) => {
-              state.routines.count = count;
+              state.memories.count = count;
             })
           }
-          onBack={() =>
-            setPanel((state) => {
-              state.routines.open = false;
-            })
-          }
-          onClose={props.onClose}
         />
-      </Show>
+      </>
     </SettingsPanel>
   );
 }
