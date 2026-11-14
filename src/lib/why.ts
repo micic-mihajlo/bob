@@ -5,6 +5,12 @@ import { senderName } from "./graph/schema";
 import { agentName, messageById, type State } from "./state";
 import type { InboxKind, Message, MessageId, WhyHop } from "./types";
 
+/** The Linear issue an inbox item came from, as a Why? source shows it. */
+function linearOf(s: State, inboxId: string): { linear?: { identifier: string; title: string; url: string } } {
+  const linear = (s.inbox ?? []).find((i) => i.id === inboxId)?.linear;
+  return linear ? { linear: { identifier: linear.identifier, title: linear.title, url: linear.url } } : {};
+}
+
 /**
  * Follows `causedBy` from a message back to what a person typed, then from an answer to the captain's
  * question back to the ask it answers, so the root is the first thing the person typed. Newest first.
@@ -25,7 +31,7 @@ export function traceWhy(s: State, messageId: MessageId): WhyHop[] {
       fromName: senderName(s, message),
       toNames: message.to.map((id) => agentName(s, id)),
       ...(question ? { question } : {}),
-      ...(item ? { source: { inboxId: item.id, kind: item.kind, label: item.source, quote, ...(item.linear ? { linear: { identifier: item.linear.identifier, title: item.linear.title, url: item.linear.url } } : {}) } } : {}),
+      ...(item ? { source: { inboxId: item.id, kind: item.kind, label: item.source, quote, ...linearOf(s, item.id) } } : {}),
     });
     cursor = message.causedBy ?? message.continues ?? null;
   }
@@ -168,7 +174,7 @@ export async function answerWhy(s: State, messageId: MessageId): Promise<WhyAnsw
     try {
       await syncWithin(s, SYNC_BUDGET_MS);
       const rows = await runCypher<HopRow>(c, WHY_QUERY, { messageId }, READ_TIMEOUT_MS);
-      const hops = hopsFromRows(orderHops(rows, messageId));
+      const hops = hopsFromRows(orderHops(rows, messageId)).map((h) => (h.source ? { ...h, source: { ...h.source, ...linearOf(s, h.source.inboxId) } } : h));
       if (hops.length > 0) return { hops, source: "hydra" };
     } catch (error) {
       console.warn(`HydraDB Why? query failed, answering from memory: ${error instanceof Error ? error.message : String(error)}`);
