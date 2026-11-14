@@ -9,6 +9,8 @@ import type {
   Message,
   Project,
   ReleaseNote,
+  RequestId,
+  RequestUsage,
   Roadmap,
   ThreadItem,
   Turn,
@@ -39,6 +41,8 @@ export interface State {
   releaseNotes?: Record<string, ReleaseNote>;
   /** Optional: by agent, the move its model is generating right now. Not carried across a restart. */
   live?: Record<AgentId, LiveMove>;
+  /** By request id: model calls, tokens and estimated cost. */
+  usage?: Record<RequestId, RequestUsage>;
   rev: number;
 }
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { policyFor, protectedFiles } from "../policy";
 import { newId, nowIso } from "../ids";
 import type { State } from "../state";
 import { addThreadItem, stamp } from "../state-ops";
@@ -41,6 +42,12 @@ type ApprovalInput = z.infer<typeof requestApprovalSchema>;
 
 const WAIT_NOTE = "A person will decide. You will get a new turn with the decision.";
 
+/** Names the changed files bob.policy.json says always need a person's eyes. */
+function withProtectedNote(s: State, pr: PullRequestArtifact, detail: string): string {
+  const files = protectedFiles(policyFor(s.project.id), pr.pullRequest.files.map((f) => f.path));
+  return files.length ? `${detail}\nPolicy: touches ${files.join(", ")}, which bob.policy.json says always needs your approval.` : detail;
+}
+
 function addApproval(s: State, input: ApprovalInput, ctx: ToolContext, pr: PullRequestArtifact | undefined): { state: State; value: string } {
   const approval: Approval = {
     id: newId("apr"),
@@ -48,7 +55,7 @@ function addApproval(s: State, input: ApprovalInput, ctx: ToolContext, pr: PullR
     turnId: ctx.turnId,
     requestId: ctx.requestId,
     title: input.title,
-    detail: input.detail,
+    detail: pr ? withProtectedNote(s, pr, input.detail) : input.detail,
     status: "pending",
     at: nowIso(),
     ...(pr ? { pullRequestId: pr.id, headSha: pr.pullRequest.headSha } : {}),

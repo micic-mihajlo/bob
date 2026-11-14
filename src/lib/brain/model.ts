@@ -2,6 +2,7 @@ import { streamText, tool, type ModelMessage, type TextStreamPart, type ToolSet 
 import { modelsToTry } from "../models";
 import { addNotice } from "../state-ops";
 import { update } from "../store";
+import { recordUsage } from "../usage";
 import { projectFiles } from "../thread-workspace";
 import type { ToolSpec } from "../tools";
 import { systemPrompt } from "./prompt";
@@ -109,6 +110,7 @@ export const modelBrain: Brain = {
       });
       await readStream(stream.fullStream, live);
       const [text, toolCalls, finishReason] = await Promise.all([stream.text, stream.toolCalls, stream.finishReason]);
+      recordUsage(ctx.requestId, model, await stream.usage);
       return { text, toolCalls, finishReason };
     };
     const attempt = async (model: string) => {

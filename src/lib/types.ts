@@ -325,6 +325,39 @@ export interface Snapshot {
   drive?: DriveFile[];
   /** What shipped, for the Learn card, newest first. CHANGELOG.md holds the same notes. */
   releaseNotes?: ReleaseNote[];
+  /** Every request the person made, newest first, with its time, model use, cost and alerts. */
+  requests?: RequestControl[];
+  budgets?: RequestBudgets;
+}
+
+/** Model use the factory recorded for one request, from the AI SDK's usage on each call. */
+export interface RequestUsage {
+  modelCalls: number;
+  inputTokens: number;
+  outputTokens: number;
+  /** Estimated from the per-model prices in bob.policy.json or the defaults. */
+  costUsd: number;
+}
+
+/** One request's controls: how long it ran, what it used, and any budget it crossed. */
+export interface RequestControl extends RequestUsage {
+  requestId: RequestId;
+  /** The first thing the person typed for it. */
+  ask: string;
+  startedAt: string;
+  /** Wall time so far, or until its last turn ended. */
+  seconds: number;
+  running: boolean;
+  turns: number;
+  /** One line per budget crossed, as DIGEST.md shows it. */
+  alerts: string[];
+}
+
+/** The per-request limits in force, from bob.policy.json or the defaults. */
+export interface RequestBudgets {
+  maxMinutes: number;
+  maxModelCalls: number;
+  maxCostUsd: number;
 }
 
 /** What changed for the people who use the product, written when a pull request merges. */

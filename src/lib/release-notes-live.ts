@@ -6,6 +6,7 @@ import { factoryNote, workOrderOf } from "./release-notes";
 import { getState, update } from "./store";
 import { isPullRequest, type PullRequestArtifact } from "./threads";
 import type { ReleaseNote } from "./types";
+import { recordUsage } from "./usage";
 
 /** Records the release note for a merged pull request. Called once the merge lands; a second call keeps the first note. */
 export function recordReleaseNote(pullRequestId: string): void {
@@ -24,7 +25,7 @@ async function rewriteReleaseNote(pullRequestId: string): Promise<void> {
   const note = s.releaseNotes?.[pullRequestId];
   const pr = s.artifacts.find((a) => a.id === pullRequestId);
   if (!note || !pr) return;
-  const { text } = await generateText({
+  const { text, usage } = await generateText({
     model: LIGHT_MODEL,
     abortSignal: AbortSignal.timeout(30_000),
     prompt: [
@@ -36,6 +37,7 @@ async function rewriteReleaseNote(pullRequestId: string): Promise<void> {
       `Draft: ${note.text}`,
     ].join("\n"),
   });
+  recordUsage(pr.requestId, LIGHT_MODEL, usage);
   const clean = text.trim().replace(/^["']|["']$/g, "");
   if (!clean || clean.length > 400) return;
   update((x) => (x.releaseNotes?.[pullRequestId] ? { ...x, releaseNotes: { ...x.releaseNotes, [pullRequestId]: { ...x.releaseNotes[pullRequestId], text: clean, source: "model" } } } : x));
