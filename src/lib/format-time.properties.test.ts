@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { formatAgo, formatElapsed, openedTimeSuffix } from "./format-time";
+import { formatAgo, formatElapsed, nowFromClock, openedTimeSuffix } from "./format-time";
 import { elapsedSince } from "./client/roadmap-view";
 
 const SECOND = 1000;
@@ -53,6 +53,14 @@ describe("formatAgo properties", () => {
       fc.property(fc.oneof(fc.constant(null), fc.string()), (openedAgo) =>
         openedTimeSuffix(openedAgo) === (openedAgo === null ? "" : ` · ${openedAgo}`),
       ),
+    );
+  });
+
+  it("uses the ticking clock, and the wall clock only while it reads zero", () => {
+    fc.assert(
+      fc.property(fc.integer(), fc.integer(), (clock, wall) => {
+        expect(nowFromClock(clock, wall)).toBe(clock === 0 ? wall : clock);
+      }),
     );
   });
 });

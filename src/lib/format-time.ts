@@ -25,6 +25,14 @@ export function openedTimeSuffix(openedAgo: string | null): string {
 }
 
 /**
+ * The clock a live card draws with. The window clock ticks once a second and still reads zero on
+ * the first render, where the wall clock stands in.
+ */
+export function nowFromClock(clock: number, wall: number = Date.now()): number {
+  return clock === 0 ? wall : clock;
+}
+
+/**
  * How long something has been going, at the roadmap card's size: "45s" under a minute,
  * "3m 05s" under an hour, and "1h 02m" from an hour up. A negative value reads as zero.
  */
