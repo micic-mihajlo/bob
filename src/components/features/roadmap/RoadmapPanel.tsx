@@ -110,13 +110,14 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
               ? tracks.map((track) => {
                   const { goal } = track;
                   const progress = trackProgress(track, roadmap.totalStages);
+                  const asked = track.ask ? requestLabel(track.ask, inbox) : null;
                   return (
                     <Card key={track.key} className="bob-roadmap-card" aria-label={goal?.title ?? "Goal"}>
                       <p className="bob-roadmap-label">Goal</p>
                       <h3 className="bob-roadmap-goal">{goal?.title ?? "No goal set yet"}</h3>
-                      {track.ask ? (
-                        <p className="bob-roadmap-ask" title={track.ask}>
-                          “{track.ask}”
+                      {asked ? (
+                        <p className="bob-roadmap-ask" title={asked}>
+                          {asked === track.ask ? `“${asked}”` : asked}
                         </p>
                       ) : null}
                       {goal?.why ? <p className="bob-roadmap-muted">{goal.why}</p> : null}

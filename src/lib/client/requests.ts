@@ -5,8 +5,15 @@ function dollars(value: number): string {
   return `$${value.toFixed(2)}`;
 }
 
-/** What a request is called: the sentence the person typed, or for an inbox item's triage, where the item came from. */
+const BUILD_ORDER = /^Build work order \S+ now: ("(?:[^"\\]|\\.)*")/;
+
+/**
+ * What a request is called: the sentence the person typed; for an inbox item's triage, where the item
+ * came from; for a "Build this" press, the work order it builds.
+ */
 export function requestLabel(ask: string, inbox: readonly InboxItem[]): string {
+  const build = BUILD_ORDER.exec(ask);
+  if (build) return `Build: ${JSON.parse(build[1]) as string}`;
   const item = inbox.find((candidate) => ask.includes(candidate.id));
   return item ? `Triage: ${item.source}` : ask;
 }

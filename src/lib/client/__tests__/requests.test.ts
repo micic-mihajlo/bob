@@ -44,6 +44,12 @@ describe("requestLabel", () => {
     );
   });
 
+  it("names a Build this press by the work order it builds, not by the prompt", () => {
+    const ask =
+      'Build work order wo_d88a039e now: "Follow-up to #2: Quote \\"Acme, Inc.\\" names". It came from production error, Nov 14 09:12 UTC: "The customer name". It is already in the backlog, so don\'t plan it again.';
+    expect(requestLabel(ask, [call])).toBe('Build: Follow-up to #2: Quote "Acme, Inc." names');
+  });
+
   it("keeps a typed request as the person wrote it", () => {
     expect(requestLabel("customers want to export invoices as CSV", [call])).toBe("customers want to export invoices as CSV");
   });
