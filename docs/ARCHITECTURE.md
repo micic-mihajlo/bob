@@ -126,3 +126,7 @@ After a merge, `markMerged` completes the work order, `recordReleaseNote` writes
 ## Restart
 
 `boot.ts` sweeps the saved state when the server loads. A turn the restart cut off reruns when every step it took is safe to repeat. Otherwise it picks up from the state with a notice of what already happened, so nothing runs twice. Askers whose answer was lost get one, and queued work starts again.
+
+## Durable state on Cloudflare (BOB_DURABLE=cloudflare)
+
+`.data/state.json` stays the default and the source Bob reads. With `BOB_DURABLE=cloudflare`, `BOB_DURABLE_URL` and `BOB_DURABLE_SECRET` set, every persisted revision is also written to the Worker in `cloud/`, which keeps one Durable Object per project: the latest revision, a log of the last 50, and a 409 for any rev that is not newer, so a stale server can't roll state back. The write runs off the request path, one at a time with the newest winning. When the Durable Object is down, turns go on, the file is kept, the failure is logged once and the write is retried with backoff. On start, `src/instrumentation.ts` restores a newer revision from the Durable Object into the file before the first request, so a server that lost its disk comes back where it was and the restart sweep above picks up the interrupted turns. The Durable Object holds state only. The git workspaces under `.data/workspaces` stay on the machine. `pnpm durable:proof` runs the kill-9-and-delete-.data proof against `wrangler dev`, and `cloud/README.md` covers the deploy.

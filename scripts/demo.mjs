@@ -150,6 +150,14 @@ try {
     ["HydraDB graph", env.BOB_STORE === "hydra" ? (has("HYDRADB_API_KEY") ? "on" : "BOB_STORE=hydra but no HYDRADB_API_KEY, so JSON only") : "off (BOB_STORE=hydra turns it on)"],
     ["Voice", env.BOB_VOICE === "elevenlabs" ? (has("ELEVENLABS_API_KEY") ? "ElevenLabs" : "BOB_VOICE=elevenlabs but no ELEVENLABS_API_KEY") : "browser speech (BOB_VOICE=elevenlabs for ElevenLabs)"],
     ["GitHub PRs", github === "gh" || github === "composio" ? `on via ${github} to ${env.BOB_GITHUB_REPO || "micic-mihajlo/bob"}` : "off (BOB_GITHUB=gh turns it on)"],
+    [
+      "Durable state",
+      env.BOB_DURABLE === "cloudflare"
+        ? has("BOB_DURABLE_URL") && has("BOB_DURABLE_SECRET")
+          ? `Cloudflare Durable Object at ${env.BOB_DURABLE_URL}, local file kept`
+          : "BOB_DURABLE=cloudflare but no BOB_DURABLE_URL or BOB_DURABLE_SECRET, so the local file only"
+        : "local file .data/state.json (BOB_DURABLE=cloudflare for a Durable Object)",
+    ],
     ["Vercel previews", env.BOB_PREVIEWS?.trim().toLowerCase() === "vercel" ? "on" : "off (BOB_PREVIEWS=vercel turns it on)"],
     ["Project", `${snapshot.project?.name ?? "?"} (${snapshot.project?.repo ?? "invoices template"})`],
   ];

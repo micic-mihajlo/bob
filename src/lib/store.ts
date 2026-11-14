@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { sweepOrphans } from "./boot";
 import { withCaptainFiles } from "./captain-files";
+import { mirrorDurable } from "./durable";
 import { withPullRequestTraces } from "./trace";
 import { globals, type Config } from "./globals";
 import { mirrorCommit } from "./graph/mirror";
@@ -79,6 +80,7 @@ function schedulePersist(): void {
     } catch {
       // Persistence is best effort. The in-memory state stays authoritative.
     }
+    if (g.state) mirrorDurable(g.state);
   }, PERSIST_DEBOUNCE_MS);
 }
 
