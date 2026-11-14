@@ -2,7 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import { Fragment, useState } from "react";
-import { useBob } from "@/components/features/window/BobContext";
+import { useBob, type SyncState } from "@/components/features/window/BobContext";
 import { buttonClass, cx } from "@/components/ui/classes";
 import { sidebarList, type SidebarListModel, type SidebarSectionModel } from "@/lib/client/sidebar-rows";
 import type { Agent } from "@/lib/types";
@@ -11,9 +11,15 @@ import { ProjectMenu } from "./ProjectMenu";
 import { SidebarAgentRow } from "./SidebarAgentRow";
 import { PlusIcon, SearchIcon, SidebarToggleIcon } from "./SidebarIcons";
 
+const SYNC: Record<SyncState, { label: string; title: string }> = {
+  live: { label: "Synced", title: "Updates stream in as they happen" },
+  polling: { label: "Polling", title: "The live stream dropped, so the app checks for updates" },
+  offline: { label: "Offline", title: "The Bob server can't be reached. The app keeps trying." },
+};
+
 /** The reference sidebar: the project in the top row, "Needs you", then the threads by section. */
 export function Sidebar({ compact = false, onExpand }: { compact?: boolean; onExpand?: () => void }) {
-  const { snapshot, connected, newAgentOpen, setNewAgentOpen } = useBob();
+  const { snapshot, sync, newAgentOpen, setNewAgentOpen } = useBob();
   const [query, setQuery] = useState("");
   const list = sidebarList(snapshot);
   const needle = query.trim().toLowerCase();
@@ -108,12 +114,8 @@ export function Sidebar({ compact = false, onExpand }: { compact?: boolean; onEx
           <div className="account-update-island__copy" role="status" aria-live="polite">
             <strong>{snapshot.brain === "model" ? "Live model" : "Scripted agents"}</strong>
           </div>
-          <span
-            className="sidebar-brain-sync"
-            data-live={connected ? "" : undefined}
-            title={connected ? "Updates stream in as they happen" : "The live stream dropped, so the app checks for updates"}
-          >
-            {connected ? "Synced" : "Polling"}
+          <span className="sidebar-brain-sync" data-sync={sync} title={SYNC[sync].title}>
+            {SYNC[sync].label}
           </span>
         </div>
       </div>

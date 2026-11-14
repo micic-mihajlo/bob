@@ -12,7 +12,7 @@ export function SnapshotGate({ children }: { children: ReactNode }) {
   if (snapshot === null) return <AppLoadingScreen error={error} />;
 
   return (
-    <BobProvider snapshot={snapshot} connected={connected}>
+    <BobProvider snapshot={snapshot} sync={connected ? "live" : error === null ? "polling" : "offline"}>
       {children}
     </BobProvider>
   );
