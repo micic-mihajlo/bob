@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/Button";
 import type { BadgeVariant } from "@/components/ui/classes";
 import { Skeleton } from "@/components/ui/Surface";
 import { fileBadge, fileReferenceTone, type FileReferenceTone } from "@/lib/client/file-reference";
+import { formatFileSize } from "@/lib/client/drive";
 import { FILE_TYPE_FILTERS, fileCountLabel, fileTypeCounts, groupFilesByDay, queryFiles, type FileQuery } from "@/lib/client/files-view";
+import { FILE_SORTS, sortFiles, type FileSort } from "./files-view";
 
 export interface FileListRow {
   key: string;
@@ -15,6 +17,8 @@ export interface FileListRow {
   /** When it was made or last changed, for the day groups. */
   at: string;
   meta: readonly string[];
+  /** Size in bytes, for the Largest order and the size in the summary. */
+  size?: number;
   /** The badge text; the file's extension when absent. */
   badge?: string;
   tone?: FileReferenceTone;
@@ -32,7 +36,7 @@ export interface FileListProps {
   rows: readonly FileListRow[];
   /** Day headings between rows, newest first. */
   groupByDay?: boolean;
-  /** Search and type filters above the rows. */
+  /** Search, order and type filters above the rows. */
   filters?: boolean;
   loading?: boolean;
   error?: string | null;
@@ -46,10 +50,12 @@ const LOADING_ROWS = [0, 1, 2, 3, 4];
 /** The reference's compact file list: search, type filters, day groups and file rows. */
 export function FileList({ label, rows, groupByDay = false, filters = true, loading, error, onRetry, emptyTitle, emptyDescription }: FileListProps) {
   const [query, setQuery] = useState<FileQuery>({ search: "", type: "all" });
+  const [sort, setSort] = useState<FileSort>("newest");
   const searched = useMemo(() => queryFiles(rows, { ...query, type: "all" }), [rows, query]);
   const counts = fileTypeCounts(searched);
-  const visible = queryFiles(rows, query);
-  const groups = groupByDay ? groupFilesByDay(visible, new Date()) : [{ key: "all", label: "", files: visible }];
+  const visible = sortFiles(queryFiles(rows, query), sort);
+  const groups = groupByDay && sort === "newest" ? groupFilesByDay(visible, new Date()) : [{ key: "all", label: "", files: visible }];
+  const sized = visible.some((row) => row.size !== undefined);
   const filtered = query.search.trim() !== "" || query.type !== "all";
 
   return (
@@ -70,6 +76,13 @@ export function FileList({ label, rows, groupByDay = false, filters = true, load
                 onChange={(event) => setQuery((previous) => ({ ...previous, search: event.target.value }))}
               />
             </div>
+            <select className="ui-select file-list-sort" data-size="sm" aria-label="Sort files" value={sort} onChange={(event) => setSort(event.target.value as FileSort)}>
+              {FILE_SORTS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
           <fieldset className="file-list-filters" aria-label="File type">
             {FILE_TYPE_FILTERS.filter((filter) => filter.value === "all" || counts[filter.value] > 0).map((filter) => (
@@ -124,11 +137,10 @@ export function FileList({ label, rows, groupByDay = false, filters = true, load
         </div>
       ) : (
         <>
-          {filtered ? (
-            <p className="file-list-summary" aria-live="polite">
-              {fileCountLabel(visible.length)} of {rows.length}
-            </p>
-          ) : null}
+          <p className="file-list-summary" aria-live="polite">
+            {fileCountLabel(visible.length)}
+            {sized ? ` · ${formatFileSize(visible.reduce((sum, row) => sum + (row.size ?? 0), 0))}` : null}
+          </p>
           {groups.map((group) => (
             <div key={group.key} className="file-list-group">
               {group.label ? <h3 className="file-list-group-heading">{group.label}</h3> : null}
