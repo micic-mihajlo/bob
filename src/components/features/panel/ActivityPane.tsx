@@ -8,7 +8,7 @@ import type { BadgeVariant } from "@/components/ui/classes";
 import { nameOf } from "@/lib/client/crew";
 import { formatClock } from "@/lib/client/format";
 import type { FileReferenceTone } from "@/lib/client/file-reference";
-import { isPullRequest, PULL_REQUEST_STATE_LABEL, pullRequestState, type PullRequestState } from "@/lib/client/pull-requests";
+import { isPullRequest, PULL_REQUEST_STATE_LABEL, pullRequestState, VERDICT_LABEL, type PullRequestState } from "@/lib/client/pull-requests";
 import type { Artifact } from "@/lib/types";
 import { PaneFrame } from "./PaneFrame";
 import { Activity } from "lucide-react";
@@ -33,7 +33,12 @@ export function ActivityPane({ onClose }: { onClose: () => void }) {
   const { snapshot, agentsById, selectAgent, openWhy } = useBob();
   const artifacts = [...snapshot.artifacts].sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
   // A pull request reads the same here as on its card: waiting at the merge gate is not "Approved".
+  // A review reads its verdict, so a review that asked for changes is not "Open".
   const statusOf = (artifact: Artifact) => {
+    if (artifact.review) {
+      const approved = artifact.review.verdict === "approve";
+      return { label: VERDICT_LABEL[artifact.review.verdict], variant: (approved ? "success-light" : "warning-light") as BadgeVariant };
+    }
     const state = isPullRequest(artifact) ? pullRequestState(artifact, snapshot.approvals) : artifact.status;
     return { label: PULL_REQUEST_STATE_LABEL[state], variant: STATUS_VARIANT[state] };
   };
