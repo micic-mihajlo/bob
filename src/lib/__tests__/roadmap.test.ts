@@ -106,6 +106,14 @@ describe("roadmap rules", () => {
     expect(renamed.today).toEqual(scheduled.today);
   });
 
+  it("starts a track's clock when the request was recorded, not at the first planning call", () => {
+    const recordedAt = "2026-11-14T22:00:00.000Z";
+    const road = unwrap(setGoal(emptyRoadmap(), { ...A, recordedAt }, TESTABLE, "2026-11-14T22:00:20.000Z"));
+    expect(trackOf(road, A.requestId)).toMatchObject({ startedAt: recordedAt, updatedAt: "2026-11-14T22:00:20.000Z" });
+    const unknown = unwrap(setGoal(emptyRoadmap(), A, TESTABLE, "2026-11-14T22:00:20.000Z"));
+    expect(trackOf(unknown, A.requestId)?.startedAt).toBe("2026-11-14T22:00:20.000Z");
+  });
+
   it("starts a new request on its own track at Intent and leaves a finished track at Learn", () => {
     const ship = atShip(planned(["a"]));
     const [a] = ship.today;

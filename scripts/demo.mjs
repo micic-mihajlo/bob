@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 /**
- * pnpm demo: checks the machine, builds and starts Bob, resets the scripted sample (tasks-app) to a clean seed with its
- * repository and dependencies already made, and prints what is on and off. Every other project is kept. Plain JavaScript so it can
+ * pnpm demo: checks the machine, builds and starts Bob, opens Bob's own repository at its pinned demo base (Bob builds
+ * Bob; --sample or --scripted use the tasks-app sample instead) with its repository and dependencies already made, and
+ * prints what is on and off. Every other project is kept. Plain JavaScript so it can
  * check the Node version before anything else runs.
  *
- *   pnpm demo                 production build on port 3000, live model when .env.local has the key
+ *   pnpm demo                 Bob builds Bob: production build on port 3000, Bob's own repository at demo/self-base,
+ *                             PRs to demo/self, live model when .env.local has the key
  *   pnpm demo --prewarm       also starts one coding request in the background, so a PR is under way
- *   pnpm demo --self          Bob builds Bob: opens Bob's own repository at its pinned demo base, PRs go to demo/self
- *   pnpm demo --scripted      the scripted brain, whatever .env.local says (the mid-demo fallback)
+ *   pnpm demo --sample        the tasks-app sample instead of Bob's own repository
+ *   pnpm demo --scripted      the scripted brain on the tasks-app sample, whatever .env.local says (the mid-demo fallback);
+ *                             add --self to keep Bob's own repository
  *   pnpm demo --keep          keep the current state instead of resetting the sample
  *   pnpm demo --dev           next dev instead of a production build
  *   pnpm demo --port 3001
@@ -27,10 +30,14 @@ const { values: opts } = parseArgs({
     prewarm: { type: "boolean", default: false },
     scripted: { type: "boolean", default: false },
     self: { type: "boolean", default: false },
+    sample: { type: "boolean", default: false },
     keep: { type: "boolean", default: false },
     dev: { type: "boolean", default: false },
   },
 });
+
+/** Bob's own repository unless the sample is asked for; the scripted brain keeps to the sample unless --self says otherwise. */
+const SELF_MODE = opts.self || (!opts.sample && !opts.scripted);
 
 const ROOT = process.cwd();
 const PORT = Number(opts.port);
@@ -90,8 +97,8 @@ if (!(await portFree(PORT))) stop(`port ${PORT} is in use. Stop the other server
 fs.mkdirSync(LOG_DIR, { recursive: true });
 const serverEnv = { ...process.env, PORT: String(PORT) };
 if (opts.scripted) serverEnv.BOB_BRAIN = "script";
-if (opts.self) serverEnv.BOB_GITHUB_BASE = process.env.BOB_GITHUB_BASE?.trim() || SELF.prBase;
-if (opts.self && !env.BOB_GITHUB?.trim() && has("COMPOSIO_API_KEY")) serverEnv.BOB_GITHUB = "composio";
+if (SELF_MODE) serverEnv.BOB_GITHUB_BASE = process.env.BOB_GITHUB_BASE?.trim() || SELF.prBase;
+if (SELF_MODE && !env.BOB_GITHUB?.trim() && has("COMPOSIO_API_KEY")) serverEnv.BOB_GITHUB = "composio";
 serverEnv.BOB_ENGINE = env.BOB_ENGINE?.trim() || "sdk";
 const next = path.join(ROOT, "node_modules", ".bin", "next");
 
@@ -137,11 +144,11 @@ for (;;) {
 
 try {
   if (!opts.keep) {
-    if (opts.self) {
+    if (SELF_MODE) {
       say(`demo: opening Bob's own repository at ${SELF.branch} and preparing it (clone, pnpm install); other projects are kept`);
       await call("/api/projects", { repo: SELF.repo, branch: SELF.branch, name: SELF.name });
     } else say("demo: resetting the scripted sample and preparing it (repository, dependencies); other projects are kept");
-    const reset = await call("/api/reset", opts.self ? { warm: true } : { warm: true, sample: true });
+    const reset = await call("/api/reset", SELF_MODE ? { warm: true } : { warm: true, sample: true });
     const deps = reset.deps ?? { kind: "none" };
     if (deps.kind === "failed") say(`demo: WARNING the project's dependency install failed (${deps.command}); each thread will install its own. ${String(deps.output).slice(-300)}`);
     else if (deps.kind === "ready") say(`demo: project ready, dependencies ${deps.reused ? "already installed" : `installed in ${Math.round(deps.seconds)} s`}`);
@@ -180,8 +187,8 @@ try {
   if (opts.prewarm) {
     const captain = snapshot.agents.find((a) => a.kind === "captain") ?? snapshot.agents.find((a) => a.role === "orchestrator");
     if (!captain) throw new Error("no captain in the snapshot");
-    await call(`/api/agents/${captain.id}/messages`, { text: opts.self ? SELF_PREWARM : PREWARM });
-    say(`\ndemo: pre-warm request sent to ${captain.name} (${opts.self ? "pull request times" : "overdue tasks"}). It stops at a merge approval under Needs you.`);
+    await call(`/api/agents/${captain.id}/messages`, { text: SELF_MODE ? SELF_PREWARM : PREWARM });
+    say(`\ndemo: pre-warm request sent to ${captain.name} (${SELF_MODE ? "pull request times" : "overdue tasks"}). It stops at a merge approval under Needs you.`);
   }
   if (!live && !opts.scripted) say("\ndemo: WARNING the scripted brain is running. Put AI_GATEWAY_API_KEY in .env.local for the live model.");
   say(`\nBob is on at ${BASE}. Ctrl-C stops it. If the model misbehaves mid-demo: Ctrl-C, then pnpm demo --scripted.`);

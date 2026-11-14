@@ -14,7 +14,8 @@ export function planningRequest(s: State, ctx: ToolContext): TrackRef {
   const turn = s.turns.find((t) => t.id === ctx.turnId);
   const typed = (turn?.messageIds ?? []).map((id) => messageById(s, id)).filter((m) => m?.from.kind === "user" && !m.approvalId).at(-1);
   const requestId = typed?.requestId ?? ctx.requestId;
-  return { requestId, messageId: requestOrigin(s, requestId) };
+  const messageId = requestOrigin(s, requestId);
+  return { requestId, messageId, recordedAt: messageId ? messageById(s, messageId)?.at : null };
 }
 
 /**

@@ -8,6 +8,8 @@ export type RoadmapResult = { ok: true; roadmap: Roadmap } | { ok: false; error:
 export interface TrackRef {
   requestId: string;
   messageId?: string | null;
+  /** When the person's request was recorded. A new track starts its clock here, not at the first planning call. */
+  recordedAt?: string | null;
 }
 
 const fail = (error: string): RoadmapResult => ({ ok: false, error });
@@ -91,7 +93,7 @@ export function emptyRoadmap(at: string = nowIso()): Roadmap {
 /** The roadmap with a track for the request, a new one starting at Intent when the request has none yet. */
 export function withTrack(r: Roadmap, ref: TrackRef, at: string = nowIso()): Roadmap {
   if (trackOf(r, ref.requestId)) return r;
-  const track: Track = { requestId: ref.requestId, messageId: ref.messageId ?? null, goal: null, stage: 1, stageTitle: "", gates: [], startedAt: at, updatedAt: at };
+  const track: Track = { requestId: ref.requestId, messageId: ref.messageId ?? null, goal: null, stage: 1, stageTitle: "", gates: [], startedAt: ref.recordedAt ?? at, updatedAt: at };
   return { ...r, tracks: [...tracksOf(r), track] };
 }
 
