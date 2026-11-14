@@ -33,7 +33,7 @@ sequenceDiagram
   participant S as Store
   participant UI as UI
 
-  P->>API: "customers want to export invoices as CSV"
+  P->>API: "users want to export their tasks as CSV"
   API->>MB: postUserMessage
   MB->>S: message + one delivery per recipient
   MB->>T: drain(captain)
@@ -121,7 +121,7 @@ After a merge, `markMerged` completes the work order, `recordReleaseNote` writes
   agents/<id>/     one clone per thread, on its own branch; node_modules linked from deps/
 ```
 
-`ensureProject` makes the origin from the invoices template or `BOB_PROJECT_REPO`. `ensureWorkspace` clones it for one thread. `prepareProjectDeps` installs with the repository's lockfile, and `ensureWorkspaceDeps` hard-links that install into each clone (an APFS clone on macOS). `mergePullRequest` in `workspace/pull-request.ts` updates main in the origin directly: a fast-forward when it can, else a merge commit, and it refuses a conflicting branch. A conflict goes back to the build thread, which merges main into its branch before the head is reviewed again.
+`ensureProject` makes the origin from the project's template or `BOB_PROJECT_REPO`. `ensureWorkspace` clones it for one thread. `prepareProjectDeps` installs with the repository's lockfile, and `ensureWorkspaceDeps` hard-links that install into each clone (an APFS clone on macOS). `mergePullRequest` in `workspace/pull-request.ts` updates main in the origin directly: a fast-forward when it can, else a merge commit, and it refuses a conflicting branch. A conflict goes back to the build thread, which merges main into its branch before the head is reviewed again.
 
 ## Restart
 

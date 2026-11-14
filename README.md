@@ -55,7 +55,7 @@ Each one sits behind a switch and is off by default, so Bob runs the same withou
 | Service | What Bob uses it for | Switch | Status |
 | --- | --- | --- | --- |
 | Vercel AI Gateway | Every model call, with retries and a fallback model | `AI_GATEWAY_API_KEY` | Live: every run above |
-| GitHub (gh) | Publishes each PR, posts reviews with inline comments, merges at the approved head | `BOB_GITHUB=gh` | Ran live: bob#46, #49 and #51 on `demo/invoices-main` |
+| GitHub (gh) | Publishes each PR, posts reviews with inline comments, merges at the approved head | `BOB_GITHUB=gh` | Ran live: bob#46, #49 and #51 on the earlier demo base branch |
 | Composio | The same GitHub steps through Composio's toolkit | `BOB_GITHUB=composio`, `COMPOSIO_API_KEY` | Built and unit-tested against the API docs; no key yet |
 | Vercel previews | The review Blob loads the PR head's preview deployment | `BOB_PREVIEWS=vercel` | Built and unit-tested; no Vercel project yet |
 | HydraDB | State mirrored as a graph; Why? is one Cypher path query | `BOB_STORE=hydra`, `HYDRADB_API_KEY` | Every statement run on FalkorDB and a local HydraDB API shim; no key yet |
@@ -84,7 +84,7 @@ BOB_MODEL_STRONG=deepseek/deepseek-v4.1-flash
 BOB_MODEL_LIGHT=deepseek/deepseek-v4.1-flash
 ```
 
-`BOB_MODEL_STRONG` is Bob's model and `BOB_MODEL_LIGHT` is every Blob's. A Vercel Token Pass key can only call Token Pass models: `moonshotai/kimi-k3.1-pro`, `moonshotai/kimi-k3`, `moonshotai/kimi-k3-fast`, `zai/glm-5.3-fast`, `zai/glm-5.3-flash`, `deepseek/deepseek-v4.1-flash` and `deepseek/deepseek-v4.1-flash-fast`. After changing models, `POST /api/reset` reseeds Bob and the Blobs so stored threads pick them up. `BOB_PROJECT_REPO` brings in your own repository in place of the invoices template.
+`BOB_MODEL_STRONG` is Bob's model and `BOB_MODEL_LIGHT` is every Blob's. A Vercel Token Pass key can only call Token Pass models: `moonshotai/kimi-k3.1-pro`, `moonshotai/kimi-k3`, `moonshotai/kimi-k3-fast`, `zai/glm-5.3-fast`, `zai/glm-5.3-flash`, `deepseek/deepseek-v4.1-flash` and `deepseek/deepseek-v4.1-flash-fast`. After changing models, `POST /api/reset` reseeds Bob and the Blobs so stored threads pick them up. `BOB_PROJECT_REPO` brings in your own repository in place of the built-in templates.
 
 ## Factory policy
 
