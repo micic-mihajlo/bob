@@ -62,28 +62,32 @@ const framedFunctions = (text: string): string[] => [...text.matchAll(/\bat (?:[
 const STOP_WORDS = new Set(["the", "and", "for", "with", "add", "has", "was", "not", "its", "from", "into", "this", "that"]);
 const wordsOf = (text: string): Set<string> => new Set((text.toLowerCase().match(/[a-z]{3,}/g) ?? []).filter((w) => !STOP_WORDS.has(w)));
 
+const mergedPullRequests = (s: State): PullRequestArtifact[] => s.artifacts.filter((a): a is PullRequestArtifact => isPullRequest(a) && a.pullRequest.merged);
+
+/** Shared words that link an error to a pull request whose files it does not name. */
+const TOPIC_WORDS = 3;
+
 /**
- * Merged pull requests whose changed files the item mentions, best match first: a diff that has a function the
- * stack names, then the most words shared with the pull request's title and the ask it came from, then newest.
+ * Merged pull requests an error is about, best match first. One counts when it changed a file the error names
+ * or shares at least TOPIC_WORDS words with the error through its title and the ask it came from. Order: a diff
+ * that has a function the stack names, then the most shared words, then a changed file the error names, then newest.
  */
 function shippedMatches(s: State, text: string): PullRequestArtifact[] {
   const mentioned = new Set(mentionedFiles(text));
   const functions = framedFunctions(text);
   const words = wordsOf(text);
-  const score = (pr: PullRequestArtifact) => {
-    const named = functions.some((f) => new RegExp(`\\b${f.replace(/\$/g, "\\$")}\\b`).test(pr.pullRequest.patch));
-    const shared = [...wordsOf(`${pr.title} ${requestAsk(s, pr.requestId ?? "") ?? ""}`)].filter((w) => words.has(w)).length;
-    return (named ? 1000 : 0) + shared;
-  };
-  return s.artifacts
-    .filter((a): a is PullRequestArtifact => isPullRequest(a) && a.pullRequest.merged && a.pullRequest.files.some((f) => mentioned.has(baseName(f.path))))
+  return mergedPullRequests(s)
     .reverse()
-    .map((pr) => ({ pr, score: score(pr) }))
-    .sort((a, b) => b.score - a.score)
-    .map((x) => x.pr);
+    .map((pr) => ({
+      pr,
+      named: functions.some((f) => new RegExp(`\\b${f.replace(/\$/g, "\\$")}\\b`).test(pr.pullRequest.patch)),
+      shared: [...wordsOf(`${pr.title} ${requestAsk(s, pr.requestId ?? "") ?? ""}`)].filter((w) => words.has(w)).length,
+      touched: pr.pullRequest.files.some((f) => mentioned.has(baseName(f.path))),
+    }))
+    .filter((m) => m.touched || m.shared >= TOPIC_WORDS)
+    .sort((x, y) => Number(y.named) - Number(x.named) || y.shared - x.shared || Number(y.touched) - Number(x.touched))
+    .map((m) => m.pr);
 }
-
-const mergedPullRequests = (s: State): PullRequestArtifact[] => s.artifacts.filter((a): a is PullRequestArtifact => isPullRequest(a) && a.pullRequest.merged);
 
 function framed(s: State, item: InboxItem): string {
   const follow = item.followUpOf ? `\nThis error names files that #${item.followUpOf.number} changed, which already shipped, so its asks are follow-ups to #${item.followUpOf.number}.` : "";

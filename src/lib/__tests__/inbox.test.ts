@@ -107,8 +107,8 @@ describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_
   });
 
   describe("links an error to the shipped pull request it is about, not just the newest one on that file", () => {
-    const pr = (number: number, title: string, patch: string) =>
-      ({ id: `art_pr${number}`, kind: "pull_request", agentId: "bob", requestId: `req_${number}`, title, detail: "", at: "", pullRequest: { number, branch: `b${number}`, headSha: "abc", files: [{ path: "src/invoices.ts", additions: 3, deletions: 0 }], patch, merged: true } }) as unknown as Artifact;
+    const pr = (number: number, title: string, patch: string, path = "src/invoices.ts") =>
+      ({ id: `art_pr${number}`, kind: "pull_request", agentId: "bob", requestId: `req_${number}`, title, detail: "", at: "", pullRequest: { number, branch: `b${number}`, headSha: "abc", files: [{ path, additions: 3, deletions: 0 }], patch, merged: true } }) as unknown as Artifact;
     const followUpOf = (artifacts: Artifact[]) => {
       update((s) => ({ ...s, artifacts: [...s.artifacts, ...artifacts] }));
       const added = addInboxItem(ERROR);
@@ -122,6 +122,14 @@ describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_
 
     it("with no function in common, prefers the title that shares the error's words", () => {
       expect(followUpOf([pr(1, "Add CSV export to the invoices page", "+function downloadCsv() {"), pr(2, "Add overdueInvoices filter with oldest-due first", "+export function overdueInvoices() {")])).toBe(1);
+    });
+
+    it("finds the pull request it is about even when that one changed other files than the error names", () => {
+      expect(followUpOf([pr(1, "Export all invoices as a correctly quoted CSV file", "+export function toCsv() {", "src/format.ts"), pr(2, "Add overdueInvoices and the Overdue count in the page summary", "+export function overdueInvoices() {")])).toBe(1);
+    });
+
+    it("links nothing when no pull request changed its files or shares enough of its words", () => {
+      expect(followUpOf([pr(1, "Show a dark mode toggle", "+export function toggleTheme() {", "src/theme.ts")])).toBeUndefined();
     });
   });
 
