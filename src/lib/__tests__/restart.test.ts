@@ -76,7 +76,7 @@ describe("a restart loses nothing and strands nothing", { timeout: TIMEOUT }, ()
     await until(() => running("bob") && !!getState().artifacts.find((a) => a.kind === "pull_request")?.pullRequest?.merged);
 
     await restart();
-    expect(notices("bob").some((n) => /picks up from where things stand: Merging \S+ already happened/.test(n))).toBe(true);
+    expect(notices("bob").some((n) => /picks up from where things stand: Merging \S+; Closing INV-1; Closing INV-2 already happened/.test(n))).toBe(true);
     expect(getState().roadmap.stageTitle).toBe("Learn");
     expect(getState().agents.filter((a) => a.kind === "crew" && !a.closedAt)).toHaveLength(0);
     expect(getState().turns.filter((t) => t.agentId === "bob").at(-1)?.status).toBe("completed");
