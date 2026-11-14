@@ -1,7 +1,7 @@
 "use client";
 
 import "./inbox-pane.css";
-import { Bug, Hammer, Inbox, MessageSquareQuote, MessagesSquare, type LucideIcon } from "lucide-react";
+import { Bug, Hammer, Inbox, MessageSquareQuote, MessagesSquare, Reply, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { useBob } from "@/components/features/window/BobContext";
 import { Badge } from "@/components/ui/Badge";
@@ -68,8 +68,13 @@ export function InboxPane({ onClose }: { onClose: () => void }) {
 }
 
 function InboxCard({ item, busy, onBuild }: { item: InboxItem; busy: string | null; onBuild: (workOrderId: string) => void }) {
-  const { snapshot, agentsById, selectAgent } = useBob();
+  const { snapshot, agentsById, captain, selectAgent } = useBob();
   const { label, icon: Icon } = KIND[item.kind];
+
+  const answer = (agentId: string) => {
+    selectAgent(agentId);
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(".composer-editor-surface")?.focus());
+  };
   const status = inboxStatus(item);
 
   return (
@@ -106,6 +111,15 @@ function InboxCard({ item, busy, onBuild }: { item: InboxItem; busy: string | nu
                   </Badge>
                 </div>
                 {outcome.kind === "asked" ? <p className="bob-inbox-question">Bob asked you: {outcome.question}</p> : null}
+                {outcome.kind === "asked" && captain ? (
+                  <div className="bob-inbox-order">
+                    <span>Waiting for your answer</span>
+                    <Button size="sm" variant="secondary" onClick={() => answer(captain.id)}>
+                      <Reply aria-hidden="true" />
+                      Answer
+                    </Button>
+                  </div>
+                ) : null}
                 {outcome.kind === "backlog" ? (
                   <div className="bob-inbox-order">
                     <span>In the backlog</span>
