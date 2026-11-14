@@ -2,8 +2,10 @@
 
 import { Bot, GitPullRequest, MessageSquare, ScanSearch, ShieldCheck, User } from "lucide-react";
 import { Fragment, useEffect, useState, type CSSProperties } from "react";
+import { useBob } from "@/components/features/window/BobContext";
 import { fetchGraph } from "@/lib/client/api";
-import { buildPathGraph, type PathGraph, type PathNodeKind } from "@/lib/client/why-graph";
+import { buildPathGraph, type PathNodeKind } from "@/lib/client/why-graph";
+import type { GraphView } from "@/lib/types";
 
 const GLYPH: Record<PathNodeKind, typeof Bot> = {
   pull_request: GitPullRequest,
@@ -19,17 +21,19 @@ const GLYPH: Record<PathNodeKind, typeof Bot> = {
  * the person typed. The columns come in one after another along the path.
  */
 export function WhyGraph({ pullRequestId }: { pullRequestId: string }) {
-  const [graph, setGraph] = useState<{ id: string; graph: PathGraph } | null>(null);
+  const { snapshot } = useBob();
+  const [view, setView] = useState<GraphView | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
     fetchGraph(pullRequestId, controller.signal)
-      .then((view) => setGraph({ id: pullRequestId, graph: buildPathGraph(view) }))
+      .then(setView)
       .catch(() => undefined);
     return () => controller.abort();
   }, [pullRequestId]);
 
-  const current = graph?.id === pullRequestId ? graph.graph : null;
+  // Built on each render, so a gate that moves while the dialog is open shows its new status.
+  const current = view?.prId === pullRequestId ? buildPathGraph(view, snapshot) : null;
   if (!current || current.columns.length === 0) return null;
   return (
     <section className="why-graph" aria-label="Path from the pull request to what you typed">
