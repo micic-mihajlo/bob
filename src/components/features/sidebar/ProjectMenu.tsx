@@ -83,7 +83,9 @@ export function ProjectMenu() {
           setOpen((value) => !value);
         }}
       >
-        <span className="sidebar-server-name-label">{active.name}</span>
+        <span className="sidebar-server-name-label">
+          <span>{active.name}</span>
+        </span>
         <ChevronsUpDown className="sidebar-server-name-chevron" aria-hidden="true" />
       </button>
       {open ? (
