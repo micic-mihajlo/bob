@@ -2,7 +2,7 @@
 
 import "./roadmap-panel.css";
 import { Check, Map as MapIcon, TriangleAlert } from "lucide-react";
-import { Fragment } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useBob } from "@/components/features/window/BobContext";
 import { PaneFrame, PaneHeader } from "@/components/features/panel/PaneFrame";
 import { Badge } from "@/components/ui/Badge";
@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Progress } from "@/components/ui/Progress";
 import { Card } from "@/components/ui/Surface";
 import { displayName } from "@/lib/client/crew";
-import { formatDeadline } from "@/lib/client/format";
+import { formatDeadline, formatRunning } from "@/lib/client/format";
 import { requestLabel, requestUsage } from "@/lib/client/requests";
 import {
   forUserLine,
@@ -30,6 +30,25 @@ const PHASE_LABEL: Record<StepPhase, string> = {
   current: "Now",
   next: "Up next",
 };
+
+/** How long a request has been running: ticks every second, and stops at the time its track finished. */
+function RunningTimer({ startedAt, finishedAt }: { startedAt: string; finishedAt: string | null }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (finishedAt) return;
+    setNow(Date.now());
+    const tick = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(tick);
+  }, [finishedAt]);
+  const start = Date.parse(startedAt);
+  if (Number.isNaN(start)) return null;
+  const end = finishedAt ? Date.parse(finishedAt) : now;
+  return (
+    <p className="bob-roadmap-timer" data-roadmap-timer="" data-finished={finishedAt ? "true" : undefined} role="timer" aria-label="Time the request has been running" suppressHydrationWarning>
+      {formatRunning(end - start)}
+    </p>
+  );
+}
 
 /**
  * The roadmap beside the captain's chat. Each request still moving gets a card: its goal and how far
@@ -121,6 +140,7 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                   return (
                     <Fragment key={track.key}>
                       <Card className="bob-roadmap-card" aria-label={goal?.title ?? "Goal"}>
+                        {track.startedAt ? <RunningTimer startedAt={track.startedAt} finishedAt={track.finishedAt} /> : null}
                         <p className="bob-roadmap-label">Goal</p>
                         <h3 className="bob-roadmap-goal">{goal?.title ?? "No goal set yet"}</h3>
                         {asked ? (

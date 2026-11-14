@@ -64,6 +64,18 @@
   overflow-wrap: anywhere;
 }
 
+.bob-roadmap-timer {
+  font-size: 2rem;
+  font-weight: var(--bob-weight-semibold);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground, currentColor);
+}
+
+.bob-roadmap-timer[data-finished="true"] {
+  opacity: 0.6;
+}
+
 .bob-roadmap-muted {
   color: var(--bob-text-muted);
   font-size: var(--bob-text-sm);

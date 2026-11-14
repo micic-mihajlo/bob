@@ -47,7 +47,7 @@ export function PaneFrame({ className, label, id, slide = false, children }: Pan
   }, [slide]);
 
   const maxWidth = () => {
-    const parent = element.current?.parentElement?.clientWidth || window.innerWidth;
+    const parent = element.current?.parentElement?.clientWidth || (typeof window === "undefined" ? PANEL_MAX : window.innerWidth);
     return Math.min(PANEL_MAX, Math.max(PANEL_MIN, parent - CONVERSATION_PANEL_MIN));
   };
 

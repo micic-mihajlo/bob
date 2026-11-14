@@ -1,0 +1,18 @@
+{
+  "acceptance": "A test renders a card for a request recorded 5 minutes ago, sees 5:00, advances the clock 1 second and sees 5:01.",
+  "propertiesFile": "src/lib/client/format.properties.test.ts",
+  "properties": [
+    {
+      "name": "is m:ss under an hour and h:mm:ss after, and reads back to the whole seconds",
+      "criterion": "A test renders a card for a request recorded 5 minutes ago, sees 5:00, advances the clock 1 second and sees 5:01."
+    },
+    {
+      "name": "never goes below 0:00",
+      "criterion": "A test renders a card for a request recorded 5 minutes ago, sees 5:00, advances the clock 1 second and sees 5:01."
+    },
+    {
+      "name": "ticks one second per second",
+      "criterion": "A test renders a card for a request recorded 5 minutes ago, sees 5:00, advances the clock 1 second and sees 5:01."
+    }
+  ]
+}

@@ -20,6 +20,10 @@ export interface TrackView {
   today: WorkOrder[];
   /** Its work orders not yet scheduled. */
   backlog: WorkOrder[];
+  /** When its request was recorded; null for a roadmap saved before tracks. */
+  startedAt: string | null;
+  /** When it reached the last stage, Learn; null while it is still moving. */
+  finishedAt: string | null;
 }
 
 /**
@@ -31,7 +35,7 @@ export function trackViews(roadmap: Roadmap): { tracks: TrackView[]; backlog: Wo
   const tracks = roadmap.tracks ?? [];
   if (tracks.length === 0) {
     const { goal, stage, stageTitle, gates, today } = roadmap;
-    return { tracks: [{ key: "roadmap", ask: null, goal, stage, stageTitle, gates, today, backlog }], backlog: [] };
+    return { tracks: [{ key: "roadmap", ask: null, goal, stage, stageTitle, gates, today, backlog, startedAt: null, finishedAt: null }], backlog: [] };
   }
   const active = tracks.filter((track) => track.stage < roadmap.totalStages);
   const shown = active.length > 0 ? active : [tracks.reduce((last, track) => (track.updatedAt >= last.updatedAt ? track : last))];
@@ -46,6 +50,8 @@ export function trackViews(roadmap: Roadmap): { tracks: TrackView[]; backlog: Wo
       gates: track.gates,
       today: roadmap.today.filter(owns(track.requestId)),
       backlog: backlog.filter(owns(track.requestId)),
+      startedAt: track.startedAt,
+      finishedAt: track.stage >= roadmap.totalStages ? track.updatedAt : null,
     })),
     backlog: backlog.filter((order) => !shown.some((track) => order.requestId === track.requestId)),
   };
