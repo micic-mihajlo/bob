@@ -69,7 +69,7 @@
   font-weight: var(--bob-weight-semibold);
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
-  color: var(--foreground, currentColor);
+  color: var(--bob-text-primary);
 }
 
 .bob-roadmap-timer[data-finished="true"] {
