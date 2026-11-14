@@ -134,6 +134,11 @@ function InboxCard({ item, busy, onBuild }: { item: InboxItem; busy: string | nu
                     </Button>
                   </div>
                 ) : null}
+                {outcome.kind === "shipped" ? (
+                  <div className="bob-inbox-order">
+                    <span>Already shipped in PR #{outcome.number}</span>
+                  </div>
+                ) : null}
                 {outcome.kind === "planned" ? (
                   <div className="bob-inbox-order">
                     {owner ? (
