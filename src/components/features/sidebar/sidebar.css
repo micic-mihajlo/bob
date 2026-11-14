@@ -199,3 +199,32 @@
   color: var(--bob-danger-text);
   font-size: var(--bob-text-sm);
 }
+
+/* The list fades at an edge that has more to scroll to, as the reference's scroll fades do. */
+.scroll-fade-top:not(.scroll-fade-bottom) {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, var(--bob-text-primary) 18px, var(--bob-text-primary) 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, var(--bob-text-primary) 18px, var(--bob-text-primary) 100%);
+}
+
+.scroll-fade-bottom:not(.scroll-fade-top) {
+  -webkit-mask-image: linear-gradient(to bottom, var(--bob-text-primary) 0, var(--bob-text-primary) calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(to bottom, var(--bob-text-primary) 0, var(--bob-text-primary) calc(100% - 18px), transparent 100%);
+}
+
+.scroll-fade-top.scroll-fade-bottom {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--bob-text-primary) 18px,
+    var(--bob-text-primary) calc(100% - 18px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--bob-text-primary) 18px,
+    var(--bob-text-primary) calc(100% - 18px),
+    transparent 100%
+  );
+}
+
