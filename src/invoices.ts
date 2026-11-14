@@ -41,3 +41,25 @@ export function overdueInvoices(invoices: readonly Invoice[], today: string): In
 export function totalCents(list: readonly Invoice[]): number {
   return list.reduce((sum, invoice) => sum + invoice.amountCents, 0);
 }
+
+export const CSV_HEADER = "id,customer,amount,status,dueDate";
+
+/** Quote a CSV field only when it needs it, doubling any embedded quotes. */
+function csvField(value: string): string {
+  return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+/** Every invoice as one CSV file: a header row, then one row per invoice. Amounts are plain dollars. */
+export function invoicesCsv(list: readonly Invoice[]): string {
+  const rows = list.map((invoice) =>
+    [invoice.id, invoice.customer, (invoice.amountCents / 100).toFixed(2), invoice.status, invoice.dueDate]
+      .map(csvField)
+      .join(","),
+  );
+  return [CSV_HEADER, ...rows].join("\n") + "\n";
+}
+
+/** Name for the downloaded file, e.g. invoices-2026-11-30.csv. */
+export function csvFilename(today: string): string {
+  return `invoices-${today}.csv`;
+}
