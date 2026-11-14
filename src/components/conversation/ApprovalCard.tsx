@@ -4,9 +4,12 @@ import { Check, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
 import { useBob } from "@/components/app/BobContext";
 import { decideApproval } from "@/lib/client/api";
+import { displayName } from "@/lib/client/crew";
 import { formatClock } from "@/lib/client/format";
+import { pullRequestForApproval } from "@/lib/client/pull-requests";
 import type { Approval } from "@/lib/types";
 import { HoldButton } from "./HoldButton";
+import { PullRequestSummary } from "./PullRequestSummary";
 
 type Decision = "approved" | "denied";
 
@@ -28,7 +31,9 @@ export function ApprovalCard({ approvalId }: { approvalId: string }) {
   }
 
   const status: Approval["status"] = approval.status === "pending" && sent !== null ? sent : approval.status;
-  const asker = agentsById.get(approval.agentId)?.name ?? "An agent";
+  const askingAgent = agentsById.get(approval.agentId);
+  const asker = askingAgent ? displayName(askingAgent) : "An agent";
+  const pullRequest = pullRequestForApproval(snapshot.artifacts, approval);
 
   async function decide(decision: Decision): Promise<void> {
     setSent(decision);
@@ -41,7 +46,7 @@ export function ApprovalCard({ approvalId }: { approvalId: string }) {
   }
 
   return (
-    <section className="entry approval" data-status={status} aria-labelledby={`approval-${approvalId}`}>
+    <section className="entry approval" data-status={status} data-approval-id={approvalId} aria-labelledby={`approval-${approvalId}`}>
       <header className="approval-header">
         <span className="approval-icon" aria-hidden="true">
           <ShieldCheck className="icon" size={16} />
@@ -56,6 +61,7 @@ export function ApprovalCard({ approvalId }: { approvalId: string }) {
         </span>
       </header>
       {approval.detail ? <p className="approval-detail">{approval.detail}</p> : null}
+      {pullRequest ? <PullRequestSummary artifact={pullRequest} /> : null}
       {status === "pending" ? (
         <footer className="approval-actions">
           {error ? (

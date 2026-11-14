@@ -1,20 +1,9 @@
 import type { Agent, AgentId, Snapshot, ThreadItem, ThreadView, WaitingOn } from "@/lib/types";
-
-export function findOrchestrator(agents: readonly Agent[]): Agent | undefined {
-  return agents.find((agent) => agent.role === "orchestrator") ?? agents[0];
-}
+import { findCaptain } from "./crew";
 
 export function resolveSelectedAgent(snapshot: Snapshot, selectedId: AgentId | null): Agent | undefined {
   const picked = selectedId === null ? undefined : snapshot.agents.find((agent) => agent.id === selectedId);
-  return picked ?? findOrchestrator(snapshot.agents);
-}
-
-export function agentsNeedingYou(snapshot: Snapshot): Agent[] {
-  return snapshot.agents.filter((agent) => snapshot.activity[agent.id]?.state === "needs_you");
-}
-
-export function agentsNotNeedingYou(snapshot: Snapshot): Agent[] {
-  return snapshot.agents.filter((agent) => snapshot.activity[agent.id]?.state !== "needs_you");
+  return picked ?? findCaptain(snapshot.agents) ?? snapshot.agents[0];
 }
 
 function previewOf(item: ThreadItem): string | null {

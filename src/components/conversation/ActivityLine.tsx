@@ -4,6 +4,8 @@ import { ChevronDown } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { Avatar } from "@/components/common/Avatar";
 import { RollingNumber } from "@/components/common/RollingNumber";
+import { ThreadFace } from "@/components/common/ThreadFace";
+import { isCrew } from "@/lib/client/crew";
 import { formatElapsed } from "@/lib/client/format";
 import { elapsedSince, type StepItem } from "@/lib/client/thread-rows";
 import { useNow } from "@/lib/client/use-now";
@@ -38,7 +40,7 @@ export function ActivityLine({ agent, since, steps }: { agent: Agent; since: str
   return (
     <div className="activity">
       <div className="activity-line">
-        <Avatar agent={agent} size={32} />
+        {isCrew(agent) ? <ThreadFace agent={agent} size={32} /> : <Avatar agent={agent} size={32} />}
         <span key={labelIndex} className="activity-label shine">
           {WORKING_LABELS[labelIndex]}
         </span>

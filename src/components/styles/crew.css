@@ -1,0 +1,198 @@
+.code-chip {
+  display: inline-flex;
+  height: 18px;
+  flex: 0 0 auto;
+  align-items: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface);
+  padding: 0 var(--gap-1);
+  color: var(--color-ink-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--size-xs);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.thread-face {
+  --agent-color: oklch(var(--agent-lightness) var(--agent-chroma) var(--agent-hue));
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--agent-color) 18%, var(--color-surface));
+  color: var(--agent-color);
+}
+
+.thread-face[data-size="32"] {
+  width: 32px;
+  height: 32px;
+}
+
+.thread-face[data-size="16"] {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-xs);
+}
+
+.face-stack > .thread-face + .thread-face {
+  margin-left: -4px;
+  box-shadow: 0 0 0 1.5px var(--color-canvas);
+}
+
+.agent-label-code {
+  font-family: var(--font-mono);
+  font-size: var(--size-xs);
+}
+
+.captain-pin {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--gap-1-5);
+}
+
+.crew-empty {
+  padding: var(--gap-1) var(--row-inset) var(--gap-2);
+  font-size: var(--size-sm);
+  line-height: var(--leading-sm);
+}
+
+.thread-group-heading {
+  margin: 0;
+}
+
+.thread-group-toggle {
+  display: flex;
+  width: 100%;
+  height: var(--control-md);
+  align-items: center;
+  gap: var(--gap-1-5);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-transparent);
+  padding: 0 var(--row-inset);
+  color: var(--color-ink-muted);
+  font-size: var(--size-sm);
+  font-weight: 400;
+  line-height: var(--leading-sm);
+  text-align: left;
+  transition: color var(--duration-fast) ease;
+}
+
+.thread-group-count {
+  color: var(--color-ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.thread-group-toggle > .chevron {
+  margin-left: auto;
+  opacity: 0;
+  transition:
+    transform var(--duration-slow) var(--ease-out),
+    opacity var(--duration-fast) ease;
+}
+
+.thread-group-toggle[aria-expanded="false"] > .chevron,
+.thread-group-toggle:focus-visible > .chevron {
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .thread-group-toggle:hover {
+    color: var(--color-ink-secondary);
+  }
+
+  .thread-group-toggle:hover > .chevron {
+    opacity: 1;
+  }
+}
+
+.thread-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-1);
+}
+
+.thread-row-name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--gap-1-5);
+}
+
+.thread-row[data-status="closed"] .team-row-name,
+.thread-row[data-status="closed"] .thread-face {
+  opacity: 0.6;
+}
+
+.thread-row[data-status="failed"] .team-row-line {
+  color: var(--color-danger-text);
+}
+
+.needs-row {
+  display: flex;
+  width: 100%;
+  min-height: 54px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--gap-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-transparent);
+  padding: var(--gap-2);
+  color: inherit;
+  text-align: left;
+  transition: transform var(--duration-normal) ease;
+}
+
+.needs-row:active {
+  transform: scale(var(--press-scale));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .needs-row:hover {
+    background: var(--color-control);
+  }
+}
+
+.needs-row-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.needs-row[data-kind="failed"] .needs-row-icon {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+}
+
+.needs-row-top {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--gap-1-5);
+}
+
+.needs-row-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-ink);
+  font-size: var(--size-md);
+  font-weight: 500;
+  line-height: var(--leading-lg);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.needs-row .team-row-line {
+  color: var(--color-ink-muted);
+}

@@ -42,6 +42,10 @@ export function markThreadRead(agentId: AgentId): Promise<ActionResult> {
   return post(API.agentRead(agentId), {});
 }
 
+export function closeThread(agentId: AgentId): Promise<ActionResult> {
+  return post(API.agentClose(agentId), {});
+}
+
 export function decideApproval(approvalId: string, decision: "approved" | "denied"): Promise<ActionResult> {
   return post(API.approval(approvalId), { decision });
 }

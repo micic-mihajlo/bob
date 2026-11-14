@@ -23,7 +23,14 @@ export type ThreadRow =
   | { kind: "sent"; id: string; turnId: TurnId; entries: readonly SentEntry[] }
   | { kind: "received"; id: string; item: Item<"message_in"> }
   | { kind: "approval"; id: string; item: Item<"approval"> }
-  | { kind: "notice"; id: string; item: Item<"notice"> };
+  | { kind: "notice"; id: string; item: Item<"notice"> }
+  | { kind: "pull_request"; id: string; artifactId: string };
+
+/** The turn running now. Its steps show under the activity line instead of in the thread. */
+export interface LiveTurn {
+  since: string;
+  turnId?: TurnId;
+}
 
 function entriesOf(item: OutgoingItem): SentEntry[] {
   return item.to.map((agentId) => ({
@@ -59,22 +66,19 @@ function appendSent(rows: readonly ThreadRow[], item: OutgoingItem): ThreadRow[]
   return [...rows, { kind: "sent", id: `sent-${item.id}`, turnId: item.turnId, entries: entriesOf(item) }];
 }
 
-function timeOf(iso: string): number {
+export function timeOf(iso: string): number {
   const time = Date.parse(iso);
   return Number.isNaN(time) ? 0 : time;
 }
 
-/** Whether a step belongs to the turn running now. The activity has no turn id, so time decides. */
-function isLive(step: StepItem, liveSince: number | null): boolean {
-  return liveSince !== null && timeOf(step.at) >= liveSince;
+/** Whether a step belongs to the turn running now. Without a turn id from the server, time decides. */
+function isLive(step: StepItem, live: LiveTurn | null): boolean {
+  if (live === null) return false;
+  return live.turnId ? step.turnId === live.turnId : timeOf(step.at) >= timeOf(live.since);
 }
 
-/**
- * `liveSince` is the start of the turn that is running now. Its steps show under the activity line
- * instead of in the thread, so they are left out here.
- */
-export function buildThreadRows(items: readonly ThreadItem[], liveSince: string | null): ThreadRow[] {
-  const since = liveSince === null ? null : timeOf(liveSince);
+/** The live turn's steps are left out here; the activity line shows them. */
+export function buildThreadRows(items: readonly ThreadItem[], live: LiveTurn | null): ThreadRow[] {
   return items.reduce<ThreadRow[]>((rows, item) => {
     switch (item.kind) {
       case "user_text":
@@ -82,7 +86,7 @@ export function buildThreadRows(items: readonly ThreadItem[], liveSince: string 
       case "agent_text":
         return [...rows, { kind: "text", id: item.id, item }];
       case "step":
-        return isLive(item, since) ? rows : appendSteps(rows, item);
+        return isLive(item, live) ? rows : appendSteps(rows, item);
       case "message_out":
         return appendSent(rows, item);
       case "message_in":
@@ -95,9 +99,8 @@ export function buildThreadRows(items: readonly ThreadItem[], liveSince: string 
   }, []);
 }
 
-export function liveSteps(items: readonly ThreadItem[], since: string): StepItem[] {
-  const start = timeOf(since);
-  return items.filter((item): item is StepItem => item.kind === "step" && timeOf(item.at) >= start);
+export function liveSteps(items: readonly ThreadItem[], live: LiveTurn): StepItem[] {
+  return items.filter((item): item is StepItem => item.kind === "step" && isLive(item, live));
 }
 
 export function elapsedSince(iso: string, now: number): number {

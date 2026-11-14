@@ -3,6 +3,7 @@
 import { ArrowUp, Mic, Square } from "lucide-react";
 import { useLayoutEffect, useRef, type KeyboardEvent } from "react";
 import { useBob } from "@/components/app/BobContext";
+import { displayName } from "@/lib/client/crew";
 import type { AgentActions } from "@/lib/client/use-agent-actions";
 import type { Agent } from "@/lib/types";
 
@@ -10,17 +11,20 @@ interface ComposerProps {
   agent: Agent;
   working: boolean;
   actions: AgentActions;
+  /** Set for a closed thread, which takes no more messages. */
+  closed?: boolean;
 }
 
 /**
  * Typing into an agent's thread. Enter sends and Shift+Enter breaks the line. While the agent works
  * and the draft is empty, the send button stops it; typing turns it back into send, which queues.
  */
-export function Composer({ agent, working, actions }: ComposerProps) {
+export function Composer({ agent, working, actions, closed = false }: ComposerProps) {
   const { draftFor, setDraft } = useBob();
   const draft = draftFor(agent.id);
   const field = useRef<HTMLTextAreaElement | null>(null);
-  const showStop = working && draft.trim() === "";
+  const showStop = working && !closed && draft.trim() === "";
+  const name = displayName(agent);
 
   useLayoutEffect(() => {
     const element = field.current;
@@ -30,7 +34,7 @@ export function Composer({ agent, working, actions }: ComposerProps) {
   }, [draft]);
 
   async function submit(): Promise<void> {
-    if (draft.trim() === "" || actions.sending) return;
+    if (closed || draft.trim() === "" || actions.sending) return;
     const sent = await actions.send(draft);
     if (sent) setDraft(agent.id, "");
   }
@@ -45,13 +49,14 @@ export function Composer({ agent, working, actions }: ComposerProps) {
     <div className="composer-wrap">
       <form
         className="composer"
+        data-closed={closed ? "" : undefined}
         onSubmit={(event) => {
           event.preventDefault();
           void submit();
         }}
       >
         <label className="sr-only" htmlFor="composer-field">
-          Message {agent.name}
+          Message {name}
         </label>
         <textarea
           id="composer-field"
@@ -59,7 +64,8 @@ export function Composer({ agent, working, actions }: ComposerProps) {
           className="composer-field"
           rows={1}
           value={draft}
-          placeholder={`Message ${agent.name}`}
+          placeholder={closed ? "This thread is closed" : `Message ${name}`}
+          disabled={closed}
           onChange={(event) => {
             setDraft(agent.id, event.target.value);
             if (actions.error) actions.clearError();
@@ -82,7 +88,7 @@ export function Composer({ agent, working, actions }: ComposerProps) {
               <button
                 type="button"
                 className="round-button round-button-solid"
-                aria-label={`Stop ${agent.name}`}
+                aria-label={`Stop ${name}`}
                 title="Stop"
                 disabled={actions.stopping}
                 onClick={() => void actions.stop()}
@@ -95,7 +101,7 @@ export function Composer({ agent, working, actions }: ComposerProps) {
                 className="round-button round-button-solid"
                 aria-label="Send"
                 title={working ? "Send, it runs after the current turn" : "Send"}
-                disabled={draft.trim() === "" || actions.sending}
+                disabled={closed || draft.trim() === "" || actions.sending}
               >
                 {actions.sending ? <span className="send-spinner" aria-hidden="true" /> : <ArrowUp className="icon" size={16} aria-hidden="true" />}
               </button>

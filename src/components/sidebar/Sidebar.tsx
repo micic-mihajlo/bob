@@ -2,15 +2,17 @@
 
 import { FolderGit2, FolderPlus, Plus } from "lucide-react";
 import { useBob } from "@/components/app/BobContext";
-import { agentsNeedingYou, agentsNotNeedingYou } from "@/lib/client/selectors";
+import { CREW_GROUPS, sidebarModel } from "@/lib/client/crew";
+import { needsYouItems } from "@/lib/client/needs-you";
 import { AgentRow } from "./AgentRow";
 import { BrainFooter } from "./BrainFooter";
 import { NeedsYouGroup } from "./NeedsYouGroup";
+import { ThreadGroup } from "./ThreadGroup";
 
 export function Sidebar() {
   const { snapshot, setNewAgentOpen } = useBob();
-  const waiting = agentsNeedingYou(snapshot);
-  const rest = agentsNotNeedingYou(snapshot);
+  const { captain, crew, standing } = sidebarModel(snapshot);
+  const noCrew = CREW_GROUPS.every((group) => crew[group.id].length === 0);
 
   return (
     <nav className="region" aria-label="Team">
@@ -34,16 +36,23 @@ export function Sidebar() {
           </button>
         </div>
         <div className="agent-list">
-          <NeedsYouGroup agents={waiting} />
+          {captain ? (
+            <div className="captain-pin">
+              <AgentRow agent={captain} />
+            </div>
+          ) : null}
+          <NeedsYouGroup items={needsYouItems(snapshot)} />
+          {CREW_GROUPS.map((group) => (
+            <ThreadGroup key={group.id} label={group.label} threads={crew[group.id]} startOpen={group.id !== "closed"} />
+          ))}
+          {noCrew && captain ? <p className="empty-line crew-empty">No crew threads yet. {captain.name} starts one for each piece of work.</p> : null}
           <section className="agent-section" aria-labelledby="agents-heading">
             <h2 id="agents-heading" className="agent-section-name">
               Agents
             </h2>
-            {rest.length === 0 && waiting.length === 0 ? (
-              <p className="empty-line agent-section-empty">No agents yet. Make the first one below.</p>
-            ) : (
-              rest.map((agent) => <AgentRow key={agent.id} agent={agent} />)
-            )}
+            {standing.map((agent) => (
+              <AgentRow key={agent.id} agent={agent} />
+            ))}
             <button type="button" className="team-row team-row-add" onClick={() => setNewAgentOpen(true)}>
               <span className="new-agent-face" aria-hidden="true">
                 <Plus className="icon" size={16} />

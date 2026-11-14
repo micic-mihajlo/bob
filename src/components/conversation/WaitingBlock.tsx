@@ -3,11 +3,12 @@
 import { ChevronDown } from "lucide-react";
 import { useId, useState } from "react";
 import { useBob } from "@/components/app/BobContext";
-import { Avatar } from "@/components/common/Avatar";
+import { AgentLabel } from "@/components/common/AgentLabel";
 import { ProgressRing } from "@/components/common/ProgressRing";
 import { RollingNumber } from "@/components/common/RollingNumber";
 import { StateMark } from "@/components/common/StateMark";
 import { REPLY_STATE_LABEL } from "@/lib/client/agent-status";
+import { displayName } from "@/lib/client/crew";
 import type { WaitingOn } from "@/lib/types";
 
 export function WaitingBlock({ rows }: { rows: readonly WaitingOn[] }) {
@@ -43,11 +44,10 @@ export function WaitingBlock({ rows }: { rows: readonly WaitingOn[] }) {
                     type="button"
                     className="waiting-chip"
                     data-state={row.state}
-                    title={`Open ${agent?.name ?? "this agent"}'s thread`}
+                    title={`Open ${agent ? displayName(agent) : "this agent"}'s thread`}
                     onClick={() => selectAgent(row.agentId)}
                   >
-                    {agent ? <Avatar agent={agent} size={16} /> : null}
-                    <span className="waiting-chip-name">{agent?.name ?? "A former teammate"}</span>
+                    {agent ? <AgentLabel agent={agent} nameClass="waiting-chip-name" /> : <span className="waiting-chip-name">A former teammate</span>}
                     <StateMark state={row.state} size={12} />
                     <span className="waiting-chip-state">{REPLY_STATE_LABEL[row.state]}</span>
                   </button>

@@ -1,0 +1,85 @@
+.crew-title {
+  flex: 1 1 auto;
+  gap: var(--gap-2);
+}
+
+.crew-name {
+  min-width: 0;
+  overflow: hidden;
+  flex: 0 1 auto;
+  text-overflow: ellipsis;
+}
+
+.crew-role {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--gap-1);
+  color: var(--color-ink-muted);
+  font-size: var(--size-sm);
+}
+
+.crew-branch {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 220px;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: var(--gap-1);
+  color: var(--color-ink-muted);
+}
+
+.crew-branch-name {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-button {
+  width: 20px;
+  height: 20px;
+}
+
+.crew-status {
+  color: var(--color-ink-muted);
+  font-size: var(--size-sm);
+  white-space: nowrap;
+}
+
+.crew-status[data-status="working"] {
+  color: var(--color-ink-secondary);
+}
+
+.crew-status[data-status="needs_you"] {
+  color: var(--color-warning);
+}
+
+.crew-status[data-status="failed"] {
+  color: var(--color-danger-text);
+}
+
+/* A narrow thread keeps the code, the title and the branch's copy button, and drops the words it can spare. */
+.conversation-top {
+  container-type: inline-size;
+}
+
+@container (max-width: 640px) {
+  .crew-role-label {
+    display: none;
+  }
+
+  .crew-branch {
+    max-width: 120px;
+  }
+}
+
+@container (max-width: 520px) {
+  .crew-role,
+  .crew-branch-name,
+  .crew-close-label {
+    display: none;
+  }
+}

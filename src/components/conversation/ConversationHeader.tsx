@@ -1,10 +1,12 @@
 "use client";
 
-import { PanelRight, Square } from "lucide-react";
-import { useBob } from "@/components/app/BobContext";
 import { Avatar } from "@/components/common/Avatar";
+import { isCrew } from "@/lib/client/crew";
 import type { AgentActions } from "@/lib/client/use-agent-actions";
 import type { Agent, AgentActivity } from "@/lib/types";
+import { CrewHeader } from "./CrewHeader";
+import { PanelToggle } from "./PanelToggle";
+import { StopButton } from "./StopButton";
 
 interface ConversationHeaderProps {
   agent: Agent;
@@ -14,9 +16,7 @@ interface ConversationHeaderProps {
 }
 
 export function ConversationHeader({ agent, activity, queued, actions }: ConversationHeaderProps) {
-  const { panelOpen, togglePanel } = useBob();
-  const working = activity?.state === "working";
-
+  if (isCrew(agent)) return <CrewHeader agent={agent} activity={activity} queued={queued} actions={actions} />;
   return (
     <header className="conversation-top">
       <div className="conversation-title">
@@ -26,24 +26,9 @@ export function ConversationHeader({ agent, activity, queued, actions }: Convers
       </div>
       <div className="conversation-actions">
         {queued > 0 ? <span className="conversation-queued">{queued} queued</span> : null}
-        {working ? (
-          <button type="button" className="btn btn-quiet btn-small" onClick={() => void actions.stop()} disabled={actions.stopping}>
-            <Square className="icon" size={12} aria-hidden="true" />
-            {actions.stopping ? "Stopping it" : "Stop"}
-          </button>
-        ) : null}
+        {activity?.state === "working" ? <StopButton actions={actions} /> : null}
         <span className="conversation-divider" aria-hidden="true" />
-        <button
-          type="button"
-          className="icon-button panel-toggle"
-          aria-expanded={panelOpen}
-          aria-controls="side-panel"
-          aria-label={panelOpen ? "Hide panel" : "Show panel"}
-          title={panelOpen ? "Hide panel" : "Show panel"}
-          onClick={togglePanel}
-        >
-          <PanelRight className="icon" size={14} aria-hidden="true" />
-        </button>
+        <PanelToggle />
       </div>
     </header>
   );

@@ -13,6 +13,8 @@ export interface StickToBottom {
   unseen: number;
   onScroll: () => void;
   jumpToNewest: () => void;
+  /** Lets the view rest away from the end, as when it scrolls to an older item on purpose. */
+  unpin: () => void;
 }
 
 function prefersReducedMotion(): boolean {
@@ -71,5 +73,10 @@ export function useStickToBottom(itemCount: number): StickToBottom {
     toEnd(true);
   }, [toEnd]);
 
-  return { scrollRef, contentRef, pinned, unseen, onScroll, jumpToNewest };
+  const unpin = useCallback(() => {
+    pinnedRef.current = false;
+    setPinned(false);
+  }, []);
+
+  return { scrollRef, contentRef, pinned, unseen, onScroll, jumpToNewest, unpin };
 }

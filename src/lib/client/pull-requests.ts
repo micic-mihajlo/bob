@@ -1,0 +1,79 @@
+import type { AgentId, Approval, Artifact, ChangedFile, PullRequestData, ReviewData, ReviewFinding } from "@/lib/types";
+
+export type PullRequestArtifact = Artifact & { pullRequest: PullRequestData };
+export type ReviewArtifact = Artifact & { review: ReviewData };
+export type PullRequestState = "open" | "approved" | "merged" | "closed";
+
+export function isPullRequest(artifact: Artifact): artifact is PullRequestArtifact {
+  return artifact.pullRequest !== undefined;
+}
+
+export function isReview(artifact: Artifact): artifact is ReviewArtifact {
+  return artifact.review !== undefined;
+}
+
+function newestFirst(a: Artifact, b: Artifact): number {
+  return Date.parse(b.at) - Date.parse(a.at);
+}
+
+export function pullRequestsBy(artifacts: readonly Artifact[], agentId: AgentId): PullRequestArtifact[] {
+  return artifacts.filter((artifact): artifact is PullRequestArtifact => isPullRequest(artifact) && artifact.agentId === agentId).sort(newestFirst);
+}
+
+export function reviewsOf(artifacts: readonly Artifact[], pullRequestId: string): ReviewArtifact[] {
+  return artifacts.filter((artifact): artifact is ReviewArtifact => isReview(artifact) && artifact.review.pullRequestId === pullRequestId).sort(newestFirst);
+}
+
+/** Reviews a thread wrote, and reviews of the pull requests it opened. */
+export function reviewsForThread(artifacts: readonly Artifact[], agentId: AgentId): ReviewArtifact[] {
+  const opened = new Set(pullRequestsBy(artifacts, agentId).map((artifact) => artifact.id));
+  return artifacts
+    .filter((artifact): artifact is ReviewArtifact => isReview(artifact) && (artifact.agentId === agentId || opened.has(artifact.review.pullRequestId)))
+    .sort(newestFirst);
+}
+
+export function pullRequestState(artifact: PullRequestArtifact): PullRequestState {
+  return artifact.pullRequest.merged ? "merged" : artifact.status;
+}
+
+export const PULL_REQUEST_STATE_LABEL: Record<PullRequestState, string> = {
+  open: "Open",
+  approved: "Approved",
+  merged: "Merged",
+  closed: "Closed",
+};
+
+export const VERDICT_LABEL: Record<ReviewData["verdict"], string> = {
+  approve: "Approved",
+  request_changes: "Changes requested",
+};
+
+const MERGE_WORDS = /merge|pull request|\bPR\b/i;
+
+/**
+ * The pull request an approval is about. `pullRequestId` names it; an approval from before that field
+ * falls back to a "#3" in its text, then to the newest pull request of the same request.
+ */
+export function pullRequestForApproval(artifacts: readonly Artifact[], approval: Approval): PullRequestArtifact | undefined {
+  const requests = artifacts.filter(isPullRequest).sort(newestFirst);
+  if (approval.pullRequestId) return requests.find((artifact) => artifact.id === approval.pullRequestId);
+  const text = `${approval.title} ${approval.detail}`;
+  const named = /#(\d+)/.exec(text);
+  if (named) return requests.find((artifact) => artifact.pullRequest.number === Number(named[1]));
+  if (!MERGE_WORDS.test(text)) return undefined;
+  return requests.find((artifact) => artifact.requestId === approval.requestId);
+}
+
+export function changeTotals(files: readonly ChangedFile[]): { additions: number; deletions: number } {
+  return files.reduce((sum, file) => ({ additions: sum.additions + file.additions, deletions: sum.deletions + file.deletions }), {
+    additions: 0,
+    deletions: 0,
+  });
+}
+
+const SEVERITY_RANK: Record<ReviewFinding["severity"], number> = { high: 0, medium: 1, low: 2 };
+
+/** High severity first, then the findings the reviewer is surest of. */
+export function sortFindings(findings: readonly ReviewFinding[]): ReviewFinding[] {
+  return [...findings].sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] || b.confidence - a.confidence);
+}

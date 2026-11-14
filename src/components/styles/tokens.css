@@ -28,6 +28,10 @@
   --color-danger: #fd2f3b;
   --color-danger-text: #ff6069;
   --color-danger-soft: rgb(253 47 59 / 0.16);
+  --color-diff-add: rgb(49 207 118 / 0.08);
+  --color-diff-add-strong: rgb(49 207 118 / 0.16);
+  --color-diff-del: rgb(253 47 59 / 0.08);
+  --color-diff-del-strong: rgb(253 47 59 / 0.16);
   --color-scrim: rgb(0 0 0 / 0.62);
   --color-shadow: rgb(0 0 0 / 0.4);
   --color-transparent: transparent;
@@ -40,6 +44,7 @@
   --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
+  --size-xs: 11px;
   --size-sm: 12px;
   --size-md: 13px;
   --size-lg: 14px;
@@ -114,4 +119,5 @@
   --stack-tuck: 14px;
   --composer-padding: 10px;
   --chat-width: 720px;
+  --tree-indent: 14px;
 }

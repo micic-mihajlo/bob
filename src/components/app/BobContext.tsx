@@ -1,22 +1,35 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { findCaptain } from "@/lib/client/crew";
+import { FIRST_TABS, panelKindOf, type PanelKind, type PanelTab } from "@/lib/client/panel-tabs";
 import { resolveSelectedAgent } from "@/lib/client/selectors";
 import type { Agent, AgentId, MessageId, Snapshot } from "@/lib/types";
 
-export type PanelTab = "roadmap" | "activity";
+/** Where a thread should scroll once it opens: an approval card, or its newest item. */
+export interface FocusTarget {
+  agentId: AgentId;
+  approvalId: string | null;
+}
 
 interface BobContextValue {
   snapshot: Snapshot;
   /** False while the event stream is down and the window is polling. */
   connected: boolean;
   agentsById: ReadonlyMap<AgentId, Agent>;
+  captain: Agent | undefined;
   selectedAgent: Agent | undefined;
   selectAgent: (agentId: AgentId) => void;
   panelOpen: boolean;
   togglePanel: () => void;
+  panelKind: PanelKind;
   panelTab: PanelTab;
   setPanelTab: (tab: PanelTab) => void;
+  /** Selects a thread, shows one of its panel tabs and opens the panel. */
+  openThreadTab: (agentId: AgentId, tab: PanelTab) => void;
+  focusTarget: FocusTarget | null;
+  focusThread: (target: FocusTarget) => void;
+  clearFocus: () => void;
   whyMessageId: MessageId | null;
   openWhy: (messageId: MessageId) => void;
   closeWhy: () => void;
@@ -34,50 +47,67 @@ export function useBob(): BobContextValue {
   return value;
 }
 
-export function BobProvider({
-  snapshot,
-  connected,
-  children,
-}: {
-  snapshot: Snapshot;
-  connected: boolean;
-  children: ReactNode;
-}) {
+export function BobProvider({ snapshot, connected, children }: { snapshot: Snapshot; connected: boolean; children: ReactNode }) {
   const [selectedId, setSelectedId] = useState<AgentId | null>(null);
   // Where the panel would float over the thread, it starts closed.
   const [panelOpen, setPanelOpen] = useState(
     () => typeof window === "undefined" || window.matchMedia("(min-width: 1041px)").matches,
   );
-  const [panelTab, setPanelTab] = useState<PanelTab>("roadmap");
+  // One remembered tab per kind of thread, so switching threads never lands on a tab it lacks.
+  const [panelTabs, setPanelTabs] = useState<Readonly<Record<PanelKind, PanelTab>>>(FIRST_TABS);
+  const [focusTarget, setFocusTarget] = useState<FocusTarget | null>(null);
   const [whyMessageId, setWhyMessageId] = useState<MessageId | null>(null);
   const [newAgentOpen, setNewAgentOpen] = useState(false);
   const [drafts, setDrafts] = useState<Readonly<Record<AgentId, string>>>({});
 
+  const agentsById = useMemo(() => new Map(snapshot.agents.map((agent) => [agent.id, agent] as const)), [snapshot.agents]);
+  const captain = useMemo(() => findCaptain(snapshot.agents), [snapshot.agents]);
+  const selectedAgent = resolveSelectedAgent(snapshot, selectedId);
+  const panelKind = panelKindOf(selectedAgent, captain);
+
   const togglePanel = useCallback(() => setPanelOpen((open) => !open), []);
   const closeWhy = useCallback(() => setWhyMessageId(null), []);
+  const clearFocus = useCallback(() => setFocusTarget(null), []);
   const draftFor = useCallback((agentId: AgentId) => drafts[agentId] ?? "", [drafts]);
   const setDraft = useCallback(
     (agentId: AgentId, text: string) => setDrafts((previous) => ({ ...previous, [agentId]: text })),
     [],
   );
-
-  const agentsById = useMemo(
-    () => new Map(snapshot.agents.map((agent) => [agent.id, agent] as const)),
-    [snapshot.agents],
+  const setPanelTab = useCallback(
+    (tab: PanelTab) => setPanelTabs((previous) => ({ ...previous, [panelKind]: tab })),
+    [panelKind],
   );
-  const selectedAgent = resolveSelectedAgent(snapshot, selectedId);
+  const openThreadTab = useCallback(
+    (agentId: AgentId, tab: PanelTab) => {
+      const kind = panelKindOf(agentsById.get(agentId), captain);
+      setSelectedId(agentId);
+      setPanelTabs((previous) => ({ ...previous, [kind]: tab }));
+      setPanelOpen(true);
+    },
+    [agentsById, captain],
+  );
+  const focusThread = useCallback((target: FocusTarget) => {
+    setSelectedId(target.agentId);
+    setFocusTarget(target);
+  }, []);
 
   const value = useMemo<BobContextValue>(
     () => ({
       snapshot,
       connected,
       agentsById,
+      captain,
       selectedAgent,
       selectAgent: setSelectedId,
       panelOpen,
       togglePanel,
-      panelTab,
+      panelKind,
+      panelTab: panelTabs[panelKind],
       setPanelTab,
+      openThreadTab,
+      focusTarget,
+      focusThread,
+      clearFocus,
       whyMessageId,
       openWhy: setWhyMessageId,
       closeWhy,
@@ -90,10 +120,17 @@ export function BobProvider({
       snapshot,
       connected,
       agentsById,
+      captain,
       selectedAgent,
       panelOpen,
       togglePanel,
-      panelTab,
+      panelKind,
+      panelTabs,
+      setPanelTab,
+      openThreadTab,
+      focusTarget,
+      focusThread,
+      clearFocus,
       whyMessageId,
       closeWhy,
       newAgentOpen,

@@ -3,10 +3,12 @@
 import { ChevronDown } from "lucide-react";
 import { useId, useState } from "react";
 import { useBob } from "@/components/app/BobContext";
-import { agentHueStyle, Avatar } from "@/components/common/Avatar";
+import { AgentLabel } from "@/components/common/AgentLabel";
+import { agentHueStyle } from "@/components/common/Avatar";
 import { RollingNumber } from "@/components/common/RollingNumber";
 import { StateMark } from "@/components/common/StateMark";
 import { isSettled, REPLY_STATE_LABEL, type ReplyState } from "@/lib/client/agent-status";
+import { displayName } from "@/lib/client/crew";
 import { formatClock, formatElapsed } from "@/lib/client/format";
 import { elapsedSince } from "@/lib/client/thread-rows";
 import { useNow } from "@/lib/client/use-now";
@@ -28,7 +30,7 @@ export function MessageMarker({ label, agentId, messageId, text, at, state }: Me
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const agent = agentsById.get(agentId);
-  const name = agent?.name ?? "A former teammate";
+  const name = agent ? displayName(agent) : "A former teammate";
   const ticking = state !== undefined && !isSettled(state);
   const now = useNow(ticking);
   const elapsed = elapsedSince(at, now);
@@ -44,8 +46,7 @@ export function MessageMarker({ label, agentId, messageId, text, at, state }: Me
           title={`Open ${name}'s thread`}
           onClick={() => selectAgent(agentId)}
         >
-          {agent ? <Avatar agent={agent} size={16} /> : null}
-          <span className="marker-pill-name">{name}</span>
+          {agent ? <AgentLabel agent={agent} /> : <span className="marker-pill-name">{name}</span>}
         </button>
         {state ? (
           <span className="marker-state" data-state={state}>
