@@ -75,6 +75,7 @@ export function DrivePane({ onClose }: { onClose: () => void }) {
               key: entry.name,
               name: entry.name,
               at: entry.updatedAt,
+              size: textBytes(entry.content),
               meta: [formatFileSize(textBytes(entry.content)), formatClock(entry.updatedAt)].filter(Boolean),
               onOpen: () => setOpen(entry.name),
             }))}
