@@ -54,8 +54,6 @@
   color: var(--bob-text-muted);
   font-size: var(--bob-text-sm);
   font-weight: var(--bob-weight-semibold);
-  letter-spacing: var(--bob-tracking-wide);
-  text-transform: uppercase;
 }
 
 .bob-roadmap-goal,
