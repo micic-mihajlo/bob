@@ -54,6 +54,16 @@ export const requestAsk = (s: State, requestId: string): string | undefined =>
 export const requestOrigin = (s: State, requestId: string): string | null =>
   s.messages.find((m) => m.requestId === requestId && m.from.kind === "user" && !m.approvalId)?.id ?? null;
 
+/** Closes the thread now when it is idle; mid-turn it is marked closing and closes when the turn ends. */
+export function closeWhenIdle(s: State, id: AgentId, by: string): State {
+  if (!runningTurn(s, id)) return closeThreadState(s, id, by);
+  return { ...s, agents: s.agents.map((a) => (a.id === id && !a.closingBy ? { ...a, closingBy: by } : a)) };
+}
+
+/** Closes every thread marked closing whose turn has ended. */
+export const closePending = (s: State): State =>
+  s.agents.filter((a) => a.closingBy && !isClosed(a) && !runningTurn(s, a.id)).reduce((acc, a) => closeThreadState(acc, a.id, a.closingBy!), s);
+
 export function closeThreadState(s: State, id: AgentId, by: string): State {
   const at = nowIso();
   const running = runningTurn(s, id);

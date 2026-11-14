@@ -44,6 +44,8 @@ export interface Agent {
   branch?: string | null;
   /** Set when the captain or a person closes the thread. Closed threads stay readable. */
   closedAt?: string | null;
+  /** Who closed the thread while its turn was still running. The thread closes when that turn ends. */
+  closingBy?: string | null;
 }
 
 export type CrewRole = "build" | "review" | "research";
