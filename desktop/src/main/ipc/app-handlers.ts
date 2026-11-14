@@ -18,6 +18,7 @@ import {
 import { app, type BrowserWindow, dialog, type OpenDialogOptions } from "electron";
 import { version as developmentVersion } from "../../../package.json";
 import type { AgentService } from "../../backend/agent-service";
+import { bobUrl } from "../../backend/bob-url";
 import type { BrowserHost } from "../../backend/browser-host";
 import type { MailboxStore } from "../../backend/mailbox-store";
 import type { AgentDefaultsPreferenceStore } from "../agent-defaults-preference-store";
@@ -175,6 +176,7 @@ export function appIpcHandlers({
           version,
           platform,
           variant: appVariant,
+          bobUrl: bobUrl(),
           ...(analyticsCaptureUrl ? { analyticsCaptureUrl } : {}),
         };
       }),

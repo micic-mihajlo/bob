@@ -10,6 +10,8 @@ export interface AppInfo {
   version: string;
   platform: DesktopPlatform;
   variant: AppVariant;
+  /** Bob's web server, which the bridge talks to and the Bob view shows. */
+  bobUrl?: string;
   /** Set only in an unpackaged build that a local analytics capture server reads. */
   analyticsCaptureUrl?: string;
 }
