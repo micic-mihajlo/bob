@@ -16,7 +16,7 @@ import type {
   UpdateTeamMemberInput,
 } from "@bob/contracts/ipc";
 import { currentText } from "@bob/ui/text";
-import { createEffect, createMemo, createSignal, flush, onCleanup } from "solid-js";
+import { createEffect, createMemo, createSignal, flush, } from "solid-js";
 import { desktopAnalytics } from "../../analytics";
 import { createSimpleContext } from "../../simple-context";
 import { useAuth } from "../account/account-context";
@@ -76,7 +76,7 @@ function generatedServerName(user: CentralAuthUser | null): string {
 const ServerSettings = createSimpleContext({
   name: "Server settings",
   init: () => {
-    const { servers, setServers, hostStatus, setHostStatus, setHostUpdateOpener } = useServers();
+    const { servers, setServers, hostStatus, setHostStatus } = useServers();
     const { signedInAccount } = useAuth();
     const [serverSettingsTargetId, setServerSettingsTargetId] = createSignal<string | null>(null);
     /** The section an opener asked for, such as Updates from the host version notice. */
@@ -716,8 +716,6 @@ const ServerSettings = createSimpleContext({
         throw error;
       }
     }
-    setHostUpdateOpener((serverId) => openServerSettings(serverId, null, "updates"));
-    onCleanup(() => setHostUpdateOpener(undefined));
 
     return {
       serverSettingsTarget,

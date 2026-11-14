@@ -14,7 +14,6 @@ import {
   AlertDescription,
   AlertIcon,
   AlertTitle,
-  AppWindow,
   ArrowLeftRight,
   Blocks,
   Button,
@@ -22,7 +21,6 @@ import {
   Download,
   HardDrive,
   KeyRound,
-  Monitor,
   RefreshCw,
   Settings,
   ShieldCheck,
@@ -40,13 +38,12 @@ import { useText } from "@bob/ui/text";
 import { createEffect, createSignal, onCleanup, Show, untrack } from "solid-js";
 import { actionToast } from "../../action-toast";
 import { BOB_SINGLE_BOT } from "../../bob";
-import { type ServerBrowserProfilesOptions, ServerBrowserProfilesPanel } from "../browser/ServerBrowserProfilesPanel";
+import { type ServerBrowserProfilesOptions, } from "../browser/ServerBrowserProfilesPanel";
 import { type ServerStorageOptions, ServerStoragePanel } from "../files/ServerStoragePanel";
 import { type HostProviderSettings, HostProviderSettingsPanel } from "../settings/ProviderSettingsSection";
 import type { HostPromptCacheTtlOptions, ProviderPromptCacheSource } from "../settings/provider-prompt-cache";
 import { type ServerVaultOptions, ServerVaultPanel } from "../vault/ServerVaultPanel";
 import type { McpServerConfig, McpTestResult } from "./mcp-servers";
-import { ServerDesktopPanel } from "./ServerDesktopPanel";
 import { createServerGeneralSection } from "./ServerGeneralSection";
 import { type ServerImportDetail, type ServerImportOptions, ServerImportPanel } from "./ServerImportPanel";
 import { type McpPanelDetail, type McpPanelSignIn, ServerMcpPanel } from "./ServerMcpPanel";
@@ -55,7 +52,7 @@ import type { ServerMemoryReviewOptions } from "./ServerMemoryReviewSetting";
 import { type ServerRoutineFeedOptions, } from "./ServerRoutineFeedPanel";
 import type { ServerTimezoneOptions } from "./ServerTimezoneSetting";
 import { type ServerTransferOptions, ServerTransferPanel } from "./ServerTransferPanel";
-import { type ServerUpdateOptions, ServerUpdatePanel } from "./ServerUpdatePanel";
+import { type ServerUpdateOptions, } from "./ServerUpdatePanel";
 import { serverCanAdminister, serverRoleCanAdminister } from "./server-capabilities";
 import type { ServerSettingsSectionHost } from "./server-settings-section";
 
@@ -198,27 +195,21 @@ export interface ServerSettingsModalProps {
 export type ServerSettingsSection =
   | "general"
   | "vault"
-  | "desktop"
   | "mcp"
   | "storage"
   | "providers"
-  | "updates"
   | "import"
-  | "transfer"
-  | "browser-profiles";
+  | "transfer";
 type Section = ServerSettingsSection;
 
 const sections = {
   general: { title: "server.settings.generalTitle", description: "server.settings.generalDescription" },
   vault: { title: "server.settings.vaultTitle", description: "server.settings.vaultDescription" },
-  desktop: { title: "server.settings.desktopTitle", description: "server.settings.desktopDescription" },
   mcp: { title: "server.settings.mcpTitle", description: "server.settings.mcpDescription" },
   storage: { title: "server.settings.storageTitle", description: "server.settings.storageDescription" },
   providers: { title: "server.settings.providersTitle", description: "server.settings.providersDescription" },
-  updates: { title: "server.settings.updatesTitle", description: "server.settings.updatesDescription" },
   import: { title: "server.settings.importTitle", description: "server.settings.importDescription" },
   transfer: { title: "server.settings.transferTitle", description: "server.settings.transferDescription" },
-  "browser-profiles": { title: "browser.profiles.title", description: "browser.profiles.subtitle" },
 } as const satisfies Record<Section, { title: AppTextKey; description: AppTextKey }>;
 
 export function ServerSettingsModal(props: ServerSettingsModalProps) {
@@ -247,7 +238,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
   let syncedServerId = "";
 
   const local = () => props.server.kind === "local";
-  const remoteDesktopSection = () => props.remoteDesktopSupported !== false && props.platform === "darwin";
   const configured = () => (local() ? Boolean(props.hostStatus?.configured) : true);
   /**
    * The role check without `configured()`. MCP servers belong to this machine and are spawned
@@ -261,7 +251,7 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
     return { ...options, serverId: props.server.id };
   }
   const availableInitialSection = (): Section | null =>
-    props.initialSection === "updates" && !props.hostUpdate ? null : (props.initialSection ?? null);
+    props.initialSection ?? null;
   const published = () => (local() ? props.hostStatus?.phase === "online" : props.server.state === "online");
 
   async function run(key: string, action: () => Promise<void>): Promise<boolean> {
@@ -393,14 +383,11 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
       if (
         value === "general" ||
         value === "vault" ||
-        value === "desktop" ||
         value === "mcp" ||
         value === "storage" ||
         value === "providers" ||
-        value === "updates" ||
         value === "import" ||
-        value === "transfer" ||
-        value === "browser-profiles"
+        value === "transfer"
       )
         setSection(value);
     },
@@ -556,12 +543,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
                 <span>{t(sections.vault.title)}</span>
               </Tabs.Trigger>
             </Show>
-            <Show when={remoteDesktopSection()}>
-              <Tabs.Trigger class="settings-modal-nav-item" value="desktop">
-                <Monitor aria-hidden="true" />
-                <span>{t(sections.desktop.title)}</span>
-              </Tabs.Trigger>
-            </Show>
             <Show when={props.mcpServers}>
               <Tabs.Trigger class="settings-modal-nav-item" value="mcp">
                 <Blocks aria-hidden="true" />
@@ -580,12 +561,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
                 <span>{t(sections.providers.title)}</span>
               </Tabs.Trigger>
             </Show>
-            <Show when={props.hostUpdate}>
-              <Tabs.Trigger class="settings-modal-nav-item" value="updates">
-                <RefreshCw aria-hidden="true" />
-                <span>{t(sections.updates.title)}</span>
-              </Tabs.Trigger>
-            </Show>
             <Show when={props.agentImport}>
               <Tabs.Trigger class="settings-modal-nav-item" value="import">
                 <Download aria-hidden="true" />
@@ -596,12 +571,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
               <Tabs.Trigger class="settings-modal-nav-item" value="transfer">
                 <ArrowLeftRight aria-hidden="true" />
                 <span>{t(sections.transfer.title)}</span>
-              </Tabs.Trigger>
-            </Show>
-            <Show when={props.browserProfiles}>
-              <Tabs.Trigger class="settings-modal-nav-item" value="browser-profiles">
-                <AppWindow aria-hidden="true" />
-                <span>{t(sections["browser-profiles"].title)}</span>
               </Tabs.Trigger>
             </Show>
           </Tabs.List>
@@ -616,11 +585,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
               <ServerVaultPanel {...vault()} menuMount={modalElement()} />
             </Tabs.Content>
           )}
-        </Show>
-        <Show when={remoteDesktopSection()}>
-          <Tabs.Content value="desktop" class="settings-modal-tab-panel server-settings-panel" data-tab="desktop">
-            <ServerDesktopPanel server={props.server} platform={props.platform} hostStatus={props.hostStatus} />
-          </Tabs.Content>
         </Show>
         <Show when={props.mcpServers}>
           {(servers) => (
@@ -691,18 +655,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
             </Show>
           </Tabs.Content>
         </Show>
-        <Show when={props.hostUpdate}>
-          {(hostUpdate) => (
-            <Tabs.Content value="updates" class="settings-modal-tab-panel server-settings-panel" data-tab="updates">
-              <ServerUpdatePanel
-                {...hostUpdate()}
-                serverId={props.server.id}
-                hostName={props.server.name}
-                actionsAvailable={actionsAvailable()}
-              />
-            </Tabs.Content>
-          )}
-        </Show>
         <Show when={props.agentImport}>
           {(agentImport) => (
             <Tabs.Content value="import" class="settings-modal-tab-panel server-settings-panel" data-tab="import">
@@ -728,17 +680,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
               <Show when={props.server.id} keyed>
                 {(serverId) => <ServerTransferPanel serverId={serverId} {...instanceTransfer()} />}
               </Show>
-            </Tabs.Content>
-          )}
-        </Show>
-        <Show when={props.browserProfiles}>
-          {(browserProfiles) => (
-            <Tabs.Content
-              value="browser-profiles"
-              class="settings-modal-tab-panel server-settings-panel"
-              data-tab="browser-profiles"
-            >
-              <ServerBrowserProfilesPanel {...browserProfiles()} menuMount={modalElement()} />
             </Tabs.Content>
           )}
         </Show>

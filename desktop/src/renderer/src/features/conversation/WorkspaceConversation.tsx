@@ -9,7 +9,6 @@ import {
   type UpdateAgentAdminSettingsInput,
   type UpdateAgentInput,
 } from "@bob/contracts/ipc";
-import { BROWSER_PROFILES_CAPABILITY } from "@bob/contracts/team-protocol/browser-profiles-v1";
 import { hasVisibleToasts } from "@bob/ui";
 import {
   type BackupModelSource,
@@ -44,7 +43,7 @@ import { useConnectors } from "../connectors/connectors-context";
 import { useCustomAgents } from "../custom-agents/custom-agents-context";
 import { useCustomProviders } from "../custom-providers/custom-providers-context";
 import { useRemoteDesktop } from "../remote-desktop/remote-desktop-context";
-import { remoteMcpSignIn, serverCanAdminister, serverSupportsCapability } from "../servers/server-capabilities";
+import { remoteMcpSignIn, serverSupportsCapability } from "../servers/server-capabilities";
 import { useServerScope } from "../servers/server-scope";
 import { useServerSettings } from "../servers/server-settings";
 import { useServers } from "../servers/servers-context";
@@ -324,12 +323,6 @@ export function WorkspaceConversation(props: { account: () => CentralAuthUser })
     const server = activeServer();
     if (server) openServerSettings(server.id, trigger, "providers");
   };
-  /** The named browser profiles live on the computer that runs the agents: this one, or a host an admin manages. */
-  const manageBrowserProfiles = createMemo(() => serverCanAdminister(activeServer(), BROWSER_PROFILES_CAPABILITY));
-  const openBrowserProfileSettings = (trigger: HTMLElement) => {
-    const server = activeServer();
-    if (server) openServerSettings(server.id, trigger, "browser-profiles");
-  };
   /** The browser sign-in opens on this computer, so it stays local. */
   const localProviderDownloads = createMemo(
     () => activeServer()?.kind === "local" && providerRuntimeDownloadsAvailable(),
@@ -514,7 +507,6 @@ export function WorkspaceConversation(props: { account: () => CentralAuthUser })
         onSignInProvider={composerSignIn() ? connectFromComposer : undefined}
         onSignInWithCodeProvider={composerCodeSignIn() ? signInWithCode : undefined}
         onManageProviders={manageProviders() ? openProviderSettings : undefined}
-        onManageBrowserProfiles={manageBrowserProfiles() ? openBrowserProfileSettings : undefined}
         agent={conversationAgent()}
         agents={agentList()}
         mentionAgents={agentList().filter((agent) => !userHiddenAgentIds().has(agent.id))}

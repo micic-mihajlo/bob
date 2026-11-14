@@ -73,8 +73,6 @@ export function WorkspacePageRail(props: { hidden: boolean }) {
       usageRows={BOB_SINGLE_BOT ? [] : usageRows()}
       customAgentUsage={BOB_SINGLE_BOT ? [] : localAgentUsage()}
       onAgents={() => showSidebarView("agents")}
-      // A joined server without workflows shows its notice on the page.
-      onWorkflows={BOB_SINGLE_BOT ? undefined : () => windowPage.openWorkflows(null)}
       onTasks={!BOB_SINGLE_BOT && tasksAvailable() ? windowPage.openTasks : undefined}
       onMarketplace={BOB_SINGLE_BOT ? undefined : () => setSkillsMarketplaceOpen(true)}
       onSettings={(button) => windowPage.openSettings(button)}
