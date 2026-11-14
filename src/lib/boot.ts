@@ -25,8 +25,6 @@ export const REPLAY_SAFE_TOOLS: ReadonlySet<string> = new Set([
   "list_agents",
   "write_drive",
   "set_goal",
-  "set_roadmap",
-  "advance_stage",
 ]);
 
 type Step = Extract<ThreadItem, { kind: "step" }>;
