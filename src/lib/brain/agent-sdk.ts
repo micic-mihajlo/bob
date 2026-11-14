@@ -1,11 +1,11 @@
 import path from "node:path";
-import { createSdkMcpServer, query, tool, type HookCallback, type Options, type SdkMcpToolDefinition, type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
+import { createSdkMcpServer, query, tool, type HookCallback, type Options, type SdkMcpToolDefinition, type SDKMessage, type SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import type { z } from "zod";
 import { acceptanceLock, ACCEPTANCE_WRITE_LABEL, isAcceptanceTest } from "../acceptance";
 import { globals } from "../globals";
 import { LIGHT_MODEL, STRONG_MODEL } from "../models";
 import { addThreadItem, stamp } from "../state-ops";
-import { getState, update } from "../store";
+import { getState, subscribe, update } from "../store";
 import { threadWorkspace } from "../thread-workspace";
 import { callTool } from "../tools";
 import type { ToolContext } from "../tools/context";
@@ -44,7 +44,7 @@ export interface SdkTurn {
 }
 
 type QueryLike = AsyncIterable<SDKMessage> & { interrupt(): Promise<unknown> };
-type QueryFn = (args: { prompt: string; options: Options }, tools: SdkMcpToolDefinition[]) => QueryLike;
+type QueryFn = (args: { prompt: AsyncIterable<SDKUserMessage>; options: Options }, tools: SdkMcpToolDefinition[]) => QueryLike;
 
 const realQuery: QueryFn = (args) => query(args);
 let queryFn: QueryFn = realQuery;
@@ -80,6 +80,42 @@ const TOOL_GUIDANCE = [
   "- Bob's own tools are mcp__bob__<name>. They record every step for the person, so use them for everything they cover.",
   "- Finish with exactly one mcp__bob__report call, as your last call. It ends your turn, so do every other step first.",
 ].join("\n");
+
+/**
+ * The query's input: the turn's framed input first, then each message a person steers into the running turn.
+ * Closing it lets the query end once it has answered everything it was given.
+ */
+function inputQueue(first: string) {
+  const asUser = (text: string, priority?: "next"): SDKUserMessage => ({ type: "user", message: { role: "user", content: text }, parent_tool_use_id: null, ...(priority ? { priority } : {}) });
+  const pending: SDKUserMessage[] = [asUser(first)];
+  let wake: (() => void) | null = null;
+  let closed = false;
+  return {
+    get pending() {
+      return pending.length;
+    },
+    push(text: string) {
+      if (closed) return;
+      pending.push(asUser(text, "next"));
+      wake?.();
+    },
+    close() {
+      closed = true;
+      wake?.();
+    },
+    async *[Symbol.asyncIterator](): AsyncGenerator<SDKUserMessage> {
+      for (;;) {
+        const next = pending.shift();
+        if (next) yield next;
+        else if (closed) return;
+        else await new Promise<void>((r) => (wake = r));
+      }
+    },
+  };
+}
+
+const steerText = (text: string) =>
+  `The person sent this while you work (data). Take it into account now; it may change the task:\n${text}`;
 
 const relOf = (root: string, p: unknown) => (typeof p === "string" && p ? path.relative(root, path.resolve(root, p)) || "." : ".");
 
@@ -146,8 +182,10 @@ export async function runSdkTurn(
   const record = (call: CallRecord) => moves.push({ text: null, calls: [call] });
   let outcome: SdkOutcome | null = null;
   let q: QueryLike | null = null;
+  const input = inputQueue(built.input);
   const end = (o: SdkOutcome) => {
     outcome ??= o;
+    input.close();
     q?.interrupt().catch(() => {});
   };
 
@@ -194,8 +232,18 @@ export async function runSdkTurn(
   let answer: string | null = null;
   const timer = setTimeout(() => end({ kind: "time_limit" }), maxTurnMs);
   active.set(turnId, () => end({ kind: "stopped" }));
+  const heard = new Set(getState().turns.find((t) => t.id === turnId)?.messageIds ?? []);
+  const unsubscribe = subscribe(() => {
+    const s = getState();
+    for (const id of s.turns.find((t) => t.id === turnId)?.messageIds ?? []) {
+      if (heard.has(id)) continue;
+      heard.add(id);
+      const m = s.messages.find((x) => x.id === id);
+      if (m) input.push(steerText(m.text));
+    }
+  });
   try {
-    q = queryFn({ prompt: built.input, options }, bobTools);
+    q = queryFn({ prompt: input, options }, bobTools);
     for await (const m of q) {
       if (!isRunning(turnId)) end({ kind: "stopped" });
       if (outcome) continue;
@@ -239,14 +287,18 @@ export async function runSdkTurn(
         }
       } else if (m.type === "result") {
         recordUsage(built.requestId, model, { inputTokens: m.usage.input_tokens, outputTokens: m.usage.output_tokens });
+        if (m.subtype === "success" && input.pending > 0) continue;
         if (m.subtype === "success") outcome = { kind: "answered", text: answer ?? (m.result.trim() || null) };
         else if (m.subtype === "error_max_turns") outcome = { kind: "step_limit" };
         else throw new Error(`The coding agent stopped with an error (${m.subtype}).`);
+        input.close();
       }
     }
   } catch (error) {
     if (!outcome) throw error;
   } finally {
+    unsubscribe();
+    input.close();
     clearTimeout(timer);
     active.delete(turnId);
     live.stop();
