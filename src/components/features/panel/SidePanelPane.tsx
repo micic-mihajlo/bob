@@ -1,5 +1,6 @@
 "use client";
 
+import { CodebasePane } from "@/components/features/codebase/CodebasePane";
 import { RoadmapPanel } from "@/components/features/roadmap/RoadmapPanel";
 import { useBob } from "@/components/features/window/BobContext";
 import type { SidePanelPaneId } from "@/lib/client/panel-tabs";
@@ -34,5 +35,7 @@ export function SidePanelPane({ pane, onClose }: { pane: SidePanelPaneId; onClos
       return selectedAgent ? <FilesPane key={selectedAgent.id} agent={selectedAgent} onClose={onClose} /> : null;
     case "review":
       return selectedAgent ? <ReviewPane agent={selectedAgent} onClose={onClose} /> : null;
+    case "codebase":
+      return <CodebasePane onClose={onClose} />;
   }
 }

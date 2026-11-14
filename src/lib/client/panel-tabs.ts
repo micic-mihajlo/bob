@@ -1,7 +1,7 @@
 import type { Agent } from "@/lib/types";
 
 /** A pane of the side panel. Each open pane has a tab in the panel's top row. */
-export type PanelTab = "roadmap" | "inbox" | "crew" | "drive" | "activity" | "changes" | "files" | "review";
+export type PanelTab = "roadmap" | "inbox" | "crew" | "drive" | "activity" | "changes" | "files" | "review" | "codebase";
 
 /**
  * Every pane the new side panel can show. `verified` is not a PanelTab yet, because the old panel
@@ -21,7 +21,7 @@ export const PANEL_TABS: Readonly<Record<PanelKind, readonly PanelTab[]>> = {
 
 /** The panes the new side panel offers each kind of thread, in tab order. */
 export const SIDE_PANEL_PANES: Readonly<Record<PanelKind, readonly SidePanelPaneId[]>> = {
-  captain: [...PANEL_TABS.captain, "verified"],
+  captain: [...PANEL_TABS.captain, "codebase", "verified"],
   crew: PANEL_TABS.crew,
   standing: PANEL_TABS.standing,
 };
@@ -36,6 +36,7 @@ export const PANEL_TAB_LABEL: Readonly<Record<SidePanelPaneId, string>> = {
   changes: "Changes",
   files: "Files",
   review: "Review",
+  codebase: "Codebase",
 };
 
 export function panelKindOf(agent: Agent | undefined, captain: Agent | undefined): PanelKind {

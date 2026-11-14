@@ -10,6 +10,7 @@ import {
   Map as MapIcon,
   Maximize2,
   Minimize2,
+  Network,
   PanelRight,
   Plus,
   ScanSearch,
@@ -54,6 +55,8 @@ export function PaneIcon({ pane }: { pane: SidePanelPaneId }) {
       return <ScanSearch aria-hidden="true" />;
     case "verified":
       return <ShieldCheck aria-hidden="true" />;
+    case "codebase":
+      return <Network aria-hidden="true" />;
   }
 }
 
