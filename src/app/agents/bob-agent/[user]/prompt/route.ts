@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { postUserMessage } from "@/lib/actions";
+import { attachClientTools, ClientToolSchema } from "@/lib/client-tools";
 import { NO_STORE, parseBody, ready } from "@/lib/http";
 import { CAPTAIN_ID } from "@/lib/seed";
 import { getState, subscribe } from "@/lib/store";
 
-const Body = z.object({ text: z.string().trim().min(1).max(8000) });
+const Body = z.object({ text: z.string().trim().min(1).max(8000), clientTools: z.array(ClientToolSchema).max(200).optional() });
 
 const SETTLE_MS = 2_000;
 const LIMIT_MS = 10 * 60_000;
@@ -14,8 +15,14 @@ export async function POST(request: Request): Promise<Response> {
   const body = await parseBody(request, Body);
   if (!body.ok) return body.response;
   const captain = getState().agents.find((a) => a.kind === "captain")?.id ?? CAPTAIN_ID;
+  const early: Record<string, unknown>[] = [];
+  let send: (chunk: Record<string, unknown>) => void = (chunk) => early.push(chunk);
+  const detach = attachClientTools(captain, body.data.clientTools ?? [], (chunk) => send(chunk));
   const sent = postUserMessage(captain, body.data.text);
-  if (!sent.ok) return new Response(sent.error, { status: 400 });
+  if (!sent.ok) {
+    detach();
+    return new Response(sent.error, { status: 400 });
+  }
   const requestId = getState().messages.find((m) => m.id === sent.messageId)?.requestId;
   const names = new Map(getState().agents.map((a) => [a.id, a.code ?? a.name]));
   const encoder = new TextEncoder();
@@ -25,7 +32,10 @@ export async function POST(request: Request): Promise<Response> {
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       const emit = (chunk: Record<string, unknown>) => controller.enqueue(encoder.encode(`${JSON.stringify(chunk)}\n`));
+      send = emit;
+      for (const chunk of early.splice(0)) emit(chunk);
       const close = () => {
+        detach();
         stop();
         try {
           controller.close();
@@ -79,6 +89,7 @@ export async function POST(request: Request): Promise<Response> {
       check();
     },
     cancel() {
+      detach();
       stop();
     },
   });
