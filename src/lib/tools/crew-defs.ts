@@ -6,6 +6,7 @@ import type { ToolContext, ToolOutput } from "./context";
 import { clip, define, fromResult, type ToolDef } from "./define";
 import { openPullRequestSchema, openPullRequestTool, recordReview, recordReviewSchema } from "./pull-requests";
 import { recordNote, recordNoteSchema, report, reportSchema } from "./report";
+import { PREVIEW_TOOLS } from "../integrations/vercel/check-preview";
 
 const READ_ONLY_GIT = ["status", "diff", "log", "show", "fetch", "switch", "checkout"] as const;
 const MAX_BATCH = 20;
@@ -175,6 +176,7 @@ export const CREW_TOOLS: ToolDef[] = [
     label: (i) => `Recorded a review: ${i.verdict === "approve" ? "approve" : "changes requested"}`,
     execute: recordReview,
   }),
+  ...PREVIEW_TOOLS,
   define({
     name: "record_artifact",
     description: "Record what you found as a note the captain and the person can read. Cite the files you read.",
