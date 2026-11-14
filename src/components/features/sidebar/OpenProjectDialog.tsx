@@ -9,6 +9,7 @@ import { openProject } from "@/lib/client/api";
 import type { ProjectTemplate } from "@/lib/types";
 
 const FORM_ID = "open-project-form";
+const stayOpen = () => {};
 
 /** The templates a new project can start from, blank first. The invoices app is the sample the demo runs on. */
 export const TEMPLATE_LABELS: Record<ProjectTemplate, string> = {
@@ -16,8 +17,8 @@ export const TEMPLATE_LABELS: Record<ProjectTemplate, string> = {
   invoices: "Sample: invoices app",
 };
 
-/** Brings in a repository by URL or local path, or starts a new project from a template. */
-export function OpenProjectDialog({ onClose }: { onClose: () => void }) {
+/** Brings in a repository by URL or local path, or starts a new project from a template. Without onClose it is the first-run choice and stays open. */
+export function OpenProjectDialog({ onClose }: { onClose?: () => void }) {
   const { selectAgent } = useBob();
   const [repo, setRepo] = useState("");
   const [name, setName] = useState("");
@@ -36,21 +37,23 @@ export function OpenProjectDialog({ onClose }: { onClose: () => void }) {
     setPending(false);
     if (!result.ok) return setError(result.error);
     selectAgent("bob");
-    onClose();
+    onClose?.();
   }
 
   return (
     <ConfirmDialog
       title="Open a project"
-      description="Bring in a repository by URL or path, or start from a template: blank TypeScript, or the invoices sample. The project you leave keeps its threads."
+      description={`Bring in a repository by URL or path, or start from a template: blank TypeScript, or the invoices sample.${onClose ? " The project you leave keeps its threads." : ""}`}
       icon={<FolderGit2 />}
       error={error}
-      onClose={onClose}
+      onClose={onClose ?? stayOpen}
       actions={
         <>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
+          {onClose ? (
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+          ) : null}
           <Button type="submit" form={FORM_ID} className="ui-confirm-dialog-confirm" disabled={!ready || pending}>
             {pending ? (fromTemplate ? "Creating" : "Cloning") : fromTemplate ? "Start from template" : "Bring it in"}
           </Button>

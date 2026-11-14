@@ -125,7 +125,7 @@ for (;;) {
 try {
   if (!opts.keep) {
     say("demo: resetting to the demo seed and preparing the project (repository, dependencies)");
-    const reset = await call("/api/reset", { warm: true });
+    const reset = await call("/api/reset", { warm: true, sample: true });
     const deps = reset.deps ?? { kind: "none" };
     if (deps.kind === "failed") say(`demo: WARNING the project's dependency install failed (${deps.command}); each thread will install its own. ${String(deps.output).slice(-300)}`);
     else if (deps.kind === "ready") say(`demo: project ready, dependencies ${deps.reused ? "already installed" : `installed in ${Math.round(deps.seconds)} s`}`);

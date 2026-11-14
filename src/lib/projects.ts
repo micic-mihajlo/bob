@@ -6,7 +6,7 @@ import { seedState } from "./seed";
 import type { State } from "./state";
 import { getConfig, getState, loadState, update } from "./store";
 import { sourceOf, workspaceOptions } from "./thread-workspace";
-import type { Project, ProjectTemplate } from "./types";
+import { hasProject, type Project, type ProjectTemplate } from "./types";
 import { ensureProject, prepareProjectDeps, projectLayout, rootOf } from "./workspace";
 
 /**
@@ -24,6 +24,7 @@ function parked(): Map<string, State> {
 }
 
 function park(s: State): void {
+  if (!hasProject(s.project)) return;
   parked().set(s.project.id, s);
   if (!getConfig().persist) return;
   fs.mkdirSync(DIR(), { recursive: true });
@@ -43,7 +44,7 @@ function unpark(id: string): State | null {
   }
 }
 
-/** Every project Bob knows: the active one first, then the parked ones by name. */
+/** Every project Bob knows: the active one first, unless none is chosen yet, then the parked ones by name. */
 export function listProjects(): { active: Project; projects: Project[] } {
   const active = getState().project;
   const others = new Map<string, Project>();
@@ -55,7 +56,8 @@ export function listProjects(): { active: Project; projects: Project[] } {
     }
   }
   others.delete(active.id);
-  return { active, projects: [active, ...[...others.values()].sort((a, b) => a.name.localeCompare(b.name))] };
+  const rest = [...others.values()].sort((a, b) => a.name.localeCompare(b.name));
+  return { active, projects: hasProject(active) ? [active, ...rest] : rest };
 }
 
 const slug = (text: string) =>

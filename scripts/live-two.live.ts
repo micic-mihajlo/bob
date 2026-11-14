@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { it } from "vitest";
 import { decideApproval, postUserMessage } from "../src/lib/actions";
+import { SAMPLE_PROJECT } from "../src/lib/seed";
 import { configure, getState, resetState, subscribe } from "../src/lib/store";
 import { settle } from "../src/lib/turns";
 
@@ -22,7 +23,7 @@ const LIMIT_MS = Number(process.env.BOB_LIVE_LIMIT_MS || 15 * 60_000);
 it("runs two requests at once until both merge", async () => {
   const root = mkdtempSync(path.join(os.tmpdir(), "bob-live2-"));
   configure({ pace: 0, persist: false, workspaceRoot: root, installDeps: true });
-  resetState();
+  resetState(SAMPLE_PROJECT);
   const t0 = Date.now();
   const at = () => Date.now() - t0;
   const rows: { t: number; agent: string; kind: string; text: string }[] = [];
