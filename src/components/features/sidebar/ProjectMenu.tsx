@@ -138,7 +138,14 @@ export function ProjectMenu() {
           </button>
         </div>
       ) : null}
-      {dialogOpen ? <OpenProjectDialog onClose={() => setDialogOpen(false)} /> : null}
+      {dialogOpen ? (
+        <OpenProjectDialog
+          onClose={() => {
+            setDialogOpen(false);
+            requestAnimationFrame(() => trigger.current?.focus());
+          }}
+        />
+      ) : null}
     </div>
   );
 }
