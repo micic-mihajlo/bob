@@ -5,7 +5,7 @@ import { send } from "../mailbox";
 import { updateWorkOrder } from "../roadmap";
 import { captainOf, isClosed, runningTurn, type State } from "../state";
 import { getState, transact, update } from "../store";
-import { checkoutBranch, prewarmProject, threadWorkspace } from "../thread-workspace";
+import { checkoutBranch, prewarmProject, stampThread, threadWorkspace } from "../thread-workspace";
 import { busyThreads, closeThreadState, findThread, isBusy, isPullRequest, openThreads } from "../threads";
 import { isThreadModel, unknownModel } from "../models";
 import { THREAD_MODELS, type Agent, type CrewRole } from "../types";
@@ -100,6 +100,7 @@ export async function startThread(input: StartInput, ctx: ToolContext): Promise<
     update((s) => closeThreadState(s, created.id, "the captain after its workspace failed"));
     return fail(`Could not set up ${created.code}'s workspace: ${problem}. Tell the person; do not retry blindly.`);
   }
+  await stampThread(getState(), created.id, ctx.requestId).catch(() => undefined);
   const sent = send({ from: { kind: "agent", agentId: ctx.agentId }, to: [created.id], text: input.brief, expectsReply: true, replyTo: null, causedBy: ctx.causedBy, requestId: ctx.requestId });
   if (!sent.ok) {
     update((s) => closeThreadState(s, created.id, "the captain after its brief was refused"));
