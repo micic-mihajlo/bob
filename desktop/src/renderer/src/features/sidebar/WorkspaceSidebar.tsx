@@ -29,6 +29,7 @@ import { attentionByAgent } from "../agents/agent-runtime-snapshot";
 import { agentThreadAttention } from "../agents/agent-thread-attention";
 import { useAgents } from "../agents/agents-context";
 import { useChannels } from "../channels/channels-context";
+import { blobAvatarUrl } from "../conversation/blob-avatar";
 import { useBobCrew } from "../conversation/bob-crew";
 import { useConversation } from "../conversation/conversation-context";
 import { useDirectMessages } from "../conversation/direct-messages-context";
@@ -130,7 +131,7 @@ export function WorkspaceSidebar(props: { peopleEnabled: boolean }) {
         threadId: null,
         avatarSeed: thread.id,
         avatarHue: nearestAvatarHue(thread.hue),
-        avatarUrl: null,
+        avatarUrl: blobAvatarUrl(thread.id, thread.hue),
         preview: line(thread),
         updatedAt: thread.at,
       }));
