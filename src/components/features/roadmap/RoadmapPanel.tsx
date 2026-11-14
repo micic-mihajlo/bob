@@ -11,7 +11,16 @@ import { Card } from "@/components/ui/Surface";
 import { displayName } from "@/lib/client/crew";
 import { formatDeadline } from "@/lib/client/format";
 import { requestUsageLine } from "@/lib/client/requests";
-import { forUserLine, hasPlan, roadmapSteps, trackViews, WORK_ORDER_STATUS_LABEL, workOrderProgress, type StepPhase } from "@/lib/client/roadmap-view";
+import {
+  forUserLine,
+  hasPlan,
+  roadmapSteps,
+  trackViews,
+  WORK_ORDER_STATUS_LABEL,
+  workOrderProgress,
+  type StepPhase,
+  type TrackView,
+} from "@/lib/client/roadmap-view";
 import type { WorkOrder } from "@/lib/types";
 
 const PHASE_LABEL: Record<StepPhase, string> = { done: "Done", current: "Now", next: "Up next" };
@@ -46,6 +55,34 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
     </li>
   );
 
+  const stages = (track: TrackView) => {
+    const steps = roadmapSteps(track);
+    if (steps.length === 0) return null;
+    return (
+      <section className="bob-roadmap-section">
+        <h4 className="bob-roadmap-label">Stages</h4>
+        <ol className="bob-roadmap-timeline">
+          {steps.map(({ gate, phase }) => (
+            <li key={`${gate.stage}-${gate.title}`} className="bob-roadmap-step" data-phase={phase} aria-current={phase === "current" ? "step" : undefined}>
+              <span className="bob-roadmap-node" role="img" aria-label={PHASE_LABEL[phase]}>
+                {phase === "done" ? <Check aria-hidden="true" /> : null}
+              </span>
+              <div className="bob-roadmap-step-body">
+                {phase === "current" ? (
+                  <p className="bob-roadmap-stage">
+                    Stage {track.stage} of {roadmap.totalStages}: {track.stageTitle}
+                  </p>
+                ) : null}
+                <p className="bob-roadmap-step-title">{gate.title}</p>
+                {phase === "current" && track.backlog.length > 0 ? <ul className="bob-roadmap-plan">{track.backlog.map(planItem)}</ul> : null}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+    );
+  };
+
   return (
     <PaneFrame className="bob-roadmap-panel" label="Roadmap">
       <PaneHeader title="Roadmap" onClose={onClose} />
@@ -65,6 +102,7 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                   Tell Bob what you want built. Bob asks until the request can be tested, then sets the goal, cuts it into work orders and starts a thread for
                   each.
                 </p>
+                {tracks[0] ? stages(tracks[0]) : null}
               </Card>
             ) : null}
 
@@ -72,7 +110,6 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
               ? tracks.map((track) => {
                   const { goal } = track;
                   const progress = workOrderProgress(track);
-                  const steps = roadmapSteps(track);
                   return (
                     <Card key={track.key} className="bob-roadmap-card" aria-label={goal?.title ?? "Goal"}>
                       <p className="bob-roadmap-label">Goal</p>
@@ -126,34 +163,7 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                         </ul>
                       </section>
 
-                      {steps.length > 0 ? (
-                        <section className="bob-roadmap-section">
-                          <h4 className="bob-roadmap-label">Stages</h4>
-                          <ol className="bob-roadmap-timeline">
-                            {steps.map(({ gate, phase }) => (
-                              <li
-                                key={`${gate.stage}-${gate.title}`}
-                                className="bob-roadmap-step"
-                                data-phase={phase}
-                                aria-current={phase === "current" ? "step" : undefined}
-                              >
-                                <span className="bob-roadmap-node" role="img" aria-label={PHASE_LABEL[phase]}>
-                                  {phase === "done" ? <Check aria-hidden="true" /> : null}
-                                </span>
-                                <div className="bob-roadmap-step-body">
-                                  {phase === "current" ? (
-                                    <p className="bob-roadmap-stage">
-                                      Stage {track.stage} of {roadmap.totalStages}: {track.stageTitle}
-                                    </p>
-                                  ) : null}
-                                  <p className="bob-roadmap-step-title">{gate.title}</p>
-                                  {phase === "current" && track.backlog.length > 0 ? <ul className="bob-roadmap-plan">{track.backlog.map(planItem)}</ul> : null}
-                                </div>
-                              </li>
-                            ))}
-                          </ol>
-                        </section>
-                      ) : null}
+                      {stages(track)}
                     </Card>
                   );
                 })
