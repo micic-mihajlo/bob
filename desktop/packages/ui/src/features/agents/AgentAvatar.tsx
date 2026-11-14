@@ -1,12 +1,16 @@
 import { type AvatarMood, avatarMoodPresentation } from "@bob/brand/bloub-avatar-motion";
-import { type BuilderState, builderSvg } from "@bob/brand/bob-builder-sprite";
+import { BUILDER_PALETTE, type BuilderState, builderPalette, builderSvg } from "@bob/brand/bob-builder-sprite";
 import type { AvatarHue } from "@bob/contracts/ipc";
 import { createEffect, createSignal, Show } from "solid-js";
 import type { AvatarMotion } from "../../bloub-avatar";
 import type { AgentProfile } from "../../data";
 
 interface AgentAvatarProps {
-  agent?: Pick<AgentProfile, "avatarSeed" | "avatarHue" | "avatarUrl"> | undefined;
+  agent?:
+    | (Pick<AgentProfile, "avatarSeed" | "avatarHue" | "avatarUrl"> & { provider?: AgentProfile["provider"] })
+    | undefined;
+  /** The agent's provider when `agent` is not passed. Bob's own agent (the "bob" provider) keeps his orange check. */
+  provider?: AgentProfile["provider"] | undefined;
   seed?: string | undefined;
   hue?: AvatarHue | null;
   url?: string | null | undefined;
@@ -56,6 +60,7 @@ export function AgentAvatar(props: AgentAvatarProps) {
         <GeneratedAvatar
           seed={props.seed ?? props.agent?.avatarSeed ?? ""}
           hue={hue()}
+          bob={(props.provider ?? props.agent?.provider) === "bob"}
           mood={mood()}
           motion={motion()}
           level={props.level ?? 0}
@@ -106,6 +111,7 @@ const BUILDER_MOODS: Record<AvatarMood, BuilderState> = {
 function GeneratedAvatar(props: {
   seed: string;
   hue: AvatarHue | null;
+  bob: boolean;
   mood: AvatarMood;
   motion: AvatarMotion;
   level: number;
@@ -115,6 +121,7 @@ function GeneratedAvatar(props: {
   style?: Record<string, string>;
 }) {
   const state = () => BUILDER_MOODS[props.mood] ?? "idle";
+  const palette = () => (props.bob ? BUILDER_PALETTE : builderPalette(props.hue));
   return (
     <span
       class={`${props.class} agent-avatar-builder`}
@@ -124,8 +131,8 @@ function GeneratedAvatar(props: {
       data-breathe={props.breathe}
       aria-hidden="true"
     >
-      <span class="agent-avatar-builder-small" innerHTML={builderSvg(state(), "small")} />
-      <span class="agent-avatar-builder-large" innerHTML={builderSvg(state(), "large")} />
+      <span class="agent-avatar-builder-small" innerHTML={builderSvg(state(), "small", "Bob", palette())} />
+      <span class="agent-avatar-builder-large" innerHTML={builderSvg(state(), "large", "Bob", palette())} />
     </span>
   );
 }

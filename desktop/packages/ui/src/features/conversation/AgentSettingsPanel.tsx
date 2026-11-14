@@ -1020,7 +1020,13 @@ export default function AgentSettingsPanel(props: AgentSettingsPanelProps) {
                   }
                 >
                   <Popover.Trigger class="agent-settings-avatar" aria-label={t("agentSettings.avatar.edit")}>
-                    <AgentAvatar seed={draft.avatar.seed} hue={draft.avatar.hue} url={avatarUrl()} motion="always" />
+                    <AgentAvatar
+                      seed={draft.avatar.seed}
+                      hue={draft.avatar.hue}
+                      provider={props.agent.provider}
+                      url={avatarUrl()}
+                      motion="always"
+                    />
                     <span class="agent-settings-avatar-badge" aria-hidden="true">
                       <Pencil class="agent-settings-avatar-badge-icon" />
                     </span>
@@ -1066,7 +1072,12 @@ export default function AgentSettingsPanel(props: AgentSettingsPanelProps) {
                             </svg>
                           }
                         >
-                          <AgentAvatar seed={draft.avatar.seed} hue={draft.avatar.hue} url={avatarUrl()} />
+                          <AgentAvatar
+                            seed={draft.avatar.seed}
+                            hue={draft.avatar.hue}
+                            provider={props.agent.provider}
+                            url={avatarUrl()}
+                          />
                         </Show>
                       </span>
                       <span>
@@ -1130,7 +1141,7 @@ export default function AgentSettingsPanel(props: AgentSettingsPanelProps) {
                             data-cuelume-tap="select"
                             onClick={() => void selectGeneratedAvatar(seed)}
                           >
-                            <AgentAvatar seed={seed} hue={draft.avatar.hue} />
+                            <AgentAvatar seed={seed} hue={draft.avatar.hue} provider={props.agent.provider} />
                           </Button>
                         )}
                       </For>

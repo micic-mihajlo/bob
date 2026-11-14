@@ -1,4 +1,4 @@
-import { builderSvgContent, builderViewBox } from "@bob/brand/bob-builder-sprite";
+import { BUILDER_PALETTE, builderPalette, builderSvgContent, builderViewBox } from "@bob/brand/bob-builder-sprite";
 import type { AvatarHue } from "@bob/contracts/ipc";
 
 /**
@@ -17,11 +17,11 @@ export {
 export { type AvatarMood, avatarMoodIsBusy, avatarMoodPresentation } from "@bob/brand/bloub-avatar-motion";
 
 /** Bob's head as a detached SVG element, for text that cannot hold a component, such as a composer token. */
-export function createStaticAvatarSvg(_seed: string, _hue: AvatarHue | null): SVGSVGElement {
+export function createStaticAvatarSvg(_seed: string, hue: AvatarHue | null, bob = false): SVGSVGElement {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", builderViewBox("small"));
   svg.setAttribute("shape-rendering", "crispEdges");
   svg.setAttribute("aria-hidden", "true");
-  svg.innerHTML = builderSvgContent("idle", "small");
+  svg.innerHTML = builderSvgContent("idle", "small", bob ? BUILDER_PALETTE : builderPalette(hue));
   return svg;
 }
