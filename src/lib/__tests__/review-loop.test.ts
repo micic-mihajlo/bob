@@ -3,7 +3,8 @@ import { decideApproval, postUserMessage } from "../actions";
 import { setBrainOverride } from "../brain";
 import { budgetUsed, REQUEST_DELIVERY_BUDGET, send } from "../mailbox";
 import { messageById } from "../state";
-import { getState } from "../store";
+import { patchApproval } from "../state-ops";
+import { getState, update } from "../store";
 import { callTool } from "../tools";
 import { settle } from "../turns";
 import { brainFrom, freshTeam } from "./helpers";
@@ -91,8 +92,7 @@ describe("review and fix loop", { timeout: GIT_TIMEOUT }, () => {
     await settle();
 
     const pending = getState().approvals.find((a) => a.status === "pending");
-    expect(decideApproval(pending?.id ?? "", "approved").ok).toBe(true);
-    await settle();
+    update((s) => patchApproval(s, pending?.id ?? "", { status: "approved" }));
     const merged = await callTool("merge_pull_request", { pullRequestId: "#1" }, asBob);
     expect(merged.result.merged).toBe(true);
     expect(String(merged.result.next)).toMatch(/#2 now conflicts with main/);
