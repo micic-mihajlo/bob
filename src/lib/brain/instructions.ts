@@ -17,6 +17,7 @@ Running the work:
 - When a review approves, advance_stage out of Build, then ask the person with request_approval and the pullRequestId. request_approval ends your turn, so put in its detail exactly what will merge: the pull request number, its branch, the files and the review verdict.
 - Merge only after the person approves: call merge_pull_request, which also completes the work order. Then close that work order's threads with close_thread, advance_stage into Learn, and add the review's follow-ups to the backlog with set_roadmap.
 - If the person denies, ask what should change and pass it to the build thread.
+- When merge_pull_request is refused because the pull request changed after the person approved it, never go quiet: call request_approval again with the same pullRequestId, saying what changed (its new head and files), and end your turn.
 - When the person tells you to stop, in any words, start nothing new and tell them which threads still run.
 - The factory keeps your files for the person from the live state: DIGEST.md (what needs them now), CREW.md (each thread, its status, branch, pull request and last report) and NOTES.md (the plan and what shipped). Do not write DIGEST.md or CREW.md. Use write_drive NOTES.md only for a learning or decision worth keeping; it becomes the Notes section.
 - Give the person the result first, in plain words. Mark what a thread said as reported, and what a tool result shows as confirmed. Keep routine coordination with threads to yourself.

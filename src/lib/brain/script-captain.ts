@@ -77,7 +77,9 @@ function factsOf(s: State): Facts {
   const review = [...s.artifacts].reverse().find((a): a is Artifact & { review: ReviewData } => a.review?.pullRequestId === pr.id);
   const builder = s.agents.find((a) => a.id === pr.agentId && !a.closedAt);
   const reviewer = s.agents.find((a) => a.crewRole === "review" && !a.closedAt && a.workOrderId === (builder?.workOrderId ?? null));
-  return { pr, review, asked: s.approvals.some((a) => a.pullRequestId === pr.id), builder, reviewer };
+  const head = pr.pullRequest.headSha;
+  const asked = s.approvals.some((a) => a.pullRequestId === pr.id && (a.status === "pending" || !a.headSha || a.headSha === head));
+  return { pr, review, asked, builder, reviewer };
 }
 
 const prLine = (pr: PullRequestArtifact) => `#${pr.pullRequest.number} (id ${pr.id}) "${pr.title}" on branch ${pr.pullRequest.branch}`;
@@ -155,9 +157,19 @@ function decisionPlan(ctx: TurnContext, decision: NonNullable<InboundItem["decis
   const followUps = findings.map((f) => `Follow up on #${pr.pullRequest.number}: ${f.comment}`);
   const backlog = (s.roadmap.backlog ?? []).map((w) => w.title).filter((t) => !followUps.includes(t));
   const merged = (done: CallRecord[]) => succeeded(done, "merge_pull_request");
+  const refusal = (done: CallRecord[]) => String(done.find((c) => c.name === "merge_pull_request")?.result.error ?? "");
+  const headMoved = (done: CallRecord[]) => /changed after the person approved it/.test(refusal(done));
+  const fresh = s.artifacts.find((a): a is PullRequestArtifact => a.id === pr.id && isPullRequest(a)) ?? pr;
+  const again = () =>
+    call("request_approval", {
+      title: `Merge #${pr.pullRequest.number} again: ${pr.title}`,
+      detail: `#${pr.pullRequest.number} changed after you approved it: its head is now ${fresh.pullRequest.headSha.slice(0, 7)}. Merges ${prLine(fresh)} into main. Files: ${filesLine(fresh)}.`,
+      pullRequestId: pr.id,
+    });
   return {
     steps: [
       () => [call("merge_pull_request", { pullRequestId: pr.id })],
+      (done) => (headMoved(done) ? [again()] : []),
       (done) => (merged(done) ? threads.map((t) => call("close_thread", { threadId: t.id })) : []),
       (done) => (merged(done) ? [call("advance_stage", {})] : []),
       (done) => (merged(done) && followUps.length > 0 ? [call("set_roadmap", { workOrderTitles: [...backlog, ...followUps] })] : []),
@@ -165,7 +177,9 @@ function decisionPlan(ctx: TurnContext, decision: NonNullable<InboundItem["decis
     reply: (done) =>
       merged(done)
         ? `Merged #${pr.pullRequest.number} "${pr.title}" into main and closed its threads.${followUps.length > 0 ? ` ${followUps.length} follow-up${followUps.length > 1 ? "s" : ""} from the review went to the backlog.` : ""}`
-        : `I could not merge #${pr.pullRequest.number}: ${String(done.find((c) => c.name === "merge_pull_request")?.result.error ?? "unknown error")}`,
+        : headMoved(done)
+          ? `#${pr.pullRequest.number} changed after you approved it, so I did not merge it. Approve the new head and I will merge.`
+          : `I could not merge #${pr.pullRequest.number}: ${refusal(done) || "unknown error"}`,
   };
 }
 
