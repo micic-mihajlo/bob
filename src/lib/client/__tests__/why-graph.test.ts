@@ -53,6 +53,28 @@ describe("buildPathGraph", () => {
     expect(graph.columns.map((c) => c.nodes[0].kind)).toEqual(["pull_request", "message", "message", "origin"]);
   });
 
+  it("tells repeated reviews and gates apart by their verdict, status and head", () => {
+    const graph = buildPathGraph(VIEW, {
+      approvals: [{ id: "apr_1", agentId: "bob", turnId: "t", requestId: "r", title: "Merge #1", detail: "", status: "pending", at: "", pullRequestId: "art_pr", headSha: "ec9055967be7" }],
+      artifacts: [
+        {
+          id: "art_review",
+          kind: "review",
+          title: "Review of #1",
+          detail: "",
+          status: "approved",
+          agentId: "inv-2",
+          turnId: "t",
+          requestId: "r",
+          messageId: null,
+          at: "",
+          review: { pullRequestId: "art_pr", verdict: "approve", findings: [], headSha: "78fda36aa" },
+        },
+      ],
+    });
+    expect(graph.columns[1].nodes.map((n) => n.label)).toEqual(["Approved at 78fda36", "Waiting for you at ec90559"]);
+  });
+
   it("stops on a cycle", () => {
     const graph = buildPathGraph({ ...VIEW, rootMessageId: null, edges: [...VIEW.edges.filter((e) => e.type !== "CONTINUES"), { from: "msg_answer", to: "msg_brief", type: "CONTINUES" }] });
     expect(graph.columns.filter((c) => c.nodes[0].kind === "message")).toHaveLength(2);
