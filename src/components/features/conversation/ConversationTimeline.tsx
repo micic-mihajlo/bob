@@ -6,6 +6,7 @@ import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
 import { dayMarkerLabel } from "@/lib/client/chat-time";
 import { buildConversationRows, type ConversationRow } from "@/lib/client/conversation-rows";
+import { pendingSteps } from "@/lib/client/live-move";
 import { liveSteps, type LiveTurn } from "@/lib/client/thread-rows";
 import { useStickToBottom } from "@/lib/client/use-stick-to-bottom";
 import type { Agent, ThreadView } from "@/lib/types";
@@ -147,11 +148,19 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [thread.items, live?.since, live?.turnId, agent.id, snapshot.artifacts],
   );
-  const running = live ? liveSteps(thread.items, live) : [];
+  const move = snapshot.live?.[agent.id];
+  const pending = pendingSteps(move);
+  const running = live ? [...liveSteps(thread.items, live), ...pending] : pending;
+  const streamed = move?.text.trim() ? move : null;
+  // A message the person watched stream in takes the streamed bubble's place without entering again.
+  const [streamedTurnIds, setStreamedTurnIds] = useState<ReadonlySet<string>>(() => new Set());
+  if (streamed && !streamedTurnIds.has(streamed.turnId)) setStreamedTurnIds(new Set([...streamedTurnIds, streamed.turnId]));
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
   // Rows that were there when the thread opened stand still; rows that arrive later enter.
   const [initialIds] = useState<ReadonlySet<string>>(() => new Set(rows.map((row) => row.id)));
-  const { scrollRef, contentRef, pinned, unseen, onScroll, jumpToNewest, unpin } = useStickToBottom(rows.length + running.length + (live ? 1 : 0));
+  const { scrollRef, contentRef, pinned, unseen, onScroll, jumpToNewest, unpin } = useStickToBottom(
+    rows.length + running.length + (live ? 1 : 0) + (streamed ? 1 : 0),
+  );
 
   // Opening the thread from a needs-you item scrolls to its approval card.
   useEffect(() => {
@@ -172,7 +181,8 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
       return next;
     });
 
-  const label = activity?.state === "working" ? (activity.step ?? running.at(-1)?.label ?? DEFAULT_ACTIVITY_LABEL) : DEFAULT_ACTIVITY_LABEL;
+  const label =
+    pending.at(-1)?.label ?? (activity?.state === "working" ? (activity.step ?? running.at(-1)?.label ?? DEFAULT_ACTIVITY_LABEL) : DEFAULT_ACTIVITY_LABEL);
 
   return (
     <>
@@ -190,10 +200,21 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
                     <span>{marker}</span>
                   </div>
                 ) : null}
-                <RowView row={row} agent={agent} animate={!initialIds.has(row.id)} expanded={expanded.has(row.id)} onToggle={() => toggle(row.id)} />
+                <RowView
+                  row={row}
+                  agent={agent}
+                  animate={!initialIds.has(row.id) && !(row.kind === "agent" && streamedTurnIds.has(row.item.turnId))}
+                  expanded={expanded.has(row.id)}
+                  onToggle={() => toggle(row.id)}
+                />
               </div>
             );
           })}
+          {streamed ? (
+            <div className="virtual-chat-row" style={{ transform: "none" }}>
+              <ChatMessageRow id={`live-${streamed.turnId}`} author="agent" name={agent.name} text={streamed.text} at={streamed.at} animate streaming />
+            </div>
+          ) : null}
         </div>
         <div className="conversation-live">
           <div className="agent-activity-slot" data-reserved="false">

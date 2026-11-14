@@ -360,6 +360,8 @@ export interface Snapshot {
   /** Every request the person made, newest first, with its time, model use, cost and alerts. */
   requests?: RequestControl[];
   budgets?: RequestBudgets;
+  /** By agent, the move its model is writing right now. Gone when the move's real text and steps land. */
+  live?: Record<AgentId, LiveMove>;
 }
 
 /** Model use the factory recorded for one request, from the AI SDK's usage on each call. */
