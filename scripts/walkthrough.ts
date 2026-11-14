@@ -162,11 +162,11 @@ const prsOf = (s: Snapshot, id: string) => s.artifacts.filter((a) => a.kind === 
 const latestPr = (s: Snapshot, id: string): Artifact | undefined => prsOf(s, id).at(-1);
 const reviewsOf = (s: Snapshot, prIds: string[]) => s.artifacts.filter((a) => a.kind === "review" && !!a.review && prIds.includes(a.review.pullRequestId));
 const agentOf = (s: Snapshot, id: string | null) => s.agents.find((a) => a.id === id);
-/** One word per thread, from threadState when the server has it. */
+/** One word per thread, from threadState. */
 function statusOf(s: Snapshot, id: string): string {
   const st = s.threadState?.[id];
-  if (st) return st.closed ? "closed" : st.needsYou ? `${st.status}+needs_you` : st.status;
-  return s.threadStatus?.[id] ?? s.activity[id]?.state ?? "?";
+  if (!st) return "unknown";
+  return st.closed ? "closed" : st.needsYou ? `${st.status}+needs_you` : st.status;
 }
 const isMerged = (a: Artifact) => a.pullRequest?.merged === true || a.status === "merged";
 
@@ -498,6 +498,9 @@ async function verdicts(final: Snapshot, stopReason: string): Promise<Row[]> {
     const bBuild = agentOf(final, B.buildId);
     const bPr = bBuild ? latestPr(final, bBuild.id) : undefined;
     const problems: string[] = [];
+      const aItems = build ? final.threads[build.id]?.items ?? [] : [];
+    if (aItems.some((i) => i.kind === "message_in" && /overdue/i.test(i.text))) problems.push(`B's work was sent to A's thread ${build?.code}`);
+    if (pr && /overdue/i.test(pr.title)) problems.push(`A's PR #${pr.pullRequest?.number} also carries B: "${pr.title}"`);
     if (!bBuild) problems.push("no build thread of its own");
     else {
       if (bBuild.branch && bBuild.branch === build?.branch) problems.push(`same branch as A (${bBuild.branch})`);
