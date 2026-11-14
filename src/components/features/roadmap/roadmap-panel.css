@@ -51,3 +51,20 @@ button.bob-roadmap-source:focus-visible {
   box-shadow: var(--bob-focus-ring);
   outline: none;
 }
+
+/* A request's use wraps between its parts, never inside "$0.11 of $1.00". */
+.bob-roadmap-usage-part {
+  white-space: nowrap;
+}
+
+/* A running request carries its badge at the end of its ask, so the use line below stays whole. */
+.bob-roadmap-request-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--bob-space-2);
+}
+
+.bob-roadmap-request-head .z-badge {
+  margin-right: 0;
+}

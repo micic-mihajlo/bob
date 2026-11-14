@@ -179,10 +179,19 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
             <ul className="bob-roadmap-list">
               {requests.map((request) => (
                 <li key={request.requestId} className="bob-roadmap-request" data-running={request.running ? "true" : undefined}>
-                  <p className="bob-roadmap-request-ask">{request.ask}</p>
-                  <p className="bob-roadmap-task-meta">
+                  <div className="bob-roadmap-request-head">
+                    <p className="bob-roadmap-request-ask">{request.ask}</p>
                     {request.running ? <Badge variant="secondary">Running</Badge> : null}
-                    {requestUsageLine(request, budgets)}
+                  </div>
+                  <p className="bob-roadmap-task-meta">
+                    {requestUsageLine(request, budgets)
+                      .split(" · ")
+                      .map((part, index) => (
+                        <span key={part} className="bob-roadmap-usage-part">
+                          {index > 0 ? " · " : null}
+                          {part}
+                        </span>
+                      ))}
                   </p>
                   {request.alerts.map((alert) => (
                     <p key={alert} className="bob-roadmap-request-alert">
