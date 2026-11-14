@@ -554,7 +554,7 @@ export const THREAD_MODELS = [
  * GET  /api/agents/:id/changes            -> WorkspaceChanges               that thread's branch against main
  * POST /api/agents/:id/close              {}                                close a crew thread
  * POST /api/agents/:id/model              { model }                         pick a crew thread's model, one of THREAD_MODELS
- * POST /api/reset                         {}                                back to the seeded team
+ * POST /api/reset                         { warm? }                         back to the seeded team; warm also re-makes the project and installs its deps
  * GET  /api/inbox                         -> InboxItem[]                    raw materials, newest first
  * POST /api/inbox                         { kind, source, text }            a meeting, feedback or error; the captain triages it
  *                                                                             -> { inboxId }; { sample: true } posts the demo sample -> { inboxIds }

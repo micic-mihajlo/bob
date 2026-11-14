@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "verify": "node formal/verify.mjs",
     "live": "vitest run --config vitest.live.config.ts",
-    "walkthrough": "node --no-warnings scripts/walkthrough.ts"
+    "walkthrough": "node --no-warnings scripts/walkthrough.ts",
+    "demo": "node scripts/demo.mjs"
   },
   "dependencies": {
     "@elevenlabs/react": "1.22.1",
