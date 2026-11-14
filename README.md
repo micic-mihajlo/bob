@@ -21,7 +21,7 @@ flowchart LR
 ```bash
 pnpm install
 cp <your key file> .env.local     # AI_GATEWAY_API_KEY=... for the live model; without it the scripted brain runs
-pnpm demo --prewarm               # checks the machine, resets to a warm seed, starts on :3000
+pnpm demo                         # checks the machine, resets to a warm seed, starts on :3000
 ```
 
 [docs/DEMO.md](docs/DEMO.md) covers a fresh Mac in under 5 minutes, the 3-minute demo script, and what to do when something goes wrong mid-demo. For development, run `pnpm dev` and open http://localhost:3000.
