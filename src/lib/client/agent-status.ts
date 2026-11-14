@@ -47,7 +47,7 @@ export function statusLine(
     case "waiting":
       return `Waiting on ${namesOf(activity.onAgentIds, agents)}`;
     default:
-      return lastSpokenLine(thread) ?? (agent.kind === "captain" ? "Say what you want built" : agent.title);
+      return lastSpokenLine(thread) ?? (agent.kind === "captain" ? "Say what you want built" : "Ready");
   }
 }
 
