@@ -116,7 +116,7 @@ describe("the workspace guard keeps file tools inside the thread's checkout", ()
   mkdirSync(path.join(root, "src"));
   mkdirSync(path.join(root, ".git"));
   writeFileSync(path.join(root, "src/a.ts"), "export {};\n");
-  const guard = workspaceGuard(root);
+  const guard = workspaceGuard(root, "nobody");
   const decide = async (tool_name: string, tool_input: Record<string, unknown>) => {
     const out = (await guard({ hook_event_name: "PreToolUse", tool_name, tool_input } as never, undefined, { signal: new AbortController().signal })) as {
       hookSpecificOutput?: { permissionDecision?: string };

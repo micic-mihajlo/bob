@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { acceptanceTampering } from "../acceptance";
 import { newId, nowIso } from "../ids";
 import { resolveOnMerge } from "../inbox";
 import { completeWorkOrder, updateWorkOrder } from "../roadmap";
@@ -133,7 +134,18 @@ function reviewArtifact(input: ReviewInput, pr: PullRequestArtifact, ctx: ToolCo
   };
 }
 
-export async function recordReview(input: ReviewInput, ctx: ToolContext): Promise<ToolOutput> {
+/** A change to an acceptance test always blocks: the verdict becomes request_changes with a high finding per file. */
+function withAcceptanceFindings(input: ReviewInput): ReviewInput {
+  const s = getState();
+  const pr = findPullRequest(s, input.pullRequestId);
+  const tampered = pr ? acceptanceTampering(s, pr) : [];
+  if (tampered.length === 0) return input;
+  const findings = tampered.map((t) => ({ ...t, line: null, category: "tests" as const, severity: "high" as const, confidence: 1 }));
+  return { ...input, verdict: "request_changes", findings: [...input.findings, ...findings] };
+}
+
+export async function recordReview(given: ReviewInput, ctx: ToolContext): Promise<ToolOutput> {
+  const input = withAcceptanceFindings(given);
   const out = storeReview(input, ctx);
   const pr = typeof out.result.reviewId === "string" ? findPullRequest(getState(), input.pullRequestId) : undefined;
   if (pr) await postReviewToGitHub(pr.id, { verdict: input.verdict, findings: reviewArtifactFindings(input), summary: input.summary });
