@@ -69,4 +69,18 @@ describe("parseMarkdown", () => {
     });
     expect(blocks[1]?.kind === "list" && blocks[1].items.map((item) => item.checked)).toEqual([true, false]);
   });
+
+  it("keeps a single newline inside a paragraph as a soft break", () => {
+    const blocks = parseMarkdown("Dana: one.\nMihajlo: two.");
+    expect(blocks).toEqual([
+      {
+        kind: "paragraph",
+        inline: [
+          { kind: "text", text: "Dana: one." },
+          { kind: "softbreak", text: " " },
+          { kind: "text", text: "Mihajlo: two." },
+        ],
+      },
+    ]);
+  });
 });

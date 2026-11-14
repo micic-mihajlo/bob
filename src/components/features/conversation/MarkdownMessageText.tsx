@@ -8,6 +8,7 @@ function InlineText({ parts }: { parts: readonly Inline[] }) {
         if (part.kind === "code") return <code key={index}>{part.text}</code>;
         if (part.kind === "strong") return <strong key={index}>{part.text}</strong>;
         if (part.kind === "em") return <em key={index}>{part.text}</em>;
+        if (part.kind === "softbreak") return <br key={index} />;
         return <Fragment key={index}>{part.text}</Fragment>;
       })}
     </>
@@ -71,9 +72,7 @@ function MarkdownBlock({ block }: { block: Block }) {
         <List>
           {block.items.map((item, index) => (
             <li key={index} className={item.checked === null ? undefined : "message-markdown-task"}>
-              {item.checked === null ? null : (
-                <input type="checkbox" className="message-markdown-checkbox" checked={item.checked} disabled readOnly />
-              )}
+              {item.checked === null ? null : <input type="checkbox" className="message-markdown-checkbox" checked={item.checked} disabled readOnly />}
               <InlineText parts={item.inline} />
             </li>
           ))}

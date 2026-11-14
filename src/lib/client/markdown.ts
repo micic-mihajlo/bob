@@ -1,4 +1,5 @@
-export type Inline = { kind: "text" | "code" | "strong" | "em"; text: string };
+/** A softbreak is a single newline inside a paragraph; its text is a space for renderers that join the lines. */
+export type Inline = { kind: "text" | "code" | "strong" | "em" | "softbreak"; text: string };
 
 export interface ListItem {
   inline: readonly Inline[];
@@ -55,7 +56,7 @@ function appendListItem(blocks: readonly Block[], ordered: boolean, text: string
 function appendParagraph(blocks: readonly Block[], text: string, joinPrevious: boolean): Block[] {
   const last = blocks.at(-1);
   if (joinPrevious && last?.kind === "paragraph") {
-    return [...blocks.slice(0, -1), { kind: "paragraph", inline: [...last.inline, { kind: "text", text: " " }, ...parseInline(text)] }];
+    return [...blocks.slice(0, -1), { kind: "paragraph", inline: [...last.inline, { kind: "softbreak", text: " " }, ...parseInline(text)] }];
   }
   return [...blocks, { kind: "paragraph", inline: parseInline(text) }];
 }
@@ -99,7 +100,8 @@ function lineStep(state: State, line: string): State {
     return lineStep({ ...state, blocks: appendTable(state.blocks, state.table), table: null, inParagraph: false }, line);
   }
   if (state.fence !== null) {
-    if (line.trimStart().startsWith("```")) return { ...state, blocks: [...state.blocks, { kind: "code", text: state.fence.join("\n") }], fence: null, inParagraph: false };
+    if (line.trimStart().startsWith("```"))
+      return { ...state, blocks: [...state.blocks, { kind: "code", text: state.fence.join("\n") }], fence: null, inParagraph: false };
     return { ...state, fence: [...state.fence, line] };
   }
   const trimmed = line.trim();
