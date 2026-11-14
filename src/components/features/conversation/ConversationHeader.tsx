@@ -41,7 +41,7 @@ export function ConversationHeader({ agent }: { agent: Agent }) {
           size="sm"
           className="conversation-title no-drag"
           data-opens-panel=""
-          aria-label={panelOpen ? "Close side panel" : "Open side panel"}
+          aria-label={`${agent.name}: ${panelOpen ? "close" : "open"} the side panel`}
           onClick={togglePanel}
         >
           <AgentAvatar agent={agent} mood={agentMood(snapshot, agent.id)} />
