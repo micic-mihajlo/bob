@@ -7,7 +7,8 @@ import { getState, transact } from "../store";
 import { threadWorkspace, workspaceOptions } from "../thread-workspace";
 import { findPullRequest, isPullRequest, nextPullRequestNumber, type PullRequestArtifact } from "../threads";
 import type { Agent, Artifact, ReviewFinding } from "../types";
-import { git, mergePullRequest, openPullRequest, type Workspace } from "../workspace";
+import { conflictsWithMain, git, mergePullRequest, openPullRequest, type Workspace } from "../workspace";
+import { askForReReview, askToUpdateBranch, handFindingsToBuilder, MAX_FIX_ROUNDS } from "./handoff";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
 
 const PATCH_PREVIEW = 6_000;
@@ -73,14 +74,17 @@ export async function openPullRequestTool(input: OpenInput, ctx: ToolContext): P
   const opened = await openPullRequest(ws, { branch, title: input.title, body: input.body });
   if (!opened.ok) return fail(opened.error);
   const pr = transact((x) => upsertPullRequest(x, ctx, agent, branch, input, opened));
+  const reviewer = askForReReview(pr);
   return done({
     pullRequestId: pr.id,
     number: pr.pullRequest.number,
     branch,
     files: pr.pullRequest.files,
     patch: opened.patch.slice(0, PATCH_PREVIEW),
-    next: `Read this diff. If it does what the brief asks, call report once naming pull request #${pr.pullRequest.number} (id ${pr.id}) and branch ${branch}.`,
-  });
+    next: reviewer
+      ? `Updated. The review runs again on this head by itself. Read the diff; report only if you are blocked, then end your turn with one line.`
+      : `Read this diff. If it does what the brief asks, call report once naming pull request #${pr.pullRequest.number} (id ${pr.id}) and branch ${branch}.`,
+  }, reviewer ? { wake: [reviewer] } : {});
 }
 
 const findingSchema = z.object({
@@ -103,7 +107,7 @@ type ReviewInput = z.infer<typeof recordReviewSchema>;
 const DEFAULT_CONFIDENCE = 0.8;
 
 function reviewArtifact(input: ReviewInput, pr: PullRequestArtifact, ctx: ToolContext): Artifact {
-  const findings: ReviewFinding[] = input.findings.map((f) => ({ ...f, line: f.line ?? null, confidence: f.confidence ?? DEFAULT_CONFIDENCE }));
+  const findings = reviewArtifactFindings(input);
   const verdict = input.verdict === "approve" ? "Approved" : "Changes requested";
   return {
     id: newId("art"),
@@ -116,11 +120,29 @@ function reviewArtifact(input: ReviewInput, pr: PullRequestArtifact, ctx: ToolCo
     requestId: ctx.requestId,
     messageId: ctx.causedBy,
     at: nowIso(),
-    review: { pullRequestId: pr.id, verdict: input.verdict, findings },
+    review: { pullRequestId: pr.id, verdict: input.verdict, findings, headSha: pr.pullRequest.headSha },
   };
 }
 
 export function recordReview(input: ReviewInput, ctx: ToolContext): ToolOutput {
+  const out = storeReview(input, ctx);
+  const pr = typeof out.result.reviewId === "string" ? findPullRequest(getState(), input.pullRequestId) : undefined;
+  if (!pr || input.verdict !== "request_changes") return out;
+  const reviewer = agentById(getState(), ctx.agentId)?.name ?? ctx.agentId;
+  const handed = handFindingsToBuilder(pr, reviewer, reviewArtifactFindings(input));
+  if (!handed.to) return out;
+  const builder = agentById(getState(), handed.to)?.name ?? handed.to;
+  const note =
+    handed.round <= MAX_FIX_ROUNDS
+      ? `Your findings went to ${builder} automatically (fix round ${handed.round} of ${MAX_FIX_ROUNDS}); you get its new head to review again.`
+      : `That was the last fix round; ${builder} now reports blocked to the captain.`;
+  return { ...out, result: { ...out.result, next: `${note} Now call report once with your verdict in Status / Result / Evidence form.` }, wake: [...(out.wake ?? []), handed.to] };
+}
+
+const reviewArtifactFindings = (input: ReviewInput): ReviewFinding[] =>
+  input.findings.map((f) => ({ ...f, line: f.line ?? null, confidence: f.confidence ?? DEFAULT_CONFIDENCE }));
+
+function storeReview(input: ReviewInput, ctx: ToolContext): ToolOutput {
   return transact((s) => {
     const pr = findPullRequest(s, input.pullRequestId);
     if (!pr) return { state: s, value: fail(`No pull request ${input.pullRequestId}. Use the id or number from your brief.`) };
@@ -167,12 +189,33 @@ export async function mergePullRequestTool(input: z.infer<typeof mergeSchema>): 
   if (refused) return fail(refused);
   const result = pr.pullRequest.merged ? null : await mergePullRequest(s.project.id, { branch: pr.pullRequest.branch }, workspaceOptions());
   if (result && !result.ok) {
-    return fail(`Could not merge #${pr.pullRequest.number}: ${result.error}. Tell the person; if it conflicts, ask the build thread to bring its branch up to date with main.`);
+    const conflict = await conflictsWithMain(s.project.id, pr.pullRequest.branch, workspaceOptions());
+    const owner = conflict.ok && conflict.conflicts.length > 0 ? askToUpdateBranch(pr, conflict.conflicts) : null;
+    if (owner) {
+      const name = agentById(getState(), owner)?.name ?? owner;
+      return { result: { error: `Could not merge #${pr.pullRequest.number}: ${result.error}. ${name} was asked to merge main into its branch; the review runs again on its new head, then ask the person again. End your turn.` }, wake: [owner] };
+    }
+    return fail(`Could not merge #${pr.pullRequest.number}: ${result.error}. Tell the person.`);
   }
   const workOrderId = transact((x) => {
     const fresh = findPullRequest(x, pr.id);
     return fresh ? markMerged(x, fresh) : { state: x, value: null };
   });
-  const next = "Merged. Close this work order's threads with close_thread.";
-  return done({ merged: true, alreadyMerged: !result || result.alreadyMerged, number: pr.pullRequest.number, workOrderId, next });
+  const updating = result && !result.alreadyMerged ? await updateConflictingPullRequests(s.project.id, pr.id) : [];
+  const also = updating.length ? ` ${updating.map((u) => `#${u.number}`).join(", ")} now conflicts with main; its build thread was asked to update its branch.` : "";
+  const next = `Merged. Close this work order's threads with close_thread.${also}`;
+  return done({ merged: true, alreadyMerged: !result || result.alreadyMerged, number: pr.pullRequest.number, workOrderId, next }, { wake: updating.map((u) => u.owner) });
+}
+
+/** After a merge, every other open pull request that now conflicts with main goes back to its owner, so none is stranded. */
+async function updateConflictingPullRequests(projectId: string, mergedId: string): Promise<{ number: number; owner: string }[]> {
+  const open = getState().artifacts.filter((a): a is PullRequestArtifact => isPullRequest(a) && !a.pullRequest.merged && a.id !== mergedId);
+  const asked: { number: number; owner: string }[] = [];
+  for (const pr of open) {
+    const conflict = await conflictsWithMain(projectId, pr.pullRequest.branch, workspaceOptions());
+    if (!conflict.ok || conflict.conflicts.length === 0) continue;
+    const owner = askToUpdateBranch(pr, conflict.conflicts);
+    if (owner) asked.push({ number: pr.pullRequest.number, owner });
+  }
+  return asked;
 }

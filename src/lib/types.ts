@@ -219,6 +219,8 @@ export interface ReviewData {
   pullRequestId: string;
   verdict: "approve" | "request_changes";
   findings: ReviewFinding[];
+  /** The pull request head the reviewer read. Missing on reviews saved before heads were recorded. */
+  headSha?: string;
 }
 
 export type WorkOrderStatus = "open" | "running" | "review" | "done" | "stale";
