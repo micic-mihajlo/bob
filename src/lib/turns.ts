@@ -1,5 +1,6 @@
 import { autopilotCalls } from "./autopilot";
 import { brainKind, getBrain } from "./brain";
+import { runSdkTurn, usesSdk } from "./brain/agent-sdk";
 import type { CallRecord, MoveRecord, ToolCallRequest } from "./brain/types";
 import { globals } from "./globals";
 import { newId, nowIso } from "./ids";
@@ -118,6 +119,7 @@ async function runTurn(t: StartedTurn): Promise<void> {
     moves.push({ text: null, calls: executed.calls });
     if (executed.endTurn) return finishTurn(t, null);
   }
+  if (usesSdk(t.agentId)) return runSdk(t, initial, moves, workspace);
   for (let i = 0; i < limit; i++) {
     if (Date.now() - started > MAX_TURN_MS) {
       final = TIME_LIMIT_TEXT;
@@ -146,6 +148,17 @@ async function runTurn(t: StartedTurn): Promise<void> {
     }
   }
   finishTurn(t, final === STEP_LIMIT_TEXT || final === TIME_LIMIT_TEXT ? (finishedWork(moves) ?? final) : final);
+}
+
+/** BOB_ENGINE=sdk: one coding-agent query in place of the move loop, ending the way the loop would. */
+async function runSdk(t: StartedTurn, initial: State, moves: MoveRecord[], workspace: string | null): Promise<void> {
+  const built = isRunning(t.turnId) ? buildContext(getState(), initial, t, moves, workspace) : null;
+  if (!built) return finishStopped(t);
+  const { outcome, moves: made } = await runSdkTurn(built, t.messageIds[0] ?? null, liveMove(t.agentId, t.turnId), drain, MAX_TURN_MS);
+  if (outcome.kind === "stopped" || !isRunning(t.turnId)) return finishStopped(t);
+  if (outcome.kind === "ended") return finishTurn(t, null);
+  if (outcome.kind === "answered") return finishTurn(t, outcome.text);
+  finishTurn(t, finishedWork([...moves, ...made]) ?? (outcome.kind === "time_limit" ? TIME_LIMIT_TEXT : STEP_LIMIT_TEXT));
 }
 
 async function executeMove(t: StartedTurn, calls: ToolCallRequest[]): Promise<{ calls: CallRecord[]; endTurn: boolean } | null> {

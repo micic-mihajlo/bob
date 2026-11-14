@@ -1,4 +1,5 @@
 import { descendsFrom, liveAsks } from "./asks";
+import { abortStoppedSdkTurns } from "./brain/agent-sdk";
 import { nowIso } from "./ids";
 import { relayOwed } from "./relay";
 import { agentName, messageById, runningTurn, type State } from "./state";
@@ -87,6 +88,7 @@ export function interrupt(agentId: AgentId): InterruptResult {
   const hadTurn = !!runningTurn(getState(), agentId);
   const requestIds = [...requestsOf(getState(), agentId)];
   const result = transact((s) => applyInterrupt(s, agentId));
+  abortStoppedSdkTurns();
   if (!result.ok || hadTurn) return result;
   const woken = relayOwed({
     agentId,
