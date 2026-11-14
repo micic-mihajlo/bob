@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, CircleAlert, CircleCheck, Clock, LoaderCircle, Minus, Users, X } from "lucide-react";
+import { ChevronRight, CircleAlert, CircleCheck, CircleMinus, Clock, LoaderCircle, Users, X } from "lucide-react";
 import { useState } from "react";
 import { useBob } from "@/components/features/window/BobContext";
 import { AgentAvatar } from "@/components/features/agents/AgentAvatar";
@@ -26,7 +26,7 @@ function StatusGlyph({ status }: { status: ThreadStatus }) {
     case "failed":
       return <X className="subagents-live-glyph" aria-hidden="true" />;
     case "closed":
-      return <Minus className="subagents-live-glyph" aria-hidden="true" />;
+      return <CircleMinus className="subagents-live-glyph" aria-hidden="true" />;
     case "idle":
       return <CircleCheck className="subagents-live-glyph" aria-hidden="true" />;
   }
