@@ -5,6 +5,7 @@ import { completeWorkOrder, updateWorkOrder } from "../roadmap";
 import { agentById, type State } from "../state";
 import { patchArtifact } from "../state-ops";
 import { recordReleaseNote } from "../release-notes-live";
+import { shipToLinear } from "../integrations/linear/outbound";
 import { getState, transact } from "../store";
 import { threadWorkspace, workspaceOptions } from "../thread-workspace";
 import { findPullRequest, isPullRequest, nextPullRequestNumber, type PullRequestArtifact } from "../threads";
@@ -215,7 +216,7 @@ export async function mergePullRequestTool(input: z.infer<typeof mergeSchema>): 
     const fresh = findPullRequest(x, pr.id);
     return fresh ? markMerged(x, fresh) : { state: x, value: null };
   });
-  recordReleaseNote(pr.id);
+  void shipToLinear(pr.id, recordReleaseNote(pr.id));
   const resolved = transact((x) => {
     const fresh = findPullRequest(x, pr.id);
     if (!fresh) return { state: x, value: [] as InboxItem[] };
