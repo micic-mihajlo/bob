@@ -1,0 +1,17 @@
+{
+  // Bob's durable state: one Durable Object per Bob project. Deploy with `wrangler deploy`, then
+  // `wrangler secret put BOB_DURABLE_SECRET`. Local dev reads the secret from .dev.vars.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bob-durable",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [
+      { "name": "BOB_STATE", "class_name": "ProjectState" },
+      { "name": "BOB_DIRECTORY", "class_name": "Directory" }
+    ]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ProjectState", "Directory"] }],
+  "observability": { "enabled": true }
+}
