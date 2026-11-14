@@ -1,7 +1,7 @@
 import { Badge, Button, Check, Lock } from "@bob/ui";
 import { createUniqueId, Match, Show, Switch } from "solid-js";
 import { useText } from "../../text";
-import { PluginIcon } from "../marketplace/PluginIcon";
+import { PluginIcon } from "./PluginIcon";
 
 /**
  * Where the sign-in is. `signed-in`: the agent can test the server again. `sent`: the user told it

@@ -52,7 +52,7 @@ import { RemoteWorkflowError, toRemoteWorkflowError } from "./remote-service-eff
 
 import { existsSync } from "node:fs";
 import { readdir, rm } from "node:fs/promises";
-import { homedir, hostname, tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { selfHostedApiOrigin } from "@bob/contracts/invite-links";
 import type {
@@ -90,7 +90,6 @@ import {
   systemPreferences,
 } from "electron";
 import { pasteCodeLoginSupported } from "../backend/agent/cli-code-login";
-import { toMcpGatewayFailed } from "../backend/agent/mcp-gateway";
 import { ProviderAccountStore } from "../backend/agent/provider-account-store";
 import { AgentLifecycleFailed, AgentService } from "../backend/agent-service";
 import { AgentStore } from "../backend/agent-store";
@@ -128,9 +127,6 @@ import { AppBehaviorService } from "./app-behavior-service";
 import { AppearanceService } from "./appearance-service";
 import { ApprovalAutomation, readApprovalAutomation } from "./approval-automation-store";
 import { AutomationServer } from "./automation-server";
-import { managedBitwardenCli } from "./bitwarden-cli-installer";
-import { BitwardenConnectorService } from "./bitwarden-connector-service";
-import { BitwardenConnectorStore } from "./bitwarden-connector-store";
 import { BrowserDockOverlay } from "./browser-dock-overlay";
 import { BrowserPictureInPicture } from "./browser-picture-in-picture";
 import { BrowserViewClient } from "./browser-view-client";
@@ -167,9 +163,6 @@ import {
   ExternalLinkOpener,
   type ExternalLinkPreferenceStore,
 } from "./external-link-opener";
-import { githubAppConfig } from "./github-connector-config";
-import { GitHubConnectorService } from "./github-connector-service";
-import { GitHubConnectorStore } from "./github-connector-store";
 import { HermesImportService } from "./hermes-import-service";
 import { HostEventsRuntime } from "./host-events-runtime";
 import { agentWebhookRoutineWriter, HostEventsService } from "./host-events-service";
@@ -220,8 +213,6 @@ import { McpOAuthStore } from "./mcp-oauth-store";
 import { MemoryReviewPreferenceStore } from "./memory-review-preference-store";
 import { MessagingCredentialStore } from "./messaging-credential-store";
 import { NotificationPreferenceStore } from "./notification-preference-store";
-import { OnePasswordConnectorService } from "./onepassword-connector-service";
-import { OnePasswordConnectorStore } from "./onepassword-connector-store";
 import { PromptCacheTtlPreferenceStore } from "./prompt-cache-ttl-preference-store";
 import { ProviderAccountsHost } from "./provider-accounts-host";
 import { createProviderCliAppVersionStore } from "./provider-cli-app-version-store";
@@ -231,7 +222,7 @@ import { PROVIDER_DETECTION_SETTINGS_FILE, ProviderDetectionSettingsStore } from
 import { ProviderHostSignIns } from "./provider-host-sign-ins";
 import { startAccountLog, startAgentLog, startProviderLog } from "./provider-log";
 import { toProviderRuntimeFailure } from "./provider-runtime-effects";
-import { ProviderRuntimeManager, providerRuntimeRoot, runtimeTarget } from "./provider-runtime-manager";
+import { ProviderRuntimeManager, providerRuntimeRoot } from "./provider-runtime-manager";
 import { ProviderUseSettingsStore } from "./provider-use-settings-store";
 import { RelayedMessagingInstalls } from "./relayed-messaging-installs";
 import { decodeQueuedMessageReceipt } from "./remote-agent-decoding";
@@ -346,12 +337,6 @@ const INGRESS_QUEUE_KEY_FILE = "bob-ingress-queue-key-v1.json";
 /** The MCP sign-ins. Separate from the keys above: a key is typed by the user, a token is not. */
 const MCP_OAUTH_FILE = "bob-mcp-oauth-v1.json";
 const MCP_OAUTH_PROXY_FILE = "bob-mcp-oauth-proxy-v1.json";
-/** The one GitHub sign-in of this computer, with the same cipher as the MCP sign-ins. */
-const GITHUB_CONNECTOR_FILE = "bob-github-connector-v1.json";
-/** The 1Password service account token of this computer, with the same cipher. */
-const ONEPASSWORD_CONNECTOR_FILE = "bob-onepassword-connector-v1.json";
-/** The Bitwarden API key and master password of a host connection (`bitwarden-connector-v1`), with the same cipher. */
-const BITWARDEN_CONNECTOR_FILE = "bob-bitwarden-connector-v1.json";
 /** The logins, payment cards and contact info of the Vault in Server settings, with the same cipher. */
 const VAULT_FILE = "bob-vault-v1.json";
 /** Which agent each imported Hermes profile made, so a second import updates that agent. */
@@ -420,11 +405,6 @@ const TEARDOWN_ORDER = {
   // Before the agent service, so no calendar read finds it stopping.
   routineFeed: 104,
   mcpOAuthRedirect: 105,
-  // Before the agent service. It holds no file an agent reads; only a CLI run that waits is stopped.
-  onePasswordConnector: 106,
-  bitwardenConnector: 106.5,
-  // Before the agent service, so no agent is handed a token file that is being removed.
-  githubConnector: 107,
   // Before the agent service, so no script starts a run while the service stops.
   automation: 108,
   storageUsage: 109,
@@ -493,9 +473,6 @@ export interface ApplicationServices {
   signInRelayClient: SignInRelayClient;
   /** The Slack and Discord installs that this computer opened for a joined server. */
   relayedMessagingInstalls: RelayedMessagingInstalls;
-  githubConnector: GitHubConnectorService;
-  onePasswordConnector: OnePasswordConnectorService;
-  bitwardenConnector: BitwardenConnectorService;
   vault: VaultService;
   mailbox: MailboxStore;
   storageUsage: StorageUsageService;
@@ -1360,47 +1337,6 @@ export async function createApplicationServices({
   mcpOAuthAuthority = mcpOAuth;
   teardown.push(TEARDOWN_ORDER.mcpOAuth, "MCP token refresh", () => Effect.runPromise(mcpOAuth.close()));
   /*
-   * The built-in GitHub connection. Loaded before the agent service, because the first spawn reads
-   * its MCP server and its `gh` and `git` files. An unreadable file is logged by the service and
-   * treated as no sign-in.
-   */
-  const githubConnector = new GitHubConnectorService({
-    app: githubAppConfig(),
-    store: new GitHubConnectorStore(join(app.getPath("userData"), GITHUB_CONNECTOR_FILE), secretCipher),
-    toolDirectory: join(app.getPath("userData"), "provider-state", "github"),
-    apiUrl: centralAuthApiUrl,
-    openExternal: openLink,
-  });
-  await runCauseEffect(githubConnector.load());
-  teardown.push(TEARDOWN_ORDER.githubConnector, "the GitHub connection", () =>
-    runCauseEffect(githubConnector.dispose()),
-  );
-  /*
-   * The Bitwarden connection. A host connection's API key and master password are stored, so the
-   * host unlocks again after a restart; its CLI data and Bob's copy of `bw` stay outside every
-   * root an agent can write.
-   */
-  const bitwardenCliTarget = runtimeTarget(process.platform, process.arch);
-  const bitwardenConnector = new BitwardenConnectorService({
-    host: {
-      store: new BitwardenConnectorStore(join(app.getPath("userData"), BITWARDEN_CONNECTOR_FILE), secretCipher),
-      dataDirectory: join(app.getPath("userData"), "provider-state", "bitwarden-host"),
-      installCli: bitwardenCliTarget
-        ? (signal) =>
-            managedBitwardenCli({
-              directory: join(app.getPath("userData"), "provider-state", "bitwarden-cli"),
-              target: bitwardenCliTarget,
-              signal,
-            })
-        : null,
-    },
-  });
-  await runCauseEffect(bitwardenConnector.load());
-  teardown.push(TEARDOWN_ORDER.bitwardenConnector, "the Bitwarden connection", async () => {
-    await runCauseEffect(bitwardenConnector.dispose());
-  });
-
-  /*
    * The Vault in Server settings. Every agent fills its logins, cards and contact info; the file
    * holds no resource, so nothing is torn down.
    */
@@ -1410,26 +1346,7 @@ export async function createApplicationServices({
   });
   await Effect.runPromise(vault.load());
 
-  /*
-   * The 1Password connection. The browser fills logins from it, so the agent service reads it. The
-   * login list is read from 1Password in the background; startup does not wait for it.
-   */
-  const onePasswordCliTarget = runtimeTarget(process.platform, process.arch);
-  const onePasswordConnector = new OnePasswordConnectorService({
-    store: new OnePasswordConnectorStore(join(app.getPath("userData"), ONEPASSWORD_CONNECTOR_FILE), secretCipher),
-    hostName: hostname(),
-    appVersion: app.getVersion(),
-    // Outside every root an agent can write, like the GitHub tool files.
-    cliInstall: onePasswordCliTarget
-      ? { directory: join(app.getPath("userData"), "provider-state", "1password-cli"), target: onePasswordCliTarget }
-      : null,
-    openExternal: openLink,
-  });
-  await runCauseEffect(onePasswordConnector.load());
   performance.mark("bob:services.connectors");
-  teardown.push(TEARDOWN_ORDER.onePasswordConnector, "the 1Password connection", () =>
-    runCauseEffect(onePasswordConnector.dispose()),
-  );
   // Read by the resource monitor, which starts after the analytics that needs the services.
   const statementTimings = new StatementTimings();
   const tables = new AgentTables({
@@ -1659,24 +1576,11 @@ export async function createApplicationServices({
       providerStateDirectory: join(app.getPath("userData"), "provider-state"),
       ...(process.platform === "win32" ? { providerTempDirectory } : {}),
       ...(serverEnvironment ? { serverEnvironment } : {}),
-      // The GitHub entries are paths only: `gh` and `git` read the token from the files the connection
-      // keeps current. On a server with an agent display, `DISPLAY` names it, so a program an agent
-      // starts opens where the driver sees it.
-      agentEnvironment: (inherited) => ({
-        ...agentDisplayEnvironment(process.platform),
-        ...githubConnector.agentEnvironment(inherited),
-      }),
-    },
-    // Appended to the stored servers at each spawn, so the same tools reach Codex, Claude and the
-    // ACP providers. Null until the daemon runs, which is what keeps a machine with no driver from
-    // handing every provider a command it cannot start.
-    githubConnector: {
-      mcpServer: () => githubConnector.mcpServer(),
-      mcpAuthorization: () => githubConnector.mcpAuthorization().pipe(toMcpGatewayFailed),
+      // On a server with an agent display, `DISPLAY` names it, so a program an agent starts opens
+      // where the driver sees it.
+      agentEnvironment: () => agentDisplayEnvironment(process.platform),
     },
     passwordVault: passwordVaultRouter([
-      { prefix: "", vault: onePasswordConnector },
-      { prefix: "bitwarden:", vault: bitwardenConnector },
       { prefix: "bob:", vault: vault.logins },
     ]),
     vaultItems: vault.items,
@@ -1857,12 +1761,6 @@ export async function createApplicationServices({
     sidebarLayout,
     readHostId: () => ingressHostId(),
     openLink,
-  });
-  // A connect, a disconnect or an expiry changes the tools and the `gh` sign-in of every agent.
-  githubConnector.onAgentAccessChanged(() => {
-    void runCauseEffect(service.notifyGitHubConnectorChanged()).catch((error) =>
-      logger.warn("Provider tools did not refresh.", toLogValue(error)),
-    );
   });
   // The capability and the tool list both follow the daemon, and nothing else can tell them: no
   // provider probe reaches the driver, because the driver is this process's child.
@@ -2249,15 +2147,8 @@ export async function createApplicationServices({
     mcpSignIns: mcpHostSignIns,
     // Present, so the host advertises `sign-in-relay-v1`. The routes are admin-only.
     signInRelay: signInRelayHost,
-    // Present, so the host advertises `connectors-v1`. GitHub answers `available: false` when this
-    // build has no GitHub App. The routes are admin-only.
-    connectors: { github: githubConnector, messaging },
-    // Present, so the host advertises `onepassword-connector-v1`. An owner or admin connects it with
-    // a service account token, as a host with no screen cannot approve the 1Password app.
-    onePasswordConnector,
-    // Present, so the host advertises `bitwarden-connector-v1`. An owner or admin connects it with an
-    // API key and the master password: a session key from their computer cannot open this vault.
-    bitwardenConnector,
+    // Present, so the host advertises `connectors-v1`: the messaging connections. The routes are admin-only.
+    connectors: { messaging },
     // Present, so the host advertises `vault-v1`. The routes are admin-only.
     vault,
     // Present on Linux, so the host advertises `provider-host-sign-in-v1`. The routes are admin-only.
@@ -2873,9 +2764,6 @@ export async function createApplicationServices({
     mcpOAuth,
     signInRelayClient,
     relayedMessagingInstalls: new RelayedMessagingInstalls(remoteServers),
-    githubConnector,
-    onePasswordConnector,
-    bitwardenConnector,
     vault,
     mailbox,
     storageUsage,

@@ -74,7 +74,7 @@ const EXTERNAL_DESTINATIONS: Record<ExternalDestination, string> = {
   "opencode-auth": "https://opencode.ai/auth",
   "claude-install": "https://code.claude.com/docs",
   feedback: "https://github.com/micic-mihajlo/bob/issues/new",
-  message: "https://x.com/norbertbodziony",
+  message: "https://github.com/micic-mihajlo/bob/issues/new",
   changelog: BOB_CHANGELOG_URL,
   guides: BOB_GUIDES_URL,
   discord: BOB_DISCORD_INVITE_URL,

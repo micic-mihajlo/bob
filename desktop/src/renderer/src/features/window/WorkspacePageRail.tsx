@@ -11,7 +11,6 @@ import { useChannels } from "../channels/channels-context";
 import { useCustomAgents } from "../custom-agents/custom-agents-context";
 import { serverSupportsCapability } from "../servers/server-capabilities";
 import { useServers } from "../servers/servers-context";
-import { useSettings } from "../settings/settings-context";
 import { useUpdates } from "../updates/updates-context";
 import { useWhatsNew } from "../updates/whats-new-context";
 import { usePlanLimitRows } from "../usage/plan-limit-rows";
@@ -25,7 +24,6 @@ import { useWindowPage } from "./window-page-context";
 export function WorkspacePageRail(props: { hidden: boolean }) {
   const text = useText();
   const windowPage = useWindowPage();
-  const { setSkillsMarketplaceOpen } = useSettings();
   const updates = useUpdates();
   const layout = useLayout();
   const channels = useChannels();
@@ -74,7 +72,6 @@ export function WorkspacePageRail(props: { hidden: boolean }) {
       customAgentUsage={BOB_SINGLE_BOT ? [] : localAgentUsage()}
       onAgents={() => showSidebarView("agents")}
       onTasks={!BOB_SINGLE_BOT && tasksAvailable() ? windowPage.openTasks : undefined}
-      onMarketplace={BOB_SINGLE_BOT ? undefined : () => setSkillsMarketplaceOpen(true)}
       onSettings={(button) => windowPage.openSettings(button)}
       settingsNotice={updateNotice()}
       logo={logo()}

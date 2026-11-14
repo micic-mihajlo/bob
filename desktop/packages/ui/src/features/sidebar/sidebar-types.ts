@@ -38,7 +38,6 @@ export interface SidebarProps {
   view?: SidebarView | undefined;
   onViewChange?: ((view: SidebarView) => void) | undefined;
   deleteSupported?: boolean | undefined;
-  marketplaceSupported?: boolean | undefined;
   channels?: ChannelSummary[] | undefined;
   deletedChannels?: ChannelSummary[] | undefined;
   activeChannelId?: string | null | undefined;
@@ -123,7 +122,6 @@ export interface SidebarProps {
   onExpand: () => void;
   /** Opens the global search. The search field and the compact search button both call it. */
   onOpenSearch: () => void;
-  onOpenMarketplace: () => void;
   /** The agents are still on their way, so an empty list says that it connects rather than that it is empty. */
   agentsConnecting?: boolean | undefined;
   emptyAction?:

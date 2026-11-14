@@ -1,6 +1,5 @@
 
 import { Show } from "solid-js";
-import { SkillsMarketplace } from "../../WorkspaceOverlays";
 import { useUsage } from "../usage/usage-context";
 import { SettingsPage } from "./SettingsPage";
 import { type SettingsKind, useWindowPage } from "./window-page-context";
@@ -18,7 +17,7 @@ export function WindowPageView() {
   };
   return (
     <Show when={settingsKind() || !usage.state.serverId}>
-      <Show when={settingsKind()} keyed fallback={<SkillsMarketplace />}>
+      <Show when={settingsKind()} keyed>
         {(kind) => <SettingsPage kind={kind} />}
       </Show>
     </Show>

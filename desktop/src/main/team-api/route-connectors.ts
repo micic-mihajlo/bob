@@ -30,22 +30,11 @@ export async function routeConnectors(
   requireAdmin(member);
   // `readJson` has already run the body through the `connectors-v1` codec.
   const body = await readJson(request);
-  const { github, messaging } = connectors;
-  const status = (current: ReturnType<typeof github.status>) => ({ ...current, ...github.pages() });
+  const { messaging } = connectors;
   // The codec allows only these values; a GitHub route has no platform.
   const platform = MESSAGING_PLATFORMS.find((id) => id === body.platform) ?? "telegram";
   const workspaceId = () => stringField(body, "workspaceId", false, 128);
   switch (url.pathname) {
-    case CONNECTORS_ROUTES.githubStatus:
-      return json(200, status(github.status()));
-    case CONNECTORS_ROUTES.githubConnect:
-      return json(200, status(await runCauseEffect(github.connect(false))));
-    case CONNECTORS_ROUTES.githubCancel:
-      return json(200, status(github.cancel()));
-    case CONNECTORS_ROUTES.githubDisconnect:
-      return json(200, status(await runCauseEffect(github.disconnect(false))));
-    case CONNECTORS_ROUTES.githubRepositories:
-      return json(200, await runCauseEffect(github.repositories()));
     case CONNECTORS_ROUTES.messagingOverview:
       return json(
         200,

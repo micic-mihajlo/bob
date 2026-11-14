@@ -21,7 +21,6 @@ import { attachmentCall } from "../src/backend/attachment-effects";
 import { BrowserHost } from "../src/backend/browser-host";
 import { runCauseEffect } from "../src/backend/effect-boundary";
 import { type DynamicToolResult, getString } from "../src/backend/protocol";
-import { runSecretHandoffScenario } from "./browser-secret-smoke";
 import { waitForPresentedFrame } from "./browser-smoke-frames";
 
 let cachedPageVersion = 1;
@@ -434,7 +433,6 @@ const SCENARIOS = [
   "evaluation",
   "wait-deadlines",
   "live-view",
-  "secret-handoff",
   "popups",
   "redirect-navigation",
 ];
@@ -518,8 +516,6 @@ async function main(): Promise<void> {
           if (amazonLive) await runAmazonLiveProbe(browser);
         } else if (scenario === "popups") {
           await runPopupScenario(browser, origin);
-        } else if (scenario === "secret-handoff") {
-          await runSecretHandoffScenario(browser, origin);
         } else if (scenario === "tool-boundary") {
           await runToolBoundaryScenario(browser, origin);
         } else if (scenario === "redirect-navigation") {
@@ -1841,7 +1837,6 @@ async function main(): Promise<void> {
     if (!toolResult.success) throw new Error("Dynamic browser tool failed.");
     await runToolBoundaryScenario(browser, origin);
     await runPopupScenario(browser, origin);
-    await runSecretHandoffScenario(browser, origin);
     if (!controlPhases.includes("open:acting") || !controlPhases.includes("open:waiting")) {
       throw new Error(`Browser control lifecycle was not reported: ${controlPhases.join(", ")}`);
     }

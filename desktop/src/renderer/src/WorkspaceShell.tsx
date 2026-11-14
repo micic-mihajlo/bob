@@ -14,7 +14,6 @@ import { useAgents } from "./features/agents/agents-context";
 import { WorkspaceAgentSetup } from "./features/agents/WorkspaceAgentSetup";
 import { useChannels } from "./features/channels/channels-context";
 import { WorkspaceChannelConversation } from "./features/channels/WorkspaceChannelConversation";
-import { ConnectorsProvider } from "./features/connectors/connectors-context";
 import { useConversation } from "./features/conversation/conversation-context";
 import { useDirectMessages } from "./features/conversation/direct-messages-context";
 import { WorkspaceConversation } from "./features/conversation/WorkspaceConversation";
@@ -208,8 +207,7 @@ export function WorkspaceShell(props: { account: () => CentralAuthUser }) {
   }
 
   return (
-    // The overlays and the chat cards show the same connectors.
-    <ConnectorsProvider>
+    <>
       {/* The page rail sits at the left of the frame. The frame is the card of the page that the rail selects. */}
       <div class="app-window">
         <WorkspacePageRail hidden={chatWindow || remoteDesktopWorkspaceVisible()} />
@@ -319,6 +317,6 @@ export function WorkspaceShell(props: { account: () => CentralAuthUser }) {
           </Show>
         </WorkspaceFrame>
       </div>
-    </ConnectorsProvider>
+    </>
   );
 }
