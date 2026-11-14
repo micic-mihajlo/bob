@@ -50,10 +50,6 @@ function requestPlan(ctx: TurnContext): Plan {
         const order = newOrder(done);
         return order ? [call("start_thread", { role: "build", title: workTitle, brief: buildBrief(intent, texts, workTitle), workOrderId: order.id })] : [];
       },
-      (done) => {
-        const started = resultOf(done, "start_thread");
-        return started ? [call("write_drive", { name: "CREW.md", content: `${started.code}: building "${workTitle}" on ${started.branch}.\n` })] : [];
-      },
     ],
     reply: (done) => {
       const started = resultOf(done, "start_thread");
@@ -109,7 +105,6 @@ const REPORT_RULES: Rule[] = [
         steps: [
           () => [
             call("advance_stage", {}),
-            call("write_drive", { name: "DIGEST.md", content: `Approve merging #${p.pullRequest.number}: ${p.title}.\n` }),
             call("request_approval", { title: `Merge #${p.pullRequest.number}: ${p.title}`, detail, pullRequestId: p.id }),
           ],
         ],
@@ -152,7 +147,7 @@ function decisionPlan(ctx: TurnContext, decision: NonNullable<InboundItem["decis
   const prId = s.approvals.find((a) => a.id === decision.approvalId)?.pullRequestId;
   const pr = s.artifacts.find((a): a is PullRequestArtifact => a.id === prId && isPullRequest(a));
   if (decision.status === "denied" || !pr) {
-    return { steps: [() => [call("write_drive", { name: "DIGEST.md", content: "Waiting for you to say what should change.\n" })]], reply: () => `Understood, I left "${decision.title}" unmerged. What should change before I merge it?` };
+    return { steps: [], reply: () => `Understood, I left "${decision.title}" unmerged. What should change before I merge it?` };
   }
   const owner = s.agents.find((a) => a.id === pr.agentId);
   const threads = s.agents.filter((a) => a.kind === "crew" && !a.closedAt && (a.id === pr.agentId || (!!owner?.workOrderId && a.workOrderId === owner.workOrderId)));
@@ -164,8 +159,7 @@ function decisionPlan(ctx: TurnContext, decision: NonNullable<InboundItem["decis
     steps: [
       () => [call("merge_pull_request", { pullRequestId: pr.id })],
       (done) => (merged(done) ? threads.map((t) => call("close_thread", { threadId: t.id })) : []),
-      (done) => (merged(done) ? [call("write_drive", { name: "DIGEST.md", content: "Nothing needs you right now.\n" }), call("advance_stage", {})] : []),
-      (done) => (merged(done) ? [call("write_drive", { name: "NOTES.md", content: learnNote(s, pr, findings) })] : []),
+      (done) => (merged(done) ? [call("advance_stage", {})] : []),
       (done) => (merged(done) && followUps.length > 0 ? [call("set_roadmap", { workOrderTitles: [...backlog, ...followUps] })] : []),
     ],
     reply: (done) =>
@@ -173,19 +167,6 @@ function decisionPlan(ctx: TurnContext, decision: NonNullable<InboundItem["decis
         ? `Merged #${pr.pullRequest.number} "${pr.title}" into main and closed its threads.${followUps.length > 0 ? ` ${followUps.length} follow-up${followUps.length > 1 ? "s" : ""} from the review went to the backlog.` : ""}`
         : `I could not merge #${pr.pullRequest.number}: ${String(done.find((c) => c.name === "merge_pull_request")?.result.error ?? "unknown error")}`,
   };
-}
-
-/** The Learn entry: what shipped, whether its acceptance check held, and what the review found, after the notes so far. */
-function learnNote(s: State, pr: PullRequestArtifact, findings: ReviewData["findings"]): string {
-  const earlier = s.drive.find((f) => f.name === "NOTES.md")?.content.trimEnd() ?? "";
-  const acceptance = s.roadmap.goal?.acceptance;
-  const entry = [
-    `## Shipped #${pr.pullRequest.number}: ${pr.title}`,
-    `- Intent: ${s.roadmap.goal?.title ?? pr.title}${s.roadmap.goal?.user ? `, for ${s.roadmap.goal.user}` : ""}`,
-    ...(acceptance ? [`- Acceptance: ${acceptance} (approved by review and merged)`] : []),
-    ...(findings.length > 0 ? findings.map((f) => `- Review (${f.severity}, ${f.path}): ${f.comment}`) : ["- Review: no findings"]),
-  ].join("\n");
-  return [earlier, entry].filter(Boolean).join("\n\n") + "\n";
 }
 
 export function captainPlan(ctx: TurnContext): Plan {

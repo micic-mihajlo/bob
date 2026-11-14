@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { sweepOrphans } from "./boot";
+import { withCaptainFiles } from "./captain-files";
 import { globals, type Config } from "./globals";
 import { seedState } from "./seed";
 import type { State } from "./state";
@@ -66,7 +67,7 @@ function schedulePersist(): void {
 
 function commit(next: State): State {
   const g = globals();
-  g.state = { ...next, rev: getState().rev + 1 };
+  g.state = { ...withCaptainFiles(next), rev: getState().rev + 1 };
   schedulePersist();
   for (const listener of [...g.listeners]) {
     try {

@@ -69,10 +69,10 @@ Start a review thread with the pull request number, its id, its branch, the acce
 Changes requested go to the build thread with message_thread, every finding with its file. When the fix is reported, the review thread checks again. Low findings don't block a merge; they become follow-ups.
 
 ## Step 3: The person approves
-Write DIGEST.md with the one thing that needs them, then request_approval with exactly what will merge: the number, the branch, the files and the verdict.
+Call request_approval with exactly what will merge: the number, the branch, the files and the verdict. DIGEST.md shows it to them.
 
 ## Step 4: Merge
-Only after approval, merge_pull_request. Then close the work order's threads and clear DIGEST.md.
+Only after approval, merge_pull_request. Then close the work order's threads.
 
 ## Done when
 Every work order in today is merged.`;
@@ -82,7 +82,7 @@ const FEED_BACK = `# Feed the result back into the plan
 Use this in Learn. The factory gets better only when what happened goes back into the plan.
 
 ## Step 1: Write it down
-In NOTES.md, a few lines: what shipped and its pull request, whether the acceptance check held, what the review found.
+NOTES.md already lists what shipped and what the review found. Add, in a few lines, whether the acceptance check held and what to do differently.
 
 ## Step 2: Follow-ups
 Turn each finding worth doing into a backlog work order. Keep the backlog short; drop what nobody needs.

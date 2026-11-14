@@ -91,7 +91,7 @@ Changes requested go back to the build thread, and the review checks again after
 When the review approves, the person approves the merge. Nothing merges without that approval.`,
     criteria: [{ label: "Every work order in today is merged", met: (r) => allToday(r, (status) => status === "done") }],
     moves: [
-      "Put the approval in DIGEST.md and ask with request_approval",
+      "Ask the person with request_approval; DIGEST.md shows it",
       "Merge with merge_pull_request after the person approves",
       "Close the work order's threads",
     ],
@@ -101,12 +101,12 @@ When the review approves, the person approves the merge. Nothing merges without 
     title: "Learn",
     gateTitle: "The results are back in the plan",
     milestone: "What shipped and what it taught us is in the plan",
-    lesson: `Learn feeds the result back into the plan. Write in NOTES.md what shipped, whether the acceptance check held, and what the review found.
+    lesson: `Learn feeds the result back into the plan. NOTES.md records what shipped and what the review found; add what it taught you there.
 Turn follow-ups into backlog work orders, so the next request starts from what this one taught.
 A new request is inspected the same way as the first before you plan it.`,
     criteria: [],
     moves: [
-      "Write what shipped and what the review found in NOTES.md",
+      "Add what the result taught you to NOTES.md",
       "Add follow-ups to the backlog with set_roadmap",
       "Inspect the next request, then record it with set_goal",
     ],
