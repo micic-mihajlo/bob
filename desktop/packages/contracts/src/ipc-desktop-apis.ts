@@ -78,8 +78,6 @@ export type HostedSitesDesktopApi = GroupApi<IpcEndpoints["hostedSites"]>;
 export type ComposioDesktopApi = GroupApi<IpcEndpoints["composio"]>;
 export type GitHubConnectorDesktopApi = GroupApi<IpcEndpoints["githubConnector"]>;
 export type OnePasswordConnectorDesktopApi = GroupApi<IpcEndpoints["onePasswordConnector"]>;
-export type BillingDesktopApi = GroupApi<IpcEndpoints["billing"]>;
-export type LicenseDesktopApi = GroupApi<IpcEndpoints["license"]>;
 export type RoutineFeedDesktopApi = GroupApi<IpcEndpoints["routineFeed"]>;
 export type BobRoadmapDesktopApi = GroupApi<IpcEndpoints["bobRoadmap"]>;
 

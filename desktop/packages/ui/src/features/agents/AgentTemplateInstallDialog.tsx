@@ -1,5 +1,5 @@
 import type { AgentTemplateDetail } from "@bob/contracts/ipc";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { Button, Dialog, Heading, IconButton, Text, toast, X } from "@bob/ui";
 import { createSignal, Show } from "solid-js";
 import { useText } from "../../text";

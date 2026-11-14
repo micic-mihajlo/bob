@@ -1,10 +1,9 @@
 import type { ServerSummary } from "@bob/contracts/ipc";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import type { ServerActionCallbacks } from "@bob/ui/features/servers/ServerActionItems";
 import { useText } from "@bob/ui/text";
 import { actionToast } from "../../action-toast";
 import { usePlatform } from "../../platform";
-import { useSettings } from "../settings/settings-context";
 import { useServerSelection } from "./server-selection";
 import { useServerSettings } from "./server-settings";
 import { useServers } from "./servers-context";
@@ -29,7 +28,6 @@ export function useServerActions() {
   } = useServers();
   const { selectServer } = useServerSelection();
   const { openServerSettings, requestLeaveServer, requestRestartServer } = useServerSettings();
-  const { openHostedServerDelete } = useSettings();
 
   /** Local servers above the saved remote-server order, as the rail draws them. */
   function orderedServers(): ServerSummary[] {
@@ -72,7 +70,6 @@ export function useServerActions() {
     // The same confirmation: main removes an owned server from the account instead of leaving it.
     onRemove: requestLeaveServer,
     canRemove: (serverId) => hostedServersLoaded() && !hostedServerIds().has(serverId),
-    onDelete: openHostedServerDelete,
     canDelete: (serverId) => hostedServerIds().has(serverId),
     onRestart: requestRestartServer,
     canRestart: (serverId) => hostedServerIds().has(serverId),

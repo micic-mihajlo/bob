@@ -1,5 +1,5 @@
 import type { UpdateStatus } from "@bob/contracts/ipc";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { toast } from "@bob/ui";
 import { currentText } from "@bob/ui/text";
 import { type Accessor, createEffect, onCleanup } from "solid-js";

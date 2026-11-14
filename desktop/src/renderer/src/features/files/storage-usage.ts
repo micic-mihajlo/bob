@@ -5,7 +5,7 @@ import {
   STORAGE_CAPABILITY,
   type StorageUsage,
 } from "@bob/contracts/ipc";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import type { StoredFileAction, StoredFileRow } from "@bob/ui/features/files/files-view";
 import { currentText } from "@bob/ui/text";
 import { createEffect, createStore, untrack } from "solid-js";

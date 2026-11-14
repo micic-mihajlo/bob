@@ -1,5 +1,5 @@
 import { type AgentTemplatePreview, isAgentTemplateCardPng } from "@bob/contracts/ipc";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { toast } from "@bob/ui";
 import { PublishAgentDialog } from "@bob/ui/features/agents/PublishAgentDialog";
 import { currentText } from "@bob/ui/text";

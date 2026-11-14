@@ -1,5 +1,5 @@
 import type { UpdateStatus } from "@bob/contracts/ipc";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { toast } from "@bob/ui";
 import { restartReasonKey } from "@bob/ui/features/updates/restart-reasons";
 import { currentText } from "@bob/ui/text";

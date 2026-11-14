@@ -1,5 +1,5 @@
 import type { AddedAgent, AgentTemplateDetail, ServerSummary } from "@bob/contracts/ipc";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { AgentTemplateInstallDialog } from "@bob/ui/features/agents/AgentTemplateInstallDialog";
 import { useText } from "@bob/ui/text";
 import { createEffect, createStore } from "solid-js";

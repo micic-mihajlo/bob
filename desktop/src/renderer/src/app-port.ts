@@ -30,8 +30,6 @@ export interface AppPort {
   agentTemplates: Pick<BobDesktopApi["agentTemplates"], "onOpenLink" | "takePendingLink">;
   acpRegistry: BobDesktopApi["acpRegistry"];
   hostedSites: BobDesktopApi["hostedSites"];
-  billing: BobDesktopApi["billing"];
-  license: BobDesktopApi["license"];
   hostedServers: BobDesktopApi["hostedServers"];
   routineFeed: BobDesktopApi["routineFeed"];
   events: BobDesktopApi["events"];

@@ -2,15 +2,12 @@ import type { AppTextKey } from "@bob/i18n";
 import { Button, Input, Search } from "@bob/ui";
 import { createSignal, For, flush, Show } from "solid-js";
 import { useI18n } from "../../i18n-context";
-import { usePlatform } from "../../platform";
 import { useServerSettings } from "../servers/server-settings";
 import { useSettings } from "../settings/settings-context";
 import {
-  dynamicIslandSettingsShown,
   navItem,
   navItems,
   type SettingsTab,
-  settingsTabShown,
 } from "../settings/settings-tabs";
 import { ServerSettingsPageTitle, SettingsPageFrame } from "./SettingsPageFrame";
 import { type SettingsKind, useWindowPage } from "./window-page-context";
@@ -57,10 +54,8 @@ export function SettingsPage(props: { kind: SettingsKind }) {
   const windowPage = useWindowPage();
   const settings = useSettings();
   const serverSettings = useServerSettings();
-  const platform = usePlatform();
   const [query, setQuery] = createSignal("");
-  const tabShown = (tab: SettingsTab) =>
-    settingsTabShown(tab, dynamicIslandSettingsShown(platform.appInfo()?.platform, platform.chatWindow !== null));
+  const tabShown = (_tab: SettingsTab) => true;
   const results = () => (query().trim() ? rankRows(query().trim(), (key) => i18n.t(key), tabShown) : null);
   /** What a screen reader hears while the user types a query. */
   const resultStatus = () => {

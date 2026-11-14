@@ -2,7 +2,7 @@ import type { HostedServerEntryPoint } from "@bob/contracts/hosted-servers";
 import type { HostStatus, ServerNotificationLevel, ServerSummary } from "@bob/contracts/ipc";
 import type { TeamCurrentCapability } from "@bob/contracts/team-protocol/current";
 import { WAKE_RECONNECT_STATES } from "@bob/team-client/hosted-server-wake";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { toast } from "@bob/ui";
 import { currentText } from "@bob/ui/text";
 import { createEffect, createMemo, createSignal, flush, onSettled, untrack } from "solid-js";

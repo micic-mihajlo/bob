@@ -104,7 +104,7 @@ const ACP_HISTORY_REPLAY_QUEUE_LIMIT = 256;
  * How long a turn may send nothing, with no tool call open and no question to the user, before
  * Bob ends it. An OpenCode prompt can stay open for an hour with no update (#2858).
  */
-const ACP_TURN_STALL_MS = 5 * 60_000;
+const ACP_TURN_STALL_MS = 15 * 60_000;
 
 /** How long a stopped turn may take to end before Bob ends it itself. */
 const ACP_STOP_GRACE_MS = 10_000;

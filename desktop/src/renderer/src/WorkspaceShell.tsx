@@ -30,7 +30,6 @@ import { useServerScope } from "./features/servers/server-scope";
 import { followsServerUpdate, ServerUpdateDialogHost } from "./features/servers/server-update-flow";
 import { useServers } from "./features/servers/servers-context";
 import { WorkspaceServerRail } from "./features/servers/WorkspaceServerRail";
-import { useSettings } from "./features/settings/settings-context";
 import { WorkspaceSidebar } from "./features/sidebar/WorkspaceSidebar";
 import { TasksPanel } from "./features/tasks/TasksPanel";
 import { createHostRestartToasts, type HostRestartView } from "./features/updates/host-restart-toast";
@@ -69,7 +68,6 @@ export function WorkspaceShell(props: { account: () => CentralAuthUser }) {
   const chatWindow = platform.chatWindow !== null;
   const { sourceText, t } = useText();
   const scope = useServerScope();
-  const settings = useSettings();
   const channels = useChannels();
   const channelOpen = () => channels.state.selectedId !== null;
   const windowPage = useWindowPage();
@@ -256,7 +254,6 @@ export function WorkspaceShell(props: { account: () => CentralAuthUser }) {
                     (activeServer()?.state === "online" && scope.connection.recovery.phase === "connecting")
                   }
                   onRetry={retry}
-                  onManage={() => settings.openAppSettings(null, "hosted-servers")}
                   upsell={offlineUpsell()}
                 />
               </Show>
@@ -289,7 +286,7 @@ export function WorkspaceShell(props: { account: () => CentralAuthUser }) {
           page={<WindowPageView />}
           after={
             <>
-              <WorkspaceOverlays account={props.account} />
+              <WorkspaceOverlays />
               <Show when={!chatWindow}>
                 <ServerUpdateDialogHost hosts={remoteHosts()} />
               </Show>

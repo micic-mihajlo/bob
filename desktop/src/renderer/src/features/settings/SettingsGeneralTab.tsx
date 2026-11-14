@@ -22,7 +22,6 @@ import { SendShortcutSelect } from "@bob/ui/features/settings/SendShortcutSelect
 import { useText } from "@bob/ui/text";
 import { Show } from "solid-js";
 import { useAppearanceChoice } from "../../appearance-choice";
-import { BOB_ONLY } from "../../bob";
 import { useI18n } from "../../i18n-context";
 import { useInterfaceSizeChoice } from "../../interface-size";
 import { useLogoColorChoice } from "../../logo-color";
@@ -185,15 +184,6 @@ export function SettingsGeneralTab(props: SettingsGeneralTabProps) {
               description={i18n.t("settings.launchAtLogin.description")}
             />
           </Show>
-          <Show when={!BOB_ONLY}>
-            <SwitchField
-              data-settings-row="settings.keepRemoteSessions.title"
-              checked={props.value.keepRemoteSessions}
-              onChange={(checked) => props.onUpdateSetting("keepRemoteSessions", checked)}
-              label={i18n.t("settings.keepRemoteSessions.title")}
-              description={i18n.t("settings.keepRemoteSessions.description")}
-            />
-          </Show>
           <Show when={props.value.keepRunningInBackground !== null}>
             <SwitchField
               data-settings-row="settings.keepRunning.title"
@@ -230,19 +220,6 @@ export function SettingsGeneralTab(props: SettingsGeneralTabProps) {
         </ItemGroup>
       </SettingsSection>
 
-      <Show when={!BOB_ONLY}>
-        <SettingsSection title={i18n.t("settings.permissions.title")}>
-          <ItemGroup class="settings-modal-card">
-            <SwitchField
-              data-settings-row="settings.analytics.title"
-              checked={props.value.productAnalytics}
-              onChange={(checked) => props.onUpdateSetting("productAnalytics", checked)}
-              label={i18n.t("settings.analytics.title")}
-              description={i18n.t("settings.analytics.description")}
-            />
-          </ItemGroup>
-        </SettingsSection>
-      </Show>
     </>
   );
 }

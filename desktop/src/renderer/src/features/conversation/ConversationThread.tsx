@@ -1,7 +1,7 @@
 import { supportedAttachmentExtensions } from "@bob/contracts/attachment-files";
 import { canPreviewAttachment } from "@bob/contracts/ipc";
 import type { AppTextKey } from "@bob/i18n";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { Input } from "@bob/ui";
 import type { AgentMessage } from "@bob/ui/data";
 import { ChatSearch } from "@bob/ui/features/conversation/ChatSearch";

@@ -1,6 +1,6 @@
 import { useText } from "@bob/ui/text";
 import { Loading, Match, Show, Switch } from "solid-js";
-import { AgentUsagePanel, WorkflowsPage } from "../../lazy-views";
+import { WorkflowsPage } from "../../lazy-views";
 import { SkillsMarketplace } from "../../WorkspaceOverlays";
 import { SchedulePanel } from "../schedule/SchedulePanel";
 import { useServers } from "../servers/servers-context";
@@ -34,18 +34,7 @@ export function WindowPageView() {
       }
     >
       {(serverId) => (
-        <Switch
-          fallback={
-            <Loading>
-              <AgentUsagePanel
-                serverId={serverId()}
-                hostName={hostName(serverId())}
-                agentId={usage.state.agentId}
-                onBack={usage.closeUsage}
-              />
-            </Loading>
-          }
-        >
+        <Switch>
           <Match when={usage.state.view === "schedule"}>
             <SchedulePanel serverId={serverId()} hostName={hostName(serverId())} onBack={usage.closeUsage} />
           </Match>

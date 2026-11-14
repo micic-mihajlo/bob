@@ -2,7 +2,7 @@ import { providerDisplayName } from "@bob/contracts/agent-providers";
 import type { AgentEvent, AgentRuntimeSnapshot } from "@bob/contracts/ipc";
 import { cleanAgentMessageText } from "@bob/team-client/agent-message-text";
 import { reconcileQueuesWithRuntimeWork } from "@bob/team-client/dynamic-island-coordinator";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { toast } from "@bob/ui";
 import { currentText } from "@bob/ui/text";
 import { classifyUserError } from "@bob/user-errors";

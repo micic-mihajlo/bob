@@ -1,5 +1,5 @@
 import type { AgentProviderId } from "@bob/contracts/agent-providers";
-import type { CauseCode } from "@bob/telemetry";
+import type { CauseCode } from "@bob/user-errors/failure";
 
 /** Local analytics context. This is not an IPC or Team API payload. */
 export interface FailureContext {

@@ -1,5 +1,5 @@
 import type { AppTextKey } from "@bob/i18n";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import type { ConnectorDetail } from "@bob/ui/features/connectors/ConnectorDetailPanel";
 import type { ConnectorId } from "@bob/ui/features/connectors/connectors";
 import { currentText } from "@bob/ui/text";

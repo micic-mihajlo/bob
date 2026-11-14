@@ -1,34 +1,13 @@
-import type { AppInfo } from "@bob/contracts/ipc";
+
 import type { AppTextKey } from "@bob/i18n";
 import {
   Bell,
   Bot,
-  CircleArrowDown,
-  CreditCard,
-  Mic,
-  MousePointer2,
-  PanelTop,
   Plug,
-  Server,
   Settings,
-  Smartphone,
-  UserRound,
 } from "@bob/ui";
-import { BOB_ONLY } from "../../bob";
 
-export type SettingsTab =
-  | "general"
-  | "agents"
-  | "notifications"
-  | "voice"
-  | "connectors"
-  | "dynamic-island"
-  | "computer-use"
-  | "profile"
-  | "billing"
-  | "mobile-connect"
-  | "updates"
-  | "hosted-servers";
+export type SettingsTab = "general" | "agents" | "notifications" | "connectors";
 
 /**
  * A row of a tab that the settings search finds. The title key is also the anchor of the row: the
@@ -66,21 +45,10 @@ export const navItems: ReadonlyArray<SettingsNavItem> = [
       { titleKey: "settings.showAgentSteps.title", descriptionKey: "settings.showAgentSteps.description" },
       { titleKey: "settings.externalLinks.title", descriptionKey: "settings.externalLinks.description" },
       { titleKey: "settings.launchAtLogin.title", descriptionKey: "settings.launchAtLogin.description" },
-      ...(BOB_ONLY
-        ? []
-        : [
-            {
-              titleKey: "settings.keepRemoteSessions.title",
-              descriptionKey: "settings.keepRemoteSessions.description",
-            } as const,
-          ]),
       { titleKey: "settings.keepRunning.title", descriptionKey: "settings.keepRunning.description" },
       { titleKey: "settings.keepAwake.title", descriptionKey: "settings.keepAwake.description" },
       { titleKey: "settings.keepAwakeOnBattery.title", descriptionKey: "settings.keepAwakeOnBattery.description" },
       { titleKey: "settings.restoreWorkspace.title", descriptionKey: "settings.restoreWorkspace.description" },
-      ...(BOB_ONLY
-        ? []
-        : [{ titleKey: "settings.analytics.title", descriptionKey: "settings.analytics.description" } as const]),
     ],
   },
   {
@@ -96,16 +64,6 @@ export const navItems: ReadonlyArray<SettingsNavItem> = [
     ],
   },
   {
-    value: "profile",
-    titleKey: "settings.tab.profile.title",
-    descriptionKey: "settings.tab.profile.description",
-    icon: UserRound,
-    rows: [
-      { titleKey: "settings.profile.email.title", descriptionKey: "settings.profile.email.description" },
-      { titleKey: "settings.profile.sessions.title", descriptionKey: "settings.profile.sessions.description" },
-    ],
-  },
-  {
     value: "notifications",
     titleKey: "settings.tab.notifications.title",
     descriptionKey: "settings.tab.notifications.description",
@@ -117,120 +75,18 @@ export const navItems: ReadonlyArray<SettingsNavItem> = [
       { titleKey: "settings.taskSound.title", descriptionKey: "settings.taskSound.description" },
       { titleKey: "settings.soundFeedback.title", descriptionKey: "settings.soundFeedback.description" },
     ],
-  },
-  {
+  },  {
     value: "connectors",
     titleKey: "settings.tab.connectors.title",
     descriptionKey: "settings.tab.connectors.description",
     icon: Plug,
     rows: [{ titleKey: "settings.connectors.toolkits.title" }],
   },
-  {
-    value: "voice",
-    titleKey: "settings.tab.voice.title",
-    descriptionKey: "settings.tab.voice.description",
-    icon: Mic,
-    rows: [
-      { titleKey: "settings.voice.models.title" },
-      { titleKey: "settings.voice.language.title", descriptionKey: "settings.voice.language.description" },
-      {
-        titleKey: "settings.voice.speech.readReplies.title",
-        descriptionKey: "settings.voice.speech.readReplies.description",
-      },
-      { titleKey: "settings.voice.speech.voice.title" },
-    ],
-  },
-  {
-    value: "dynamic-island",
-    titleKey: "settings.tab.dynamicIsland.title",
-    descriptionKey: "settings.tab.dynamicIsland.description",
-    icon: PanelTop,
-    rows: [
-      { titleKey: "settings.notch.show.title", descriptionKey: "settings.notch.show.description" },
-      { titleKey: "settings.notch.idle.title", descriptionKey: "settings.notch.idle.description" },
-      { titleKey: "settings.notch.displays.title", descriptionKey: "settings.notch.displays.description" },
-      { titleKey: "settings.notch.haptics.title", descriptionKey: "settings.notch.haptics.description" },
-      { titleKey: "settings.notch.servers.title", descriptionKey: "settings.notch.servers.description" },
-      { titleKey: "settings.notch.size.title", descriptionKey: "settings.notch.size.description" },
-    ],
-  },
-  {
-    value: "computer-use",
-    titleKey: "settings.tab.computerUse.title",
-    descriptionKey: "settings.tab.computerUse.description",
-    icon: MousePointer2,
-    rows: [{ titleKey: "computerUse.permissions.title", descriptionKey: "computerUse.permissions.description" }],
-  },
-  {
-    value: "billing",
-    titleKey: "settings.tab.billing.title",
-    descriptionKey: "settings.tab.billing.description",
-    icon: CreditCard,
-    rows: [],
-  },
-  {
-    value: "mobile-connect",
-    titleKey: "settings.tab.mobileConnect.title",
-    descriptionKey: "settings.tab.mobileConnect.description",
-    icon: Smartphone,
-    rows: [
-      {
-        titleKey: "settings.mobileConnect.phones.title",
-        descriptionKey: "settings.mobileConnect.phones.description",
-      },
-      { titleKey: "settings.mobileConnect.phones.add", descriptionKey: "settings.mobileConnect.add.question" },
-      { titleKey: "settings.mobileConnect.link.title", descriptionKey: "settings.mobileConnect.link.cardHint" },
-      {
-        titleKey: "settings.mobileConnect.route.title",
-        descriptionKey: "settings.mobileConnect.route.description",
-      },
-    ],
-  },
-  {
-    value: "updates",
-    titleKey: "settings.tab.updates.title",
-    descriptionKey: "settings.tab.updates.description",
-    icon: CircleArrowDown,
-    rows: [
-      { titleKey: "settings.updates.track.title", descriptionKey: "settings.updates.track.description" },
-      { titleKey: "settings.updates.idleRestart.title" },
-      { titleKey: "settings.updates.autoDownload.title", descriptionKey: "settings.updates.autoDownload.description" },
-      { titleKey: "settings.updates.autoInstall.title", descriptionKey: "settings.updates.autoInstall.description" },
-      { titleKey: "settings.updates.allowRemote.title", descriptionKey: "settings.updates.allowRemote.description" },
-      { titleKey: "settings.updates.managed.title", descriptionKey: "settings.updates.managed.description" },
-    ],
-  },
-  {
-    value: "hosted-servers",
-    titleKey: "settings.tab.hostedServers.title",
-    descriptionKey: "settings.tab.hostedServers.description",
-    icon: Server,
-    rows: [],
-  },
+
 ];
 
 export function navItem(tab: SettingsTab): SettingsNavItem {
   const found = navItems.find((item) => item.value === tab);
   if (!found) throw new Error(`Unknown settings tab: ${tab}`);
   return found;
-}
-
-/**
- * Whether the settings panel and its search show the tab. Hosted servers opens from its own entry, not
- * from this panel.
- */
-export function settingsTabShown(tab: SettingsTab, dynamicIslandShown: boolean): boolean {
-  if (tab === "hosted-servers") return false;
-  // Bob has no cloud account, billing, phone pairing or Bob release channel.
-  if (BOB_ONLY && (tab === "profile" || tab === "billing" || tab === "mobile-connect" || tab === "updates"))
-    return false;
-  return tab !== "dynamic-island" || dynamicIslandShown;
-}
-
-/**
- * The Dynamic Island exists only on macOS, and only the main window owns it: main rejects its calls
- * from a chat window.
- */
-export function dynamicIslandSettingsShown(platform: AppInfo["platform"] | undefined, chatWindow: boolean): boolean {
-  return platform === "darwin" && !chatWindow;
 }

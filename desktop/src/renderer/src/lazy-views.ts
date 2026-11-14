@@ -16,9 +16,6 @@ export const AgentTemplateInstall = lazy(() =>
     default: module.AgentTemplateInstall,
   })),
 );
-export const AgentUsagePanel = lazy(() =>
-  import("./features/usage/AgentUsagePanel").then((module) => ({ default: module.AgentUsagePanel })),
-);
 export const AccountLogin = lazy(() =>
   import("@bob/ui/features/account/AccountLogin").then((module) => ({ default: module.AccountLogin })),
 );

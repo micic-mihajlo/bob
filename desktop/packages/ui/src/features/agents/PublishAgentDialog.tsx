@@ -1,7 +1,7 @@
 import type { AgentTemplatePreview, MarketplaceAgentRoutine } from "@bob/contracts/ipc";
 import { markdownPreviewText } from "@bob/contracts/markdown-preview-text";
 import type { AppFormat, AppTranslate } from "@bob/i18n";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import {
   ArrowLeft,
   Badge,

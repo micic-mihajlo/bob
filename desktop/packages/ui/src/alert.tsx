@@ -1,4 +1,4 @@
-import type { FailureProperties, NotificationMetadata } from "@bob/telemetry";
+import type { FailureProperties, NotificationMetadata } from "@bob/user-errors/failure";
 import type { JSX } from "@solidjs/web";
 import { createContext, createEffect, omit, useContext } from "solid-js";
 import { cx } from "./utils";

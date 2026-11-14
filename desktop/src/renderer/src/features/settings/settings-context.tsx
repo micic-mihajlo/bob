@@ -92,12 +92,6 @@ const Settings = createSimpleContext({
     const [appSettingsOpenRequest, setAppSettingsOpenRequest] = createSignal(0);
     /** The tab that the next opening shows. Undefined keeps the tab that was open last. */
     const [appSettingsTab, setAppSettingsTab] = createSignal<SettingsTab | undefined>();
-    /** A hosted server that the server menu asked to delete. The nonce repeats a request for the same server. */
-    const [hostedServerDeleteRequest, setHostedServerDeleteRequest] = createSignal<{
-      serverId: string;
-      nonce: number;
-    } | null>(null);
-    let hostedServerDeleteNonce = 0;
     const [generalSettings, setGeneralSettings] = createSignal<GeneralSettingsValue>({
       ...DEFAULT_GENERAL_SETTINGS,
       taskCompletionSound: isCompletionSoundEnabled(),
@@ -403,11 +397,6 @@ const Settings = createSimpleContext({
       setAppSettingsOpenRequest((count) => count + 1);
     }
 
-    /** Opens the Hosted servers tab with the delete confirmation of one server. */
-    function openHostedServerDelete(serverId: string, trigger?: HTMLElement | null): void {
-      setHostedServerDeleteRequest({ serverId, nonce: ++hostedServerDeleteNonce });
-      openAppSettings(trigger, "hosted-servers");
-    }
 
     onSettled(() => {
       // The native Preferences menu item sends the same request from main, so the shortcut below only
@@ -419,9 +408,6 @@ const Settings = createSimpleContext({
       };
       window.addEventListener("keydown", handleSettingsShortcut);
       const unsubscribe = settingsPort().onOpenSettings(() => openAppSettings());
-      const unsubscribeUpdateSettings = settingsPort().onOpenUpdateSettings(() =>
-        openAppSettings(undefined, "updates"),
-      );
       // A remote owner or admin can change an agent's grant from a phone or the web client.
       const unsubscribeApprovals = settingsPort().onApprovalAutomation(setApprovalAutomation);
       // An admin of a joined server can change how many memories each agent of this computer keeps.
@@ -451,7 +437,6 @@ const Settings = createSimpleContext({
         window.removeEventListener("keydown", handleSettingsShortcut);
         unsubscribeLinkFallback();
         unsubscribe();
-        unsubscribeUpdateSettings();
         unsubscribeApprovals();
         unsubscribeMemoryLimit();
         unsubscribeUpdates();
@@ -606,8 +591,6 @@ const Settings = createSimpleContext({
       appSettingsRestoreTarget: () => appSettingsRestoreTarget,
       appSettingsTab,
       openAppSettings,
-      hostedServerDeleteRequest,
-      openHostedServerDelete,
       skillsMarketplaceOpen,
       setSkillsMarketplaceOpen,
       pendingPluginSlug,

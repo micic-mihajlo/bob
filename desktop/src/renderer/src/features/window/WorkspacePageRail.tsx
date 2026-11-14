@@ -25,7 +25,7 @@ import { useWindowPage } from "./window-page-context";
 export function WorkspacePageRail(props: { hidden: boolean }) {
   const text = useText();
   const windowPage = useWindowPage();
-  const { openAppSettings, setSkillsMarketplaceOpen } = useSettings();
+  const { setSkillsMarketplaceOpen } = useSettings();
   const updates = useUpdates();
   const layout = useLayout();
   const channels = useChannels();
@@ -78,9 +78,8 @@ export function WorkspacePageRail(props: { hidden: boolean }) {
       onWorkflows={BOB_SINGLE_BOT ? undefined : () => windowPage.openWorkflows(null)}
       onSchedule={windowPage.openSchedule}
       onTasks={!BOB_SINGLE_BOT && tasksAvailable() ? windowPage.openTasks : undefined}
-      onUsage={BOB_SINGLE_BOT ? undefined : windowPage.openUsage}
       onMarketplace={BOB_SINGLE_BOT ? undefined : () => setSkillsMarketplaceOpen(true)}
-      onSettings={(button) => (updateNotice() ? openAppSettings(button, "updates") : windowPage.openSettings(button))}
+      onSettings={(button) => windowPage.openSettings(button)}
       settingsNotice={updateNotice()}
       logo={logo()}
       help={

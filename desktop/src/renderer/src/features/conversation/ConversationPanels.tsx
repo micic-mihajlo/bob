@@ -1,6 +1,6 @@
 import type { ServerSummary } from "@bob/contracts/ipc";
 import { BROWSER_PROFILES_CAPABILITY } from "@bob/contracts/team-protocol/browser-profiles-v1";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { SETTINGS_PANEL_DEFAULT, SETTINGS_PANEL_MAX } from "@bob/ui/components/SettingsPanel";
 import { BROWSER_NEW_TAB_URL } from "@bob/ui/features/browser/browser-suggestions";
 import { SidePanelHeader, SidePanelLauncher, type SidePanelPane } from "@bob/ui/features/conversation/SidePanel";

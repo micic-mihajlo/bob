@@ -1,5 +1,5 @@
 import type { BobDesktopApi, HostReleaseStatus, HostUpdateSettingsChange, HostUpdateStatus } from "@bob/contracts/ipc";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import {
   Alert,
   AlertActions,

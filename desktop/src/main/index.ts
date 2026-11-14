@@ -59,7 +59,6 @@ import { agentImportIpcHandlers } from "./ipc/agent-import-handlers";
 import { agentTemplateIpcHandlers } from "./ipc/agent-template-handlers";
 import { appIpcHandlers } from "./ipc/app-handlers";
 import { attachmentIpcHandlers } from "./ipc/attachment-handlers";
-import { billingIpcHandlers } from "./ipc/billing-handlers";
 import { bitwardenConnectorIpcHandlers } from "./ipc/bitwarden-connector-handlers";
 import { browserDockIpcHandlers } from "./ipc/browser-dock-handlers";
 import { browserIpcHandlers } from "./ipc/browser-handlers";
@@ -80,7 +79,6 @@ import { hostAdminIpcHandlers } from "./ipc/host-admin-handlers";
 import { hostedServerIpcHandlers } from "./ipc/hosted-server-handlers";
 import { hostedSiteIpcHandlers } from "./ipc/hosted-site-handlers";
 import { instanceTransferIpcHandlers } from "./ipc/instance-transfer-handlers";
-import { licenseIpcHandlers } from "./ipc/license-handlers";
 import { macAutomationIpcHandlers } from "./ipc/mac-automation-handlers";
 import { marketplaceAgentIpcHandlers } from "./ipc/marketplace-agent-handlers";
 import { mcpServerIpcHandlers } from "./ipc/mcp-server-handlers";
@@ -598,8 +596,6 @@ function registerIpcHandlers({
   onePasswordConnector,
   bitwardenConnector,
   vault,
-  billing,
-  license,
   hostedServers,
   routineFeed,
   events,
@@ -706,8 +702,6 @@ function registerIpcHandlers({
     ...onePasswordConnectorIpcHandlers({ onePasswordConnector, remoteServers }),
     ...bitwardenConnectorIpcHandlers({ bitwardenConnector, remoteServers }),
     ...vaultIpcHandlers({ vault, getMainWindow: getDialogParent, translate: language.translate, remoteServers }),
-    ...billingIpcHandlers({ billing }),
-    ...licenseIpcHandlers({ license }),
     ...routineFeedIpcHandlers({ routineFeed }),
     ...bobOnboardingIpcHandlers({ service, host, userDataPath: app.getPath("userData") }),
     ...bobRoadmapIpcHandlers({ bobRoadmap: bobRoadmapClient }),
@@ -1141,7 +1135,6 @@ if (!hasSingleInstanceLock) {
         windows,
         appIconPath,
         appVariant,
-        analyticsCaptureUrl,
         developmentRemoteRole,
         developmentTestClientEnabled,
         hostedServer,

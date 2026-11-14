@@ -1,6 +1,0 @@
-abi <abi/4.0>,
-include <tunables/global>
-
-profile bob-hosted /opt/Bob/app/bob flags=(unconfined) {
-  userns,
-}

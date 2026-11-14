@@ -141,10 +141,6 @@ const context = createSimpleContext({
         const serverId = activeServerId();
         if (serverId) usage.openWorkflows(serverId, source);
       },
-      openUsage(source: HTMLElement | null) {
-        const serverId = activeServerId();
-        if (serverId) usage.openUsage(serverId, source);
-      },
       openSettings(source: HTMLElement | null) {
         settings.openAppSettings(source);
       },

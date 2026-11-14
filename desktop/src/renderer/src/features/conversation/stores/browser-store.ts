@@ -1,6 +1,6 @@
 import type { BrowserControlSession, BrowserPreview, BrowserTab } from "@bob/contracts/ipc";
 import { TEAM_BROWSER_NAVIGATION_CAPABILITY } from "@bob/contracts/team-protocol/current";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { toast } from "@bob/ui";
 import type { AgentProfile } from "@bob/ui/data";
 import { browserAddressUrl } from "@bob/ui/features/browser/browser-suggestions";

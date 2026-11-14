@@ -19,7 +19,7 @@ import {
 } from "@bob/contracts/ipc";
 import { type DynamicRecord, isString } from "@bob/contracts/runtime-values";
 import { createBobLogger } from "@bob/logging";
-import { type CauseCode, classifyFailure } from "@bob/telemetry";
+import { type CauseCode, classifyFailure } from "@bob/user-errors/failure";
 import { Cause, Deferred, Effect, Exit, Schema, Scope } from "effect";
 import type { AgentClient } from "../agent-client";
 import type { AgentStore } from "../agent-store";

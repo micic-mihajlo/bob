@@ -5,7 +5,7 @@ import type {
   BobDesktopApi,
   HermesImportPreview,
 } from "@bob/contracts/ipc";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { AgentImportSources } from "@bob/ui/features/import/AgentImportSources";
 import { type AgentImportPhase, type AgentImportSetup, AgentImportView } from "@bob/ui/features/import/AgentImportView";
 import {

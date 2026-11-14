@@ -1,16 +1,12 @@
 import type {
   AvatarImageInput,
-  HostedSitesDesktopApi,
   HostStatus,
-  InviteSummary,
   ServerNotificationLevel,
   ServerSummary,
-  TeamInviteSummary,
   TeamPresenceMember,
-  UpdateTeamMemberInput,
 } from "@bob/contracts/ipc";
 import type { AppTextKey } from "@bob/i18n";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import {
   Alert,
   AlertActions,
@@ -25,7 +21,6 @@ import {
   CalendarClock,
   ChevronRight,
   Download,
-  Globe2,
   HardDrive,
   KeyRound,
   Monitor,
@@ -35,24 +30,17 @@ import {
   Sparkles,
   Tabs,
   Text,
-  UsersRound,
 } from "@bob/ui";
-import type { LicenseCalls } from "@bob/ui/features/billing/license-store";
 import type { ProviderSettingsDetail } from "@bob/ui/features/settings/ProviderSettingsPage";
 import {
   SaveBarDock,
   SettingsDialogShell,
   type SettingsPagePlacement,
 } from "@bob/ui/features/settings/SettingsDialogShell";
-import { SettingsHostedSitesTab } from "@bob/ui/features/settings/SettingsHostedSitesTab";
-import {
-  createSettingsHostedSitesStore,
-  type HostedSiteDeleteResult,
-} from "@bob/ui/features/settings/stores/hosted-sites-store";
 import { useText } from "@bob/ui/text";
 import { createEffect, createSignal, onCleanup, Show, untrack } from "solid-js";
 import { actionToast } from "../../action-toast";
-import { BOB_ONLY, BOB_SINGLE_BOT } from "../../bob";
+import { BOB_SINGLE_BOT } from "../../bob";
 import { type ServerBrowserProfilesOptions, ServerBrowserProfilesPanel } from "../browser/ServerBrowserProfilesPanel";
 import { type ServerStorageOptions, ServerStoragePanel } from "../files/ServerStoragePanel";
 import { type HostProviderSettings, HostProviderSettingsPanel } from "../settings/ProviderSettingsSection";
@@ -63,10 +51,8 @@ import { ServerDesktopPanel } from "./ServerDesktopPanel";
 import { createServerGeneralSection } from "./ServerGeneralSection";
 import { type ServerImportDetail, type ServerImportOptions, ServerImportPanel } from "./ServerImportPanel";
 import { type McpPanelDetail, type McpPanelSignIn, ServerMcpPanel } from "./ServerMcpPanel";
-import { createServerMembersSection } from "./ServerMembersSection";
 import type { ServerMemoryLimitOptions } from "./ServerMemoryLimitSetting";
 import type { ServerMemoryReviewOptions } from "./ServerMemoryReviewSetting";
-import { createServerRolesSection, type ServerAgentAccessOptions } from "./ServerRolesSection";
 import { type ServerRoutineFeedOptions, ServerRoutineFeedPanel } from "./ServerRoutineFeedPanel";
 import type { ServerTimezoneOptions } from "./ServerTimezoneSetting";
 import { type ServerTransferOptions, ServerTransferPanel } from "./ServerTransferPanel";
@@ -82,7 +68,6 @@ export interface ServerSettingsModalProps {
   server: ServerSummary;
   hostStatus?: HostStatus | null;
   members: TeamPresenceMember[];
-  invites: TeamInviteSummary[];
   loading?: boolean;
   loadError?: string | null;
   restoreFocusTarget?: HTMLElement | null;
@@ -97,17 +82,6 @@ export interface ServerSettingsModalProps {
   /** The Notifications section appears only when a caller supplies both: they are desktop notifications. */
   onSetMuted?: (muted: boolean) => Promise<void>;
   onSetNotificationLevel?: (level: ServerNotificationLevel) => Promise<void>;
-  onCreateInvite: (input: { role: "admin" | "member"; email?: string; permanent?: boolean }) => Promise<InviteSummary>;
-  /**
-   * The license of the signed-in account. When the owner invites a person to a full license, the
-   * Members section first asks to add a user to it. Absent on surfaces with no account license.
-   */
-  license?: Pick<LicenseCalls, "getState" | "setUsers" | "changePlan"> | undefined;
-  /** Opens the contact page when a full license already has the most users that the app sells. */
-  onContactUs?: () => void;
-  onUpdateMember: (input: UpdateTeamMemberInput) => Promise<void>;
-  onRemoveMember: (memberId: string) => Promise<void>;
-  onRevokeInvite: (inviteId: string) => Promise<void>;
   /**
    * Ends this account's membership of a joined server. The Leave section appears only when a
    * caller supplies this: the browser client is attached to one host and cannot leave it.
@@ -159,11 +133,6 @@ export interface ServerSettingsModalProps {
    */
   storage?: ServerStorageOptions | undefined;
   /**
-   * The Sites section appears only when a caller supplies this: this computer, or a remote host with
-   * `hosted-sites-v1`. Every member reads the list; an owner or admin can delete.
-   */
-  hostedSites?: ServerHostedSitesOptions | undefined;
-  /**
    * The Providers section: this computer, or a remote host with `providers-v1` that this account
    * administers. A member gets no section.
    */
@@ -210,11 +179,6 @@ export interface ServerSettingsModalProps {
    */
   hostPromptCacheTtl?: HostPromptCacheTtlOptions | undefined;
   /**
-   * The Roles section appears only when a caller supplies this, and only for the local server or a
-   * remote host with `agent-access-v1` that this member administers.
-   */
-  agentAccess?: ServerAgentAccessOptions | undefined;
-  /**
    * The Routines section appears only when a caller supplies this: the feed listens on this
    * computer, so a remote server passes nothing.
    */
@@ -232,23 +196,12 @@ export interface ServerSettingsModalProps {
   page: SettingsPagePlacement | undefined;
 }
 
-export interface ServerHostedSitesOptions {
-  /** Called with this dialog's server. */
-  api: Pick<HostedSitesDesktopApi, "list" | "delete">;
-  onOpenSite: (url: string) => void;
-  /** Called as a deletion starts. It returns the call that records the result. */
-  trackDelete?: () => (result: HostedSiteDeleteResult) => void;
-}
-
 export type ServerSettingsSection =
   | "general"
   | "vault"
-  | "members"
-  | "roles"
   | "desktop"
   | "mcp"
   | "storage"
-  | "sites"
   | "providers"
   | "updates"
   | "import"
@@ -260,12 +213,9 @@ type Section = ServerSettingsSection;
 const sections = {
   general: { title: "server.settings.generalTitle", description: "server.settings.generalDescription" },
   vault: { title: "server.settings.vaultTitle", description: "server.settings.vaultDescription" },
-  members: { title: "server.settings.membersTitle", description: "server.settings.membersDescription" },
-  roles: { title: "server.settings.rolesTitle", description: "server.settings.rolesDescription" },
   desktop: { title: "server.settings.desktopTitle", description: "server.settings.desktopDescription" },
   mcp: { title: "server.settings.mcpTitle", description: "server.settings.mcpDescription" },
   storage: { title: "server.settings.storageTitle", description: "server.settings.storageDescription" },
-  sites: { title: "server.settings.hostedSitesTitle", description: "server.settings.hostedSitesDescription" },
   providers: { title: "server.settings.providersTitle", description: "server.settings.providersDescription" },
   updates: { title: "server.settings.updatesTitle", description: "server.settings.updatesDescription" },
   import: { title: "server.settings.importTitle", description: "server.settings.importDescription" },
@@ -286,7 +236,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
   const crumbDetail = () => {
     if (section() === "mcp") return mcpDetail();
     if (section() === "import") return importDetail();
-    if (section() === "roles") return roles.crumb();
     return section() === "providers" ? providerDetail() : null;
   };
   /** The key of the one action in flight, gating every panel at once rather than belonging to any. */
@@ -354,33 +303,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
     },
   };
   const general = createServerGeneralSection(host);
-  const roles = createServerRolesSection(host, () => section() === "roles" || section() === "members");
-  const members = createServerMembersSection(
-    host,
-    {
-      onSetUpDesktop: () => setSection("desktop"),
-      saveIdentityDraft: general.saveIdentityDraft,
-    },
-    roles,
-  );
-  const hostedSites = createSettingsHostedSitesStore(
-    {
-      get open() {
-        return props.open;
-      },
-      get serverId() {
-        return props.server.id;
-      },
-      get hostedSitesApi() {
-        return props.hostedSites?.api;
-      },
-      get trackDelete() {
-        return props.hostedSites?.trackDelete;
-      },
-    },
-    () => section() === "sites",
-  );
-
   /** Publishes the reserve to the shell stylesheet, which spends it as the panel's end padding. */
   createEffect(
     () => ({ element: modalElement(), height: toastHeight() }),
@@ -417,26 +339,14 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
         syncedServerId = id;
         setSection(untrack(availableInitialSection) ?? "general");
         general.resetForServer();
-        members.resetForServer();
-        roles.resetForServer();
       }
       if (!editing) general.syncFromServer(name, logoUrl);
     },
   );
 
-  /** Roles leaves with the access that gives it: a host that goes offline or a role that changes. */
+  /** With a single bot there is no vault, so an opener that names it lands on General. */
   createEffect(
-    () => section() === "roles" && !roles.available(),
-    (gone) => {
-      if (gone) setSection("members");
-    },
-  );
-
-  /** Bob has no team or hosted sites (and no vault with a single bot), so an opener that names one lands on General. */
-  createEffect(
-    () =>
-      (BOB_SINGLE_BOT && section() === "vault") ||
-      (BOB_ONLY && (section() === "members" || section() === "roles" || section() === "sites")),
+    () => BOB_SINGLE_BOT && section() === "vault",
     (hidden) => {
       if (hidden) setSection("general");
     },
@@ -486,12 +396,9 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
       if (
         value === "general" ||
         value === "vault" ||
-        value === "members" ||
-        value === "roles" ||
         value === "desktop" ||
         value === "mcp" ||
         value === "storage" ||
-        value === "sites" ||
         value === "providers" ||
         value === "updates" ||
         value === "import" ||
@@ -527,7 +434,7 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
         restoreFocusTarget={props.restoreFocusTarget}
         onContentElement={(element) => setModalElement(element)}
         floatingContent={
-          <Show when={props.loadError && (section() === "general" || section() === "members")}>
+          <Show when={props.loadError && section() === "general"}>
             <Alert
               ref={measureToast}
               class="server-settings-error-toast"
@@ -653,18 +560,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
                 <span>{t(sections.vault.title)}</span>
               </Tabs.Trigger>
             </Show>
-            <Show when={!BOB_ONLY}>
-              <Tabs.Trigger class="settings-modal-nav-item" value="members">
-                <UsersRound aria-hidden="true" />
-                <span>{t(sections.members.title)}</span>
-              </Tabs.Trigger>
-            </Show>
-            <Show when={!BOB_ONLY && roles.available()}>
-              <Tabs.Trigger class="settings-modal-nav-item" value="roles">
-                <ShieldCheck aria-hidden="true" />
-                <span>{t(sections.roles.title)}</span>
-              </Tabs.Trigger>
-            </Show>
             <Show when={remoteDesktopSection()}>
               <Tabs.Trigger class="settings-modal-nav-item" value="desktop">
                 <Monitor aria-hidden="true" />
@@ -681,12 +576,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
               <Tabs.Trigger class="settings-modal-nav-item" value="storage">
                 <HardDrive aria-hidden="true" />
                 <span>{t(sections.storage.title)}</span>
-              </Tabs.Trigger>
-            </Show>
-            <Show when={!BOB_ONLY && props.hostedSites}>
-              <Tabs.Trigger class="settings-modal-nav-item" value="sites">
-                <Globe2 aria-hidden="true" />
-                <span>{t(sections.sites.title)}</span>
               </Tabs.Trigger>
             </Show>
             <Show when={props.providers || props.onSwitchToManageProviders}>
@@ -738,16 +627,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
             </Tabs.Content>
           )}
         </Show>
-        <Show when={!BOB_ONLY}>
-          <Tabs.Content value="members" class="settings-modal-tab-panel server-settings-panel" data-tab="members">
-            <members.Panel />
-          </Tabs.Content>
-        </Show>
-        <Show when={!BOB_ONLY && roles.available()}>
-          <Tabs.Content value="roles" class="settings-modal-tab-panel server-settings-panel" data-tab="roles">
-            <roles.Panel />
-          </Tabs.Content>
-        </Show>
         <Show when={remoteDesktopSection()}>
           <Tabs.Content value="desktop" class="settings-modal-tab-panel server-settings-panel" data-tab="desktop">
             <ServerDesktopPanel server={props.server} platform={props.platform} hostStatus={props.hostStatus} />
@@ -785,18 +664,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
           {(storage) => (
             <Tabs.Content value="storage" class="settings-modal-tab-panel server-settings-panel" data-tab="storage">
               <ServerStoragePanel serverId={props.server.id} members={props.members} {...storage()} />
-            </Tabs.Content>
-          )}
-        </Show>
-        <Show when={!BOB_ONLY && props.hostedSites}>
-          {(sites) => (
-            <Tabs.Content value="sites" class="settings-modal-tab-panel server-settings-panel" data-tab="sites">
-              <SettingsHostedSitesTab
-                store={hostedSites}
-                available
-                canDelete={serverRoleCanAdminister(props.server)}
-                onOpenSite={sites().onOpenSite}
-              />
             </Tabs.Content>
           )}
         </Show>
@@ -900,7 +767,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
         </Show>
       </SettingsDialogShell>
 
-      <members.ConfirmDialogs />
       <general.LeaveDialog />
       <general.RotateKeyDialog />
     </Tabs.Root>

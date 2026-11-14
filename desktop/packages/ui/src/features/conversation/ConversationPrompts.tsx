@@ -6,7 +6,7 @@ import type {
   BrowserTakeoverRequest,
   LocalBrowserSecretResponse,
 } from "@bob/contracts/ipc";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { Badge, Button, Check, Input, LoaderCircle, LogIn, Maximize2, Monitor, RadioGroup, toast, X } from "@bob/ui";
 import { StandingApprovalConfirmation } from "@bob/ui/components/StandingApprovalConfirmation";
 import { BrowserSecretCard, type BrowserSecretVault } from "@bob/ui/features/conversation/BrowserSecretCard";

@@ -1,6 +1,6 @@
 import type { ClientAgentSummary } from "@bob/contracts/ipc";
 import { TEAM_AGENT_CREATE_MODEL_CAPABILITY } from "@bob/contracts/team-protocol/current";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { toast } from "@bob/ui";
 import type { AgentProfile } from "@bob/ui/data";
 import { AgentDeleteUndoToast, startUndoCountdown } from "@bob/ui/features/agents/AgentDeleteUndoToast";

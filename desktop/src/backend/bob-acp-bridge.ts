@@ -5,7 +5,7 @@
  * keeps the conversation, the goal and the tasks of one user.
  *
  * BOB_URL    The Worker. Main sets it to the deployed stage dev (`bob-url.ts`) before it starts the bridge,
- *            which imports nothing from this app so it runs outside the archive. Bare: http://localhost:1337.
+ *            which imports nothing from this app so it runs outside the archive. Bare: http://localhost:3000.
  * BOB_USER   The BobAgent instance, one for each user. Default: the user name on this computer.
  * BOB_SIDE   Set for the side questions that Bob asks (profiles, memory review). They go to a
  *            second instance, so they do not enter the user's conversation.
@@ -24,7 +24,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
-const BOB_URL = (process.env.BOB_URL || "http://localhost:1337").replace(/\/+$/u, "");
+const BOB_URL = (process.env.BOB_URL || "http://localhost:3000").replace(/\/+$/u, "");
 const BOB_USER = process.env.BOB_USER || userInfo().username;
 const AGENT_URL = `${BOB_URL}/agents/bob-agent/${encodeURIComponent(process.env.BOB_SIDE ? `${BOB_USER}-side` : BOB_USER)}`;
 

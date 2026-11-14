@@ -13,7 +13,7 @@ import {
 } from "@bob/contracts/team-protocol/provider-account-relay-v1";
 import { PROVIDER_ACCOUNTS_CAPABILITY } from "@bob/contracts/team-protocol/provider-accounts-v1";
 import { PROVIDER_USAGE_RESET_CAPABILITY } from "@bob/contracts/team-protocol/provider-usage-reset-v1";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { toast } from "@bob/ui";
 import type { ProviderAccountActions } from "@bob/ui/components/provider-accounts";
 import { currentText } from "@bob/ui/text";

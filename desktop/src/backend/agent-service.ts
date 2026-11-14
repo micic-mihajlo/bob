@@ -130,7 +130,7 @@ import { ContextResetBusyError } from "@bob/contracts/team-protocol/context-rese
 import type { QueueEditRequest } from "@bob/contracts/team-protocol/queue-edit-v1";
 import { sourceText } from "@bob/i18n/source";
 import { createBobLogger } from "@bob/logging";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { Cause, Deferred, Effect, Exit, Fiber, Result, Schema, Scope, Semaphore } from "effect";
 import { AgentMemories } from "./agent/agent-memories";
 import { AgentRemoval, AgentRemovalFailed } from "./agent/agent-removal";

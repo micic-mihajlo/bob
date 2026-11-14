@@ -465,8 +465,7 @@
     "mermaid": "catalog:",
     "@tanstack/virtual-core": "catalog:",
     "zod": "catalog:",
-    "@bob/i18n": "workspace:*",
-    "@bob/telemetry": "workspace:*"
+    "@bob/i18n": "workspace:*"
   },
   "peerDependencies": {
     "solid-js": "2.0.0-rc.18",

@@ -23,7 +23,6 @@ import { useText } from "@bob/ui/text";
 import { createEffect, createMemo } from "solid-js";
 import { desktopAnalytics } from "../../analytics";
 import { ProviderSignInDialogs } from "../../components/ProviderSignInDialogs";
-import { BOB_SINGLE_BOT } from "../../bob";
 import { useNavigation } from "../../navigation";
 import { usePlatform } from "../../platform";
 import { useProviders } from "../../providers";
@@ -52,7 +51,6 @@ import { useServers } from "../servers/servers-context";
 import { useSettings } from "../settings/settings-context";
 import { isReaderAuthor } from "../team/reader-identity";
 import { usePresence } from "../team/team-context";
-import { useUsage } from "../usage/usage-context";
 import { useWindowPage } from "../window/window-page-context";
 import { Conversation } from "./Conversation";
 import { useConversation } from "./conversation-context";
@@ -174,7 +172,6 @@ export function WorkspaceConversation(props: { account: () => CentralAuthUser })
     closeBrowserTab,
   } = useBrowserTabs();
   const { activeRemoteDesktopSession, remoteDesktopWorkspaceVisible, openRemoteDesktopWorkspace } = useRemoteDesktop();
-  const usage = useUsage();
   const windowPage = useWindowPage();
   // The composer never asks for usage itself. It reads the dock's reading, which is scoped to the
   // active agent's provider and model and cleared on a switch, because a second request would hit
@@ -497,11 +494,6 @@ export function WorkspaceConversation(props: { account: () => CentralAuthUser })
         })()}
         mcpSignedIn={(mcpServerId) =>
           serverSettingsTargetId() === activeServer()?.id && serverSettingsMcpSignIns()[mcpServerId]?.signedIn === true
-        }
-        onOpenUsage={
-          BOB_SINGLE_BOT
-            ? undefined
-            : (trigger) => usage.openUsage(activeServer()?.id ?? "local", trigger, activeAgent()?.id)
         }
         agentStatus={
           activeServer()?.kind === "remote" &&

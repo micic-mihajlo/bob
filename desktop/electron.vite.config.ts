@@ -16,7 +16,6 @@ export default defineConfig({
           "@bob/i18n",
           "@bob/logging",
           "@bob/team-client",
-          "@bob/telemetry",
           "@bob/user-errors",
         ],
       }),

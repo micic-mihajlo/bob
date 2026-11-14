@@ -1,4 +1,4 @@
-import { classifyFailure, type FailureProperties, type NotificationMetadata } from "@bob/telemetry";
+import { classifyFailure, type FailureProperties, type NotificationMetadata } from "@bob/user-errors/failure";
 import { errorReference } from "@bob/user-errors";
 import type { ComponentProps, JSX } from "@solidjs/web";
 import { createEffect, createSignal, omit, onSettled } from "solid-js";

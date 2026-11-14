@@ -1,4 +1,4 @@
-import { BookMarked, Bot, CalendarClock, Hash, Server, Store, UsersRound } from "@bob/ui";
+import { BookMarked, Bot, CalendarClock, Hash, Server, Store, } from "@bob/ui";
 import type {
   GlobalSearchAction,
   GlobalSearchFile,
@@ -9,7 +9,7 @@ import { useText } from "@bob/ui/text";
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { formatMessageTime } from "./app-message-projection";
 import { appPort } from "./app-port";
-import { BOB_ONLY, BOB_SINGLE_BOT } from "./bob";
+import { BOB_SINGLE_BOT } from "./bob";
 import { useAgents } from "./features/agents/agents-context";
 import { useChannels } from "./features/channels/channels-context";
 import { globalSearchChannels } from "./features/channels/global-search-channels";
@@ -17,10 +17,9 @@ import { serverCanAdminister } from "./features/servers/server-capabilities";
 import { useServerSettings } from "./features/servers/server-settings";
 import { useServers } from "./features/servers/servers-context";
 import { useSettings } from "./features/settings/settings-context";
-import { dynamicIslandSettingsShown, navItems, settingsTabShown } from "./features/settings/settings-tabs";
+import { navItems } from "./features/settings/settings-tabs";
 import { useUsage } from "./features/usage/usage-context";
 import { useNavigation } from "./navigation";
-import { usePlatform } from "./platform";
 
 const FILE_SEARCH_LIMIT = 50;
 
@@ -31,7 +30,6 @@ const FILE_SEARCH_LIMIT = 50;
  */
 export function useGlobalSearchSources(open: () => boolean) {
   const { t } = useText();
-  const platform = usePlatform();
   const channels = useChannels();
   const { agentList, agentSetupOpen, creatingAgent, openAgentSetup, setSettingsRequest } = useAgents();
   const { selectAgent, globalSearchOpener } = useNavigation();
@@ -111,7 +109,6 @@ export function useGlobalSearchSources(open: () => boolean) {
   const actions = createMemo<GlobalSearchAction[]>(
     () => {
       const server = activeServer();
-      const dynamicIslandShown = dynamicIslandSettingsShown(platform.appInfo()?.platform, platform.chatWindow !== null);
       const list: GlobalSearchAction[] = [];
       if (!BOB_SINGLE_BOT) {
         list.push({
@@ -153,8 +150,6 @@ export function useGlobalSearchSources(open: () => boolean) {
         });
       }
       for (const item of navItems) {
-        // Hosted servers shows only for an account with hosting, which the dialog checks when it opens.
-        if (!settingsTabShown(item.value, dynamicIslandShown)) continue;
         list.push({
           id: `settings:${item.value}`,
           label: t(item.titleKey),
@@ -174,18 +169,6 @@ export function useGlobalSearchSources(open: () => boolean) {
             icon: Server,
             run: () => openServerSettings(server.id, globalSearchOpener(), "general"),
           },
-          ...(BOB_ONLY
-            ? []
-            : [
-                {
-                  id: "server:members",
-                  label: t("server.settings.membersTitle"),
-                  detail: server.name,
-                  group: "settings" as const,
-                  icon: UsersRound,
-                  run: () => openServerSettings(server.id, globalSearchOpener(), "members"),
-                },
-              ]),
         );
         // General shows the row only to an admin of a host that can set it, and only while it is online.
         if (

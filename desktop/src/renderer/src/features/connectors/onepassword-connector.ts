@@ -1,5 +1,5 @@
 import { DISCONNECTED_ONEPASSWORD_CONNECTOR, type OnePasswordConnectorStatus } from "@bob/contracts/ipc";
-import { classifyFailure } from "@bob/telemetry";
+import { classifyFailure } from "@bob/user-errors/failure";
 import { currentText } from "@bob/ui/text";
 import { createSignal, onCleanup, onSettled } from "solid-js";
 import { actionToast } from "../../action-toast";
