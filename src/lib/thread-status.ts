@@ -25,6 +25,7 @@ const finalText = (s: State, turn: Turn): string | null => {
 function openQuestion(s: State, agent: Agent): NeedsYouItem | null {
   const turn = latestTurn(s, agent.id);
   if (!turn || turn.status !== "completed" || runningTurn(s, agent.id)) return null;
+  if (turn.messageIds.some((id) => messageById(s, id)?.inboxId)) return null;
   if (agent.kind !== "captain" && !fromPerson(s, turn)) return null;
   const text = finalText(s, turn)?.trim();
   if (!text || !/\?\s*$/m.test(text)) return null;
@@ -43,13 +44,24 @@ function failure(s: State, agent: Agent): NeedsYouItem | null {
 }
 
 /** Pending approvals, open questions and failed threads, newest first. */
+/** Vague asks the captain found in the inbox, each waiting on the person's answer. */
+function inboxQuestions(s: State): NeedsYouItem[] {
+  const captain = s.agents.find((a) => a.kind === "captain");
+  if (!captain) return [];
+  return (s.inbox ?? []).flatMap((item) =>
+    item.candidates
+      .filter((c) => c.verdict === "vague")
+      .map((c) => ({ id: `inbox:${item.id}:${c.id}`, agentId: captain.id, kind: "question" as const, title: `Unclear ask from ${item.source}`, detail: `"${c.quote}" ${c.question ?? ""}`.trim(), at: item.at })),
+  );
+}
+
 export function needsYou(s: State): NeedsYouItem[] {
   const approvals: NeedsYouItem[] = s.approvals
     .filter((a) => a.status === "pending")
     .map((a) => ({ id: `approval:${a.id}`, agentId: a.agentId, kind: "approval", title: a.title, detail: a.detail, approvalId: a.id, at: a.at }));
   const open = s.agents.filter((a) => !a.closedAt);
   const others = open.flatMap((a) => [openQuestion(s, a), failure(s, a)]).filter((x): x is NeedsYouItem => x !== null);
-  return [...approvals, ...others].sort((a, b) => b.at.localeCompare(a.at));
+  return [...approvals, ...others, ...inboxQuestions(s)].sort((a, b) => b.at.localeCompare(a.at));
 }
 
 function runStatusOf(s: State, agent: Agent, mine: NeedsYouItem[]): RunStatus {

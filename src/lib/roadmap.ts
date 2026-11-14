@@ -1,6 +1,6 @@
 import { newId, nowIso } from "./ids";
 import { MAX_TODAY, STAGES } from "./stages";
-import type { Roadmap, WorkOrder, WorkOrderStatus } from "./types";
+import type { Roadmap, WorkOrder, WorkOrderSource, WorkOrderStatus } from "./types";
 
 export type RoadmapResult = { ok: true; roadmap: Roadmap } | { ok: false; error: string };
 
@@ -83,11 +83,19 @@ const newOrder = (title: string): WorkOrder => ({
   artifactId: null,
 });
 
-/** Replaces the planned (not yet scheduled) work. Today is left alone. */
+/** Replaces the planned (not yet scheduled) work. Today is left alone, and so are work orders that came from the inbox. */
 export function setRoadmap(r: Roadmap, titles: string[], at: string = nowIso()): RoadmapResult {
   const clean = titles.map((t) => t.trim()).filter(Boolean);
   if (clean.length === 0) return fail("Give at least one work order title in workOrderTitles.");
-  return finalize({ ...r, backlog: clean.map(newOrder) }, at);
+  const fromInbox = (r.backlog ?? []).filter((w) => w.source);
+  return finalize({ ...r, backlog: [...fromInbox, ...clean.map(newOrder)] }, at);
+}
+
+/** Adds one work order to the backlog, quoting where it came from. */
+export function addSourcedOrder(r: Roadmap, title: string, source: WorkOrderSource, at: string = nowIso()): { roadmap: Roadmap; order: WorkOrder } {
+  const order = { ...newOrder(title), source };
+  const result = finalize({ ...r, backlog: [...(r.backlog ?? []), order] }, at);
+  return { roadmap: result.ok ? result.roadmap : r, order };
 }
 
 /** Picks today's work by id from today and the backlog. Unpicked open work goes back to the backlog. */

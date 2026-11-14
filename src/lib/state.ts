@@ -5,6 +5,7 @@ import type {
   Artifact,
   Delivery,
   DriveFile,
+  InboxItem,
   LiveMove,
   Message,
   Project,
@@ -39,6 +40,8 @@ export interface State {
   drive: DriveFile[];
   /** By pull request id: what each merge changed for the people who use the product. */
   releaseNotes?: Record<string, ReleaseNote>;
+  /** Optional: raw materials handed to the captain, newest first. */
+  inbox?: InboxItem[];
   /** Optional: by agent, the move its model is generating right now. Not carried across a restart. */
   live?: Record<AgentId, LiveMove>;
   /** By request id: model calls, tokens and estimated cost. */

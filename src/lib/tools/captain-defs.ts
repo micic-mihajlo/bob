@@ -1,4 +1,5 @@
 import { MAX_BUSY_THREADS } from "../crew";
+import { triageInbox, triageInboxSchema } from "../inbox";
 import { clip, define, type ToolDef } from "./define";
 import {
   advanceSchema,
@@ -26,6 +27,15 @@ import {
 } from "./threads";
 
 export const CAPTAIN_TOOLS: ToolDef[] = [
+  define({
+    name: "triage_inbox",
+    description:
+      "Record the asks in one inbox item (a meeting, feedback or a production error) in one call. A meeting can hold several asks. For each, quote its line exactly. An ask with a named user, a behaviour and an acceptance check passes the intent gate and goes to the backlog as a work order that quotes the line. One without them is vague: give the one question for the person instead. Never start threads from the inbox; the person promotes backlog work.",
+    schema: triageInboxSchema,
+    sets: ["captain"],
+    label: (i) => `Triaged ${i.candidates.length} ask${i.candidates.length === 1 ? "" : "s"} from the inbox`,
+    execute: triageInbox,
+  }),
   define({
     name: "start_thread",
     description: `Start a crew thread for one piece of work: a build thread to change code on its own branch, a review thread to check one pull request, or a research thread to answer a question from the code. It gets the next code, its own workspace and, for build, its own branch, and receives your brief. One open thread per role per work order; at most ${MAX_BUSY_THREADS} working at once. After it, end your turn: the thread reports back as a new turn.`,

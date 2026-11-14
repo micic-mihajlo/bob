@@ -22,6 +22,8 @@ export interface SendInput {
   continues?: MessageId;
   automatic?: boolean;
   via?: "voice";
+  inboxId?: string;
+  quote?: string;
 }
 
 export type SendErrorCode =
@@ -144,6 +146,8 @@ function buildMessage(input: SendInput, to: AgentId[]): Message {
     ...(input.continues ? { continues: input.continues } : {}),
     ...(input.automatic ? { automatic: true as const } : {}),
     ...(input.via ? { via: input.via } : {}),
+    ...(input.inboxId ? { inboxId: input.inboxId } : {}),
+    ...(input.quote ? { quote: input.quote } : {}),
     at: nowIso(),
   };
 }

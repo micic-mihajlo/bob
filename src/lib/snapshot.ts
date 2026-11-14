@@ -82,5 +82,6 @@ export function buildSnapshot(s: State): Snapshot {
     requests: requestControls(s),
     budgets: policyFor(s.project.id).budgets,
     live: s.live ?? {},
+    inbox: s.inbox ?? [],
   };
 }

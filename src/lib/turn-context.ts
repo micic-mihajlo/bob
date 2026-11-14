@@ -1,5 +1,6 @@
 import type { InboundItem, InboundRule, MoveRecord, TurnContext } from "./brain/types";
 import { artifactsBlock, crewBlock, historyBlock, messagesBlock, selfBlock, teamBlock, type Audience } from "./framing";
+import { inboxBlock } from "./inbox";
 import { agentById, agentName, messageById, type State } from "./state";
 import { toolsFor } from "./tools";
 import type { StartedTurn } from "./turn-start";
@@ -40,7 +41,7 @@ function silentTeammates(s: State, agentId: string, messages: Message[]): string
 const audienceOf = (agent: Agent): Audience => (agent.kind === "captain" ? "captain" : agent.kind === "crew" ? "crew" : "standing");
 
 function whoBlock(s: State, agent: Agent): string {
-  if (agent.kind === "captain") return crewBlock(s);
+  if (agent.kind === "captain") return [crewBlock(s), inboxBlock(s)].filter(Boolean).join("\n\n");
   if (agent.kind === "crew") return selfBlock(s, agent);
   return teamBlock(s, agent.id);
 }
