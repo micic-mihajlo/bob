@@ -64,23 +64,25 @@ describe("HydraDB memory", () => {
   });
 
   it("recalls this project's lessons first and the person's decisions, and the captain's prompt carries them", async () => {
-    const chunk = (id: string, project: string, score: number) => ({ id, chunk_content: `text ${id}`, source_title: id, relevancy_score: score, additional_metadata: { project } });
+    const chunk = (id: string, project: string, score: number) => ({ id, chunk_content: `text ${id}`, source_title: id, relevancy_score: score, additional_metadata: { project, kind: id.startsWith("lesson_") ? "lesson" : "instruction" } });
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (_url: string, init: RequestInit) => {
-        const body = JSON.parse(String(init.body)) as { collection: string };
-        const chunks = body.collection === "lessons" ? [chunk("other", "elsewhere", 0.9), chunk("mine", "invoices-app", 0.7)] : [chunk("dollars", "invoices-app", 0.8)];
+      vi.fn(async (url: string, init: RequestInit) => {
+        if (!url.endsWith("/query")) return new Response("{}", { status: 200 });
+        const body = JSON.parse(String(init.body)) as { collections: string[] };
+        expect(body.collections).toEqual(["lessons", "person_default"]);
+        const chunks = [chunk("lesson_other", "elsewhere", 0.9), chunk("decision_dollars", "invoices-app", 0.8), chunk("lesson_mine", "invoices-app", 0.7)];
         return new Response(JSON.stringify({ success: true, data: { chunks } }), { status: 200 });
       }),
     );
     const recall = await startRecall("export invoices", "invoices-app");
-    expect(recall?.items.map((m) => [m.id, m.source])).toEqual([["mine", "lesson"], ["other", "lesson"], ["dollars", "person"]]);
+    expect(recall?.items.map((m) => [m.id, m.source])).toEqual([["lesson_mine", "lesson"], ["lesson_other", "lesson"], ["decision_dollars", "person"]]);
     const s = withRecall(base(), { id: "m9", requestId: "r9" }, recall!, "2026-11-14T20:00:00.000Z");
     const captain = s.agents.find((a) => a.kind === "captain")!;
     const prompt = systemPrompt(captain, s);
     expect(prompt).toContain("What Bob learned before");
     expect(prompt).toContain("Remembered from you");
-    expect(prompt).toContain("text mine");
+    expect(prompt).toContain("text lesson_mine");
   });
 
   it("gives up after the timeout and stays out of the way when the store is off", async () => {

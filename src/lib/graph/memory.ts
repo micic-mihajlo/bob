@@ -142,12 +142,14 @@ interface Writer {
   latest: State | null;
   running: Promise<void> | null;
   downUntil: number;
+  warmUntil: number;
+  warmer: ReturnType<typeof setInterval> | null;
 }
 
 const KEY = "__bobMemoryWriter";
 function writer(): Writer {
   const g = globalThis as unknown as Record<string, Writer | undefined>;
-  g[KEY] ??= { written: new Map(), timer: null, latest: null, running: null, downUntil: 0 };
+  g[KEY] ??= { written: new Map(), timer: null, latest: null, running: null, downUntil: 0, warmUntil: 0, warmer: null };
   return g[KEY];
 }
 
@@ -155,6 +157,7 @@ function writer(): Writer {
 export function resetMemory(): void {
   const w = writer();
   if (w.timer) clearTimeout(w.timer);
+  if (w.warmer) clearInterval(w.warmer);
   (globalThis as unknown as Record<string, Writer | undefined>)[KEY] = undefined;
 }
 
@@ -196,7 +199,9 @@ async function writeChanged(c: HydraConfig, s: State): Promise<void> {
 
 /** Called on every commit: schedules one write of the memories that changed. Nothing waits on it. */
 export function rememberCommit(s: State): void {
-  if (!hydraConfig()) return;
+  const config = hydraConfig();
+  if (!config) return;
+  keepWarm(config);
   const w = writer();
   w.latest = s;
   if (w.timer) return;
@@ -224,15 +229,23 @@ interface Chunk {
   additional_metadata?: Record<string, unknown>;
 }
 
-async function query(c: HydraConfig, kind: MemoryItem["collection"], text: string, max: number, signal: AbortSignal): Promise<RecalledMemory[]> {
+/** Both collections in one request: one round trip, and one connection to keep warm. */
+async function query(c: HydraConfig, text: string): Promise<RecalledMemory[]> {
   const data = (await hydraFetch(
     c,
     "/query",
     {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ database: c.database, collection: collectionName(kind), query: text, type: "memory", mode: "fast", graph_context: false, max_results: max }),
-      signal,
+      body: JSON.stringify({
+        database: c.database,
+        collections: [collectionName("lessons"), collectionName("person")],
+        query: text,
+        type: "memory",
+        mode: "fast",
+        graph_context: false,
+        max_results: 6,
+      }),
     },
     RECALL_TIMEOUT_MS,
   )) as { chunks?: Chunk[] } | null;
@@ -245,7 +258,7 @@ async function query(c: HydraConfig, kind: MemoryItem["collection"], text: strin
     return [
       {
         id,
-        source: kind === "lessons" ? ("lesson" as const) : ("person" as const),
+        source: chunk.additional_metadata?.kind === "lesson" ? ("lesson" as const) : ("person" as const),
         title: chunk.source_title ?? id,
         text: chunk.chunk_content,
         score: Math.round((chunk.relevancy_score ?? 0) * 100) / 100,
@@ -264,14 +277,48 @@ export function startRecall(text: string, project: string): Promise<{ items: Rec
   const c = hydraConfig();
   const w = writer();
   if (!c || Date.now() < w.downUntil || !text.trim()) return null;
+  keepWarm(c);
   const started = Date.now();
-  const signal = AbortSignal.timeout(RECALL_TIMEOUT_MS);
-  const settle = (p: Promise<RecalledMemory[]>) => p.catch(() => [] as RecalledMemory[]);
-  return Promise.all([settle(query(c, "lessons", text, 3, signal)), settle(query(c, "person", text, 3, signal))]).then(([lessons, person]) => {
-    const ordered = [...lessons.filter((l) => l.project === project), ...lessons.filter((l) => l.project !== project), ...person];
-    return ordered.length > 0 ? { items: ordered, ms: Date.now() - started } : null;
-  });
+  return query(c, text)
+    .catch(() => [] as RecalledMemory[])
+    .then((found) => {
+      const lessons = found.filter((m) => m.source === "lesson");
+      const ordered = [...lessons.filter((l) => l.project === project), ...lessons.filter((l) => l.project !== project), ...found.filter((m) => m.source === "person")];
+      return ordered.length > 0 ? { items: ordered, ms: Date.now() - started } : null;
+    });
 }
+
+/** How long after the last activity Bob keeps its connection to HydraDB open. */
+const WARM_FOR_MS = 10 * 60_000;
+/** Under the client's idle-socket timeout, so the next recall skips the TLS handshake. */
+const WARM_EVERY_MS = 3_000;
+
+/**
+ * A cold connection costs a TLS handshake, about 100 ms of the recall's 300. While the person is active, a cheap
+ * status read every few seconds keeps the connection to HydraDB open.
+ */
+function keepWarm(c: HydraConfig): void {
+  const w = writer();
+  w.warmUntil = Date.now() + WARM_FOR_MS;
+  if (w.warmer) return;
+  w.warmer = setInterval(() => {
+    if (Date.now() > w.warmUntil || !hydraConfig()) {
+      clearInterval(w.warmer!);
+      w.warmer = null;
+      return;
+    }
+    void fetch(`${c.url}/databases/status?database=${encodeURIComponent(c.database)}`, {
+      headers: { authorization: `Bearer ${c.key}`, "api-version": "2" },
+      signal: AbortSignal.timeout(WRITE_TIMEOUT_MS),
+    })
+      .then((response) => response.body?.cancel())
+      .catch(() => undefined);
+  }, WARM_EVERY_MS);
+  w.warmer.unref?.();
+}
+
+const bootConfig = process.env.VITEST ? null : hydraConfig();
+if (bootConfig) keepWarm(bootConfig);
 
 /** Records a recall on the state, newest last, for the captain's prompt and the request's Why?. */
 export function withRecall(s: State, message: Pick<Message, "id" | "requestId">, recall: { items: RecalledMemory[]; ms: number }, at: string): State {
