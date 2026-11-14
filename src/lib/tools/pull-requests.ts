@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { acceptanceTampering } from "../acceptance";
 import { newId, nowIso } from "../ids";
+import { scheduleKnowledgeIngest } from "../graph/knowledge";
 import { resolveOnMerge } from "../inbox";
 import { completeWorkOrder, updateWorkOrder } from "../roadmap";
 import { agentById, type State } from "../state";
@@ -232,6 +233,7 @@ export async function mergePullRequestTool(input: z.infer<typeof mergeSchema>): 
     return fresh ? markMerged(x, fresh) : { state: x, value: null };
   });
   void shipToLinear(pr.id, recordReleaseNote(pr.id));
+  scheduleKnowledgeIngest();
   const resolved = transact((x) => {
     const fresh = findPullRequest(x, pr.id);
     if (!fresh) return { state: x, value: [] as InboxItem[] };

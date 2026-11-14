@@ -4,7 +4,7 @@ import { agentById, isCaptain, isClosed, isCrew, messageById, type State } from 
 import { addNotice, patchDelivery } from "./state-ops";
 import { transact } from "./store";
 import { subagentRule } from "./subagent-rules";
-import type { AgentId, Delivery, Message, MessageId, RequestId, Sender } from "./types";
+import type { AgentId, Delivery, KnowledgeContext, Message, MessageId, RequestId, Sender } from "./types";
 
 export const REQUEST_DELIVERY_BUDGET = 12;
 /** Deliveries of automatic hand-offs one request may get, counted apart from what the agents spend. */
@@ -25,6 +25,7 @@ export interface SendInput {
   inboxId?: string;
   shown?: string;
   quote?: string;
+  knowledge?: KnowledgeContext;
 }
 
 export type SendErrorCode =
@@ -150,6 +151,7 @@ function buildMessage(input: SendInput, to: AgentId[]): Message {
     ...(input.inboxId ? { inboxId: input.inboxId } : {}),
     ...(input.shown ? { shown: input.shown } : {}),
     ...(input.quote ? { quote: input.quote } : {}),
+    ...(input.knowledge ? { knowledge: input.knowledge } : {}),
     at: nowIso(),
   };
 }

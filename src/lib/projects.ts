@@ -4,6 +4,7 @@ import type { ActionResult } from "./actions";
 import { globals } from "./globals";
 import { seedState } from "./seed";
 import type { State } from "./state";
+import { scheduleKnowledgeIngest } from "./graph/knowledge";
 import { getConfig, getState, loadState, update } from "./store";
 import { sourceOf, workspaceOptions } from "./thread-workspace";
 import { hasProject, type Project, type ProjectTemplate } from "./types";
@@ -110,5 +111,6 @@ export async function openProject(input: { repo?: string; name?: string; templat
   if (busy(getState())) return { ok: false, error: `Bob started work in ${current.project.name} meanwhile. Try again when it finishes.` };
   park(getState());
   update(() => (saved ? loadState(saved) : { ...seedState(), project }));
+  scheduleKnowledgeIngest(project);
   return { ok: true, project };
 }

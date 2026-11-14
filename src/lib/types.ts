@@ -99,7 +99,16 @@ export interface Message {
   shown?: string;
   /** Optional: on a brief for a work order that came from the inbox, the source line it quotes. */
   quote?: string;
+  /** Optional: on a crew brief, what HydraDB recalled for it (BOB_STORE=hydra). */
+  knowledge?: KnowledgeContext;
   at: string;
+}
+
+/** The files and merged pull requests HydraDB recalled for a crew brief, and how long the recall took. */
+export interface KnowledgeContext {
+  files: { path: string; snippet: string }[];
+  prs: { number: number; title: string; files: string[] }[];
+  ms: number;
 }
 
 export type DeliveryStatus = "queued" | "running" | "completed" | "failed" | "cancelled";

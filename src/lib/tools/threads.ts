@@ -2,6 +2,7 @@ import { z } from "zod";
 import { briefWithAcceptance } from "../acceptance";
 import { branchName, MAX_BUSY_THREADS, nextThreadCode, ROLE_TEMPLATES, threadHue } from "../crew";
 import { nowIso } from "../ids";
+import { knowledgeSection, recallKnowledge, warmKnowledge } from "../graph/knowledge";
 import { inboxItem, isInboxRequest } from "../inbox";
 import { send } from "../mailbox";
 import { updateWorkOrder } from "../roadmap";
@@ -111,10 +112,14 @@ export async function startThread(input: StartInput, ctx: ToolContext): Promise<
   await stampThread(getState(), created.id, requestId).catch(() => undefined);
   const source = order?.source;
   const origin = source ? inboxItem(getState(), source.inboxId)?.messageId : undefined;
+  const brief = briefWithAcceptance(getState(), created, input.brief);
+  warmKnowledge(getState().project);
+  const knowledge = created.crewRole === "research" ? null : await recallKnowledge(getState(), [order?.title, input.title, input.brief].filter(Boolean).join("\n"));
   const sent = send({
     from: { kind: "agent", agentId: ctx.agentId },
     to: [created.id],
-    text: briefWithAcceptance(getState(), created, input.brief),
+    text: knowledge ? `${brief.trim()}\n\n${knowledgeSection(knowledge)}` : brief,
+    ...(knowledge ? { knowledge } : {}),
     expectsReply: true,
     replyTo: null,
     causedBy: origin ?? causeIn(getState(), ctx, requestId),
