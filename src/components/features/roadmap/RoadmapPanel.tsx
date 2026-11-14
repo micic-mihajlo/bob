@@ -114,7 +114,11 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                     <Card key={track.key} className="bob-roadmap-card" aria-label={goal?.title ?? "Goal"}>
                       <p className="bob-roadmap-label">Goal</p>
                       <h3 className="bob-roadmap-goal">{goal?.title ?? "No goal set yet"}</h3>
-                      {track.ask ? <p className="bob-roadmap-ask">“{track.ask}”</p> : null}
+                      {track.ask ? (
+                        <p className="bob-roadmap-ask" title={track.ask}>
+                          “{track.ask}”
+                        </p>
+                      ) : null}
                       {goal?.why ? <p className="bob-roadmap-muted">{goal.why}</p> : null}
                       {goal?.user ? <p className="bob-roadmap-muted">{forUserLine(goal.user)}</p> : null}
                       {goal?.behaviour ? <p className="bob-roadmap-muted">{goal.behaviour}</p> : null}

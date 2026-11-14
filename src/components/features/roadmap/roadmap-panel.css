@@ -85,8 +85,12 @@ button.bob-roadmap-source:focus-visible {
 
 /* The sentence the person typed, which every change for the request traces back to. */
 .bob-roadmap-ask {
+  display: -webkit-box;
+  overflow: hidden;
   color: var(--bob-text-secondary);
   font-size: var(--bob-text-sm);
   line-height: var(--bob-leading-sm);
   overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
