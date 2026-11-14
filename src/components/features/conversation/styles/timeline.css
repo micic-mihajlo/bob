@@ -392,3 +392,34 @@
   line-height: 16px;
   text-align: center;
 }
+
+/*
+ * The way back sits in its own band between the chat and the composer, so no line of the chat
+ * hides under it. The band takes its height from the chat while it shows.
+ */
+.scroll-to-latest-band {
+  display: flex;
+  flex: none;
+  justify-content: center;
+  padding-block: var(--bob-space-1) var(--bob-space-2);
+}
+
+.scroll-to-latest-band .scroll-to-latest {
+  position: static;
+  margin: 0;
+  transform: none;
+  animation: scroll-to-latest-in var(--bob-duration-fast) var(--bob-ease-out);
+}
+
+@keyframes scroll-to-latest-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-to-latest-band .scroll-to-latest {
+    animation: none;
+  }
+}
