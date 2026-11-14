@@ -16,6 +16,8 @@ export interface TrackView {
   stage: number;
   stageTitle: string;
   gates: StageGate[];
+  /** When the request was recorded, which its card's elapsed timer counts from. */
+  startedAt: string;
   /** Its work orders scheduled for today. */
   today: WorkOrder[];
   /** Its work orders not yet scheduled. */
@@ -30,8 +32,8 @@ export function trackViews(roadmap: Roadmap): { tracks: TrackView[]; backlog: Wo
   const backlog = roadmap.backlog ?? [];
   const tracks = roadmap.tracks ?? [];
   if (tracks.length === 0) {
-    const { goal, stage, stageTitle, gates, today } = roadmap;
-    return { tracks: [{ key: "roadmap", ask: null, goal, stage, stageTitle, gates, today, backlog }], backlog: [] };
+    const { goal, stage, stageTitle, gates, today, updatedAt } = roadmap;
+    return { tracks: [{ key: "roadmap", ask: null, goal, stage, stageTitle, gates, startedAt: updatedAt, today, backlog }], backlog: [] };
   }
   const active = tracks.filter((track) => track.stage < roadmap.totalStages);
   const shown = active.length > 0 ? active : [tracks.reduce((last, track) => (track.updatedAt >= last.updatedAt ? track : last))];
@@ -44,11 +46,18 @@ export function trackViews(roadmap: Roadmap): { tracks: TrackView[]; backlog: Wo
       stage: track.stage,
       stageTitle: track.stageTitle,
       gates: track.gates,
+      startedAt: track.startedAt,
       today: roadmap.today.filter(owns(track.requestId)),
       backlog: backlog.filter(owns(track.requestId)),
     })),
     backlog: backlog.filter((order) => !shown.some((track) => order.requestId === track.requestId)),
   };
+}
+
+/** How long a request has run: from `startedAt`, when it was recorded, to now. An unreadable start reads as zero. */
+export function elapsedSince(startedAt: string, now: number): number {
+  const recorded = Date.parse(startedAt);
+  return Number.isNaN(recorded) ? 0 : now - recorded;
 }
 
 /** The stage the work is in: the gate of the track's stage, else the first one not done. */
