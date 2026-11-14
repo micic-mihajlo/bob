@@ -62,8 +62,13 @@ describe("factory controls", { timeout: 60_000 }, () => {
       '1 thing needs you: approve the merge of #1\n\nAlert: "Customers want to export invoices as CSV: all invoices, col…" made 61 model calls, over its budget of 60.\n',
     );
 
-    const later = Date.parse(used.startedAt) + 4 * 60_000;
-    expect(requestControls({ ...getState(), turns: getState().turns.map((t) => ({ ...t, status: "running" as const })) }, later)[0].alerts[0]).toMatch(/has run 4m 00s, over its 3-minute budget/);
+    const waited = Date.now() + 30 * 60_000;
+    expect(requestControls(getState(), waited)[0]).toMatchObject({ seconds: used.seconds, running: false });
+    expect(requestControls(getState(), waited)[0].alerts.some((a) => /has run/.test(a))).toBe(false);
+
+    const last = getState().turns.at(-1)!;
+    const stuck = { ...getState(), turns: [...getState().turns, { ...last, id: "turn_stuck", status: "running" as const, startedAt: new Date(waited).toISOString(), endedAt: null }] };
+    expect(requestControls(stuck, waited + 4 * 60_000)[0].alerts[0]).toMatch(/has run 4m 0\ds, over its 3-minute budget/);
   });
 
   it("uses the project's policy in the gates: protected files on the approval, and its fix-round limit", async () => {

@@ -1,7 +1,7 @@
 import { costOf, policyFor, type Policy } from "./policy";
 import type { State } from "./state";
 import { update } from "./store";
-import type { RequestControl, RequestId, RequestUsage } from "./types";
+import type { RequestControl, RequestId, RequestUsage, Turn } from "./types";
 
 const EMPTY: RequestUsage = { modelCalls: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 };
 
@@ -37,6 +37,22 @@ function alertsOf(policy: Policy, c: Omit<RequestControl, "alerts">): string[] {
   ];
 }
 
+/**
+ * Time some turn of the request was running: the union of its turns, so parallel threads count once and
+ * the time it waited on the person (an approval, a question) counts not at all.
+ */
+function busyMs(turns: Turn[], now: number): number {
+  const spans = turns.map((t) => [Date.parse(t.startedAt), t.endedAt ? Date.parse(t.endedAt) : t.status === "running" ? now : Date.parse(t.startedAt)] as const).sort((a, b) => a[0] - b[0]);
+  let total = 0;
+  let reach = -Infinity;
+  for (const [start, end] of spans) {
+    const from = Math.max(start, reach);
+    if (end > from) total += end - from;
+    reach = Math.max(reach, end);
+  }
+  return total;
+}
+
 /** Every request a person started, newest first: what it took so far and any budget it crossed. */
 export function requestControls(s: State, now: number = Date.now()): RequestControl[] {
   const policy = policyFor(s.project.id);
@@ -47,13 +63,11 @@ export function requestControls(s: State, now: number = Date.now()): RequestCont
     .map((m) => {
       const turns = s.turns.filter((t) => t.requestId === m.requestId);
       const running = turns.some((t) => t.status === "running");
-      const ended = turns.flatMap((t) => (t.endedAt ? [Date.parse(t.endedAt)] : []));
-      const end = running ? now : Math.max(Date.parse(m.at), ...ended);
       const base = {
         requestId: m.requestId,
         ask: m.text,
         startedAt: m.at,
-        seconds: Math.max(0, Math.round((end - Date.parse(m.at)) / 1000)),
+        seconds: Math.round(busyMs(turns, now) / 1000),
         running,
         turns: turns.length,
         ...(s.usage?.[m.requestId] ?? EMPTY),

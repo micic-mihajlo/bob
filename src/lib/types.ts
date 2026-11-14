@@ -379,7 +379,7 @@ export interface RequestControl extends RequestUsage {
   /** The first thing the person typed for it. */
   ask: string;
   startedAt: string;
-  /** Wall time so far, or until its last turn ended. */
+  /** Time its turns were running, overlaps counted once. Time waiting on the person does not count. */
   seconds: number;
   running: boolean;
   turns: number;
