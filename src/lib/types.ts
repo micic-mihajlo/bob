@@ -332,6 +332,17 @@ export interface WhyHop {
   question?: string;
 }
 
+/** The models a Vercel Token Pass key can call, so the ones a crew thread can be set to. */
+export const THREAD_MODELS = [
+  "moonshotai/kimi-k3.1-pro",
+  "moonshotai/kimi-k3",
+  "moonshotai/kimi-k3-fast",
+  "zai/glm-5.3-fast",
+  "zai/glm-5.3-flash",
+  "deepseek/deepseek-v4.1-flash",
+  "deepseek/deepseek-v4.1-flash-fast",
+] as const;
+
 /**
  * Routes. Every POST answers `{ ok: true }` or `{ ok: false, error: string }` unless noted.
  *
@@ -348,6 +359,7 @@ export interface WhyHop {
  * GET  /api/agents/:id/files?path=...     -> WorkspaceListing               browse that thread's workspace
  * GET  /api/agents/:id/changes            -> WorkspaceChanges               that thread's branch against main
  * POST /api/agents/:id/close              {}                                close a crew thread
+ * POST /api/agents/:id/model              { model }                         pick a crew thread's model, one of THREAD_MODELS
  * POST /api/reset                         {}                                back to the seeded team
  */
 export const API = {
@@ -361,6 +373,7 @@ export const API = {
   agentFiles: (id: AgentId, path = "") => `/api/agents/${id}/files?path=${encodeURIComponent(path)}`,
   agentChanges: (id: AgentId) => `/api/agents/${id}/changes`,
   agentClose: (id: AgentId) => `/api/agents/${id}/close`,
+  agentModel: (id: AgentId) => `/api/agents/${id}/model`,
   why: (messageId: MessageId) => `/api/why?messageId=${encodeURIComponent(messageId)}`,
   reset: "/api/reset",
   verification: "/api/verification",

@@ -1,6 +1,7 @@
 import { openAsk } from "./brain/intake";
 import { globals } from "./globals";
 import { newId } from "./ids";
+import { isThreadModel, unknownModel } from "./models";
 import { interrupt, type InterruptResult } from "./interrupt";
 import { send } from "./mailbox";
 import { relayOwed } from "./relay";
@@ -126,6 +127,17 @@ export function closeThreadByPerson(agentId: AgentId): ActionResult {
     if (agent.kind !== "crew") return { state: s, value: { ok: false, error: `${agent.name} is not a crew thread.` } };
     if (agent.closedAt) return { state: s, value: { ok: true } };
     return { state: closeThreadState(s, agentId, "you"), value: { ok: true } };
+  });
+}
+
+/** The person picks the model a crew thread runs on. Its next turn uses it. */
+export function setThreadModelByPerson(agentId: AgentId, model: string): ActionResult {
+  return transact<ActionResult>((s) => {
+    const agent = agentById(s, agentId);
+    if (!agent) return { state: s, value: unknownAgent(agentId) };
+    if (agent.kind !== "crew") return { state: s, value: { ok: false, error: `${agent.name} is not a crew thread.` } };
+    if (!isThreadModel(model)) return { state: s, value: { ok: false, error: unknownModel(model) } };
+    return { state: { ...s, agents: s.agents.map((a) => (a.id === agentId ? { ...a, model } : a)) }, value: { ok: true } };
   });
 }
 
