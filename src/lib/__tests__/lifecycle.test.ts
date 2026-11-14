@@ -25,7 +25,7 @@ function claim(agentId: string): string {
 describe("boot sweep", () => {
   beforeEach(freshStandingTeam);
 
-  it("closes turns a restart cut off, replays only those that did nothing, and keeps approvals", async () => {
+  it("closes turns a restart cut off, runs each of them once more, and keeps approvals", async () => {
     postUserMessage("researcher", "find invoice formats");
     postUserMessage("reviewer", "check the export");
     await settle();
@@ -52,7 +52,8 @@ describe("boot sweep", () => {
     const swept = getState();
     expect(swept.turns.filter((t) => t.status === "running")).toHaveLength(0);
     expect(swept.turns.find((t) => t.id === busy)?.status).toBe("interrupted");
-    expect(swept.deliveries.find((d) => d.turnId === busy)?.status).toBe("failed");
+    const busyDelivery = saved.deliveries.find((d) => d.turnId === busy)?.id;
+    expect(swept.deliveries.find((d) => d.id === busyDelivery)).toMatchObject({ status: "queued", turnId: null });
     expect(swept.threads.researcher.some((i) => i.kind === "notice" && /restarted/.test(i.text))).toBe(true);
     expect(swept.threads.coder.some((i) => i.kind === "notice" && /restarted/.test(i.text))).toBe(true);
     expect(swept.approvals[0].status).toBe("pending");
@@ -64,6 +65,7 @@ describe("boot sweep", () => {
     const replayed = after.turns.filter((t) => t.agentId === "coder" && t.id !== idle && t.status === "completed");
     expect(replayed.length).toBeGreaterThan(0);
     expect(after.threads.coder.filter((i) => i.kind === "user_text" && i.text === "and then the import")).toHaveLength(1);
+    expect(after.turns.filter((t) => t.agentId === "researcher" && t.id !== busy && t.status === "completed").length).toBeGreaterThan(1);
     expect(buildSnapshot(after).activity.bob.state).toBe("needs_you");
     expect(decideApproval("apr_1", "denied").ok).toBe(true);
   });
