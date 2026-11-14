@@ -76,6 +76,26 @@ export function pullRequestForApproval(artifacts: readonly Artifact[], approval:
   return requests.find((artifact) => artifact.requestId === approval.requestId);
 }
 
+export type PreviewTone = "pending" | "passed" | "failed" | "stale";
+
+/**
+ * The preview deployment's line on the pull request card: the check's pass or fail once a review ran
+ * it, or the deployment's state before that. A preview built from another head is stale.
+ */
+export function previewStatus(pullRequest: PullRequestData): { label: string; tone: PreviewTone } | null {
+  const preview = pullRequest.preview;
+  if (!preview) return null;
+  if (preview.headSha !== pullRequest.headSha) return { label: "Built from an older head", tone: "stale" };
+  if (preview.check) {
+    const status = preview.check.status === null ? "" : ` (${preview.check.status})`;
+    return preview.check.ok ? { label: `Check passed${status}`, tone: "passed" } : { label: `Check failed${status}`, tone: "failed" };
+  }
+  if (preview.state === "building") return { label: "Building", tone: "pending" };
+  if (preview.state === "ready") return { label: "Ready, not checked yet", tone: "pending" };
+  if (preview.state === "missing") return { label: "No deployment for this head", tone: "failed" };
+  return { label: "Deployment failed", tone: "failed" };
+}
+
 export function changeTotals(files: readonly ChangedFile[]): { additions: number; deletions: number } {
   return files.reduce((sum, file) => ({ additions: sum.additions + file.additions, deletions: sum.deletions + file.deletions }), {
     additions: 0,

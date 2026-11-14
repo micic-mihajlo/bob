@@ -716,6 +716,50 @@
   overflow-wrap: anywhere;
 }
 
+/* The pull request's GitHub link and its preview, with the preview check's mark. */
+.approval-detail-row strong:has(.pull-request-note) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bob-space-1) var(--bob-space-2);
+}
+
+.pull-request-link {
+  color: var(--bob-text-primary);
+  text-decoration: underline;
+  text-decoration-color: var(--bob-border-strong);
+  text-underline-offset: 2px;
+}
+
+.pull-request-link:hover {
+  text-decoration-color: currentColor;
+}
+
+.pull-request-note {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bob-space-1);
+  color: var(--bob-text-muted);
+  font-family: var(--bob-font-sans);
+}
+
+.pull-request-note svg {
+  width: var(--bob-icon-xs);
+  height: var(--bob-icon-xs);
+}
+
+.pull-request-note[data-tone="passed"] {
+  color: var(--bob-success-text);
+}
+
+.pull-request-note[data-tone="failed"] {
+  color: var(--bob-danger-text);
+}
+
+.pull-request-note[data-tone="stale"] {
+  color: var(--bob-warning-text);
+}
+
 .approval-permissions {
   display: grid;
   gap: var(--bob-space-2);
