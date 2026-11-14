@@ -3,7 +3,7 @@ import { newId, nowIso } from "../ids";
 import type { State } from "../state";
 import { addThreadItem, stamp } from "../state-ops";
 import { transact, update } from "../store";
-import { findPullRequest } from "../threads";
+import { findPullRequest, type PullRequestArtifact } from "../threads";
 import type { Approval, Artifact } from "../types";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
 
@@ -40,7 +40,7 @@ type ApprovalInput = z.infer<typeof requestApprovalSchema>;
 
 const WAIT_NOTE = "A person will decide. You will get a new turn with the decision.";
 
-function addApproval(s: State, input: ApprovalInput, ctx: ToolContext, pullRequestId: string | undefined): { state: State; value: string } {
+function addApproval(s: State, input: ApprovalInput, ctx: ToolContext, pr: PullRequestArtifact | undefined): { state: State; value: string } {
   const approval: Approval = {
     id: newId("apr"),
     agentId: ctx.agentId,
@@ -50,7 +50,7 @@ function addApproval(s: State, input: ApprovalInput, ctx: ToolContext, pullReque
     detail: input.detail,
     status: "pending",
     at: nowIso(),
-    ...(pullRequestId ? { pullRequestId } : {}),
+    ...(pr ? { pullRequestId: pr.id, headSha: pr.pullRequest.headSha } : {}),
   };
   const state = addThreadItem({ ...s, approvals: [...s.approvals, approval] }, ctx.agentId, { kind: "approval", ...stamp(), approvalId: approval.id });
   return { state, value: approval.id };
@@ -63,7 +63,7 @@ export function requestApproval(input: ApprovalInput, ctx: ToolContext): ToolOut
     if (pr?.pullRequest.merged) return { state: s, value: fail(`#${pr.pullRequest.number} is already merged.`) };
     const pending = pr && s.approvals.find((a) => a.pullRequestId === pr.id && a.status === "pending");
     if (pending) return { state: s, value: done({ approvalId: pending.id, note: `Already waiting on the person. ${WAIT_NOTE}` }, { endTurn: true }) };
-    const added = addApproval(s, input, ctx, pr?.id);
+    const added = addApproval(s, input, ctx, pr);
     return { state: added.state, value: done({ approvalId: added.value, note: WAIT_NOTE }, { endTurn: true }) };
   });
 }

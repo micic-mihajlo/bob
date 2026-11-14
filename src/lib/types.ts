@@ -137,6 +137,8 @@ export interface Approval {
   at: string;
   /** Set when the approval is for merging one pull request artifact. Merging checks it. */
   pullRequestId?: string;
+  /** The pull request's head when the person was asked. Merging refuses once the head has moved. */
+  headSha?: string;
 }
 
 /** Something an agent produced: a pull request, a note, a review. */

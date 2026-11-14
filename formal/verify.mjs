@@ -57,7 +57,9 @@ const lake = findLake();
 const record = lake ? checkProofs(lake) : null;
 if (!record) console.log(`verify: skipping the Lean proofs because lake is not installed. Install Lean with:\n  ${INSTALL}\nthen run pnpm verify again.`);
 
+const save = (conformance) => record && writeFileSync(path.join(formal, "last-check.json"), JSON.stringify({ ...record, conformance }, null, 2) + "\n");
+save("running");
 console.log("verify: conformance tests");
 const tests = spawnSync("pnpm", ["exec", "vitest", "run", "formal"], { cwd: repo, stdio: "inherit" });
+save(tests.status === 0 ? "passed" : "failed");
 if (tests.status !== 0) fail("conformance tests failed.");
-if (record) writeFileSync(path.join(formal, "last-check.json"), JSON.stringify({ ...record, conformance: "passed" }, null, 2) + "\n");
