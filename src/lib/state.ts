@@ -7,6 +7,7 @@ import type {
   DriveFile,
   InboxItem,
   LiveMove,
+  MemoryRecall,
   Message,
   Project,
   ReleaseNote,
@@ -51,6 +52,8 @@ export interface State {
   equivalentMutants?: EquivalentMutant[];
   /** By request id: model calls, tokens and estimated cost. */
   usage?: Record<RequestId, RequestUsage>;
+  /** Optional: what HydraDB recalled for the person's recent messages to the captain, oldest first. */
+  recalls?: MemoryRecall[];
   rev: number;
 }
 

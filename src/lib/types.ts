@@ -489,6 +489,29 @@ export interface Snapshot {
   linear?: { on: boolean; error: string | null };
   /** Whether the person's own Claude is connected for SDK turns. Never the credential. */
   claude?: ClaudeStatus;
+  /** What HydraDB recalled for the person's recent messages to the captain, oldest first. */
+  recalls?: MemoryRecall[];
+}
+
+/** One memory HydraDB recalled: a lesson from a finished request, or something the person decided. */
+export interface RecalledMemory {
+  id: string;
+  source: "lesson" | "person";
+  title: string;
+  text: string;
+  /** HydraDB's relevancy score, 0 to 1. */
+  score: number;
+  /** On a lesson: the project it came from. */
+  project?: string;
+}
+
+/** What HydraDB recalled for one message the person wrote to the captain, and how long it took. */
+export interface MemoryRecall {
+  messageId: MessageId;
+  requestId: RequestId;
+  at: string;
+  ms: number;
+  items: RecalledMemory[];
 }
 
 /** Model use the factory recorded for one request, from the AI SDK's usage on each call. */
