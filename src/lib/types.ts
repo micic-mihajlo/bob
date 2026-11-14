@@ -338,7 +338,9 @@ export interface WhyHop {
  * GET  /api/state                         -> Snapshot
  * GET  /api/events                        -> text/event-stream, `data: {"rev": number}` on every change
  * POST /api/agents                        { name, title, description }      -> { ok: true, agentId }
- * POST /api/agents/:id/messages           { text }                          a person types into that thread
+ * POST /api/agents/:id/messages           { text, mode? }                   a person types into that thread; mode "steer"
+ *                                                                             lands in its running turn at the next step,
+ *                                                                             "queue" (default) runs after it -> { messageId, steered }
  * POST /api/agents/:id/interrupt          {}                                stop that agent's running turn
  * POST /api/agents/:id/read               {}                                mark that thread read
  * POST /api/approvals/:id                 { decision: "approved" | "denied" }
