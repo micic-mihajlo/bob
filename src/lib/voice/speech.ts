@@ -3,6 +3,9 @@
 /** The client tool the ElevenLabs agent calls with what the person said. Must match the tool config. */
 export const SEND_TO_BOB = "send_to_bob";
 
+/** How the browser hands Bob's answer back into the call, and how the agent knows to say it. */
+export const BOB_ANSWER = "Bob's answer:";
+
 /** What Bob says when the call connects. */
 export const FIRST_MESSAGE = "Hi, this is Bob. What do you want built?";
 
