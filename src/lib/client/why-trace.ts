@@ -66,6 +66,6 @@ export function buildWhyTrace(hops: readonly WhyHop[]): WhyTraceModel {
       label: index > 0 ? formatElapsed(gap) : "",
     };
   });
-  const agents = new Set(hops.filter((hop) => hop.message.from.kind === "agent").map((hop) => hop.fromName));
+  const agents = new Set(hops.flatMap((hop) => (hop.message.from.kind === "agent" ? [hop.fromName, ...hop.toNames] : hop.toNames)));
   return { spans, durationMs, ticks: ticksFor(durationMs), agentCount: agents.size };
 }

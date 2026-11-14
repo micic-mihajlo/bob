@@ -7,7 +7,14 @@ import type { Agent, Artifact, Snapshot, ThreadItem, WhyHop } from "@/lib/types"
 
 const at = (minute: number, second = 0) => new Date(Date.UTC(2026, 10, 14, 9, minute, second)).toISOString();
 
-const step = (id: string, turnId: string, minute: number): ThreadItem => ({ kind: "step", id, turnId, tool: "read_file", label: `Reading ${id}`, at: at(minute) });
+const step = (id: string, turnId: string, minute: number): ThreadItem => ({
+  kind: "step",
+  id,
+  turnId,
+  tool: "read_file",
+  label: `Reading ${id}`,
+  at: at(minute),
+});
 
 const ITEMS: ThreadItem[] = [
   { kind: "user_text", id: "u1", text: "customers want CSV", at: at(0) },
@@ -58,7 +65,13 @@ describe("buildConversationRows", () => {
   });
 
   it("shows a review only in the reviewer's own thread", () => {
-    const review: Artifact = { ...pullRequest("inv-2", "tx", 9), id: "rv", kind: "review", pullRequest: undefined, review: { pullRequestId: "pr-inv-1", verdict: "approve", findings: [] } };
+    const review: Artifact = {
+      ...pullRequest("inv-2", "tx", 9),
+      id: "rv",
+      kind: "review",
+      pullRequest: undefined,
+      review: { pullRequestId: "pr-inv-1", verdict: "approve", findings: [] },
+    };
     expect(buildConversationRows(ITEMS, null, "bob", [review]).some((row) => row.kind === "artifact")).toBe(false);
   });
 });
@@ -97,6 +110,14 @@ describe("buildWhyTrace", () => {
     expect(trace.spans.at(-1)).toMatchObject({ fromPerson: true, text: "customers want to export invoices as CSV", at: 0, width: 0.25, label: "10s" });
     expect(trace.spans[0]).toMatchObject({ at: 1, width: 0, label: "" });
     expect(trace.ticks.map((tick) => tick.label)).toEqual(["0s", "10s", "20s", "30s", "40s"]);
+  });
+
+  it("counts an agent that only received a message on the path", () => {
+    const trace = buildWhyTrace([
+      hop("m2", 10, { kind: "agent", agentId: "bob" }, "Bob", ["FIR-1"], "Goal: export invoices as CSV"),
+      hop("m1", 0, { kind: "user" }, "You", ["Bob"], "customers want to export invoices as CSV"),
+    ]);
+    expect(trace.agentCount).toBe(2);
   });
 });
 
