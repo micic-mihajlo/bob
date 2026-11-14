@@ -197,7 +197,7 @@ export function promoteInboxOrder(workOrderId: string): { ok: true; messageId: s
   const order = (s.roadmap.backlog ?? []).find((w) => w.id === workOrderId);
   if (!captain || !order?.source) return { ok: false, error: `No inbox work order ${workOrderId} in the backlog.` };
   const text = `Build work order ${order.id} now: ${JSON.stringify(order.title)}. It came from ${order.source.label}: "${order.source.quote}". It is already in the backlog, so don't plan it again with set_roadmap: put ${order.id} in today with set_today and start its build thread with workOrderId ${order.id}.`;
-  const sent = send({ from: { kind: "user" }, to: [captain.id], text, expectsReply: false, replyTo: null, causedBy: null, requestId: newId("req") });
+  const sent = send({ from: { kind: "user" }, to: [captain.id], text, shown: `Build this: ${order.title}`, expectsReply: false, replyTo: null, causedBy: null, requestId: newId("req") });
   if (!sent.ok) return { ok: false, error: sent.error.message };
   drain(captain.id);
   return { ok: true, messageId: sent.message.id };
