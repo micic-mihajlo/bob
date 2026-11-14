@@ -26,3 +26,27 @@ npx wrangler deploy && npx wrangler secret put BOB_DURABLE_SECRET
 ```
 
 Bob writes through to it with `BOB_DURABLE=cloudflare`, `BOB_DURABLE_URL` and `BOB_DURABLE_SECRET`.
+
+## The captain on Pi Durable (`bob-captain`, wrangler.captain.jsonc)
+
+A sibling Worker runs Bob's captain on [Pi Durable](https://developers.cloudflare.com/agents/harnesses/pi/) with the Agents SDK's
+`PiHarness`: one `BobCaptain` Durable Object per Bob instance and project, model `deepseek/deepseek-v4.1-flash` through the AI
+Gateway. Pi keeps the transcript, the inbox and every step in the object's SQLite, so a captain turn survives Bob's server dying
+mid-turn. The tools stay in Bob: Bob sends its live system prompt and the captain's tools with each turn, and each tool is a remote
+call back to Bob's `POST /api/captain/tools`, where the factory rules run.
+
+| Route | |
+|---|---|
+| `POST /captain/:project/turn` | starts the turn, or rejoins it when `operationId` was already submitted; streams NDJSON |
+| `POST /captain/:project/abort` | ends a turn Bob closed on its side |
+
+Both need `x-bob-durable-secret` and `x-bob-namespace`, as above.
+
+```sh
+npx wrangler deploy -c wrangler.captain.jsonc
+npx wrangler secret put BOB_DURABLE_SECRET -c wrangler.captain.jsonc
+npx wrangler secret put AI_GATEWAY_API_KEY -c wrangler.captain.jsonc
+```
+
+Bob uses it with `BOB_CAPTAIN_ENGINE=pi-durable`, `BOB_CAPTAIN_URL` (this Worker), `BOB_DURABLE_SECRET`, and `BOB_PUBLIC_URL`, a
+URL the Worker can reach Bob's server on (for a laptop, `cloudflared tunnel --url http://localhost:3000`).

@@ -1,6 +1,7 @@
 import { autopilotCalls } from "./autopilot";
 import { brainKind, getBrain } from "./brain";
 import { runSdkTurn, usesSdk } from "./brain/agent-sdk";
+import { runPiTurn, usesPi } from "./brain/pi-durable";
 import type { CallRecord, MoveRecord, ToolCallRequest } from "./brain/types";
 import { globals } from "./globals";
 import { newId, nowIso } from "./ids";
@@ -120,7 +121,7 @@ async function runTurn(t: StartedTurn): Promise<void> {
     moves.push({ text: null, calls: executed.calls });
     if (executed.endTurn) return finishTurn(t, null);
   }
-  if (usesSdk(t.agentId)) return runSdk(t, initial, moves, workspace);
+  if (usesSdk(t.agentId) || usesPi(t.agentId)) return runSdk(t, initial, moves, workspace);
   for (let i = 0; i < limit; i++) {
     if (Date.now() - started > MAX_TURN_MS) {
       final = TIME_LIMIT_TEXT;
@@ -155,7 +156,7 @@ async function runTurn(t: StartedTurn): Promise<void> {
 async function runSdk(t: StartedTurn, initial: State, moves: MoveRecord[], workspace: string | null): Promise<void> {
   const built = isRunning(t.turnId) ? buildContext(getState(), initial, t, moves, workspace) : null;
   if (!built) return finishStopped(t);
-  const { outcome, moves: made } = await runSdkTurn(built, t.messageIds[0] ?? null, liveMove(t.agentId, t.turnId), drain, MAX_TURN_MS);
+  const { outcome, moves: made } = await (usesPi(t.agentId) ? runPiTurn : runSdkTurn)(built, t.messageIds[0] ?? null, liveMove(t.agentId, t.turnId), drain, MAX_TURN_MS);
   if (outcome.kind === "stopped" || !isRunning(t.turnId)) return finishStopped(t);
   if (outcome.kind === "ended") return finishChecked(t, null);
   if (outcome.kind === "answered") return finishChecked(t, outcome.text);
