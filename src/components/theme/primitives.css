@@ -2578,3 +2578,13 @@ button.ui-bubble-content {
 .ui-toaster [data-sonner-toast]::after {
   -webkit-app-region: no-drag;
 }
+
+/* The tooltip TitleTooltips opens for a title attribute, placed in viewport coordinates. */
+.ui-tooltip.bob-title-tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  max-width: min(320px, calc(100vw - 16px));
+  overflow-wrap: anywhere;
+}
+
