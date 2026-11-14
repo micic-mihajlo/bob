@@ -49,10 +49,11 @@ interface Request {
   buildId: string | null;
   stageAtApproval: number | null;
   approvalId: string | null;
+  approvedIds: string[];
   at: Record<string, number>;
 }
 
-const newRequest = (key: string, vague: string, testable: string): Request => ({ key, vague, testable, postedAt: null, answers: 0, pushback: null, buildId: null, stageAtApproval: null, approvalId: null, at: {} });
+const newRequest = (key: string, vague: string, testable: string): Request => ({ key, vague, testable, postedAt: null, answers: 0, pushback: null, buildId: null, stageAtApproval: null, approvalId: null, approvedIds: [], at: {} });
 
 const A = newRequest(
   "A",
@@ -283,8 +284,8 @@ function trackRequest(s: Snapshot, r: Request): void {
     const lastAsk = reviews.findLastIndex((x) => x.review?.verdict === "request_changes");
     if (reviews.slice(lastAsk + 1).some((x) => x.review?.verdict === "approve")) mark(r, "changes_fixed");
   }
-  const approval = s.approvals.find((a: Approval) => !!a.pullRequestId && prIds.includes(a.pullRequestId));
-  if (approval?.status === "pending" && (s.needsYou ?? []).some((n) => n.approvalId === approval.id)) {
+  const approval = s.approvals.filter((a: Approval) => !!a.pullRequestId && prIds.includes(a.pullRequestId) && a.status === "pending").at(-1);
+  if (approval && (s.needsYou ?? []).some((n) => n.approvalId === approval.id)) {
     r.approvalId = approval.id;
     r.stageAtApproval ??= s.roadmap.stage;
     mark(r, "approval_pending", approval.title);
@@ -405,9 +406,12 @@ async function phase(reqs: Request[], restartAt: Request | null): Promise<{ stop
       continue;
     }
     for (const r of reqs) {
-      if (!r.approvalId || r.at.approved !== undefined) continue;
+      if (!r.approvalId || r.approvedIds.includes(r.approvalId)) continue;
+      r.approvedIds.push(r.approvalId);
       const res = await post(`/api/approvals/${r.approvalId}`, { decision: "approved" });
-      mark(r, "approved", res.ok ? "" : `failed: ${res.error}`);
+      const outcome = res.ok ? "" : `failed: ${res.error}`;
+      if (r.at.approved === undefined) mark(r, "approved", outcome);
+      else log(`${r.key}: approved again (${r.approvedIds.length}) ${outcome}`);
     }
     if (reqs.every((r) => r.postedAt !== null && done(r))) break;
     if ((Date.now() - clock) / 1000 > TIMEOUT_S) { stopReason = `timeout after ${TIMEOUT_S}s`; break; }
@@ -513,7 +517,7 @@ async function verdicts(final: Snapshot, stopReason: string): Promise<Row[]> {
     if (bPr && bWhy.typed !== null && ![B.vague, B.testable].includes(bWhy.typed)) problems.push(`B's PR traces to ${JSON.stringify(bWhy.typed.slice(0, 60))}`);
     const misfiled = reviewsOf(final, bPr ? [bPr.id] : []).length === 0 && B.at.review !== undefined;
     if (misfiled) problems.push("B's review is about another PR");
-    if (done(B) && !done(A)) {
+    if (done(B) && A.at.merged === undefined) {
       const last = Object.entries(A.at).filter(([k]) => k !== "approved").sort((x, y) => x[1] - y[1]).at(-1);
       problems.push(`B finished but A stopped after ${last ? `${last[0]} at ${since(A, last[0])}s` : "posting"}`);
     }
