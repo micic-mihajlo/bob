@@ -1,11 +1,12 @@
 import { resultLine } from "./brain/script-plan";
 import { nowIso } from "./ids";
 import { changelogFile } from "./release-notes";
+import { ordersOf, tracksOf } from "./roadmap";
 import { requestControls } from "./usage";
 import { agentName, type State } from "./state";
 import { needsYou, threadStateOf } from "./thread-status";
 import { isPullRequest } from "./threads";
-import type { Agent, DriveFile, NeedsYouItem } from "./types";
+import type { Agent, DriveFile, NeedsYouItem, Track } from "./types";
 
 const clip = (text: string, max: number) => {
   const line = text.trim().split("\n")[0] ?? "";
@@ -73,19 +74,20 @@ function captainNotes(current: string): string {
 /** The plan from the roadmap, what shipped with its review, then the captain's own notes. */
 export function notesFile(s: State, current: string): string {
   const r = s.roadmap;
-  const g = r.goal;
   const orders = (list: typeof r.today) => (list.length > 0 ? list.map((w) => `- ${w.id} ${w.title} (${w.status})`) : ["- none"]);
-  const plan = [
-    PLAN,
-    g ? `Intent: ${g.title}${g.user ? `, for ${g.user}` : ""}.` : "Intent: none yet.",
-    ...(g?.acceptance ? [`Acceptance: ${g.acceptance}`] : []),
-    ...(g?.assumptions?.length ? [`Assumed: ${g.assumptions.join("; ")}`] : []),
-    `Stage ${r.stage} of ${r.totalStages}: ${r.stageTitle}.`,
-    "Today:",
-    ...orders(r.today),
-    "Backlog:",
-    ...orders(r.backlog ?? []),
-  ];
+  const track = (t: Track) => {
+    const g = t.goal;
+    return [
+      g ? `Intent: ${g.title}${g.user ? `, for ${g.user}` : ""}.` : `Intent: not recorded yet for ${t.requestId}.`,
+      ...(g?.acceptance ? [`Acceptance: ${g.acceptance}`] : []),
+      ...(g?.assumptions?.length ? [`Assumed: ${g.assumptions.join("; ")}`] : []),
+      `Stage ${t.stage} of ${r.totalStages}: ${t.stageTitle}.`,
+      "Today:",
+      ...orders(ordersOf(r, t.requestId).today),
+    ];
+  };
+  const tracks = tracksOf(r);
+  const plan = [PLAN, ...(tracks.length > 0 ? tracks.flatMap(track) : ["Intent: none yet."]), "Backlog:", ...orders(r.backlog ?? [])];
   const shipped = s.artifacts.filter((a) => isPullRequest(a) && a.pullRequest.merged).map((a) => {
     const review = [...s.artifacts].reverse().find((x) => x.review?.pullRequestId === a.id)?.review;
     const findings = review?.findings.map((f) => `${f.severity} (${f.path}): ${f.comment}`).join("; ");

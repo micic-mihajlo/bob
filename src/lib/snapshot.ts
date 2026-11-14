@@ -2,9 +2,11 @@ import { liveAsks } from "./asks";
 import { brainKind } from "./brain";
 import { policyFor } from "./policy";
 import { releaseNotesOf } from "./release-notes";
+import { tracksOf } from "./roadmap";
 import { requestControls } from "./usage";
 import { messageById, runningTurn, type State } from "./state";
 import { needsYou, threadStateOf } from "./thread-status";
+import { requestAsk } from "./threads";
 import type { AgentActivity, AgentId, Delivery, Snapshot, ThreadView, WaitingOn } from "./types";
 
 function activityOf(s: State, agentId: AgentId): AgentActivity {
@@ -73,7 +75,7 @@ export function buildSnapshot(s: State): Snapshot {
     threads: Object.fromEntries(s.agents.map((a) => [a.id, threadOf(s, a.id)])),
     approvals: s.approvals,
     artifacts: s.artifacts,
-    roadmap: s.roadmap,
+    roadmap: { ...s.roadmap, tracks: tracksOf(s.roadmap).map((t) => ({ ...t, ask: requestAsk(s, t.requestId) ?? null })) },
     brain: brainKind(),
     threadState: Object.fromEntries(s.agents.map((a) => [a.id, threadStateOf(s, a, needs)])),
     needsYou: needs,

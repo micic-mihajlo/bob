@@ -1,6 +1,6 @@
 # Bob
 
-A software factory turns a person's request into shipped code through fixed stations, and every station leaves a record. Bob is one you run by talking to its captain. The captain inspects the intent and pushes back until the request can be tested. It writes the spec as work orders with IDs on a five-stage roadmap and starts a build thread for each one. Every build thread works in its own git workspace, runs the tests, and opens a pull request. A review thread runs that PR's tests on its own branch and either sends findings back or approves the exact head. Then the person approves the merge at a gate the code enforces. The merge writes a release note, and Learn feeds the result back into the plan, including closing the production errors it fixed. Every commit, PR and message traces back to the sentence the person typed, and Why? on any PR shows that chain.
+A software factory turns a person's request into shipped code through fixed stations, and every station leaves a record. Bob is one you run by talking to its captain. The captain inspects the intent and pushes back until the request can be tested. It writes the spec as work orders with IDs on the request's own five-stage track and starts a build thread for each one. Every build thread works in its own git workspace, runs the tests, and opens a pull request. A review thread runs that PR's tests on its own branch and either sends findings back or approves the exact head. Then the person approves the merge at a gate the code enforces. The merge writes a release note, and Learn feeds the result back into the plan, including closing the production errors it fixed. Every commit, PR and message traces back to the sentence the person typed, and Why? on any PR shows that chain.
 
 ```mermaid
 flowchart LR
@@ -65,7 +65,7 @@ The factory rules are proved in Lean 4 under `formal/`. Conformance tests run th
 
 - **Merge gate.** No PR merges without the person's approval of the exact head that merged.
 - **Loop termination.** Agent messages and automatic hand-offs are bounded per request, and ping-pong replies stop.
-- **Stage order.** The roadmap never moves back a stage and never skips one.
+- **Stage order.** Each request has its own track through the five stages. A track never moves back a stage, never skips one, and moves only when its own gate holds, so one request waiting at Ship never holds another back.
 - **Traceability.** Every message traces back to a person, with no cycles.
 
 `pnpm verify` checks them. [docs/formal.md](docs/formal.md) has every theorem and the two gaps the proofs found and fixed, and `GET /api/verification` reports their status in the app.
