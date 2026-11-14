@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock3, LoaderCircle, TriangleAlert } from "lucide-react";
+import { Clock3, LoaderCircle, ScrollText, TriangleAlert } from "lucide-react";
 import { AgentAvatar } from "@/components/features/agents/AgentAvatar";
 import { agentMood } from "@/components/features/agents/agent-mood";
 import { useBob } from "@/components/features/window/BobContext";
@@ -37,7 +37,6 @@ export function ConversationHeader({ agent }: { agent: Agent }) {
   const status = threadStatusOf(snapshot, agent);
   const variant = STATUS_BADGE[status];
   const subtitle = agent.kind === "captain" ? null : agent.title;
-  const model = snapshot.brain === "script" ? "Scripted" : modelName(agent.model);
   return (
     <header className="window-drag conversation-header">
       <div className="conversation-heading-group">
@@ -65,14 +64,24 @@ export function ConversationHeader({ agent }: { agent: Agent }) {
             {THREAD_STATUS_LABEL[status]}
           </Badge>
         ) : null}
-        {agent.kind === "crew" && snapshot.brain !== "script" && status !== "closed" ? (
+        {snapshot.brain === "script" ? (
+          <span
+            className="conversation-scripted"
+            role="note"
+            aria-label="Scripted: the agents follow a script and no model is called"
+            title="The agents follow a script and no model is called. Start Bob without --scripted for the live model."
+          >
+            <ScrollText aria-hidden="true" />
+            Scripted
+          </span>
+        ) : agent.kind === "crew" && status !== "closed" ? (
           <ModelPicker agent={agent} />
         ) : (
           <div className="provider-model-picker">
-            <span className="provider-model-trigger" aria-label={`Agent model: ${model}`} title={agent.model}>
+            <span className="provider-model-trigger" aria-label={`Agent model: ${modelName(agent.model)}`} title={agent.model}>
               <span className="provider-model-trigger-value">
                 <span className="ui-swap provider-model-trigger-name">
-                  <span>{model}</span>
+                  <span>{modelName(agent.model)}</span>
                 </span>
               </span>
             </span>

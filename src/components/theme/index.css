@@ -10,7 +10,6 @@
 @import "./base.css";
 @import "./app-shell.css";
 @import "../features/sidebar/sidebar-views.css";
-@import "../features/sidebar/footer-island.css";
 @import "../features/sidebar/sidebar.css";
 @import "../features/conversation/conversation.css";
 @import "../features/roadmap/roadmap.css";

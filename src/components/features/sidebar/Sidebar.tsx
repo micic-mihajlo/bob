@@ -12,9 +12,8 @@ import { SidebarAgentRow } from "./SidebarAgentRow";
 import { ThemeToggle } from "./ThemeToggle";
 import { PlusIcon, SearchIcon, SidebarToggleIcon } from "./SidebarIcons";
 
-const SYNC: Record<SyncState, { label: string; title: string }> = {
-  live: { label: "Synced", title: "Updates stream in as they happen" },
-  polling: { label: "Polling", title: "The live stream dropped, so the app checks for updates" },
+const SYNC: Record<Exclude<SyncState, "live">, { label: string; title: string }> = {
+  polling: { label: "Reconnecting", title: "The live stream dropped. Updates still arrive every few seconds while it reconnects." },
   offline: { label: "Offline", title: "The Bob server can't be reached. The app keeps trying." },
 };
 
@@ -115,17 +114,19 @@ export function Sidebar({ compact = false, onExpand }: { compact?: boolean; onEx
         </div>
       </nav>
 
-      <div className="sidebar-update-island" hidden={compact}>
-        <div className="account-update-island t-panel-slide" data-open="true" data-phase="available">
-          <div className="account-update-island__copy" role="status" aria-live="polite">
-            <strong>{snapshot.brain === "model" ? "Live model" : "Scripted agents"}</strong>
-          </div>
-          <span className="sidebar-brain-sync" data-sync={sync} title={SYNC[sync].title}>
-            {SYNC[sync].label}
+      <footer className="sidebar-footer" hidden={compact}>
+        <div className="sidebar-connection" data-sync={sync} title={sync === "live" ? undefined : SYNC[sync].title}>
+          <span className="sr-only" role="status">
+            {sync === "live" ? "" : SYNC[sync].label}
           </span>
-          <ThemeToggle />
+          {(["polling", "offline"] as const).map((state) => (
+            <span key={state} className="sidebar-connection__label" data-state={state} aria-hidden="true">
+              {SYNC[state].label}
+            </span>
+          ))}
         </div>
-      </div>
+        <ThemeToggle />
+      </footer>
 
       {newAgentOpen ? <NewAgentDialog onClose={() => setNewAgentOpen(false)} /> : null}
     </aside>

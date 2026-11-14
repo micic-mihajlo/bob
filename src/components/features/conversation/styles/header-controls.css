@@ -55,6 +55,30 @@
   height: 12px;
 }
 
+/* Scripted mode, said once: where the model would be, in the stroke of a draft. */
+.conversation-scripted {
+  display: inline-flex;
+  height: 28px;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  border: 1px dashed color-mix(in srgb, var(--bob-text-muted) 60%, transparent);
+  border-radius: var(--bob-radius-pill);
+  padding: 0 10px 0 8px;
+  color: var(--bob-text-secondary);
+  font-size: var(--bob-text-md);
+  font-weight: 470;
+  line-height: 18px;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.conversation-scripted svg {
+  width: 14px;
+  height: 14px;
+  color: var(--bob-text-muted);
+}
+
 .provider-model-picker {
   position: relative;
   min-width: 0;

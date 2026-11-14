@@ -47,12 +47,3 @@
   font-size: var(--bob-text-2xl);
   line-height: var(--bob-leading-2xl);
 }
-
-[data-print] .sidebar-brain-sync[data-sync="live"]::before {
-  background: var(--bob-print-cyan);
-}
-
-.sidebar-theme-toggle {
-  color: var(--bob-text-secondary);
-  font-size: var(--bob-text-sm);
-}

@@ -1,7 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { buttonClass } from "@/components/ui/classes";
+import { useSyncExternalStore, type CSSProperties, type KeyboardEvent } from "react";
 
 const THEMES = ["ink", "newsprint", "classic"] as const;
 type Theme = (typeof THEMES)[number];
@@ -28,20 +27,51 @@ function applyTheme(theme: Theme) {
   window.dispatchEvent(new Event("bob-theme"));
 }
 
-/** Cycles the look: ink (dark print), newsprint (light print), then the classic look. The root layout restores the choice before the first paint. */
+const MOVE: Record<string, (index: number) => number> = {
+  ArrowRight: (index) => index + 1,
+  ArrowDown: (index) => index + 1,
+  ArrowLeft: (index) => index - 1,
+  ArrowUp: (index) => index - 1,
+  Home: () => 0,
+  End: () => THEMES.length - 1,
+};
+
+/** The look, as three paper samples: ink (dark print), newsprint (light print) and the classic look. Arrow keys move between them. The root layout restores the choice before the first paint. */
 export function ThemeToggle() {
   const theme = useSyncExternalStore(subscribe, currentTheme, () => null);
   if (theme === null) return null;
-  const next = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+  const index = THEMES.indexOf(theme);
+
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const move = MOVE[event.key];
+    if (move === undefined) return;
+    event.preventDefault();
+    const target = THEMES[(move(index) + THEMES.length) % THEMES.length];
+    applyTheme(target);
+    event.currentTarget.querySelector<HTMLButtonElement>(`[data-option="${target}"]`)?.focus();
+  }
+
   return (
-    <button
-      type="button"
-      className={buttonClass({ variant: "ghost", size: "xs", className: "sidebar-theme-toggle" })}
-      title={`Theme: ${LABEL[theme]}. Switch to ${LABEL[next]}`}
-      aria-label={`Theme: ${LABEL[theme]}. Switch to ${LABEL[next]}`}
-      onClick={() => applyTheme(next)}
-    >
-      {LABEL[theme]}
-    </button>
+    <div role="radiogroup" aria-label="Theme" className="theme-switch" style={{ "--theme-index": index } as CSSProperties} onKeyDown={onKeyDown}>
+      <span className="theme-switch__thumb" aria-hidden="true" />
+      {THEMES.map((option) => (
+        <button
+          key={option}
+          type="button"
+          role="radio"
+          aria-checked={option === theme}
+          aria-label={LABEL[option]}
+          title={LABEL[option]}
+          tabIndex={option === theme ? 0 : -1}
+          className="theme-switch__option"
+          data-option={option}
+          onClick={() => applyTheme(option)}
+        >
+          <span className="theme-switch__swatch" aria-hidden="true">
+            Aa
+          </span>
+        </button>
+      ))}
+    </div>
   );
 }

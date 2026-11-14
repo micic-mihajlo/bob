@@ -1,36 +1,157 @@
 /* Bob's own additions to the reference sidebar, in its tokens. */
 
-/* The footer island says which brain runs the agents, and whether the window is live. */
-.sidebar-update-island .account-update-island {
-  grid-template-columns: minmax(0, 1fr) auto auto;
+/* The sidebar's foot: the connection, only while it is not live, and the theme. */
+.sidebar-footer {
+  display: flex;
+  min-height: var(--bob-control-xl);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bob-space-2);
+  padding: var(--bob-space-2) var(--bob-space-3) var(--bob-space-3) var(--bob-space-4);
 }
 
-.sidebar-brain-sync {
+.sidebar-footer[hidden] {
+  display: none;
+}
+
+.sidebar-connection {
+  display: grid;
+  min-width: 0;
+  align-items: center;
+}
+
+.sidebar-connection__label {
   display: inline-flex;
+  min-width: 0;
   align-items: center;
   gap: var(--bob-space-1-5);
+  grid-area: 1 / 1;
+  overflow: hidden;
   color: var(--bob-text-secondary);
   font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(var(--bob-space-1));
+  transition:
+    opacity var(--bob-duration-slow) var(--bob-ease),
+    transform var(--bob-duration-slow) var(--bob-ease);
 }
 
-.sidebar-brain-sync::before {
+.sidebar-connection__label::before {
   width: 6px;
   height: 6px;
+  flex: none;
   border-radius: 50%;
   background: var(--bob-text-muted);
   content: "";
 }
 
-.sidebar-brain-sync[data-sync="live"]::before {
-  background: var(--bob-success);
-}
-
-.sidebar-brain-sync[data-sync="offline"] {
+.sidebar-connection__label[data-state="offline"] {
   color: var(--bob-warning-text);
 }
 
-.sidebar-brain-sync[data-sync="offline"]::before {
+.sidebar-connection__label[data-state="offline"]::before {
   background: var(--bob-warning);
+}
+
+.sidebar-connection[data-sync="polling"] .sidebar-connection__label[data-state="polling"],
+.sidebar-connection[data-sync="offline"] .sidebar-connection__label[data-state="offline"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Three paper samples with a ring that slides to the chosen one. */
+.theme-switch {
+  --theme-option: calc(var(--bob-control-sm) + var(--bob-space-0-5));
+
+  position: relative;
+  display: flex;
+  flex: none;
+  margin-left: auto;
+}
+
+.theme-switch__thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--theme-option);
+  height: var(--bob-control-xs);
+  border-radius: var(--bob-radius-sm);
+  box-shadow: 0 0 0 1px var(--bob-text-primary);
+  pointer-events: none;
+  transform: translateX(calc(var(--theme-index) * var(--theme-option)));
+  transition: transform var(--bob-duration-slow) var(--bob-ease);
+}
+
+.theme-switch__option {
+  display: grid;
+  width: var(--theme-option);
+  height: var(--bob-control-xs);
+  place-items: center;
+  border: 0;
+  border-radius: var(--bob-radius-sm);
+  background: none;
+  padding: 3px;
+  cursor: pointer;
+}
+
+.theme-switch__option:focus-visible {
+  outline: 1px solid var(--bob-border-focus);
+  outline-offset: 2px;
+}
+
+.theme-switch__swatch {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  border-radius: calc(var(--bob-radius-sm) - 3px);
+  box-shadow: inset 0 0 0 1px rgb(128 128 128 / 0.32);
+  font-size: 11px;
+  line-height: 1;
+  transition: transform var(--bob-duration-fast) var(--bob-ease);
+}
+
+.theme-switch__option:active .theme-switch__swatch {
+  transform: scale(0.94);
+}
+
+.theme-switch__option[data-option="ink"] .theme-switch__swatch {
+  background: #14130f;
+  color: #ebe4d3;
+  font-family: var(--font-display), var(--bob-font-sans);
+  letter-spacing: 0.02em;
+}
+
+.theme-switch__option[data-option="newsprint"] .theme-switch__swatch {
+  background: #e8e0cc;
+  color: #1c1a16;
+  font-family: var(--font-display), var(--bob-font-sans);
+  letter-spacing: 0.02em;
+}
+
+.theme-switch__option[data-option="classic"] .theme-switch__swatch {
+  background: #0a0a0a;
+  color: #f2f2f2;
+  font-family: var(--bob-font-sans);
+  font-weight: var(--bob-weight-semibold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-connection__label {
+    transform: none;
+    transition: opacity var(--bob-duration-slow) ease;
+  }
+
+  .theme-switch__thumb,
+  .theme-switch__swatch {
+    transition: none;
+  }
+
+  .theme-switch__option:active .theme-switch__swatch {
+    transform: none;
+  }
 }
 
 .sidebar-search-empty {
