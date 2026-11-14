@@ -3,7 +3,7 @@
 import { Bot, User, Workflow, X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { IconButton } from "@/components/ui/Button";
 import { fetchWhy } from "@/lib/client/api";
 import { formatElapsed } from "@/lib/client/format";

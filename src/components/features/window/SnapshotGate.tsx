@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { BobProvider } from "@/components/app/BobContext";
+import { BobProvider } from "@/components/features/window/BobContext";
 import { useSnapshot } from "@/lib/client/use-snapshot";
 
 /** Loads the snapshot, keeps it live, and hands it to the window through BobProvider. */

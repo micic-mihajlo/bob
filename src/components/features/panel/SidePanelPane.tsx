@@ -1,7 +1,7 @@
 "use client";
 
 import { RoadmapPanel } from "@/components/features/roadmap/RoadmapPanel";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import type { SidePanelPaneId } from "@/lib/client/panel-tabs";
 import { ActivityPane } from "./ActivityPane";
 import { ChangesPane } from "./ChangesPane";

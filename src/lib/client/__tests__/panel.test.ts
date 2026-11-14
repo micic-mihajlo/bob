@@ -182,9 +182,9 @@ describe("parseMarkdown tables", () => {
 
 describe("threadStatusOf", () => {
   const agent = { id: "inv-1", kind: "crew" } as Agent;
-  const snap = (extra: Partial<Snapshot>) => ({ activity: {}, threadStatus: { "inv-1": "working" }, ...extra }) as unknown as Snapshot;
+  const snap = (extra: Partial<Snapshot>) => ({ activity: { "inv-1": { state: "working", since: "", step: null } }, ...extra }) as unknown as Snapshot;
 
-  it("prefers threadState over the old threadStatus", () => {
+  it("reads threadState, and activity without it", () => {
     expect(threadStatusOf(snap({ threadState: { "inv-1": { status: "waiting", needsYou: false, closed: false } } }), agent)).toBe("waiting");
     expect(threadStatusOf(snap({ threadState: { "inv-1": { status: "waiting", needsYou: true, closed: false } } }), agent)).toBe("needs_you");
     expect(threadStatusOf(snap({ threadState: { "inv-1": { status: "idle", needsYou: false, closed: true } } }), agent)).toBe("closed");

@@ -1,7 +1,7 @@
 "use client";
 
 import { HelpCircle, X } from "lucide-react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { FileList } from "@/components/features/files/FileList";
 import { Button } from "@/components/ui/Button";
 import type { BadgeVariant } from "@/components/ui/classes";

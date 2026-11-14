@@ -2,7 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { buttonClass, cx } from "@/components/ui/classes";
 import { sidebarList, type SidebarSectionModel, type SidebarAgentState } from "@/lib/client/sidebar-rows";
 import type { Agent, AgentId } from "@/lib/types";

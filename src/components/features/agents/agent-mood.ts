@@ -1,3 +1,4 @@
+import { threadStatusOf } from "@/lib/client/crew";
 import type { AgentId, Snapshot } from "@/lib/types";
 
 /**
@@ -28,7 +29,8 @@ export function avatarMoodIsBusy(mood: AvatarMood): boolean {
 
 /** The face one agent wears, from the most urgent signal the snapshot carries for it. */
 export function agentMood(snapshot: Snapshot, agentId: AgentId): AvatarMood {
-  const status = snapshot.threadStatus?.[agentId];
+  const agent = snapshot.agents.find((candidate) => candidate.id === agentId);
+  const status = agent ? threadStatusOf(snapshot, agent) : undefined;
   if (status === "closed") return "asleep";
   if (status === "failed") return "failed";
   const activity = snapshot.activity[agentId];

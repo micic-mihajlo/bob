@@ -1,5 +1,5 @@
 import type { Agent, AgentId, Snapshot } from "@/lib/types";
-import { CREW_GROUPS, sidebarModel } from "./crew";
+import { CREW_GROUPS, sidebarModel, threadStatusOf } from "./crew";
 import { needsYouItems } from "./needs-you";
 
 /** What a row in "Needs you" waits on. It picks the badge, the chip and the hint. */
@@ -58,7 +58,7 @@ export function sidebarList(snapshot: Snapshot): SidebarListModel {
     const wait = waiting.find((entry) => entry.agent.id === agent.id);
     const unread = snapshot.threads[agent.id]?.unread ?? 0;
     if (wait) states[agent.id] = { kind: "waiting", reason: wait.reason, detail: wait.detail };
-    else if (snapshot.threadStatus?.[agent.id] === "failed") states[agent.id] = { kind: "failed" };
+    else if (threadStatusOf(snapshot, agent) === "failed") states[agent.id] = { kind: "failed" };
     else if (snapshot.activity[agent.id]?.state === "working") states[agent.id] = { kind: "working" };
     else if (unread > 0) states[agent.id] = { kind: "unread", count: unread };
   }

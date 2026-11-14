@@ -18,6 +18,9 @@ Convert the reference components to React, keep their markup and class names, an
 - Every identifier, file and class that names the reference product has to be renamed for Bob anyway, so a verbatim vendor is not verbatim either.
 - Bob needs a small part of the reference: the window frame, the sidebar, the conversation, the composer, the side panel and the roadmap. Converting that part costs less than carrying the rest.
 
-## While the port is in progress
+## Where it lives
 
-The new window renders at `/lab/app`. The old window keeps `/` until the new one covers every surface, then `/` switches and the old `src/components` folders are deleted.
+- `src/components/theme`: the copied token sheet, primitives and shell CSS, and `index.css`, which loads every sheet in the reference's order.
+- `src/components/ui`: the reference primitives as React (button, badge, typing dots, confirm dialog).
+- `src/components/features`: `window` (rail, frame, `BobContext`), `sidebar`, `agents` (the animated ASCII faces), `conversation`, `panel`, `roadmap`, `files`.
+- `src/lib/client`: pure view logic (rows, grouping, markdown, diffs) with tests, and the API calls.

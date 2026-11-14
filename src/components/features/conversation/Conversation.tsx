@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { SidePanel, useSidePanelFrame } from "@/components/features/panel/SidePanel";
 import { cx } from "@/components/ui/classes";
 import { markThreadRead, sendMessage } from "@/lib/client/api";

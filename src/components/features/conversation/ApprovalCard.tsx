@@ -2,7 +2,7 @@
 
 import { Check, LoaderCircle, X } from "lucide-react";
 import { useState } from "react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { decideApproval } from "@/lib/client/api";

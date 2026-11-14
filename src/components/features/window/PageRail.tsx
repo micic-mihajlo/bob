@@ -1,7 +1,7 @@
 "use client";
 
 import { Bot, FolderOpen, Map as MapIcon, Users, type LucideIcon } from "lucide-react";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { buttonClass } from "@/components/ui/classes";
 import type { PanelTab } from "@/lib/client/panel-tabs";
 

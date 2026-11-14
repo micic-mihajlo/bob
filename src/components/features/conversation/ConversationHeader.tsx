@@ -3,7 +3,7 @@
 import { Clock3, LoaderCircle, TriangleAlert } from "lucide-react";
 import { AgentAvatar } from "@/components/features/agents/AgentAvatar";
 import { agentMood } from "@/components/features/agents/agent-mood";
-import { useBob } from "@/components/app/BobContext";
+import { useBob } from "@/components/features/window/BobContext";
 import { SidePanelToggle } from "@/components/features/panel/SidePanel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
