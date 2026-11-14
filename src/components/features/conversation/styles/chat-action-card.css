@@ -57,6 +57,12 @@
   line-height: var(--bob-leading-sm);
 }
 
+/* How long ago a pull request was opened, after its number. Its digits do not jitter as they change. */
+.chat-action-card-age {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .chat-action-card-title {
   overflow: hidden;
   margin: 0;

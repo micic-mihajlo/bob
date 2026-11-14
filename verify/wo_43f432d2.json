@@ -1,0 +1,34 @@
+{
+  "acceptance": "A vitest test on formatAgo in src/lib/format-time.ts passes for 5 s (just now), 12 s (12s ago), 300 s (5m ago), 7200 s (2h ago) and 3 days (3d ago).",
+  "propertiesFile": "src/lib/format-time.properties.test.ts",
+  "properties": [
+    {
+      "name": "says just now for anything under ten seconds, including a clock that ran backwards",
+      "criterion": "A vitest test on formatAgo in src/lib/format-time.ts passes for 5 s (just now), 12 s (12s ago), 300 s (5m ago), 7200 s (2h ago) and 3 days (3d ago)."
+    },
+    {
+      "name": "counts whole seconds from ten seconds up to a minute",
+      "criterion": "A vitest test on formatAgo in src/lib/format-time.ts passes for 5 s (just now), 12 s (12s ago), 300 s (5m ago), 7200 s (2h ago) and 3 days (3d ago)."
+    },
+    {
+      "name": "counts whole minutes from a minute up to an hour",
+      "criterion": "A vitest test on formatAgo in src/lib/format-time.ts passes for 5 s (just now), 12 s (12s ago), 300 s (5m ago), 7200 s (2h ago) and 3 days (3d ago)."
+    },
+    {
+      "name": "counts whole hours from an hour up to a day",
+      "criterion": "A vitest test on formatAgo in src/lib/format-time.ts passes for 5 s (just now), 12 s (12s ago), 300 s (5m ago), 7200 s (2h ago) and 3 days (3d ago)."
+    },
+    {
+      "name": "counts whole days from a day on",
+      "criterion": "A vitest test on formatAgo in src/lib/format-time.ts passes for 5 s (just now), 12 s (12s ago), 300 s (5m ago), 7200 s (2h ago) and 3 days (3d ago)."
+    },
+    {
+      "name": "counts the age from the opened moment up to the clock now",
+      "criterion": "The pull request card shows when it was opened as relative time, so a moment's age is read from its timestamp against the clock now."
+    },
+    {
+      "name": "has no age for a timestamp it cannot read",
+      "criterion": "The pull request card shows when it was opened as relative time, and a timestamp it cannot read yields no age instead of a wrong one."
+    }
+  ]
+}

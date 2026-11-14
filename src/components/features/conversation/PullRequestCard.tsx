@@ -1,11 +1,12 @@
 "use client";
 
 import { Check, ChevronRight, Clock3, GitMerge, GitPullRequest, LoaderCircle, MessageSquareText, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import { displayName } from "@/lib/client/crew";
+import { openedAgo } from "@/lib/format-time";
 import {
   changeTotals,
   isPullRequest,
@@ -115,7 +116,16 @@ function PullRequestCardView({ artifact, animate }: { artifact: PullRequestArtif
   const { snapshot } = useBob();
   const state = pullRequestState(artifact, snapshot.approvals);
   const [mergedOnMount] = useState(state === "merged");
+  const [openedAge, setOpenedAge] = useState<string | null>(null);
   const titleId = `pull-request-${artifact.id}-title`;
+  /* The card's `at` is when the pull request was opened. Counted after mount so the server and the
+     client never disagree, and refreshed as the person keeps the conversation open. */
+  useEffect(() => {
+    const tick = () => setOpenedAge(openedAgo(artifact.at, Date.now()));
+    tick();
+    const clock = setInterval(tick, 10_000);
+    return () => clearInterval(clock);
+  }, [artifact.at]);
   return (
     <article aria-labelledby={titleId} className={cx("conversation-interaction-card chat-action-card", animate && "chat-action-entry-animated")} data-artifact-id={artifact.id}>
       <header className="chat-action-card-header">
@@ -123,7 +133,10 @@ function PullRequestCardView({ artifact, animate }: { artifact: PullRequestArtif
           <GitPullRequest />
         </span>
         <div className="chat-action-card-heading">
-          <span className="chat-action-card-eyebrow">Opened pull request #{artifact.pullRequest.number}</span>
+          <span className="chat-action-card-eyebrow">
+            Opened pull request #{artifact.pullRequest.number}
+            {openedAge ? <span className="chat-action-card-age"> · {openedAge}</span> : null}
+          </span>
           <h3 className="chat-action-card-title" id={titleId}>
             {artifact.title}
           </h3>
