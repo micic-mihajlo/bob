@@ -13,7 +13,7 @@ function subscribe(onChange: () => void) {
 
 function currentTheme(): Theme {
   const theme = document.documentElement.dataset.theme;
-  return theme === "newsprint" || theme === "classic" ? theme : "ink";
+  return theme === "newsprint" || theme === "ink" ? theme : "classic";
 }
 
 function applyTheme(theme: Theme) {
@@ -23,6 +23,7 @@ function applyTheme(theme: Theme) {
   else root.dataset.print = "";
   try {
     localStorage.setItem("bob-theme", theme);
+    localStorage.setItem("bob-theme-picked", "1");
   } catch {}
   window.dispatchEvent(new Event("bob-theme"));
 }
@@ -36,7 +37,7 @@ const MOVE: Record<string, (index: number) => number> = {
   End: () => THEMES.length - 1,
 };
 
-/** The look, as three paper samples: ink (dark print), newsprint (light print) and the classic look. Arrow keys move between them. The root layout restores the choice before the first paint. */
+/** The look, as three paper samples: ink (dark print), newsprint (light print) and the classic look. Arrow keys move between them. Classic is the default. The root layout restores a pick before the first paint, and reads an ink stored before picks were marked as classic. */
 export function ThemeToggle() {
   const theme = useSyncExternalStore(subscribe, currentTheme, () => null);
   if (theme === null) return null;

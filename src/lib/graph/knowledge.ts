@@ -7,10 +7,10 @@ import { factsForFiles, scheduleCodebaseGraph, type FileFacts } from "../codebas
 import { projectHistory } from "../codebase/history";
 import type { State } from "../state";
 import { getConfig, getState } from "../store";
-import { sourceOf, workspaceOptions } from "../thread-workspace";
+import { workspaceOptions } from "../thread-workspace";
 import { isPullRequest } from "../threads";
 import { hasProject, type KnowledgeContext, type Project, type RecalledMemory } from "../types";
-import { ensureProject } from "../workspace";
+import { projectLayout, rootOf } from "../workspace";
 import { MAIN_BRANCH } from "../workspace/layout";
 import { HydraError, hydraConfig, type HydraConfig } from "./hydra";
 
@@ -22,7 +22,11 @@ import { HydraError, hydraConfig, type HydraConfig } from "./hydra";
 
 const run = promisify(execFile);
 
-/** A brief waits this long for recall, then goes out without it. Fast mode with the graph answers in 250-600 ms. */
+/**
+ * A brief waits this long for recall, then goes out without it. Fast mode answers in about 200 ms; HydraDB's own
+ * graph_context adds 250-500 ms on a large project, so the brief and captain paths leave it off and take structure from
+ * the codebase graph instead, and only the search box asks for it.
+ */
 export const RECALL_TIMEOUT_MS = Number(process.env.BOB_HYDRA_RECALL_MS) || 800;
 /** Longer queries cost HydraDB more time than they add in ranking. */
 const QUERY_CHARS = 400;
@@ -30,6 +34,8 @@ const QUERY_CHARS = 400;
 const CAPTAIN_TIMEOUT_MS = 700;
 const INGEST_TIMEOUT_MS = 20_000;
 const COOL_OFF_MS = 30_000;
+/** A failed ingest (say, a project repository being re-cloned under it) runs again on the next look after this long. */
+const RETRY_AFTER_MS = 20_000;
 /** Files larger than this are not ingested; the rest are cut to BODY_CHARS. */
 const MAX_FILE_BYTES = 64 * 1024;
 const BODY_CHARS = 24_000;
@@ -261,7 +267,8 @@ async function sendBatch(c: HydraConfig, form: FormData): Promise<void> {
 async function ingest(project: Project): Promise<void> {
   const c = hydraConfig();
   if (!c || Date.now() < downUntil) return;
-  const { origin } = await ensureProject(project.id, sourceOf(project), workspaceOptions());
+  const origin = projectLayout(rootOf(workspaceOptions()), project.id).origin;
+  if (!fs.existsSync(path.join(origin, "HEAD"))) throw new Error("its repository is not ready yet");
   const files = await filesOnMain(origin);
   pathsOnMain.set(project.id, new Set(files.filter((f) => f.meta.source !== "module").map((f) => f.meta.path)));
   const s = getState();
@@ -320,8 +327,11 @@ export function scheduleKnowledgeIngest(project: Project = getState().project): 
   }
   const pass: Promise<void> = new Promise<void>((resolve) => setTimeout(resolve, 0))
     .then(() => ingest(project))
-    .finally(() => scheduleCodebaseGraph(project))
-    .catch((error) => console.warn(`HydraDB knowledge ingest for ${project.id} failed: ${error instanceof Error ? error.message : error}`))
+    .then(() => scheduleCodebaseGraph(project))
+    .catch((error) => {
+      console.warn(`HydraDB knowledge ingest for ${project.id} failed: ${error instanceof Error ? error.message : error}`);
+      setTimeout(() => warmed.delete(project.id), RETRY_AFTER_MS).unref?.();
+    })
     .finally(() => {
       ingesting.delete(project.id);
       if (again.delete(project.id)) scheduleKnowledgeIngest(project);
@@ -329,7 +339,7 @@ export function scheduleKnowledgeIngest(project: Project = getState().project): 
   ingesting.set(project.id, pass);
 }
 
-/** The first look at a project in this process ingests it; later calls do nothing. */
+/** The first look at a project in this process ingests it; later calls do nothing, unless the last pass failed. */
 export function warmKnowledge(project: Project = getState().project): void {
   if (!warmed.has(project.id)) scheduleKnowledgeIngest(project);
 }
@@ -380,7 +390,7 @@ const KINDS: Record<string, KnowledgeHit["kind"]> = { file: "file", doc: "doc", 
  * Null when the switch is off, HydraDB is cooling off, or no answer came within the timeout. Pull requests from an
  * earlier run of the same project, and files no longer on main, are dropped.
  */
-async function queryKnowledge(s: State, query: string, timeoutMs: number, max = 12): Promise<{ hits: KnowledgeHit[]; ms: number } | null> {
+async function queryKnowledge(s: State, query: string, timeoutMs: number, max = 12, graph = false): Promise<{ hits: KnowledgeHit[]; ms: number } | null> {
   const c = hydraConfig();
   if (!c || !hasProject(s.project) || Date.now() < downUntil || !query.trim()) return null;
   const started = Date.now();
@@ -389,7 +399,7 @@ async function queryKnowledge(s: State, query: string, timeoutMs: number, max = 
       c,
       "POST",
       "/query",
-      { database: c.database, collection: knowledgeCollection(s.project.id), query: query.slice(0, QUERY_CHARS), type: "knowledge", mode: "fast", graph_context: true, max_results: max },
+      { database: c.database, collection: knowledgeCollection(s.project.id), query: query.slice(0, QUERY_CHARS), type: "knowledge", mode: "fast", graph_context: graph, max_results: max },
       timeoutMs,
     )) as { chunks?: Chunk[] } | null;
     const onMain = pathsOnMain.get(s.project.id);
@@ -414,7 +424,7 @@ async function queryKnowledge(s: State, query: string, timeoutMs: number, max = 
 
 /** The codebase search box: ranked hits with scores and the time HydraDB took. */
 export async function searchKnowledge(s: State, query: string): Promise<{ ms: number; source: "hydra" | "off"; hits: Omit<KnowledgeHit, "text" | "files">[] }> {
-  const found = await queryKnowledge(s, query, 3_000, 10);
+  const found = await queryKnowledge(s, query, 3_000, 10, true);
   if (!found) return { ms: 0, source: "off", hits: [] };
   return { ms: found.ms, source: "hydra", hits: found.hits.map(({ text: _text, files: _files, ...hit }) => hit) };
 }
