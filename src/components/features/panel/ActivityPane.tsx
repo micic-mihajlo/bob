@@ -11,6 +11,7 @@ import type { FileReferenceTone } from "@/lib/client/file-reference";
 import type { Artifact } from "@/lib/types";
 import { PaneFrame } from "./PaneFrame";
 import { Activity } from "lucide-react";
+import { pullRequestIdOf } from "@/lib/client/why-graph";
 
 const KIND: Record<Artifact["kind"], { badge: string; tone: FileReferenceTone; label: string }> = {
   pull_request: { badge: "PR", tone: "source", label: "Pull request" },
@@ -67,7 +68,7 @@ export function ActivityPane({ onClose }: { onClose: () => void }) {
                   className="file-row-menu-trigger"
                   aria-label={`Why? Trace ${artifact.title} back to what was asked`}
                   title="Why?"
-                  onClick={() => artifact.messageId && openWhy(artifact.messageId)}
+                  onClick={() => artifact.messageId && openWhy(artifact.messageId, pullRequestIdOf(artifact))}
                 >
                   <HelpCircle aria-hidden="true" />
                 </Button>

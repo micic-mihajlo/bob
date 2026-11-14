@@ -1,0 +1,167 @@
+/* The Why? path graph: columns left to right, joined by labelled arrows, revealed along the path. */
+.why-graph {
+  display: grid;
+  flex: 0 0 auto;
+  gap: var(--bob-space-2);
+  border-bottom: 1px solid var(--bob-border);
+  padding: var(--bob-space-3) var(--bob-space-4);
+}
+
+.why-graph-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--bob-space-2);
+}
+
+.why-graph-title {
+  color: var(--bob-text-secondary);
+  font-size: var(--bob-text-sm);
+  font-weight: var(--bob-weight-medium);
+}
+
+.why-graph-source {
+  border: 1px solid var(--bob-border);
+  border-radius: var(--bob-radius-pill);
+  padding: 0 var(--bob-space-2);
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+}
+
+.why-graph-source[data-source="hydra"] {
+  border-color: var(--bob-border-strong);
+  background: var(--bob-accent-soft);
+  color: var(--bob-text-primary);
+}
+
+.why-graph-path {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  overflow-x: auto;
+  padding: var(--bob-space-1) 0;
+  list-style: none;
+}
+
+.why-graph-column,
+.why-graph-link {
+  animation: why-graph-in var(--bob-duration-normal) var(--bob-ease-out) both;
+  animation-delay: calc(var(--why-step) * 45ms);
+}
+
+.why-graph-column {
+  display: grid;
+  min-width: 96px;
+  max-width: 176px;
+  flex: 1 1 0;
+  gap: var(--bob-space-1-5);
+}
+
+.why-graph-node {
+  display: grid;
+  min-width: 0;
+  gap: var(--bob-space-0-5);
+  border: 1px solid var(--bob-border);
+  border-radius: var(--bob-radius-md);
+  padding: var(--bob-space-1-5) var(--bob-space-2);
+  background: var(--bob-bg-control);
+}
+
+.why-graph-column:last-child {
+  max-width: 240px;
+  flex-grow: 1.6;
+}
+
+.why-graph-node[data-kind="origin"] .why-graph-node-label {
+  -webkit-line-clamp: 3;
+}
+
+.why-graph-node[data-kind="origin"] {
+  border-color: var(--bob-border-strong);
+  background: var(--bob-bg-surface-raised);
+  box-shadow: 0 0 0 1px var(--bob-accent-soft);
+}
+
+.why-graph-node-title {
+  display: flex;
+  align-items: center;
+  gap: var(--bob-space-1);
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+}
+
+.why-graph-node-title > svg {
+  width: var(--bob-icon-xs);
+  height: var(--bob-icon-xs);
+  flex: 0 0 auto;
+}
+
+.why-graph-node[data-kind="origin"] .why-graph-node-title {
+  color: var(--bob-text-secondary);
+}
+
+.why-graph-node-label {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--bob-text-primary);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+/* An arrow: a line with a head, its words above it. */
+.why-graph-link {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0 var(--bob-space-2) var(--bob-space-3) var(--bob-space-1-5);
+}
+
+.why-graph-link::before {
+  position: absolute;
+  right: var(--bob-space-2);
+  bottom: var(--bob-space-1-5);
+  left: var(--bob-space-1);
+  height: 1px;
+  background: var(--bob-border-strong);
+  content: "";
+}
+
+.why-graph-link::after {
+  position: absolute;
+  right: var(--bob-space-1-5);
+  bottom: calc(var(--bob-space-1-5) - 3px);
+  width: 6px;
+  height: 6px;
+  border-top: 1px solid var(--bob-border-strong);
+  border-right: 1px solid var(--bob-border-strong);
+  content: "";
+  rotate: 45deg;
+}
+
+.why-graph-link-label {
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+  white-space: nowrap;
+}
+
+@keyframes why-graph-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .why-graph-column,
+  .why-graph-link {
+    animation: none;
+  }
+}

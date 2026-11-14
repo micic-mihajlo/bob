@@ -18,6 +18,7 @@ import {
   type ReviewArtifact,
 } from "@/lib/client/pull-requests";
 import type { Artifact } from "@/lib/types";
+import { pullRequestIdOf } from "@/lib/client/why-graph";
 
 function StatusIcon({ state }: { state: PullRequestState }) {
   if (state === "merged") return <GitMerge aria-hidden="true" />;
@@ -37,7 +38,7 @@ function WhyButton({ artifact, subject }: { artifact: Artifact; subject: string 
       className="chat-action-card-open"
       aria-label={`Why does ${subject} exist?`}
       disabled={messageId === null}
-      onClick={() => messageId && openWhy(messageId)}
+      onClick={() => messageId && openWhy(messageId, pullRequestIdOf(artifact))}
     >
       Why?
       <ChevronRight aria-hidden="true" />

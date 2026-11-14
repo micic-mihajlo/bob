@@ -9,6 +9,7 @@ import { fetchWhy } from "@/lib/client/api";
 import { formatElapsed } from "@/lib/client/format";
 import { buildWhyTrace, type WhySpan, type WhyTraceModel } from "@/lib/client/why-trace";
 import type { MessageId } from "@/lib/types";
+import { WhyGraph } from "./WhyGraph";
 
 type TraceState =
   | { messageId: MessageId; status: "ready"; trace: WhyTraceModel }
@@ -76,7 +77,7 @@ function TraceRow({ span }: { span: WhySpan }) {
  * reference's trace waterfall. The last row is the sentence the person typed.
  */
 export function WhyTraceDialog() {
-  const { whyMessageId, closeWhy } = useBob();
+  const { whyMessageId, whyPullRequestId, closeWhy } = useBob();
   const [state, setState] = useState<TraceState | null>(null);
   const content = useRef<HTMLDivElement>(null);
 
@@ -127,6 +128,7 @@ export function WhyTraceDialog() {
             <TraceTotal label="Agents" value={trace ? String(trace.agentCount) : "…"} />
             <TraceTotal label="Started by" value={origin ? origin.name : "…"} />
           </dl>
+          {whyPullRequestId ? <WhyGraph pullRequestId={whyPullRequestId} /> : null}
           <div className="trace-body">
             <div className="trace-grid">
               <div className="trace-row trace-axis-row">

@@ -1,4 +1,4 @@
-import { API, type AgentId, type MessageId, type Project, type WhyHop } from "@/lib/types";
+import { API, type AgentId, type GraphView, type MessageId, type Project, type WhyHop } from "@/lib/types";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -73,6 +73,14 @@ export async function fetchWhy(messageId: MessageId, signal: AbortSignal): Promi
   const payload: unknown = await response.json();
   if (!isRecord(payload) || !Array.isArray(payload.hops)) throw new Error("The trace was not in the expected shape.");
   return payload.hops as WhyHop[];
+}
+
+export async function fetchGraph(pullRequestId: string, signal: AbortSignal): Promise<GraphView> {
+  const response = await fetch(API.graph(pullRequestId), { signal, cache: "no-store" });
+  if (!response.ok) throw new Error(`The server answered ${response.status}.`);
+  const payload: unknown = await response.json();
+  if (!isRecord(payload) || !Array.isArray(payload.nodes) || !Array.isArray(payload.edges)) throw new Error("The graph was not in the expected shape.");
+  return payload as unknown as GraphView;
 }
 
 /** Opens a parked project by name, brings in a repository, or starts one from the template. */

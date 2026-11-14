@@ -61,7 +61,7 @@ function PullRequestCard({ pullRequest }: { pullRequest: PullRequestArtifact }) 
         <span className="bob-pr-number">#{number}</span>
         <Badge variant={STATE_VARIANT[state]}>{PULL_REQUEST_STATE_LABEL[state]}</Badge>
         {pullRequest.messageId ? (
-          <Button variant="ghost" size="xs" className="bob-pr-why" onClick={() => pullRequest.messageId && openWhy(pullRequest.messageId)}>
+          <Button variant="ghost" size="xs" className="bob-pr-why" onClick={() => pullRequest.messageId && openWhy(pullRequest.messageId, pullRequest.id)}>
             <HelpCircle aria-hidden="true" />
             Why?
           </Button>
