@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SAMPLE_INVOICES } from "./invoices";
-import { invoiceRows, summary } from "./page";
+import { invoiceRows, invoicesCsv, summary } from "./page";
 
 describe("page", () => {
   it("renders one row per invoice", () => {
@@ -21,5 +21,19 @@ describe("page", () => {
   it("counts overdue invoices in the summary", () => {
     expect(summary(SAMPLE_INVOICES, "2026-11-20")).toBe("3 invoices, 2 outstanding ($579.50 owed), 1 overdue");
     expect(summary(SAMPLE_INVOICES, "2026-11-01")).toBe("3 invoices, 2 outstanding ($579.50 owed), 0 overdue");
+  });
+
+  it("exports every invoice as CSV", () => {
+    expect(invoicesCsv(SAMPLE_INVOICES).split("\n")).toEqual([
+      "Invoice,Customer,Amount,Status,Due",
+      "INV-1001,Acme Corp,$1250.00,paid,2026-10-31",
+      'INV-1002,"Globex, Inc.",$480.50,sent,2026-11-14',
+      "INV-1003,Initech,$99.00,draft,2026-12-01",
+    ]);
+  });
+
+  it("escapes quotes in a CSV field", () => {
+    const csv = invoicesCsv([{ ...SAMPLE_INVOICES[0], customer: 'Say "hi", Ltd.' }]);
+    expect(csv.split("\n")[1]).toBe('INV-1001,"Say ""hi"", Ltd.",$1250.00,paid,2026-10-31');
   });
 });
