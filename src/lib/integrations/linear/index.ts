@@ -22,7 +22,7 @@ interface IssueNode {
 
 const issueFilter = (config: LinearConfig) => ({
   labels: { name: { eqIgnoreCase: LINEAR_LABEL } },
-  state: { type: { nin: ["completed", "canceled"] } },
+  state: { type: { nin: ["completed", "canceled", "duplicate"] } },
   ...(config.team ? { team: { key: { eq: config.team } } } : {}),
 });
 

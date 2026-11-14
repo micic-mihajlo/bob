@@ -56,7 +56,7 @@ describe("Linear as an inbox source", { timeout: 30_000 }, () => {
   it("pulls open issues labelled bob into the inbox once, keeping the issue, and Why? ends at it", async () => {
     const first = await syncLinear();
     expect(first.ok && first.added).toHaveLength(1);
-    expect(calls[0].variables.filter).toEqual({ labels: { name: { eqIgnoreCase: "bob" } }, state: { type: { nin: ["completed", "canceled"] } }, team: { key: { eq: "STA" } } });
+    expect(calls[0].variables.filter).toEqual({ labels: { name: { eqIgnoreCase: "bob" } }, state: { type: { nin: ["completed", "canceled", "duplicate"] } }, team: { key: { eq: "STA" } } });
     const item = inboxItem(getState(), first.ok ? first.added[0] : "")!;
     expect(item).toMatchObject({
       kind: "feedback",
