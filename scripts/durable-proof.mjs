@@ -112,7 +112,8 @@ say("durable proof: request sent to the captain");
 
 const mid = await until("a crew thread working on the request", async () => {
   const s = await call("/api/state");
-  return crew(s).length > 0 && pending(s).length === 0 ? s : undefined;
+  const working = crew(s).some((a) => s.threads[a.id]?.items.some((i) => i.kind === "step"));
+  return working && pending(s).length === 0 ? s : undefined;
 });
 const held = await until(`the Durable Object holding rev ${mid.rev}`, async () => {
   const latest = await durable("/latest");
