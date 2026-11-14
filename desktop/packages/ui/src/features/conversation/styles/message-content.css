@@ -632,7 +632,7 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--bob-border);
-  border-radius: var(--bob-radius-md);
+  border-radius: var(--bob-radius-lg);
   background: var(--bob-bg-control);
 }
 
@@ -667,12 +667,9 @@
 
 .message-code-language {
   flex: none;
-  border-radius: var(--bob-radius-pill);
-  background: var(--bob-border);
-  padding: 1px 6px;
-  color: var(--bob-text-readable);
+  color: var(--bob-text-muted);
   font-size: var(--bob-text-sm);
-  font-weight: var(--bob-weight-medium);
+  font-weight: var(--bob-weight-regular);
   line-height: 16px;
 }
 
@@ -755,8 +752,8 @@
   max-height: 420px;
   overflow: auto;
   margin: 0;
-  background: var(--bob-bg-sidebar);
-  padding-block: 8px 10px;
+  background: var(--bob-bg-control);
+  padding-block: 10px 12px;
   color: var(--bob-text-secondary);
   font-family: var(--bob-font-mono);
   font-size: var(--bob-text-sm);

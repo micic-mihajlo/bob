@@ -4,6 +4,7 @@
   border: 1px solid var(--bob-border);
   border-radius: var(--bob-radius-card);
   background: var(--bob-bg-canvas);
+  box-shadow: var(--bob-shadow-card);
   color: var(--bob-text-primary);
   padding: var(--bob-space-4);
 }
