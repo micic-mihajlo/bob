@@ -59,7 +59,9 @@ export function CaptainChatEmptyState({
     <div className="agent-chat-empty bob-chat-empty">
       <div className="agent-chat-empty-pitch">
         <AgentAvatar agent={agent} mood="idle" motion="always" className="agent-chat-empty-avatar" />
-        <h2 className="agent-chat-empty-title">Hi, I&apos;m {agent.name}. Where do you want to start?</h2>
+        <h2 className="agent-chat-empty-title">
+          <span>Hi, I&apos;m {agent.name}.</span> <span>Where do you want to start?</span>
+        </h2>
         <QuickActions className="bob-quick-actions-centered" disabled={disabled} onSend={onSend} onPrefill={onPrefill} />
       </div>
     </div>
