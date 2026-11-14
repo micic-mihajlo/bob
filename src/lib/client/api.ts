@@ -1,4 +1,4 @@
-import { API, type AgentId, type GraphView, type MessageId, type Project, type ProjectTemplate, type WhyHop } from "@/lib/types";
+import { API, type AgentId, type ClaudeMethod, type GraphView, type MessageId, type Project, type ProjectTemplate, type WhyHop } from "@/lib/types";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -107,5 +107,21 @@ export async function listProjects(): Promise<Project[] | null> {
     return isRecord(payload) && Array.isArray(payload.projects) ? (payload.projects as Project[]) : null;
   } catch {
     return null;
+  }
+}
+
+/** Connects the person's own Claude for SDK turns. The secret goes to the server once and is never read back. */
+export function connectClaude(method: ClaudeMethod, secret?: string): Promise<ActionResult> {
+  return post(API.claude, { method, ...(secret ? { secret } : {}) });
+}
+
+export async function disconnectClaude(): Promise<ActionResult> {
+  try {
+    const response = await fetch(API.claude, { method: "DELETE" });
+    const payload: unknown = await response.json().catch(() => null);
+    if (isRecord(payload) && payload.ok === true) return { ok: true };
+    return { ok: false, error: isRecord(payload) && typeof payload.error === "string" ? payload.error : `The server answered ${response.status}.` };
+  } catch {
+    return { ok: false, error: NETWORK_ERROR };
   }
 }
