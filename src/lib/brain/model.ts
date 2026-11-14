@@ -1,4 +1,4 @@
-import { streamText, tool, type ModelMessage, type TextStreamPart, type ToolSet } from "ai";
+import { jsonSchema, streamText, tool, type ModelMessage, type TextStreamPart, type ToolSet } from "ai";
 import { modelsToTry } from "../models";
 import { addNotice } from "../state-ops";
 import { update } from "../store";
@@ -19,7 +19,7 @@ const CUT_OFF_NOTE =
 
 /** Tools are declared without `execute`, so the model proposes calls and the turn loop runs them. */
 function toolSet(specs: ToolSpec[]): ToolSet {
-  return Object.fromEntries(specs.map((s) => [s.name, tool({ description: s.description, inputSchema: s.schema })]));
+  return Object.fromEntries(specs.map((s) => [s.name, tool({ description: s.description, inputSchema: s.jsonSchema ? jsonSchema(s.jsonSchema) : s.schema })]));
 }
 
 function moveMessages(move: MoveRecord): ModelMessage[] {

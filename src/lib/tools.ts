@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { callClientTool, isClientTool } from "./client-tools";
 import type { Toolset } from "./crew";
 import { agentById } from "./state";
 import { addThreadItem, stamp } from "./state-ops";
@@ -73,6 +74,7 @@ export async function callTool(name: string, rawInput: unknown, ctx: ToolContext
   const agent = agentById(getState(), ctx.agentId);
   if (!agent) return fail(`Unknown agent ${ctx.agentId}.`);
   const def = defsFor(toolsetOf(agent)).find((t) => t.name === name);
+  if (!def && isClientTool(ctx.agentId, name)) return runClientTool(name, rawInput, ctx);
   if (!def) return fail(`${name} is not one of your tools. Use only the tools you were given.`);
   const parsed = def.schema.safeParse(rawInput);
   const label = parsed.success ? safeLabel(def, parsed.data) : name;
@@ -82,6 +84,25 @@ export async function callTool(name: string, rawInput: unknown, ctx: ToolContext
   const out = await runParsed(def, parsed, name, ctx);
   finishStep(ctx.agentId, step.id, def, parsed.success ? parsed.data : undefined, out.result, (Date.now() - started) / 1000);
   return out;
+}
+
+/** A desktop tool: the step shows here while the desktop runs it and posts the result back. */
+async function runClientTool(name: string, input: unknown, ctx: ToolContext): Promise<ToolOutput> {
+  const step = stamp();
+  const label = `Using ${name.replace(/_[0-9a-f]{12}$/u, "").replaceAll("__", " · ")} on this computer`;
+  update((s) => addThreadItem(s, ctx.agentId, { kind: "step", ...step, turnId: ctx.turnId, tool: name, label }));
+  const started = Date.now();
+  const { output, errorText } = await callClientTool(ctx.agentId, name, input);
+  const result = errorText ? { error: errorText } : { output };
+  const detail = (errorText ?? JSON.stringify(output) ?? "").slice(0, DETAIL_LIMIT);
+  const seconds = Math.round(((Date.now() - started) / 1000) * 10) / 10;
+  update((s) => {
+    const items = s.threads[ctx.agentId];
+    if (!items?.some((i) => i.id === step.id)) return s;
+    const patch = { outcome: errorText ? ("failed" as const) : ("ok" as const), seconds, ...(detail ? { detail } : {}) };
+    return { ...s, threads: { ...s.threads, [ctx.agentId]: items.map((i) => (i.id === step.id && i.kind === "step" ? { ...i, ...patch } : i)) } };
+  });
+  return { result };
 }
 
 async function runParsed(def: ToolDef, parsed: z.ZodSafeParseResult<unknown>, name: string, ctx: ToolContext): Promise<ToolOutput> {
