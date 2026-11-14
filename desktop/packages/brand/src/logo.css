@@ -18,18 +18,39 @@
   transform-origin: center;
 }
 
-/* The ASCII head, the generated avatar of an agent (AgentAvatar in @bob/ui): a canvas 1.5x the
-   avatar box, centered on it, so the light the head gives off has room around it. The tracks are the
-   box: an auto row grows to the canvas and its 150% height then resolves against that row. */
-.agent-avatar-bob {
+/* The pixel builder, the generated avatar of an agent (AgentAvatar in @bob/ui). The head and shoulders
+   fill a row-size box; from 48px the full figure takes over. Pixels stay square at every size. */
+.agent-avatar-builder {
+  container-type: inline-size;
   grid-template: 100% / 100%;
 }
 
-.agent-avatar > .agent-avatar-ascii {
+.agent-avatar-builder > span {
   display: block;
-  width: 150%;
-  height: 150%;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
+}
+
+.agent-avatar-builder svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.agent-avatar-builder > .agent-avatar-builder-large {
+  display: none;
+}
+
+@container (min-width: 48px) {
+  .agent-avatar-builder > .agent-avatar-builder-small {
+    display: none;
+  }
+
+  .agent-avatar-builder > .agent-avatar-builder-large {
+    display: block;
+  }
 }
 
 /* A face that blinks now and then: 120ms closed in a six-second loop. */
@@ -53,4 +74,10 @@
   .app-logo[data-animation="blink"] .bob-face-eyes {
     animation: none;
   }
+}
+/* The builder logo is pixel art on a clear ground: no tile corner clips its shoulders. */
+.app-logo.app-logo-builder {
+  overflow: visible;
+  border-radius: 0;
+  image-rendering: pixelated;
 }

@@ -16,6 +16,7 @@
     "./bob-mark-paths": "./src/bob-mark-paths.ts",
     "./bob-face": "./src/BobFace.tsx",
     "./bob-face-shape": "./src/bob-face-shape.ts",
+    "./bob-builder-sprite": "./src/bob-builder-sprite.ts",
     "./wordmark-shape": "./src/wordmark-shape.ts",
     "./provider-logo-shape": "./src/provider-logo-shape.ts",
     "./connector-mark-shape": "./src/connector-mark-shape.ts"

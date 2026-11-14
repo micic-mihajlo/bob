@@ -1,4 +1,5 @@
-import { type AvatarMood, avatarMoodIsBusy, avatarMoodPresentation } from "@bob/brand/bloub-avatar-motion";
+import { type AvatarMood, avatarMoodPresentation } from "@bob/brand/bloub-avatar-motion";
+import { type BuilderState, builderSvg } from "@bob/brand/bob-builder-sprite";
 import type { AvatarHue } from "@bob/contracts/ipc";
 import { prefersReducedMotion } from "@bob/ui/utils";
 import { BotEngine, type BotFrame, DEMI_VIEWBOX, POSES, RAYON } from "@norbert_bodziony/bloub";
@@ -6,14 +7,6 @@ import type { JSX } from "@solidjs/web";
 import { createEffect, createSignal, createUniqueId, For, onSettled, Show } from "solid-js";
 import type { AvatarMotion, SupportedAvatarSilhouetteId } from "../../bloub-avatar";
 import type { AgentProfile } from "../../data";
-import {
-  type AsciiFaceFrame,
-  asciiFaceFrame,
-  asciiFaceIdentity,
-  asciiFaceSettled,
-  drawAsciiFace,
-  easeAsciiFaceFrame,
-} from "./bob-ascii-face";
 
 // Cap the ring animation of a photo avatar, and the ASCII head, at 30fps: uncapped bloub clocks measured
 // 30% renderer / 24% GPU for two visible avatars. At 24-40px the eye cannot see the difference.
@@ -22,13 +15,6 @@ const AVATAR_FPS = 30;
 // Decor rings are sampled from the `orbit` pose, not played as a state: `orbit`
 // replaces the body, while sampling only `frame.arcs` keeps the silhouette.
 const RING_POSE = "orbit";
-
-// Hover group lookup: the first `[data-avatar-hover]`/control ancestor, since dialogs and
-// scroll regions with `[tabindex]` are too wide to count as one.
-const HOVER_GROUP = "[data-avatar-hover], button, a, [role='button'], [role='link'], [role='menuitem']";
-
-// How far away the pointer can be before the head stops turning toward it, in pixels.
-const GAZE_DISTANCE = 320;
 
 interface AgentAvatarProps {
   agent?: Pick<AgentProfile, "avatarSeed" | "avatarHue" | "avatarUrl"> | undefined;
@@ -240,6 +226,21 @@ function AvatarArcs(props: { arcs: BotFrame["arcs"]; half: "back" | "front"; ref
   );
 }
 
+const BUILDER_MOODS: Record<AvatarMood, BuilderState> = {
+  idle: "idle",
+  responded: "idle",
+  asleep: "idle",
+  connecting: "working",
+  working: "working",
+  waiting: "needs-you",
+  failed: "error",
+};
+
+/**
+ * Bob as a pixel-art builder. The head and shoulders show at row size and the full figure from 48px
+ * up; a container query on the avatar box picks one. "working" swings the hammer, and reduced motion
+ * holds it still.
+ */
 function GeneratedAvatar(props: {
   seed: string;
   hue: AvatarHue | null;
@@ -251,174 +252,18 @@ function GeneratedAvatar(props: {
   class: string;
   style?: Record<string, string>;
 }) {
-  let element: HTMLSpanElement | undefined;
-  let canvas: HTMLCanvasElement | undefined;
-  const [interacting, setInteracting] = createSignal(false);
-  // What the frame loop reads. It is copied out of props by an effect, so the loop never reads them.
-  let live = {
-    identity: asciiFaceIdentity(props.seed, props.hue),
-    mood: props.mood,
-    level: props.level,
-    moving: false,
-  };
-  let look: { x: number; y: number } | null = null;
-  let wake = () => {};
-
-  onSettled(() => {
-    // What must be hovered or focused for a resting face to move: the control the avatar sits in or
-    // beside, marked with `data-avatar-hover` when the avatar is only a neighbour of it. A dialog and a
-    // scroll region are focusable as well, and taking one of those would start every avatar on it at once.
-    const group = element?.closest<HTMLElement>(`${HOVER_GROUP}, [tabindex]`);
-    const interactionTarget = group?.matches(HOVER_GROUP) ? group : element;
-    const startInteraction = () => setInteracting(true);
-    const stopInteraction = () => setInteracting(false);
-    // Only keyboard focus starts the avatar. A click leaves the focus on the button it lands on, such as
-    // the sidebar row of the open channel, and the window gives that button `focusin` again each time it
-    // comes back to the front.
-    const startFocusInteraction = (event: FocusEvent) => {
-      if (event.target instanceof Element && event.target.matches(":focus-visible")) startInteraction();
-    };
-    const stopFocusInteraction = (event: FocusEvent) => {
-      if (!(event.relatedTarget instanceof Node) || !interactionTarget?.contains(event.relatedTarget)) {
-        stopInteraction();
-      }
-    };
-    interactionTarget?.addEventListener("pointerenter", startInteraction);
-    interactionTarget?.addEventListener("pointerleave", stopInteraction);
-    interactionTarget?.addEventListener("focusin", startFocusInteraction);
-    interactionTarget?.addEventListener("focusout", stopFocusInteraction);
-
-    const context = canvas?.getContext("2d");
-    const reduced = prefersReducedMotion();
-    let size = 0;
-    let visible = true;
-    let handle = 0;
-    let previousFrameAt = 0;
-    let drawnAt = -Infinity;
-    let time = 0;
-    let current: AsciiFaceFrame | null = null;
-    const target = (animated: boolean) =>
-      asciiFaceFrame(live.mood, time + live.identity.phase, animated, live.level, look);
-    const draw = (frame: AsciiFaceFrame) => {
-      if (!context || !canvas || size === 0) return;
-      const ratio = Math.min(2, window.devicePixelRatio || 1);
-      const pixels = Math.round(size * ratio);
-      if (canvas.width !== pixels) {
-        canvas.width = pixels;
-        canvas.height = pixels;
-      }
-      context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      drawAsciiFace(context, size, live.identity, frame);
-    };
-    const step = (now: number) => {
-      handle = 0;
-      const dt = previousFrameAt ? Math.min((now - previousFrameAt) / 1000, 0.064) : 0;
-      previousFrameAt = now;
-      time += dt;
-      const goal = target(live.moving);
-      current = current ? easeAsciiFaceFrame(current, goal, dt) : goal;
-      if (now - drawnAt >= 1000 / AVATAR_FPS) {
-        drawnAt = now;
-        draw(current);
-      }
-      // A head with nothing to do stops its clock once it has eased into its pose.
-      if (live.moving || !asciiFaceSettled(current, goal)) handle = requestAnimationFrame(step);
-      else draw(current);
-    };
-    wake = () => {
-      if (reduced || !visible) {
-        current = target(false);
-        draw(current);
-        return;
-      }
-      if (handle) return;
-      // The clock restarts from the next frame, so a row that scrolls back in resumes where it
-      // stopped rather than jumping forward by the time it spent out of sight.
-      previousFrameAt = 0;
-      handle = requestAnimationFrame(step);
-    };
-    const resize = new ResizeObserver(([entry]) => {
-      size = (entry?.contentRect.width ?? 0) * 1.5;
-      draw(current ?? target(false));
-    });
-    if (element) resize.observe(element);
-    // Like the rings, every working row in a long sidebar would keep drawing a head nobody can see.
-    const observer = window.IntersectionObserver
-      ? new IntersectionObserver(([entry]) => {
-          visible = entry?.isIntersecting ?? true;
-          if (!visible && handle) {
-            cancelAnimationFrame(handle);
-            handle = 0;
-          }
-          wake();
-        })
-      : undefined;
-    if (observer && element) observer.observe(element);
-    wake();
-
-    return () => {
-      interactionTarget?.removeEventListener("pointerenter", startInteraction);
-      interactionTarget?.removeEventListener("pointerleave", stopInteraction);
-      interactionTarget?.removeEventListener("focusin", startFocusInteraction);
-      interactionTarget?.removeEventListener("focusout", stopFocusInteraction);
-      resize.disconnect();
-      observer?.disconnect();
-      if (handle) cancelAnimationFrame(handle);
-      wake = () => {};
-    };
-  });
-
-  createEffect(
-    () => ({
-      identity: asciiFaceIdentity(props.seed, props.hue),
-      mood: props.mood,
-      level: props.level,
-      moving:
-        avatarMoodIsBusy(props.mood) ||
-        props.motion === "always" ||
-        props.level > 0 ||
-        props.followPointer ||
-        interacting(),
-    }),
-    (value) => {
-      live = value;
-      wake();
-    },
-  );
-
-  // The head turns toward the pointer. Only a few large faces ask for it, such as a first-run hero.
-  createEffect(
-    () => props.followPointer,
-    (follow) => {
-      if (!follow || prefersReducedMotion()) return;
-      const turn = (event: PointerEvent) => {
-        if (!element || event.pointerType === "touch") return;
-        const box = element.getBoundingClientRect();
-        look = {
-          x: Math.max(-1, Math.min(1, (event.clientX - (box.left + box.width / 2)) / GAZE_DISTANCE)),
-          y: Math.max(-1, Math.min(1, (event.clientY - (box.top + box.height / 2)) / GAZE_DISTANCE)),
-        };
-      };
-      window.addEventListener("pointermove", turn, { passive: true });
-      return () => {
-        window.removeEventListener("pointermove", turn);
-        look = null;
-      };
-    },
-  );
-
+  const state = () => BUILDER_MOODS[props.mood] ?? "idle";
   return (
     <span
-      ref={element}
-      class={`${props.class} agent-avatar-bob`}
+      class={`${props.class} agent-avatar-builder`}
       style={props.style}
       data-avatar="generated"
       data-mood={props.mood}
       data-breathe={props.breathe}
-      data-interacting={interacting() ? "" : undefined}
       aria-hidden="true"
     >
-      <canvas ref={canvas} class="agent-avatar-ascii" />
+      <span class="agent-avatar-builder-small" innerHTML={builderSvg(state(), "small")} />
+      <span class="agent-avatar-builder-large" innerHTML={builderSvg(state(), "large")} />
     </span>
   );
 }
