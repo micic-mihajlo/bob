@@ -70,7 +70,7 @@ export function DrivePane({ onClose }: { onClose: () => void }) {
             label={`Files in ${captainName}'s drive`}
             groupByDay
             emptyTitle="The drive is empty"
-            emptyDescription={`${captainName} keeps a digest, the crew list and notes here as the work moves.`}
+            emptyDescription={`${captainName} keeps a digest, the Blob list and notes here as the work moves.`}
             rows={files.map((entry) => ({
               key: entry.name,
               name: entry.name,

@@ -20,8 +20,8 @@ const anton = Anton({
 });
 
 export const metadata: Metadata = {
-  title: "Bob",
-  description: "A team of agents that message each other, with you in the loop.",
+  title: "Bob and B(l)obs",
+  description: "Bob and his lil builders.",
 };
 
 /** Sets the saved theme before the first paint, so a reload never flashes the other look. */

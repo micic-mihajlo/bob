@@ -50,7 +50,7 @@ function plural(count: number, one: string, other: string): string {
 }
 
 function agentCount(count: number): string {
-  return `${count} ${plural(count, "agent", "agents")}`;
+  return `${count} ${plural(count, "Blob", "Blobs")}`;
 }
 
 /** The text of an open agent message, as the chat draws it under its marker. */
@@ -211,7 +211,7 @@ function AgentMessageGroupMarker(
     <MarkerGroup
       className="chat-action-marker chat-action-marker-agent-message chat-action-marker-agent-message-group"
       label={`${label} ${agentsLabel}`}
-      listLabel="Messages with agents"
+      listLabel="Messages with Blobs"
       entries={props.group.messages}
       drawnCount={props.drawnMessageCount}
       agents={props.agents}
