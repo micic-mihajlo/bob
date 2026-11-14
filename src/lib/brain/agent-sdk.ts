@@ -1,9 +1,11 @@
+import os from "node:os";
 import path from "node:path";
 import { createSdkMcpServer, query, tool, type HookCallback, type Options, type SdkMcpToolDefinition, type SDKMessage, type SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import type { z } from "zod";
 import { acceptanceLock, ACCEPTANCE_WRITE_LABEL, isAcceptanceTest } from "../acceptance";
 import { globals } from "../globals";
-import { LIGHT_MODEL, STRONG_MODEL } from "../models";
+import { readClaudeConnection } from "../claude-connection";
+import { isClaudeModel, LIGHT_MODEL, STRONG_MODEL } from "../models";
 import { addThreadItem, stamp } from "../state-ops";
 import { getState, subscribe, update } from "../store";
 import { threadWorkspace } from "../thread-workspace";
@@ -54,12 +56,53 @@ export function setSdkQuery(fn: QueryFn | null): void {
   queryFn = fn ?? realQuery;
 }
 
-/** BOB_ENGINE=sdk with the model brain: build and review crew threads run one SDK query per turn. */
+/**
+ * With the model brain, a thread set to a Claude model while the person's Claude is connected, the captain
+ * included, runs one SDK query per turn on it. BOB_ENGINE=sdk also puts build and review crew threads there.
+ */
 export function usesSdk(agentId: AgentId): boolean {
-  if (process.env.BOB_ENGINE !== "sdk") return false;
   if (queryFn === realQuery && (brainKind() !== "model" || globals().brainOverride)) return false;
   const agent = getState().agents.find((a) => a.id === agentId);
+  if (agent && isClaudeModel(agent.model) && readClaudeConnection()) return true;
+  if (process.env.BOB_ENGINE !== "sdk") return false;
   return agent?.kind === "crew" && (agent.crewRole === "build" || agent.crewRole === "review");
+}
+
+const CLAUDE_AUTH_ERROR = /not logged in|\/login|\b401\b|authenticat|unauthori[sz]ed|invalid (?:api[ -]?key|x-api-key|bearer)|oauth token|credit balance/i;
+
+/** Whether an SDK turn failed because the connected Claude would not sign in. */
+export const isClaudeAuthError = (error: unknown): boolean => CLAUDE_AUTH_ERROR.test(error instanceof Error ? error.message : String(error));
+
+/**
+ * One tiny query on the connected Claude, set up as a turn's is, so a credential that cannot call it fails
+ * when it is connected instead of in a turn. Null when Claude answered; the scripted brain calls no model.
+ */
+export async function claudeCheckError(): Promise<string | null> {
+  if (queryFn === realQuery && (brainKind() !== "model" || globals().brainOverride)) return null;
+  const { env, model } = engineAuth("claude-haiku");
+  const options: Options = {
+    model,
+    tools: [],
+    settingSources: [],
+    persistSession: false,
+    maxTurns: 1,
+    permissionMode: "bypassPermissions",
+    allowDangerouslySkipPermissions: true,
+    env: { PATH: process.env.PATH ?? "/usr/local/bin:/usr/bin:/bin", HOME: os.tmpdir(), CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1", ...env },
+  };
+  const prompt = (async function* (): AsyncIterable<SDKUserMessage> {
+    yield { type: "user", message: { role: "user", content: "Reply with the word ok." }, parent_tool_use_id: null };
+  })();
+  try {
+    for await (const m of queryFn({ prompt, options }, [])) {
+      if (m.type !== "result") continue;
+      if (m.subtype === "success" && !m.is_error) return null;
+      return (m.subtype === "success" ? m.result.trim() : m.subtype).slice(0, 300) || "Claude did not answer.";
+    }
+    return "Claude did not answer.";
+  } catch (error) {
+    return (error instanceof Error ? error.message : String(error)).slice(0, 300);
+  }
 }
 
 /** Live turns by id, so a stop reaches the query at once instead of at its next message. */
@@ -207,7 +250,8 @@ export async function runSdkTurn(
       }),
     );
 
-  const { env, model } = engineAuth(agent.model === LIGHT_MODEL ? STRONG_MODEL : agent.model);
+  const { env, model, source } = engineAuth(agent.model === LIGHT_MODEL ? STRONG_MODEL : agent.model);
+  console.info(`SDK turn ${turnId}: ${agent.code ?? agent.name} on ${source === "token-pass" ? "gateway" : `Claude (${source})`} / ${model}`);
   const options: Options = {
     cwd: root,
     model,

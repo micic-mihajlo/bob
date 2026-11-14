@@ -1,6 +1,8 @@
 import { autopilotCalls } from "./autopilot";
 import { brainKind, getBrain } from "./brain";
-import { runSdkTurn, usesSdk } from "./brain/agent-sdk";
+import { isClaudeAuthError, runSdkTurn, usesSdk } from "./brain/agent-sdk";
+import { dropClaude } from "./claude-actions";
+import { readClaudeConnection } from "./claude-connection";
 import { runPiTurn, usesPi } from "./brain/pi-durable";
 import type { CallRecord, MoveRecord, ToolCallRequest } from "./brain/types";
 import { globals } from "./globals";
@@ -121,7 +123,7 @@ async function runTurn(t: StartedTurn): Promise<void> {
     moves.push({ text: null, calls: executed.calls });
     if (executed.endTurn) return finishTurn(t, null);
   }
-  if (usesSdk(t.agentId) || usesPi(t.agentId)) return runSdk(t, initial, moves, workspace);
+  if ((usesSdk(t.agentId) || usesPi(t.agentId)) && (await runSdk(t, initial, moves, workspace))) return;
   for (let i = 0; i < limit; i++) {
     if (Date.now() - started > MAX_TURN_MS) {
       final = TIME_LIMIT_TEXT;
@@ -152,15 +154,31 @@ async function runTurn(t: StartedTurn): Promise<void> {
   await finishChecked(t, final === STEP_LIMIT_TEXT || final === TIME_LIMIT_TEXT ? (finishedWork(moves) ?? final) : final);
 }
 
-/** BOB_ENGINE=sdk: one coding-agent query in place of the move loop, ending the way the loop would. */
-async function runSdk(t: StartedTurn, initial: State, moves: MoveRecord[], workspace: string | null): Promise<void> {
+/**
+ * One coding-agent query in place of the move loop, ending the way the loop would. False when the query failed
+ * because the connected Claude would not sign in: Claude is dropped and the caller runs the turn on the loop.
+ */
+async function runSdk(t: StartedTurn, initial: State, moves: MoveRecord[], workspace: string | null): Promise<boolean> {
   const built = isRunning(t.turnId) ? buildContext(getState(), initial, t, moves, workspace) : null;
-  if (!built) return finishStopped(t);
-  const { outcome, moves: made } = await (usesPi(t.agentId) ? runPiTurn : runSdkTurn)(built, t.messageIds[0] ?? null, liveMove(t.agentId, t.turnId), drain, MAX_TURN_MS);
-  if (outcome.kind === "stopped" || !isRunning(t.turnId)) return finishStopped(t);
-  if (outcome.kind === "ended") return finishChecked(t, null);
-  if (outcome.kind === "answered") return finishChecked(t, outcome.text);
-  await finishChecked(t, finishedWork([...moves, ...made]) ?? (outcome.kind === "time_limit" ? TIME_LIMIT_TEXT : STEP_LIMIT_TEXT));
+  if (!built) {
+    finishStopped(t);
+    return true;
+  }
+  const onSdk = usesSdk(t.agentId);
+  let turn: Awaited<ReturnType<typeof runSdkTurn>>;
+  try {
+    turn = await (onSdk ? runSdkTurn : runPiTurn)(built, t.messageIds[0] ?? null, liveMove(t.agentId, t.turnId), drain, MAX_TURN_MS);
+  } catch (error) {
+    if (!onSdk || !readClaudeConnection() || !isClaudeAuthError(error)) throw error;
+    dropClaude(t.agentId, error instanceof Error ? error.message : String(error));
+    return false;
+  }
+  const { outcome, moves: made } = turn;
+  if (outcome.kind === "stopped" || !isRunning(t.turnId)) finishStopped(t);
+  else if (outcome.kind === "ended") await finishChecked(t, null);
+  else if (outcome.kind === "answered") await finishChecked(t, outcome.text);
+  else await finishChecked(t, finishedWork([...moves, ...made]) ?? (outcome.kind === "time_limit" ? TIME_LIMIT_TEXT : STEP_LIMIT_TEXT));
+  return true;
 }
 
 async function executeMove(t: StartedTurn, calls: ToolCallRequest[]): Promise<{ calls: CallRecord[]; endTurn: boolean } | null> {
