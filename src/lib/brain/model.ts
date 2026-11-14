@@ -1,5 +1,6 @@
 import { generateText, tool, type ModelMessage, type ToolSet } from "ai";
 import { modelFor } from "../models";
+import { projectFiles } from "../thread-workspace";
 import type { ToolSpec } from "../tools";
 import { systemPrompt } from "./prompt";
 import type { Brain, MoveRecord, TurnContext } from "./types";
@@ -42,10 +43,11 @@ function messages(ctx: TurnContext): ModelMessage[] {
 /** The AI SDK through the gateway: one model step per move, model id from the agent record. */
 export const modelBrain: Brain = {
   async next(ctx) {
+    const files = ctx.agent.kind === "captain" ? await projectFiles(ctx.state.project).catch(() => []) : [];
     const call = (extra: ModelMessage[], reasoning?: "none") =>
       generateText({
         model: modelFor(ctx.agent),
-        instructions: systemPrompt(ctx.agent, ctx.state),
+        instructions: systemPrompt(ctx.agent, ctx.state, files),
         messages: [...messages(ctx), ...extra],
         tools: toolSet(ctx.tools),
         maxOutputTokens: MAX_OUTPUT_TOKENS,

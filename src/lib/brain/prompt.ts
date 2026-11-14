@@ -40,12 +40,23 @@ function situation(roadmap: Roadmap, rounds: number): string {
 const profileOf = (agent: Agent) =>
   `Your profile (data): ${asData({ id: agent.id, name: agent.name, code: agent.code, title: agent.title, standingInstructions: agent.description })}`;
 
-/** The system prompt, rebuilt for every move from the agent's kind and role and the live roadmap. */
-export function systemPrompt(agent: Agent, state: State): string {
+const PROJECT_FILES_SHOWN = 300;
+
+function projectLine(files: string[]): string {
+  if (files.length === 0) return "# The project's files\nNot available right now. Name only areas the person or a thread's report mentioned.";
+  const more = files.length > PROJECT_FILES_SHOWN ? `\n(and ${files.length - PROJECT_FILES_SHOWN} more)` : "";
+  return `# The project's files on main (data)\nWork orders and briefs name only files, modules and screens in this list. Something the person asks for that is not here gets built inside an existing module, or you tell the person it does not exist yet.\n${files.slice(0, PROJECT_FILES_SHOWN).join("\n")}${more}`;
+}
+
+/**
+ * The system prompt, rebuilt for every move from the agent's kind and role and the live roadmap. The captain
+ * also gets the project's files on main, so it plans only against what exists.
+ */
+export function systemPrompt(agent: Agent, state: State, projectFiles: string[] = []): string {
   if (agent.kind === "captain") {
     const playbook = PLAYBOOKS[STAGES[state.roadmap.stage - 1].playbook];
     const rounds = pushbackRounds(state.threads[agent.id] ?? []);
-    return [PERSONA, CAPTAIN_RULES, profileOf(agent), situation(state.roadmap, rounds), `# Playbook for this stage\n\n${playbook}`].join("\n\n");
+    return [PERSONA, CAPTAIN_RULES, profileOf(agent), situation(state.roadmap, rounds), projectLine(projectFiles), `# Playbook for this stage\n\n${playbook}`].join("\n\n");
   }
   if (agent.kind === "crew" && agent.crewRole) return [CREW_RULES, ROLE_RULES[agent.crewRole], profileOf(agent)].join("\n\n");
   return [STANDING_RULES, profileOf(agent)].join("\n\n");

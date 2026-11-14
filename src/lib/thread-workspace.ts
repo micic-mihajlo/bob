@@ -1,4 +1,6 @@
+import { execFile } from "node:child_process";
 import { rm } from "node:fs/promises";
+import { promisify } from "node:util";
 import { agentById, isCrew, type State } from "./state";
 import { getConfig } from "./store";
 import { findPullRequest, isPullRequest, type PullRequestArtifact } from "./threads";
@@ -19,6 +21,8 @@ import {
   type WorkspaceOptions,
 } from "./workspace";
 
+const execFileAsync = promisify(execFile);
+
 /** Read at call time, so a hot reload that kept an older config object still gets the default. */
 export const workspaceOptions = (): WorkspaceOptions => ({ root: getConfig().workspaceRoot ?? defaultRoot() });
 
@@ -33,6 +37,13 @@ export async function threadWorkspace(project: Project, agentId: string): Promis
   const options = workspaceOptions();
   await ensureProject(project.id, sourceOf(project), options);
   return ensureWorkspace(project.id, agentId, options);
+}
+
+/** The files on the project's main branch, so the captain plans against what exists. */
+export async function projectFiles(project: Project): Promise<string[]> {
+  const { origin } = await ensureProject(project.id, sourceOf(project), workspaceOptions());
+  const { stdout } = await execFileAsync("git", ["-C", origin, "ls-tree", "-r", "--name-only", "HEAD"], { maxBuffer: 4_000_000 });
+  return stdout.split("\n").filter((f) => f && !SKIPPED.test(f));
 }
 
 /**
