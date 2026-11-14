@@ -25,11 +25,11 @@ export const metadata: Metadata = {
 };
 
 /** Sets the saved theme before the first paint, so a reload never flashes the other look. */
-const themeScript = `try{var t=localStorage.getItem("bob-theme");if(t!=="newsprint"&&t!=="classic")t="ink";var r=document.documentElement;r.dataset.theme=t;if(t==="classic")delete r.dataset.print}catch(e){}`;
+const themeScript = `try{var t=localStorage.getItem("bob-theme");if(t==="ink"&&localStorage.getItem("bob-theme-picked")!=="1")t="classic";if(t!=="newsprint"&&t!=="ink")t="classic";var r=document.documentElement;r.dataset.theme=t;if(t!=="classic")r.dataset.print=""}catch(e){}`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${anton.variable}`} data-theme="ink" data-print="" suppressHydrationWarning>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${anton.variable}`} data-theme="classic" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
