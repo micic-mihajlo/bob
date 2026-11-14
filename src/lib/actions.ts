@@ -46,17 +46,17 @@ const unknownAgent = (agentId: AgentId) => ({ ok: false as const, error: `No age
 export type SendMode = "steer" | "queue";
 
 /** Hands a just-sent person message to the agent's running turn, which reads it at its next step. */
-function steerInto(agentId: AgentId, messageId: string, deliveryId: string, text: string): boolean {
+function steerInto(agentId: AgentId, messageId: string, deliveryId: string, text: string, via?: "voice"): boolean {
   return transact((s) => {
     const turn = runningTurn(s, agentId);
     if (!turn) return { state: s, value: false };
     const joined = patchTurn(s, turn.id, { messageIds: [...turn.messageIds, messageId] });
     const claimed = patchDelivery(joined, deliveryId, { status: "completed", turnId: turn.id });
-    return { state: addThreadItem(claimed, agentId, { kind: "user_text", ...stamp(), text }), value: true };
+    return { state: addThreadItem(claimed, agentId, { kind: "user_text", ...stamp(), text, ...(via ? { via } : {}) }), value: true };
   });
 }
 
-export function postUserMessage(agentId: AgentId, text: string, mode: SendMode = "queue"): ActionResult<{ messageId: string; steered: boolean }> {
+export function postUserMessage(agentId: AgentId, text: string, mode: SendMode = "queue", via?: "voice"): ActionResult<{ messageId: string; steered: boolean }> {
   const agent = agentById(getState(), agentId);
   if (!agent) return unknownAgent(agentId);
   const ask = agent.kind === "captain" ? openAsk(getState(), agentId) : null;
@@ -69,9 +69,10 @@ export function postUserMessage(agentId: AgentId, text: string, mode: SendMode =
     causedBy: null,
     requestId: ask?.requestId ?? newId("req"),
     ...(ask ? { continues: ask.id } : {}),
+    ...(via ? { via } : {}),
   });
   if (!sent.ok) return { ok: false, error: sent.error.message };
-  const steered = mode === "steer" && steerInto(agentId, sent.message.id, sent.deliveries[0].id, sent.message.text);
+  const steered = mode === "steer" && steerInto(agentId, sent.message.id, sent.deliveries[0].id, sent.message.text, via);
   if (!steered) drain(agentId);
   return { ok: true, messageId: sent.message.id, steered };
 }

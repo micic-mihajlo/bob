@@ -58,7 +58,7 @@ function RowView({
   const { snapshot } = useBob();
   switch (row.kind) {
     case "user":
-      return <ChatMessageRow id={row.id} author="user" text={row.item.text} at={row.at} animate={animate} />;
+      return <ChatMessageRow id={row.id} author="user" text={row.item.text} at={row.at} animate={animate} voice={row.item.via === "voice"} />;
     case "agent":
       return (
         <>

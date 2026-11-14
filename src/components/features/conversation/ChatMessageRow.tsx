@@ -1,5 +1,6 @@
 "use client";
 
+import { Mic } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
@@ -15,10 +16,12 @@ export interface ChatMessageRowProps {
   text: string;
   at: string;
   animate?: boolean;
+  /** Said in a call: the text is the transcript. */
+  voice?: boolean;
 }
 
 /** One message of the chat: the person's bubble at the end, the agent's at the start. */
-export function ChatMessageRow({ id, author, name, text, at, animate = false }: ChatMessageRowProps) {
+export function ChatMessageRow({ id, author, name, text, at, animate = false, voice = false }: ChatMessageRowProps) {
   const user = author === "user";
   const [copyFailed, setCopyFailed] = useState(false);
   const copy = () => {
@@ -63,6 +66,12 @@ export function ChatMessageRow({ id, author, name, text, at, animate = false }: 
               <CopyGlyph />
             </Button>
           </div>
+          {voice ? (
+            <span className="message-voice-mark" title="Said in a call">
+              <Mic aria-hidden="true" />
+              voice
+            </span>
+          ) : null}
           <time className="message-time" dateTime={at}>
             {formatChatTimestamp(at)}
           </time>

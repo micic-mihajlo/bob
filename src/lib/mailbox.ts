@@ -20,6 +20,7 @@ export interface SendInput {
   approvalId?: string;
   continues?: MessageId;
   automatic?: boolean;
+  via?: "voice";
 }
 
 export type SendErrorCode =
@@ -138,6 +139,7 @@ function buildMessage(input: SendInput, to: AgentId[]): Message {
     ...(input.approvalId ? { approvalId: input.approvalId } : {}),
     ...(input.continues ? { continues: input.continues } : {}),
     ...(input.automatic ? { automatic: true as const } : {}),
+    ...(input.via ? { via: input.via } : {}),
     at: nowIso(),
   };
 }

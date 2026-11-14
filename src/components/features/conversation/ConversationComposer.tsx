@@ -3,6 +3,7 @@
 import { ArrowUp, LoaderCircle, Plus } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useBob } from "@/components/features/window/BobContext";
+import { CallBob } from "@/components/voice/CallBob";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import { interruptAgent, sendMessage, type SendMode } from "@/lib/client/api";
@@ -182,6 +183,7 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
             <Plus aria-hidden="true" />
           </button>
           <div className="composer-primary-actions">
+            {agent.kind === "captain" ? <CallBob agent={agent} /> : null}
             {working && !hasContent ? (
               <Button
                 variant="ghost"
