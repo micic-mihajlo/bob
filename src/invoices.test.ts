@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addInvoice, markPaid, outstanding, overdue, overdueInvoices, SAMPLE_INVOICES, totalCents } from "./invoices";
+import { addInvoice, markPaid, outstanding, outstandingTotal, overdue, overdueInvoices, SAMPLE_INVOICES, totalCents } from "./invoices";
 
 describe("invoices", () => {
   it("adds an invoice and refuses a duplicate id", () => {
@@ -31,5 +31,11 @@ describe("invoices", () => {
 
   it("totals amounts in cents", () => {
     expect(totalCents(SAMPLE_INVOICES)).toBe(182950);
+  });
+
+  it("totals only sent invoices as outstanding", () => {
+    expect(outstandingTotal(SAMPLE_INVOICES)).toBe(48050);
+    expect(outstandingTotal([])).toBe(0);
+    expect(outstandingTotal(markPaid(SAMPLE_INVOICES, "INV-1002"))).toBe(0);
   });
 });

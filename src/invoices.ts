@@ -43,6 +43,11 @@ export function overdue(invoices: readonly Invoice[], today: string): Invoice[] 
   return overdueInvoices(invoices, today);
 }
 
+/** Sum of every sent invoice in cents. Paid and draft invoices do not count. */
+export function outstandingTotal(invoices: readonly Invoice[]): number {
+  return invoices.filter((invoice) => invoice.status === "sent").reduce((sum, invoice) => sum + invoice.amountCents, 0);
+}
+
 export function totalCents(list: readonly Invoice[]): number {
   return list.reduce((sum, invoice) => sum + invoice.amountCents, 0);
 }

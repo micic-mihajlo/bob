@@ -1,5 +1,5 @@
 import { formatAmount } from "./format";
-import { outstanding, overdueInvoices, totalCents, type Invoice } from "./invoices";
+import { outstanding, outstandingTotal, overdueInvoices, type Invoice } from "./invoices";
 
 const escapeHtml = (text: string) =>
   text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
@@ -22,5 +22,5 @@ export function exportButton(): string {
 export function summary(list: readonly Invoice[], today: string): string {
   const owed = outstanding(list);
   const overdue = overdueInvoices(list, today).length;
-  return `${list.length} invoices, ${owed.length} outstanding (${formatAmount(totalCents(owed))} owed), ${overdue} overdue`;
+  return `${list.length} invoices, ${owed.length} outstanding, Outstanding: ${formatAmount(outstandingTotal(list))}, ${overdue} overdue`;
 }
