@@ -1,5 +1,8 @@
+import { execFile } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
+import type { ClaudeMethod, ClaudeStatus } from "./types";
 
 /**
  * The person's own Claude, used as the SDK engine's credential instead of the Token Pass gateway.
@@ -8,22 +11,13 @@ import path from "node:path";
  * - "claude-code": the Claude Code login already on this computer; no secret is stored.
  * The secret stays in a server-side file that only the owner can read. It never goes into the state, a log or a response.
  */
-export type ClaudeMethod = "oauth-token" | "api-key" | "claude-code";
+export type { ClaudeMethod, ClaudeStatus } from "./types";
 
 export interface ClaudeConnection {
   method: ClaudeMethod;
   secret: string | null;
   connectedAt: string;
-  /** "file" when connected in Bob, "env" when CLAUDE_CODE_OAUTH_TOKEN or BOB_ANTHROPIC_API_KEY is set. */
   from: "file" | "env";
-}
-
-/** What the browser may see: never the secret. */
-export interface ClaudeStatus {
-  connected: boolean;
-  method: ClaudeMethod | null;
-  from: "file" | "env" | null;
-  connectedAt: string | null;
 }
 
 export const CLAUDE_METHODS: readonly ClaudeMethod[] = ["oauth-token", "api-key", "claude-code"];
@@ -82,4 +76,28 @@ export function clearClaudeConnection(): void {
 export function claudeStatus(): ClaudeStatus {
   const c = readClaudeConnection();
   return c ? { connected: true, method: c.method, from: c.from, connectedAt: c.connectedAt || null } : { connected: false, method: null, from: null, connectedAt: null };
+}
+
+/**
+ * Whether this computer's Claude Code is signed in, from `claude auth status --json`, which exits 1 when
+ * signed out and still prints its status. Run with the user's own HOME and no credential variables, so it
+ * reads the login and nothing Bob holds. BOB_CLAUDE_CLI names another `claude` executable.
+ */
+export function claudeCodeLogin(): Promise<{ ok: true } | { ok: false; error: string }> {
+  const cli = process.env.BOB_CLAUDE_CLI || "claude";
+  const env: Record<string, string> = { PATH: process.env.PATH ?? "", HOME: os.homedir(), ...(process.env.USER ? { USER: process.env.USER } : {}) };
+  return new Promise((resolve) => {
+    execFile(cli, ["auth", "status", "--json"], { env: env as NodeJS.ProcessEnv, timeout: 10_000, maxBuffer: 64 * 1024 }, (error, stdout) => {
+      if (error && (error as NodeJS.ErrnoException).code === "ENOENT") {
+        return resolve({ ok: false, error: "Claude Code is not installed on this computer. Install it, run claude and sign in, then connect again." });
+      }
+      try {
+        const status = JSON.parse(String(stdout)) as { loggedIn?: unknown };
+        if (status.loggedIn === true) return resolve({ ok: true });
+        return resolve({ ok: false, error: "Claude Code on this computer is not signed in. Run claude and sign in with your Claude account, then connect again." });
+      } catch {
+        return resolve({ ok: false, error: "Could not read Claude Code's sign-in status. Run claude auth status to check it." });
+      }
+    });
+  });
 }
