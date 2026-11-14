@@ -3,9 +3,9 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { postUserMessage } from "../actions";
+import { postUserMessage, resetAll } from "../actions";
 import { listProjects, openProject, projectFor } from "../projects";
-import { getState, update } from "../store";
+import { getState, resetState, update } from "../store";
 import { projectFiles } from "../thread-workspace";
 import { settle } from "../turns";
 import { freshTeam } from "./helpers";
@@ -54,6 +54,32 @@ describe("projects", { timeout: 60_000 }, () => {
   it("records the invoices sample as the template of a new project that names none", async () => {
     const opened = await openProject({ name: "shop-three" });
     expect(opened).toMatchObject({ ok: true, project: { id: "shop-three", template: "invoices" } });
+  });
+
+  it("starts a fresh Bob with no project, and leaves nothing behind when the first one opens", async () => {
+    resetState();
+    expect(getState().project).toEqual({ id: "", name: "No project", repo: null });
+    expect(listProjects().projects.map((p) => p.id)).not.toContain("");
+
+    const opened = await openProject({ name: "first", template: "blank-ts" });
+    expect(opened.ok).toBe(true);
+    const ids = listProjects().projects.map((p) => p.id);
+    expect(ids[0]).toBe("first");
+    expect(ids).not.toContain("");
+  });
+
+  it("resets to the invoices sample only when asked, and otherwise keeps the project", async () => {
+    resetState();
+    expect(await resetAll()).toEqual({ ok: true });
+    expect(getState().project.id).toBe("");
+
+    expect((await resetAll({ sample: true })).ok).toBe(true);
+    expect(getState().project).toEqual({ id: "invoices-app", name: "invoices-app", repo: null, template: "invoices" });
+    expect(await projectFiles(getState().project)).toContain("src/invoices.ts");
+
+    await openProject({ name: "blank-two", template: "blank-ts" });
+    expect((await resetAll()).ok).toBe(true);
+    expect(getState().project).toMatchObject({ id: "blank-two", template: "blank-ts" });
   });
 
   it("brings in a repository by local path", async () => {

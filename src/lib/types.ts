@@ -425,6 +425,9 @@ export interface Project {
   template?: ProjectTemplate;
 }
 
+/** False before a project is chosen, when Bob opens on the Open a project choice. */
+export const hasProject = (project: Project): boolean => project.id !== "";
+
 /** One row of the "waiting for replies" block in a thread. */
 export interface WaitingOn {
   messageId: MessageId;

@@ -8,6 +8,7 @@ import { mirrorCommit } from "./graph/mirror";
 import { withTracks } from "./roadmap";
 import { seedState } from "./seed";
 import type { State } from "./state";
+import type { Project } from "./types";
 
 const FILE = () => path.join(process.cwd(), ".data", "state.json");
 const PERSIST_DEBOUNCE_MS = 200;
@@ -120,10 +121,10 @@ export function subscribe(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
-/** Back to the seed. Keeps `rev` increasing so open event streams see the change. */
-export function resetState(): State {
+/** Back to the seed, on the given project or none. Keeps `rev` increasing so open event streams see the change. */
+export function resetState(project?: Project): State {
   globals().pendingBoot = null;
-  return commit(seedState());
+  return commit(seedState(project));
 }
 
 /** Swaps in a whole state, as a restart would. Tests use it to exercise the boot sweep. */

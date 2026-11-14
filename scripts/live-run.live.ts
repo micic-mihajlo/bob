@@ -6,6 +6,7 @@ import { decideApproval, postUserMessage } from "../src/lib/actions";
 import { getBrain, setBrainOverride } from "../src/lib/brain";
 import { isClosed } from "../src/lib/state";
 import type { Brain } from "../src/lib/brain/types";
+import { SAMPLE_PROJECT } from "../src/lib/seed";
 import { configure, getState, resetState, subscribe } from "../src/lib/store";
 import { settle } from "../src/lib/turns";
 
@@ -25,7 +26,7 @@ interface Row { t: number; agent: string; kind: string; text: string }
 it(MERGE ? "runs a request live until it merged and its threads closed" : "runs a request live until the merge approval", async () => {
   const root = mkdtempSync(path.join(os.tmpdir(), "bob-live-"));
   configure({ pace: Number(process.env.BOB_LIVE_PACE || 0), persist: false, workspaceRoot: root, installDeps: true });
-  resetState();
+  resetState(SAMPLE_PROJECT);
   const t0 = Date.now();
   const at = () => Date.now() - t0;
   const rows: Row[] = [];

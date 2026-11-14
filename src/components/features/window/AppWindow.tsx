@@ -2,8 +2,10 @@
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { PANEL_MIN } from "@/components/features/panel/PaneFrame";
+import { OpenProjectDialog } from "@/components/features/sidebar/OpenProjectDialog";
 import { Sidebar } from "@/components/features/sidebar/Sidebar";
 import { TitleTooltips } from "@/components/ui/TitleTooltips";
+import { hasProject } from "@/lib/types";
 import { useBob } from "./BobContext";
 import { LEFT_PANEL_DEFAULT, LeftPanelResizer } from "./LeftPanelResizer";
 import { PageRail } from "./PageRail";
@@ -18,8 +20,15 @@ export function AppWindow({ children }: { children: ReactNode }) {
     <SnapshotGate>
       <WindowFrame>{children}</WindowFrame>
       <TitleTooltips />
+      <FirstRun />
     </SnapshotGate>
   );
+}
+
+/** With no project chosen yet, Bob opens on the Open a project choice. */
+function FirstRun() {
+  const { snapshot } = useBob();
+  return hasProject(snapshot.project) ? null : <OpenProjectDialog />;
 }
 
 /**

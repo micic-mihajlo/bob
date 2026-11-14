@@ -373,7 +373,7 @@ async function boot(): Promise<void> {
 /** Resets, posts the first request, and drives until every request it posted is done or the run stops. */
 async function phase(reqs: Request[], restartAt: Request | null): Promise<{ stopReason: string; final: Snapshot }> {
   requests = reqs;
-  const reset = await post("/api/reset");
+  const reset = await post("/api/reset", { sample: true });
   if (!reset.ok) throw new Error(`reset failed: ${reset.error}`);
   let s = await state();
   const captain = captainOf(s);

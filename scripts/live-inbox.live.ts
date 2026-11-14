@@ -4,6 +4,7 @@ import path from "node:path";
 import { it } from "vitest";
 import { decideApproval } from "../src/lib/actions";
 import { addInboxItem, promoteInboxOrder, SAMPLE_INBOX } from "../src/lib/inbox";
+import { SAMPLE_PROJECT } from "../src/lib/seed";
 import { configure, getState, resetState, subscribe } from "../src/lib/store";
 import { settle } from "../src/lib/turns";
 import { traceWhy } from "../src/lib/why";
@@ -12,7 +13,7 @@ import { traceWhy } from "../src/lib/why";
 it("triages the sample inbox, builds the promoted ask, and resolves the error it fixes", async () => {
   const root = mkdtempSync(path.join(os.tmpdir(), "bob-live-inbox-"));
   configure({ pace: 0, persist: false, workspaceRoot: root, installDeps: true });
-  resetState();
+  resetState(SAMPLE_PROJECT);
   const t0 = Date.now();
   const at = () => ((Date.now() - t0) / 1000).toFixed(1).padStart(6);
   const seen: Record<string, number> = {};

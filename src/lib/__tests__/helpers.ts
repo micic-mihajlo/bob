@@ -4,6 +4,7 @@ import path from "node:path";
 import { liveAsks } from "../asks";
 import { setBrainOverride } from "../brain";
 import type { Brain, Move, TurnContext } from "../brain/types";
+import { SAMPLE_PROJECT } from "../seed";
 import { messageById, type State } from "../state";
 import { configure, getState, resetState, update } from "../store";
 import { addAgent } from "../team";
@@ -12,13 +13,13 @@ import type { AgentId } from "../types";
 
 let workspaceRoot: string | null = null;
 
-/** The seeded captain alone, with workspaces in a new temp folder. */
+/** The seeded captain alone on the invoices sample, with workspaces in a new temp folder. */
 export function freshTeam(): void {
   if (workspaceRoot) rmSync(workspaceRoot, { recursive: true, force: true });
   workspaceRoot = mkdtempSync(path.join(os.tmpdir(), "bob-crew-"));
   configure({ pace: 0, persist: false, workspaceRoot });
   setBrainOverride(null);
-  resetState();
+  resetState(SAMPLE_PROJECT);
 }
 
 export const STANDING = ["Lead", "Coder", "Reviewer", "Researcher"] as const;

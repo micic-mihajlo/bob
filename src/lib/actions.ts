@@ -12,7 +12,8 @@ import { addAgent, type NewAgentInput } from "./team";
 import { removeProjectWorkspaces, warmProject } from "./thread-workspace";
 import { closeThreadState } from "./threads";
 import { drain } from "./turns";
-import type { AgentId } from "./types";
+import { SAMPLE_PROJECT } from "./seed";
+import { hasProject, type AgentId } from "./types";
 import type { DepsState } from "./workspace";
 
 /** What a person can do. Routes call these after validating the request body. */
@@ -150,13 +151,17 @@ export function setThreadModelByPerson(agentId: AgentId, model: string): ActionR
   });
 }
 
-/** Back to the seed, with the project's repository and every thread's clone removed. With warm, the repository and its dependencies are made again before it answers. */
-export async function resetAll(options: { warm?: boolean } = {}): Promise<ActionResult<{ deps?: DepsState }>> {
-  const projectId = getState().project.id;
-  resetState();
+/**
+ * Back to the seed on the same project, or on the invoices sample with sample, with that project's repository and every
+ * thread's clone removed. With warm, the repository and its dependencies are made again before it answers.
+ */
+export async function resetAll(options: { warm?: boolean; sample?: boolean } = {}): Promise<ActionResult<{ deps?: DepsState }>> {
+  const project = options.sample ? SAMPLE_PROJECT : getState().project;
+  resetState(project);
+  if (!hasProject(project)) return { ok: true };
   try {
-    await removeProjectWorkspaces(projectId);
-    if (options.warm) return { ok: true, deps: await warmProject(getState().project) };
+    await removeProjectWorkspaces(project.id);
+    if (options.warm) return { ok: true, deps: await warmProject(project) };
   } catch (error) {
     return { ok: false, error: `State was reset, but the workspaces could not be ${options.warm ? "prepared" : "removed"}: ${error instanceof Error ? error.message : "unknown error"}` };
   }
