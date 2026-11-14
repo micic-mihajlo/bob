@@ -59,5 +59,6 @@ export function closeThreadState(s: State, id: AgentId, by: string): State {
     return d.status === "queued" ? { ...d, status: "cancelled" as const, answered: true } : { ...d, answered: true };
   });
   const agents = stopped.agents.map((a) => (a.id === id ? { ...a, closedAt: at } : a));
-  return addNotice({ ...stopped, agents, deliveries }, id, "info", `Closed by ${by}. The thread stays readable.`);
+  const closed = addNotice({ ...stopped, agents, deliveries }, id, "info", `Closed by ${by}. The thread stays readable.`);
+  return closed.agents.filter((a) => a.parentAgentId === id && !a.closedAt).reduce((acc, a) => closeThreadState(acc, a.id, `${by}, with its thread`), closed);
 }

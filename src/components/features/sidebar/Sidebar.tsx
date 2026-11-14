@@ -1,11 +1,11 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useBob } from "@/components/features/window/BobContext";
 import { buttonClass, cx } from "@/components/ui/classes";
-import { sidebarList, type SidebarSectionModel, type SidebarAgentState } from "@/lib/client/sidebar-rows";
-import type { Agent, AgentId } from "@/lib/types";
+import { sidebarList, type SidebarListModel, type SidebarSectionModel } from "@/lib/client/sidebar-rows";
+import type { Agent } from "@/lib/types";
 import { NewAgentDialog } from "./NewAgentDialog";
 import { ProjectMenu } from "./ProjectMenu";
 import { SidebarAgentRow } from "./SidebarAgentRow";
@@ -101,7 +101,7 @@ export function Sidebar({ compact = false, onExpand }: { compact?: boolean; onEx
             </section>
           ) : null}
           {sections.map((section) => (
-            <SidebarSection key={section.id} section={section} states={list.states} />
+            <SidebarSection key={section.id} section={section} list={list} />
           ))}
         </div>
       </nav>
@@ -123,7 +123,7 @@ export function Sidebar({ compact = false, onExpand }: { compact?: boolean; onEx
 }
 
 /** One section. The first, which holds the captain, has no heading; the rest fold like the reference's. */
-function SidebarSection({ section, states }: { section: SidebarSectionModel; states: Readonly<Record<AgentId, SidebarAgentState>> }) {
+function SidebarSection({ section, list }: { section: SidebarSectionModel; list: SidebarListModel }) {
   const [collapsed, setCollapsed] = useState(section.collapsedByDefault);
   const bodyId = `sidebar-section-body-${section.id}`;
   const folded = section.name !== null && collapsed;
@@ -152,7 +152,16 @@ function SidebarSection({ section, states }: { section: SidebarSectionModel; sta
       <div className="sidebar-section-collapse" data-collapsed={folded ? "" : undefined} aria-hidden={folded ? "true" : undefined} inert={folded}>
         <div id={bodyId} className="sidebar-section-body">
           {section.agents.map((agent) => (
-            <SidebarAgentRow key={agent.id} agent={agent} state={states[agent.id]} />
+            <Fragment key={agent.id}>
+              <SidebarAgentRow agent={agent} state={list.states[agent.id]} />
+              {list.subagents[agent.id] ? (
+                <div className="sidebar-subagents" role="group" aria-label={`${agent.code ?? agent.name} subagents`}>
+                  {list.subagents[agent.id].map((sub) => (
+                    <SidebarAgentRow key={sub.id} agent={sub} state={list.states[sub.id]} />
+                  ))}
+                </div>
+              ) : null}
+            </Fragment>
           ))}
         </div>
       </div>

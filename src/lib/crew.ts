@@ -3,7 +3,7 @@ import { LIGHT_MODEL } from "./models";
 import type { State } from "./state";
 import type { CrewRole } from "./types";
 
-export type Toolset = "captain" | CrewRole | "standing";
+export type Toolset = "captain" | CrewRole | "standing" | "subagent";
 
 export interface RoleTemplate {
   role: CrewRole;

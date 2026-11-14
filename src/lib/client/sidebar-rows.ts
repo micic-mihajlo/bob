@@ -24,6 +24,8 @@ export interface SidebarListModel {
   waiting: readonly { agent: Agent; reason: SidebarWaitReason; detail: string }[];
   sections: readonly SidebarSectionModel[];
   states: Readonly<Record<AgentId, SidebarAgentState>>;
+  /** A thread's subagents, drawn nested under its row and never on their own. */
+  subagents: Readonly<Record<AgentId, readonly Agent[]>>;
 }
 
 /**
@@ -36,7 +38,7 @@ export function sidebarList(snapshot: Snapshot): SidebarListModel {
   const waiting: { agent: Agent; reason: SidebarWaitReason; detail: string }[] = [];
   for (const item of needsYouItems(snapshot)) {
     const agent = agents.get(item.agentId);
-    if (!agent || waiting.some((entry) => entry.agent.id === agent.id)) continue;
+    if (!agent || agent.kind === "subagent" || waiting.some((entry) => entry.agent.id === agent.id)) continue;
     waiting.push({ agent, reason: item.kind, detail: item.title || item.detail });
   }
   const waitingIds = new Set(waiting.map((entry) => entry.agent.id));
@@ -63,7 +65,12 @@ export function sidebarList(snapshot: Snapshot): SidebarListModel {
     else if (unread > 0) states[agent.id] = { kind: "unread", count: unread };
   }
 
-  return { waiting, sections, states };
+  const subagents: Record<AgentId, Agent[]> = {};
+  for (const agent of snapshot.agents) {
+    if (agent.kind === "subagent" && agent.parentAgentId) (subagents[agent.parentAgentId] ??= []).push(agent);
+  }
+
+  return { waiting, sections, states, subagents };
 }
 
 /** The time slot of a row: the clock today, the date before. */

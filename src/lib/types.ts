@@ -30,7 +30,11 @@ export interface Agent {
    * working on one piece of work, with its own workspace and branch. Absent means a
    * standing agent created by a person.
    */
-  kind?: "captain" | "crew";
+  kind?: "captain" | "crew" | "subagent";
+  /** A subagent's crew thread: the only agent it hears from and reports to. Shown nested under it. */
+  parentAgentId?: AgentId;
+  /** A subagent works in its parent's workspace ("same") or in its own copy of it ("copy"). */
+  workspaceMode?: "same" | "copy";
   /** Short handle shown everywhere, such as "INV-12". Crew threads only. */
   code?: string;
   crewRole?: CrewRole;

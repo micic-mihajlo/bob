@@ -5,7 +5,7 @@ import { STAGES } from "../stages";
 import type { State } from "../state";
 import type { Agent, Roadmap } from "../types";
 import { MAX_PUSHBACK_ROUNDS, pushbackRounds } from "./intake";
-import { CAPTAIN_RULES, CREW_RULES, ROLE_RULES, STANDING_RULES } from "./instructions";
+import { CAPTAIN_RULES, CREW_RULES, ROLE_RULES, STANDING_RULES, SUBAGENT_RULES } from "./instructions";
 import { PERSONA } from "./persona";
 
 function intakeLine(roadmap: Roadmap, rounds: number): string {
@@ -58,6 +58,7 @@ export function systemPrompt(agent: Agent, state: State, projectFiles: string[] 
     const rounds = pushbackRounds(state.threads[agent.id] ?? []);
     return [PERSONA, CAPTAIN_RULES, profileOf(agent), situation(state.roadmap, rounds), projectLine(projectFiles), `# Playbook for this stage\n\n${playbook}`].join("\n\n");
   }
+  if (agent.kind === "subagent") return [SUBAGENT_RULES, profileOf(agent)].join("\n\n");
   if (agent.kind === "crew" && agent.crewRole) return [CREW_RULES, ROLE_RULES[agent.crewRole], profileOf(agent)].join("\n\n");
   return [STANDING_RULES, profileOf(agent)].join("\n\n");
 }

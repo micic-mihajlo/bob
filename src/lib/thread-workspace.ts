@@ -3,7 +3,8 @@ import { chmod, mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { agentById, isCrew, type State } from "./state";
-import { getConfig } from "./store";
+import { getConfig, getState } from "./store";
+import { workspaceOwner } from "./subagent-rules";
 import { traceTrailers } from "./trace";
 import { findPullRequest, isPullRequest, type PullRequestArtifact } from "./threads";
 import type { AgentId, Project, RequestId, WorkspaceChanges, WorkspaceListing } from "./types";
@@ -38,7 +39,7 @@ const sourceOf = (project: Project): ProjectSource => {
 export async function threadWorkspace(project: Project, agentId: string): Promise<Workspace> {
   const options = workspaceOptions();
   await ensureProject(project.id, sourceOf(project), options);
-  return ensureWorkspace(project.id, agentId, options);
+  return ensureWorkspace(project.id, workspaceOwner(getState(), agentId), options);
 }
 
 const HOOK = `#!/bin/sh

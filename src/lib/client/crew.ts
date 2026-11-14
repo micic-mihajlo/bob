@@ -71,7 +71,7 @@ export function sidebarModel(snapshot: Snapshot): SidebarModel {
   return {
     captain,
     crew: { working: inGroup("working"), waiting: inGroup("waiting"), idle: inGroup("idle"), closed: inGroup("closed") },
-    standing: snapshot.agents.filter((agent) => agent.id !== captain?.id && !isCrew(agent)),
+    standing: snapshot.agents.filter((agent) => agent.id !== captain?.id && !isCrew(agent) && agent.kind !== "subagent"),
   };
 }
 

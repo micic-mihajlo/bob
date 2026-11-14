@@ -77,6 +77,13 @@ describe("sidebarList", () => {
     expect(list.states.bob).toEqual({ kind: "unread", count: 2 });
     expect(list.states["inv-1"]).toEqual({ kind: "failed" });
   });
+
+  it("nests a subagent under its thread and never lists it at the top level", () => {
+    const sub = agent("inv-1-s1", { kind: "subagent", code: "INV-1.1", parentAgentId: "inv-1", workspaceMode: "copy" });
+    const list = sidebarList(snapshot([captain, build, sub], { threadState: { "inv-1": { status: "working", needsYou: false, closed: false } } }));
+    expect(list.sections.flatMap((section) => section.agents.map((a) => a.id))).toEqual(["bob", "inv-1"]);
+    expect(list.subagents["inv-1"]?.map((a) => a.id)).toEqual(["inv-1-s1"]);
+  });
 });
 
 describe("sidebarMessageTime", () => {

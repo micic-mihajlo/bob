@@ -3,6 +3,7 @@ import { hasSubstance } from "./reply-format";
 import { agentById, isCaptain, isClosed, isCrew, messageById, type State } from "./state";
 import { addNotice, patchDelivery } from "./state-ops";
 import { transact } from "./store";
+import { subagentRule } from "./subagent-rules";
 import type { AgentId, Delivery, Message, MessageId, RequestId, Sender } from "./types";
 
 export const REQUEST_DELIVERY_BUDGET = 12;
@@ -61,6 +62,9 @@ export function handoffsUsed(s: State, requestId: RequestId): number {
 /** Crew threads talk only to the captain, and only the captain or a person talks to them. */
 function crewRefusal(s: State, from: Sender, to: AgentId[]): string | null {
   if (from.kind !== "agent") return null;
+  const pair = subagentRule(s, from.agentId, to);
+  if (pair === "allowed") return null;
+  if (pair === "refused") return "A subagent hears only from its own crew thread and answers only to it.";
   const sender = agentById(s, from.agentId);
   if (isCaptain(sender)) return null;
   if (isCrew(sender) && to.some((id) => !isCaptain(agentById(s, id)))) {

@@ -1816,8 +1816,16 @@ textarea {
   transition: transform var(--bob-duration-fast) var(--bob-ease-out);
 }
 
-.sidebar-agent-item + .sidebar-agent-item {
+.sidebar-agent-item + .sidebar-agent-item,
+.sidebar-subagents,
+.sidebar-subagents + .sidebar-agent-item {
   margin-top: 4px;
+}
+
+.sidebar-subagents {
+  display: grid;
+  gap: 4px;
+  padding-left: 20px;
 }
 
 .sidebar-agent-item-dragging {
