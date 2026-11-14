@@ -1,10 +1,11 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Awaiting } from "@/lib/client/awaiting";
 import { findCaptain } from "@/lib/client/crew";
 import { FIRST_TABS, panelKindOf, type PanelKind, type PanelTab } from "@/lib/client/panel-tabs";
 import { resolveSelectedAgent } from "@/lib/client/selectors";
+import { buildUrlSearch, parseUrlState, validTabFor } from "@/lib/client/url-state";
 import type { Agent, AgentId, MessageId, Snapshot } from "@/lib/types";
 
 /** Where a thread should scroll once it opens: an approval card, or its newest item. */
@@ -83,6 +84,48 @@ export function BobProvider({ snapshot, sync, children }: { snapshot: Snapshot; 
   const captain = useMemo(() => findCaptain(snapshot.agents), [snapshot.agents]);
   const selectedAgent = resolveSelectedAgent(snapshot, selectedId);
   const panelKind = panelKindOf(selectedAgent, captain);
+
+  const [urlReady, setUrlReady] = useState(false);
+  const urlWritten = useRef(false);
+
+  const applyUrl = useCallback(() => {
+    const { thread, tab } = parseUrlState(window.location.search);
+    if (thread === null) return;
+    const agent = agentsById.get(thread);
+    setSelectedId(agent ? agent.id : null);
+    const kind = panelKindOf(agent ?? captain, captain);
+    const valid = validTabFor(kind, tab);
+    if (valid) setPanelTabs((previous) => ({ ...previous, [kind]: valid }));
+    setPanelOpen(valid !== null);
+  }, [agentsById, captain]);
+  const applyUrlRef = useRef(applyUrl);
+  applyUrlRef.current = applyUrl;
+
+  useEffect(() => {
+    applyUrlRef.current();
+    setUrlReady(true);
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => applyUrlRef.current();
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const urlThread = selectedAgent?.id ?? null;
+  const urlTab = panelOpen ? panelTabs[panelKind] : null;
+  useEffect(() => {
+    if (!urlReady || urlThread === null) return;
+    const search = buildUrlSearch(urlThread, urlTab);
+    if (search === window.location.search) {
+      urlWritten.current = true;
+      return;
+    }
+    const sameThread = parseUrlState(window.location.search).thread === urlThread;
+    const method = sameThread || !urlWritten.current ? "replaceState" : "pushState";
+    urlWritten.current = true;
+    window.history[method](null, "", `${window.location.pathname}${search}`);
+  }, [urlReady, urlThread, urlTab]);
 
   const togglePanel = useCallback(() => setPanelOpen((open) => !open), []);
   const closeWhy = useCallback(() => setWhyMessageId(null), []);
