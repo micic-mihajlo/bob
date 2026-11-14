@@ -12,6 +12,7 @@
     "verify": "node formal/verify.mjs",
     "live": "vitest run --config vitest.live.config.ts",
     "walkthrough": "node --no-warnings scripts/walkthrough.ts",
+    "chaos": "node --no-warnings scripts/chaos.ts",
     "demo": "node scripts/demo.mjs"
   },
   "dependencies": {

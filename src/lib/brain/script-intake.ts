@@ -4,7 +4,7 @@ import { summarize } from "./script-plan";
 
 const USER = /\b(customers?|users?|clients?|admins?|accountants?|managers?|buyers?|sellers?|members?|staff|developers?|finance team|support team|owners?)\b/i;
 const SCOPE = /\b(columns?|fields?|rows?|buttons?|page|screen|tab|menu|list|table|endpoint|all|only|filter(ed)?)\b/i;
-const ACCEPTANCE =
+export const ACCEPTANCE =
   /\b(done when|acceptance|accepted when|passes when|tests? (that|pass|passes|proves)|should (show|return|produce|open|include|contain|have)|expect(ed)? (to|that)|one row per|opens in)\b/i;
 const PROCEED =
   /^\s*(yes|yep|yeah|both)\b|\b(go ahead|go for it|your call|you decide|(use|go with) (your|the) (defaults?|judg(e)?ment)|assume|just (do|build|ship) it|defaults? (is|are) fine|sounds (good|right)|(that's|thats|that is) right|whatever you think)\b/i;

@@ -3,6 +3,7 @@ import { decideApproval, postUserMessage } from "../actions";
 import { setBrainOverride } from "../brain";
 import { scriptBrain } from "../brain/script";
 import type { Brain, TurnContext } from "../brain/types";
+import { alwaysViolations } from "../invariants";
 import { getState } from "../store";
 import { isPullRequest, type PullRequestArtifact } from "../threads";
 import { settle } from "../turns";
@@ -63,6 +64,9 @@ describe("two requests in flight", { timeout: 60_000 }, () => {
       expect(getState().artifacts.filter((a) => isPullRequest(a) && a.pullRequest.merged)).toHaveLength(2);
       expect(getState().approvals.filter((a) => a.status === "pending")).toHaveLength(0);
       expect(getState().agents.filter((a) => a.kind === "crew" && !a.closedAt)).toHaveLength(0);
+      const s = getState();
+      expect(s.approvals.map((a) => a.requestId)).toEqual(s.approvals.map((a) => s.artifacts.find((x) => x.id === a.pullRequestId)?.requestId));
+      expect(alwaysViolations(s)).toEqual([]);
     });
   }
 });

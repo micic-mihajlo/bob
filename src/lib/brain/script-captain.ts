@@ -5,12 +5,13 @@ import { isPullRequest, type PullRequestArtifact } from "../threads";
 import type { Agent, Artifact, ReviewData } from "../types";
 import { intakeTexts, pushbackRounds } from "./intake";
 import { changeFor } from "./script-changes";
+import { inboxPlan, promotePlan } from "./script-inbox";
 import { inspectRequest, type IntentDraft } from "./script-intake";
 import { call, resultOf, succeeded, type Plan } from "./script-plan";
 import type { CallRecord, InboundItem, TurnContext } from "./types";
 
-/** The work order set_roadmap made for this request: the first title is always the new one. */
-const newOrder = (done: CallRecord[]) => (resultOf(done, "set_roadmap")?.workOrders as { id: string; title: string }[] | undefined)?.[0];
+/** The work order set_roadmap made for this request, found by its title: backlog orders, such as the inbox's, may come first. */
+const newOrder = (done: CallRecord[], title: string) => (resultOf(done, "set_roadmap")?.workOrders as { id: string; title: string }[] | undefined)?.find((w) => w.title === title);
 
 function buildBrief(intent: IntentDraft, texts: string[], workTitle: string): string {
   return [
@@ -40,7 +41,7 @@ function requestPlan(ctx: TurnContext): Plan {
   if (building) return { steps: [], reply: () => `${building.code} is building "${building.title}" on ${building.branch}.` };
   const planned = road.today.find((w) => w.title === workTitle && w.status !== "done");
   const fresh = road.stage === 1;
-  const orderOf = (done: CallRecord[]) => planned ?? newOrder(done);
+  const orderOf = (done: CallRecord[]) => planned ?? newOrder(done, workTitle);
   return {
     steps: [
       () => [
@@ -49,7 +50,7 @@ function requestPlan(ctx: TurnContext): Plan {
       ],
       () => (planned ? [] : [call("set_roadmap", { workOrderTitles: [workTitle, ...(road.backlog ?? []).map((w) => w.title).filter((t) => t !== workTitle)] })]),
       (done) => {
-        const order = newOrder(done);
+        const order = newOrder(done, workTitle);
         if (planned) return road.stage === 2 ? [call("advance_stage", {})] : [];
         if (!order) return [];
         const keep = road.today.filter((w) => w.status !== "done").map((w) => w.id);
@@ -135,7 +136,11 @@ const REPORT_RULES: Rule[] = [
       const started = (done: CallRecord[]) => done.find((c) => c.name === "start_thread" && (c.input as { title?: string }).title === title && !("error" in c.result))?.result.code;
       return {
         steps: [() => [call("start_thread", { role: "review", title, brief: reviewBrief(p), ...(builder?.workOrderId ? { workOrderId: builder.workOrderId } : {}) })]],
-        reply: (done) => `${builder?.code ?? "The build thread"} opened #${p.pullRequest.number}. ${String(started(done) ?? "A review thread")} is reviewing it.`,
+        reply: (done) => {
+          const code = started(done);
+          const opened = `${builder?.code ?? "The build thread"} opened #${p.pullRequest.number}.`;
+          return code ? `${opened} ${String(code)} is reviewing it.` : `${opened} I could not start its review: ${String(done.find((c) => c.name === "start_thread")?.result.error ?? "unknown error")}`;
+        },
       };
     },
   },
@@ -255,6 +260,8 @@ export function captainPlan(ctx: TurnContext): Plan {
   if (decision) return withReports(ctx, decisionPlan(ctx, decision));
   const change = declinedChange(ctx);
   if (change) return withReports(ctx, changePlan(change.text, change.pr, change.builder));
+  const triage = inboxPlan(ctx) ?? promotePlan(ctx);
+  if (triage) return triage;
   const ask = ctx.inbound.find((i) => i.rule === "person");
   if (ask) return requestPlan(ctx);
   return reportPlan(ctx);

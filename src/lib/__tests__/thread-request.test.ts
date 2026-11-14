@@ -31,4 +31,17 @@ describe("a crew thread belongs to one request", { timeout: 60_000 }, () => {
     const own = await callTool("message_thread", { threadId: "INV-1", text: "One more check on the CSV header.", expectsReply: false }, asBob(requestOf(CSV)));
     expect(own.result.error).toBeUndefined();
   });
+
+  it("starts another thread for a work order still being built after today dropped it", async () => {
+    postUserMessage("bob", CSV);
+    await settle();
+    const as = asBob(requestOf(CSV));
+    const builder = getState().agents.find((a) => a.code === "INV-1")!;
+    for (const a of getState().agents.filter((a) => a.crewRole === "review" && !a.closedAt)) await callTool("close_thread", { threadId: a.id }, as);
+    expect((await callTool("set_today", { workOrderIds: [] }, as)).result.error).toBeUndefined();
+
+    const review = { role: "review", title: "Review again", brief: "Review the pull request again." };
+    expect((await callTool("start_thread", { ...review, workOrderId: builder.workOrderId }, as)).result.error).toBeUndefined();
+    expect(String((await callTool("start_thread", { ...review, workOrderId: "wo_unknown" }, as)).result.error)).toMatch(/is not in today/);
+  });
 });
