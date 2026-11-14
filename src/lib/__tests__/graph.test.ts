@@ -223,6 +223,18 @@ describe("Why? from HydraDB", () => {
     expect(answer.hops.at(-1)?.source).toMatchObject({ kind: "meeting", label: "customer call, Nov 13" });
   });
 
+  it("adds the Linear issue to an inbox source the graph returns", async () => {
+    replay();
+    switchOn();
+    const linear = { issueId: "issue_1", identifier: "MIH-5", title: "Show the invoice count in the page header", url: "https://linear.app/mihajlo-bob/issue/MIH-5", teamId: "team_1" };
+    const withLinear = { ...recordedState, inbox: (recordedState.inbox ?? []).map((i) => ({ ...i, linear })) };
+    const brief = recorded.whyInbox.request.params.messageId;
+    const answer = await answerWhy(withLinear, brief);
+    expect(answer.source).toBe("hydra");
+    expect(answer.hops.at(-1)?.source?.linear).toEqual({ identifier: "MIH-5", title: linear.title, url: linear.url });
+    expect(answer.hops).toEqual(traceWhy(withLinear, brief));
+  });
+
   it("answers from memory when the graph is missing part of the path", async () => {
     fakeHydra((c) => {
       if (c.body.query !== WHY_QUERY) return ok();
