@@ -1,0 +1,37 @@
+# Bob on a hosted server. provision.sh replaces @SERVICE_USER@ and enables this unit. boat
+# stop and resume work like a reboot, so the unit starts again on each wake. boat starts the desktop
+# about 8 seconds before the enabled units, and Bob starts with it.
+[Unit]
+Description=Bob hosted server
+Wants=network-online.target bob-update-apply.service
+After=network-online.target display-manager.service
+# bob-boat-pre-stop stops Bob before boat saves the disk, and makes this file so that nothing
+# starts it again before the save. /run is empty at each boot.
+ConditionPathExists=!/run/bob-pre-stop
+
+[Service]
+Type=simple
+User=@SERVICE_USER@
+RuntimeDirectory=bob
+RuntimeDirectoryMode=0700
+Environment=XDG_RUNTIME_DIR=/run/bob
+# As root (+), and Bob starts when it fails (-). It installs the update request units when an
+# older release moved this one into place; bob-hosted-update says why.
+ExecStartPre=-+/opt/Bob/hosted/bob-hosted-update trigger
+ExecStart=/opt/Bob/hosted/bob-hosted-server
+# Stops Bob before its virtual displays, so that it closes its database first.
+ExecStop=/opt/Bob/hosted/bob-hosted-server --stop
+Restart=always
+RestartSec=10
+TimeoutStopSec=60
+# Memory guards. The machine is small, and this unit holds Bob, its browser tabs and every agent
+# process. The OOM killer of the unit acts before the kernel's own, so the desktop, sshd and the boat
+# agent keep running. systemd sets -500 as root, before it changes the user; main then gives each
+# process it starts 500, so the OOM killer picks an agent process before main. One killed agent does
+# not stop the unit: the default policy "stop" would stop Bob too.
+MemoryMax=90%
+OOMScoreAdjust=-500
+OOMPolicy=continue
+
+[Install]
+WantedBy=multi-user.target lightdm.service

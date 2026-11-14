@@ -1,0 +1,56 @@
+.app-logo {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  border-radius: var(--bob-radius-logo, 20.833%);
+  isolation: isolate;
+}
+
+/* Bob's face fills the box its surface gives it. */
+.bob-face {
+  display: block;
+  overflow: visible;
+}
+
+/* A blink and a glance move both eyes together, around their own center. */
+.bob-face-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* The ASCII head, the generated avatar of an agent (AgentAvatar in @bob/ui): a canvas 1.5x the
+   avatar box, centered on it, so the light the head gives off has room around it. The tracks are the
+   box: an auto row grows to the canvas and its 150% height then resolves against that row. */
+.agent-avatar-bob {
+  grid-template: 100% / 100%;
+}
+
+.agent-avatar > .agent-avatar-ascii {
+  display: block;
+  width: 150%;
+  height: 150%;
+  pointer-events: none;
+}
+
+/* A face that blinks now and then: 120ms closed in a six-second loop. */
+.app-logo[data-animation="blink"] .bob-face-eyes {
+  animation: bob-face-blink 6s var(--bob-ease-out, ease-out) infinite;
+}
+
+@keyframes bob-face-blink {
+  0%,
+  96%,
+  100% {
+    transform: scaleY(1);
+  }
+
+  98% {
+    transform: scaleY(0.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-logo[data-animation="blink"] .bob-face-eyes {
+    animation: none;
+  }
+}

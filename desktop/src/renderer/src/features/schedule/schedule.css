@@ -1,0 +1,8 @@
+/* The schedule fills the pane the usage report uses, and scrolls inside it. */
+.schedule-pane {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--bob-bg-canvas);
+  padding: var(--bob-space-4) var(--bob-space-6) var(--bob-space-6);
+}

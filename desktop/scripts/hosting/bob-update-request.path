@@ -1,0 +1,11 @@
+# Bob asks for an update now with an empty file in its runtime directory. This starts
+# bob-update-request.service as root, which removes the file and never reads it.
+[Unit]
+Description=Watch for an Bob update request
+
+[Path]
+PathExists=/run/bob/update-stage
+PathExists=/run/bob/update-install
+
+[Install]
+WantedBy=paths.target

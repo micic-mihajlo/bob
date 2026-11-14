@@ -1,0 +1,22 @@
+{
+  "name": "@bob/user-errors",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./reference": "./src/reference.ts"
+  },
+  "scripts": {
+    "typecheck": "bun ../../scripts/type-checker.ts --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@bob/contracts": "workspace:*",
+    "@bob/i18n": "workspace:*",
+    "@bob/logging": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "@types/node": "catalog:"
+  }
+}

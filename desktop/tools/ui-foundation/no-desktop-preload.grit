@@ -1,0 +1,14 @@
+language js(typescript)
+
+or {
+  `window.bob`,
+  `window?.bob`,
+  `window["bob"]`,
+  `window?.["bob"]`,
+  `globalThis.bob`,
+  `globalThis?.bob`,
+  `globalThis["bob"]`,
+  `globalThis?.["bob"]`
+} as $access where {
+  register_diagnostic(span=$access, message="Shared UI must receive platform actions through props, not the desktop preload.", severity="error")
+}

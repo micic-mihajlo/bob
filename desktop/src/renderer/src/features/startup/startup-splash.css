@@ -1,0 +1,44 @@
+/*
+ * The desktop startup splash, the landing site's loading screen: a rotating beam finds the glass Eye
+ * of Ra (`glass-mark.ts`) on the Bob background. When the app is ready and the mark is revealed, it
+ * fades out.
+ */
+
+.startup-splash {
+  position: absolute;
+  z-index: var(--bob-layer-dialog);
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--bob-bg);
+  color: var(--bob-ink);
+  -webkit-app-region: drag;
+}
+
+.startup-splash-mark {
+  width: min(56vw, 420px);
+}
+
+.startup-splash-mark > canvas {
+  display: block;
+  width: 100%;
+}
+
+.startup-splash-mark > svg {
+  display: block;
+  width: 100%;
+  padding: 14%;
+}
+
+/* The fade also runs with reduced motion: its animationend removes the splash. */
+.startup-splash[data-phase="exit"] {
+  pointer-events: none;
+  -webkit-app-region: no-drag;
+  animation: startup-splash-exit var(--bob-duration-overlay) var(--bob-ease-in-out) forwards;
+}
+
+@keyframes startup-splash-exit {
+  to {
+    opacity: 0;
+  }
+}
