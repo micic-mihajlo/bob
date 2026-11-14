@@ -4,6 +4,7 @@ import { Clock3, LoaderCircle, TriangleAlert } from "lucide-react";
 import { AgentAvatar } from "@/components/features/agents/AgentAvatar";
 import { agentMood } from "@/components/features/agents/agent-mood";
 import { useBob } from "@/components/features/window/BobContext";
+import { ModelPicker, modelName } from "@/components/features/conversation/ModelPicker";
 import { SidePanelToggle } from "@/components/features/panel/SidePanel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -23,11 +24,6 @@ function StatusIcon({ status }: { status: ThreadStatus }) {
   if (status === "working") return <LoaderCircle className="conversation-interaction-spinner" aria-hidden="true" />;
   if (status === "needs_you" || status === "failed") return <TriangleAlert aria-hidden="true" />;
   return <Clock3 aria-hidden="true" />;
-}
-
-/** The model as the reference's model pill shows it: the name after the provider. */
-function modelName(model: string): string {
-  return model.split("/").at(-1) ?? model;
 }
 
 /** The top of the chat: the agent and what it is for, its state, the model, and the side panel button. */
@@ -64,15 +60,19 @@ export function ConversationHeader({ agent }: { agent: Agent }) {
             {THREAD_STATUS_LABEL[status]}
           </Badge>
         ) : null}
-        <div className="provider-model-picker">
-          <span className="provider-model-trigger" aria-label={`Agent model: ${model}`} title={agent.model}>
-            <span className="provider-model-trigger-value">
-              <span className="ui-swap provider-model-trigger-name">
-                <span>{model}</span>
+        {agent.kind === "crew" && snapshot.brain !== "script" ? (
+          <ModelPicker agent={agent} />
+        ) : (
+          <div className="provider-model-picker">
+            <span className="provider-model-trigger" aria-label={`Agent model: ${model}`} title={agent.model}>
+              <span className="provider-model-trigger-value">
+                <span className="ui-swap provider-model-trigger-name">
+                  <span>{model}</span>
+                </span>
               </span>
             </span>
-          </span>
-        </div>
+          </div>
+        )}
         <SidePanelToggle />
       </div>
     </header>
