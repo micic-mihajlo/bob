@@ -1,0 +1,105 @@
+/*
+ * Bob in print, texture: Ben-Day halftone, paper grain, ink outlines with a hard offset print shadow,
+ * and a 1px cyan/magenta misregistration on display headings and the faces. Gradients only, no
+ * images. Dots stay faint wherever text sits on them, and nothing here animates.
+ */
+
+:root[data-theme="ink"] {
+  --bob-print-line: rgb(242 235 218 / 0.3);
+  --bob-print-slab: rgb(242 235 218 / 0.1);
+  --bob-print-dot: rgb(242 235 218 / 0.16);
+  --bob-print-face-dot: rgb(242 235 218 / 0.28);
+  --bob-print-grain: rgb(242 235 218 / 0.028);
+  --bob-print-plate-cyan: rgb(51 214 245 / 0.55);
+  --bob-print-plate-magenta: rgb(255 79 168 / 0.55);
+  --bob-face-ink: brightness(1);
+}
+
+:root[data-theme="newsprint"] {
+  --bob-print-line: rgb(20 18 14 / 0.82);
+  --bob-print-slab: rgb(20 18 14 / 0.85);
+  --bob-print-dot: rgb(20 18 14 / 0.16);
+  --bob-print-face-dot: rgb(20 18 14 / 0.3);
+  --bob-print-grain: rgb(20 18 14 / 0.035);
+  --bob-print-plate-cyan: rgb(0 137 168 / 0.5);
+  --bob-print-plate-magenta: rgb(200 0 107 / 0.45);
+  --bob-face-ink: brightness(0.62) saturate(1.5);
+}
+
+[data-print] {
+  --bob-radius-card: 6px;
+  --bob-print-halftone: radial-gradient(circle, var(--bob-print-dot) 0.9px, transparent 1.25px) 0 0 / 5px 5px;
+  --bob-print-shadow: 3px 3px 0 var(--bob-print-slab);
+  --bob-print-misregister: 1.5px 1px 0 var(--bob-print-plate-magenta), -1px -0.5px 0 var(--bob-print-plate-cyan);
+}
+
+/* Paper grain: two dot grids at prime pitches, so no repeat lines up. A fixed layer above the
+   app that never repaints and takes no pointer events. */
+[data-print] body::after {
+  position: fixed;
+  z-index: 2147483000;
+  inset: 0;
+  background:
+    radial-gradient(circle, var(--bob-print-grain) 0.6px, transparent 0.8px) 0 0 / 3px 3px,
+    radial-gradient(circle, var(--bob-print-grain) 0.5px, transparent 0.7px) 1px 2px / 7px 7px;
+  content: "";
+  pointer-events: none;
+}
+
+/* Cards are panels: an ink outline and a hard offset shadow instead of a soft blur. */
+[data-print] :is(.conversation-interaction-card, .ui-card, .approval-card) {
+  border-color: var(--bob-print-line);
+  box-shadow: var(--bob-print-shadow);
+}
+
+/* Halftone in the card header, fading out before the body text. */
+[data-print] :is(.conversation-interaction-card, .ui-card, .approval-card) {
+  position: relative;
+  isolation: isolate;
+}
+
+[data-print] :is(.conversation-interaction-card, .ui-card, .approval-card)::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 auto;
+  height: 72px;
+  border-radius: inherit;
+  background: var(--bob-print-halftone);
+  content: "";
+  mask-image: linear-gradient(200deg, black, transparent 62%);
+  pointer-events: none;
+}
+
+/* The faces: a halftone disc behind each, and the head printed slightly off register. */
+[data-print] .agent-avatar {
+  position: relative;
+  isolation: isolate;
+}
+
+[data-print] .agent-avatar::before {
+  position: absolute;
+  z-index: -1;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--bob-print-face-dot) 0.7px, transparent 1px) 0 0 / 3px 3px;
+  content: "";
+  mask-image: radial-gradient(circle, black 35%, transparent 71%);
+  pointer-events: none;
+}
+
+[data-print] .agent-avatar canvas {
+  filter: var(--bob-face-ink) drop-shadow(1px 0.5px 0 var(--bob-print-plate-magenta)) drop-shadow(-1px -0.5px 0 var(--bob-print-plate-cyan));
+}
+
+[data-print]
+  :is(
+    .conversation-title h1,
+    .bob-roadmap-goal,
+    .bob-roadmap-stage,
+    .message-markdown-heading[data-level="1"],
+    .message-markdown-heading[data-level="2"],
+    .ui-confirm-dialog-title,
+    .direct-conversation-empty h2
+  ) {
+  text-shadow: var(--bob-print-misregister);
+}
