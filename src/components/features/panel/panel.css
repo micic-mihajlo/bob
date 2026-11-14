@@ -220,11 +220,38 @@
   overflow-wrap: anywhere;
 }
 
-/* Crew: an avatar takes the place of the subagent status icon. */
+/* Crew: an avatar spanning both lines takes the place of the subagent status icon, and the step
+   glyph moves in front of the second line. */
+.bob-crew-panel .subagents-list .subagents-row {
+  grid-template-columns: 28px minmax(0, 1fr) auto auto;
+  column-gap: var(--bob-space-3);
+}
+
+.bob-crew-panel .subagents-row .subagents-status {
+  width: 28px;
+  height: 28px;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
 .bob-crew-avatar {
   display: inline-block;
-  width: var(--bob-icon-sm);
-  height: var(--bob-icon-sm);
+  width: 28px;
+  height: 28px;
+}
+
+.bob-crew-panel .subagents-row .subagents-live {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.bob-crew-panel .subagents-row .subagents-live-glyph {
+  width: var(--bob-icon-xs);
+  height: var(--bob-icon-xs);
+  flex: 0 0 auto;
 }
 
 .bob-crew-code {
