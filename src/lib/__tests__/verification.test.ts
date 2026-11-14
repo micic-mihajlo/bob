@@ -9,9 +9,9 @@ import { toolsFor } from "../tools";
 import { markEquivalent } from "../tools/verify";
 import type { Agent, Artifact } from "../types";
 import type { PullRequestArtifact } from "../threads";
-import { LEAN_SKIPPED_HERE, proofLine, verificationLine, verificationRefusal, verificationStatus, type EquivalentMutant, type Verification } from "../verification";
+import { countsLine, LEAN_SKIPPED_HERE, proofLine, verificationLine, verificationRefusal, verificationStatus, type EquivalentMutant, type Verification } from "../verification";
 import { changedLines, mutantsOf } from "../verify/mutants";
-import { leanCantRun, propertyNames, runMutants, runProof, writeHarness } from "../verify/run";
+import { leanCantRun, propertyNames, theoremStatement, runMutants, runProof, writeHarness } from "../verify/run";
 import { freshTeam } from "./helpers";
 import type { Workspace } from "../workspace";
 
@@ -70,7 +70,7 @@ describe("the verification gate", () => {
 
   it("reads as one line, with the proof shown honestly", () => {
     expect(verificationLine(verification())).toBe("4 properties · 1,200 cases · 8/8 mutants killed · proved in Lean");
-    expect(verificationLine(verification({ proof: { status: "skipped", reason: "Lean not installed" } }))).toBe("4 properties · 1,200 cases · 8/8 mutants killed · Lean skipped: Lean not installed");
+    expect(verificationLine(verification({ proof: { status: "skipped", reason: "Lean not installed" } }))).toBe("4 properties · 1,200 cases · 8/8 mutants killed · not proved: Lean not installed");
     expect(verificationLine(verification({ proof: { status: "not_proved", reason: "a proof uses sorry" } }))).toMatch(/· not proved in Lean: a proof uses sorry$/);
     const survivor = verification({ mutation: { ok: false, mutants: [...verification().mutation.mutants.slice(1), { file: "src/csv.ts", line: 2, operator: "dropped .replace()", before: "a", after: "b", killed: false }] } });
     expect(verificationLine(survivor)).toContain("7/8 mutants killed");
@@ -210,7 +210,15 @@ describe("the Lean tier", () => {
   it("shows a calm skip line instead of the raw error when elan cannot run on this machine", () => {
     expect(leanCantRun("error: could not write settings file: '/home/user/.local/settings.toml'")).toBe(true);
     expect(leanCantRun("Contract.lean:3:2: error: type mismatch\nerror: build failed")).toBe(false);
-    expect(proofLine({ status: "skipped", reason: LEAN_SKIPPED_HERE })).toBe("Lean proof skipped on this machine");
-    expect(verificationLine(verification({ proof: { status: "skipped", reason: LEAN_SKIPPED_HERE } }))).toBe("4 properties · 1,200 cases · 8/8 mutants killed · Lean proof skipped on this machine");
+    expect(proofLine({ status: "skipped", reason: LEAN_SKIPPED_HERE })).toBe("not proved: Lean can't run on this machine");
+    expect(verificationLine(verification({ proof: { status: "skipped", reason: LEAN_SKIPPED_HERE } }))).toBe("4 properties · 1,200 cases · 8/8 mutants killed · not proved: Lean can't run on this machine");
+  });
+
+  it("leads the card with the theorem as the Lean file states it, and keeps the counts apart", () => {
+    const model = "namespace Elapsed\n\ntheorem formatElapsed_spec :\n    ∀ s : Nat, s < 10 → formatElapsed s = \"just now\" := by\n  intro s h\n  simp [formatElapsed, h]\n";
+    expect(theoremStatement(model, "Elapsed.formatElapsed_spec")).toBe('theorem formatElapsed_spec : ∀ s : Nat, s < 10 → formatElapsed s = "just now"');
+    expect(theoremStatement(model, "Elapsed.missing")).toBe("theorem missing");
+    expect(countsLine(verification())).toBe("4 properties · 1,200 cases · 8/8 mutants killed");
+    expect(proofLine({ status: "skipped", reason: "tiers 1 to 3 fail" })).toBe("not proved: tiers 1 to 3 fail");
   });
 });

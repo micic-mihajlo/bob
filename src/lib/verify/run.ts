@@ -264,6 +264,13 @@ export function findLake(): string | null {
   return candidates.find((c): c is string => !!c && existsSync(c)) ?? null;
 }
 
+/** A theorem's declaration as the Lean file states it, up to its proof, on one line. */
+export function theoremStatement(model: string, theorem: string): string {
+  const name = theorem.split(".").pop() ?? theorem;
+  const found = new RegExp(`(?:theorem|lemma)\\s+${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b([\\s\\S]*?):=`).exec(model);
+  return found ? `theorem ${name}${found[1].replace(/\s+/g, " ").trimEnd()}` : `theorem ${name}`;
+}
+
 /** True when elan or the machine stopped lake before Lean read the model: an unwritable home, no toolchain, no network. */
 export function leanCantRun(output: string): boolean {
   if (/Contract\.lean:\d+:\d+: error/.test(output)) return false;
@@ -325,5 +332,5 @@ export async function runProof(ws: Workspace, contract: Contract, tsOutputs: str
       }
     }
   }
-  return { status: "proved", theorems: lean.theorems, axioms: [...axioms], cases: conf?.inputs.length ?? 0, seconds: Math.round((Date.now() - started) / 100) / 10 };
+  return { status: "proved", theorems: lean.theorems, axioms: [...axioms], cases: conf?.inputs.length ?? 0, seconds: Math.round((Date.now() - started) / 100) / 10, statements: lean.theorems.map((t) => theoremStatement(model, t)) };
 }

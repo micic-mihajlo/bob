@@ -1,3 +1,4 @@
+import type { Proof } from "./verification";
 /**
  * The shared contract. The core (`src/lib/**`, `src/app/api/**`) writes these shapes
  * and the UI (`src/components/**`) only reads `Snapshot` and calls the routes in `API`.
@@ -263,6 +264,9 @@ export interface PullRequestData {
   tree?: string;
   /** The head's verification as one line, kept current with the trace block. */
   verification?: string;
+  /** The head's Lean proof and its properties, cases and mutants line, so the approval card can lead with the proof. */
+  proof?: Proof;
+  counts?: string;
 }
 
 export interface GitHubPullRequest {

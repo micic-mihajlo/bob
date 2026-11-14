@@ -3,7 +3,7 @@ import { goalOf } from "./roadmap";
 import type { State } from "./state";
 import type { Artifact, RequestId } from "./types";
 import { isPullRequest } from "./threads";
-import { verificationStatus } from "./verification";
+import { countsLine, verificationOf, verificationStatus } from "./verification";
 import { traceWhy } from "./why";
 
 /**
@@ -104,9 +104,13 @@ export function withPullRequestTraces(s: State): State {
     if (a.kind !== "pull_request") return a;
     const trace = traceOf(s, a);
     const detail = withTraceBlock(a.detail, traceBlock(trace));
-    if (detail === a.detail && (!a.pullRequest || a.pullRequest.verification === trace.verification)) return a;
+    const v = isPullRequest(a) ? verificationOf(s, a) : undefined;
+    const proof = v?.contract.ok ? v.proof : undefined;
+    const counts = v?.contract.ok ? countsLine(v, s.equivalentMutants ?? []) : undefined;
+    const same = !a.pullRequest || (a.pullRequest.verification === trace.verification && a.pullRequest.counts === counts && JSON.stringify(a.pullRequest.proof) === JSON.stringify(proof));
+    if (detail === a.detail && same) return a;
     changed = true;
-    return { ...a, detail, ...(a.pullRequest ? { pullRequest: { ...a.pullRequest, verification: trace.verification } } : {}) };
+    return { ...a, detail, ...(a.pullRequest ? { pullRequest: { ...a.pullRequest, verification: trace.verification, proof, counts } } : {}) };
   });
   return changed ? { ...s, artifacts } : s;
 }

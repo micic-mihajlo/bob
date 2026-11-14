@@ -736,6 +736,21 @@
   overflow-wrap: break-word;
 }
 
+.approval-proof-statement {
+  color: var(--bob-text-primary);
+  font-family: var(--bob-font-mono);
+  font-size: var(--bob-text-sm);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.approval-proof-counts {
+  color: var(--bob-text-muted);
+  font-family: var(--bob-font-mono);
+  font-size: var(--bob-text-xs, var(--bob-text-sm));
+  overflow-wrap: anywhere;
+}
+
 .approval-file-counts {
   flex: none;
   color: var(--bob-text-muted);
