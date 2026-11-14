@@ -285,7 +285,7 @@ export interface AgentProfile {
 export type ComposerAgent = Pick<
   AgentProfile,
   "id" | "name" | "title" | "description" | "avatarSeed" | "avatarHue" | "avatarUrl"
->;
+> & { provider?: AgentProfile["provider"] };
 
 /** The skill fields that the composer, the queue and rich text read. */
 export type ComposerSkill = Pick<
