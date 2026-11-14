@@ -1,5 +1,5 @@
 import { formatAmount } from "./format";
-import { outstanding, totalCents, type Invoice } from "./invoices";
+import { overdueInvoices, outstanding, totalCents, type Invoice } from "./invoices";
 
 const escapeHtml = (text: string) =>
   text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
@@ -14,7 +14,9 @@ export function invoiceRows(list: readonly Invoice[]): string {
     .join("");
 }
 
-export function summary(list: readonly Invoice[]): string {
+/** The page summary line. Pass today's ISO date to include the overdue count. */
+export function summary(list: readonly Invoice[], today?: string): string {
   const owed = outstanding(list);
-  return `${list.length} invoices, ${owed.length} outstanding (${formatAmount(totalCents(owed))} owed)`;
+  const base = `${list.length} invoices, ${owed.length} outstanding (${formatAmount(totalCents(owed))} owed)`;
+  return today === undefined ? base : `${base}, ${overdueInvoices(list, today).length} overdue`;
 }
