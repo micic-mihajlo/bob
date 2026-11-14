@@ -1,0 +1,34 @@
+{
+  "acceptance": "A vitest test passes for five inputs: 5000ms gives \"just now\", 12000ms gives \"12s ago\", 300000ms gives \"5m ago\", 7200000ms gives \"2h ago\", and 259200000ms (3 days) gives \"3d ago\".",
+  "propertiesFile": "src/lib/format-time.properties.test.ts",
+  "properties": [
+    {
+      "name": "reads just now for anything under ten seconds or not finite",
+      "criterion": "5000ms gives \"just now\"; negative and non-finite values read \"just now\" too."
+    },
+    {
+      "name": "reads one whole unit and ago from ten seconds on, never a minus sign or NaN",
+      "criterion": "12000ms gives \"12s ago\", 300000ms gives \"5m ago\", 7200000ms gives \"2h ago\" and 259200000ms gives \"3d ago\"."
+    },
+    {
+      "name": "rounds the unit down: its count fits and one more would overshoot",
+      "criterion": "The largest whole unit is rounded down, so 12s, 5m, 2h and 3d are the counts the inputs give."
+    },
+    {
+      "name": "switches from seconds to minutes exactly at one minute",
+      "criterion": "Under a minute reads seconds (\"12s ago\"); a whole minute reads \"1m ago\"."
+    },
+    {
+      "name": "switches from minutes to hours exactly at one hour",
+      "criterion": "Under an hour reads minutes (\"5m ago\"); a whole hour reads \"1h ago\"."
+    },
+    {
+      "name": "switches from hours to days exactly at one day",
+      "criterion": "Under a day reads hours (\"2h ago\"); a whole day reads \"1d ago\"."
+    },
+    {
+      "name": "reads an ISO timestamp as the span from now, so the subtraction cannot flip",
+      "criterion": "The pull request card's opened time is the span from now to the artifact's timestamp, giving the same label formatAgo gives for that span."
+    }
+  ]
+}
