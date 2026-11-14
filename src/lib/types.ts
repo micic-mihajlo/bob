@@ -414,10 +414,15 @@ export interface Roadmap {
   updatedAt: string;
 }
 
+/** The starting point of a project made without a repository: the invoices sample or a blank TypeScript project. */
+export type ProjectTemplate = "invoices" | "blank-ts";
+
 export interface Project {
   id: string;
   name: string;
   repo: string | null;
+  /** Which template a project without a repository was made from. Missing on projects saved before templates: the invoices sample. */
+  template?: ProjectTemplate;
 }
 
 /** One row of the "waiting for replies" block in a thread. */

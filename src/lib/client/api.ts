@@ -1,4 +1,4 @@
-import { API, type AgentId, type GraphView, type MessageId, type Project, type WhyHop } from "@/lib/types";
+import { API, type AgentId, type GraphView, type MessageId, type Project, type ProjectTemplate, type WhyHop } from "@/lib/types";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -96,7 +96,7 @@ export function promoteInboxOrder(workOrderId: string): Promise<ActionResult> {
 }
 
 /** Opens a parked project by name, brings in a repository, or starts one from the template. */
-export function openProject(input: { repo?: string; name?: string }): Promise<ActionResult> {
+export function openProject(input: { repo?: string; name?: string; template?: ProjectTemplate }): Promise<ActionResult> {
   return post(API.projects, input);
 }
 

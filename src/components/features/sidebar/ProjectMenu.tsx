@@ -6,7 +6,7 @@ import { useBob } from "@/components/features/window/BobContext";
 import { buttonClass } from "@/components/ui/classes";
 import { listProjects, openProject } from "@/lib/client/api";
 import type { Project } from "@/lib/types";
-import { OpenProjectDialog } from "./OpenProjectDialog";
+import { OpenProjectDialog, TEMPLATE_LABELS } from "./OpenProjectDialog";
 
 /**
  * The project name on the sidebar title, as the reference's server menu: it lists the projects
@@ -108,7 +108,7 @@ export function ProjectMenu() {
               className="server-menu-row"
               aria-current={project.id === active.id ? "true" : undefined}
               disabled={pendingId !== null}
-              title={project.repo ?? "From the invoices template"}
+              title={project.repo ?? TEMPLATE_LABELS[project.template ?? "invoices"]}
               onClick={() => void choose(project)}
             >
               <span className="ui-menu-check" data-checked={project.id === active.id ? "" : undefined} aria-hidden="true">

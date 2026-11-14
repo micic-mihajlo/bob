@@ -28,7 +28,7 @@ export function seedState(): State {
   const at = nowIso();
   const captain: Agent = { ...CAPTAIN, createdAt: at, createdBy: { kind: "seed" } };
   return {
-    project: { id: "invoices-app", name: "invoices-app", repo: null },
+    project: { id: "invoices-app", name: "invoices-app", repo: null, template: "invoices" },
     agents: [captain],
     messages: [],
     deliveries: [],
