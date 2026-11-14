@@ -141,6 +141,11 @@
   margin-left: var(--bob-space-3);
 }
 
+/* A finished turn's list grows to fit a step's open output instead of scrolling around it. */
+.agent-steps-panel > .agent-steps-viewport:has(.agent-step[data-open]) {
+  max-height: none;
+}
+
 .agent-steps-list {
   display: grid;
   gap: var(--bob-space-1);
@@ -182,6 +187,83 @@
   margin-top: 2px;
 }
 
+.agent-step[data-outcome="ok"] > .agent-step-icon,
+.agent-step[data-outcome="ok"] .agent-step-toggle > .agent-step-icon {
+  color: var(--bob-success-text);
+}
+
+.agent-step[data-outcome="failed"] > .agent-step-icon,
+.agent-step[data-outcome="failed"] .agent-step-toggle > .agent-step-icon {
+  color: var(--bob-danger-text);
+}
+
+.agent-step-duration {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--bob-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A step with output: the row opens it below, the way a finished turn's row opens its steps. */
+.agent-step:has(> .agent-step-toggle) {
+  flex-wrap: wrap;
+}
+
+.agent-step-toggle {
+  display: flex;
+  flex: 1 1 100%;
+  min-width: 0;
+  align-items: flex-start;
+  gap: var(--bob-space-2);
+  margin-left: calc(-1 * var(--bob-space-1-5));
+  border: 0;
+  border-radius: var(--bob-radius-sm);
+  padding: 0 var(--bob-space-1-5);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agent-step-toggle:hover {
+  background: var(--bob-hover);
+}
+
+.agent-step-toggle:focus-visible {
+  outline: 2px solid var(--bob-accent);
+  outline-offset: 1px;
+}
+
+.agent-step-chevron {
+  flex: 0 0 auto;
+  width: var(--bob-icon-xs);
+  height: var(--bob-icon-xs);
+  margin-top: 2px;
+  color: var(--bob-text-muted);
+  transition: rotate var(--bob-duration-fast) var(--bob-ease-out);
+}
+
+.agent-step[data-open] .agent-step-chevron {
+  rotate: 90deg;
+}
+
+.agent-step-output {
+  flex: 1 1 100%;
+  max-height: 240px;
+  margin: var(--bob-space-1) 0 var(--bob-space-1) var(--bob-space-6);
+  overflow: auto;
+  border: 1px solid var(--bob-border);
+  border-radius: var(--bob-radius-sm);
+  padding: var(--bob-space-2) var(--bob-space-3);
+  color: var(--bob-text-secondary);
+  font-family: var(--bob-font-mono);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .agent-step[data-kind="thinking"] .agent-step-text {
   color: var(--bob-text-muted);
   font-style: italic;
@@ -207,6 +289,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .agent-steps-chevron,
+  .agent-step-chevron,
   .agent-steps-panel,
   .agent-steps-list {
     transition: none;
