@@ -36,6 +36,23 @@ const FINISH: Record<string, string> = {
   research: "record what you found, then report",
 };
 
+/** Calls that finish a turn's job, with the answer they leave. Once one has run, a step or time limit does not fail the turn. */
+const TERMINAL: Record<string, (r: Record<string, unknown>) => string> = {
+  report: () => "Reported.",
+  record_review: (r) => `Recorded my review of #${r.pullRequest}: ${r.verdict === "approve" ? "approved" : "changes requested"}.`,
+  open_pull_request: (r) => `Opened pull request #${r.number} (id ${r.pullRequestId}) on branch ${r.branch}.`,
+  record_note: () => "Recorded what I found.",
+};
+const EDITS = new Set(["write_files", "edit_files"]);
+
+/** The answer of a turn whose last successful terminal call came after its last file change, else null. */
+function finishedWork(moves: MoveRecord[]): string | null {
+  const calls = moves.flatMap((m) => m.calls).filter((c) => !("error" in c.result));
+  const at = calls.findLastIndex((c) => c.name in TERMINAL);
+  if (at < 0 || calls.slice(at + 1).some((c) => EDITS.has(c.name))) return null;
+  return TERMINAL[calls[at].name](calls[at].result);
+}
+
 const wrapUpNote = (left: number, role: string | undefined) =>
   `Budget (data): you have ${left} move${left === 1 ? "" : "s"} left in this turn. Stop exploring and finish now: ${FINISH[role ?? ""] ?? "answer with what you have"}.`;
 
@@ -126,7 +143,7 @@ async function runTurn(t: StartedTurn): Promise<void> {
       break;
     }
   }
-  finishTurn(t, final);
+  finishTurn(t, final === STEP_LIMIT_TEXT || final === TIME_LIMIT_TEXT ? (finishedWork(moves) ?? final) : final);
 }
 
 async function executeMove(t: StartedTurn, calls: ToolCallRequest[]): Promise<{ calls: CallRecord[]; endTurn: boolean } | null> {
@@ -165,7 +182,7 @@ function relayAndDrain(t: StartedTurn, text: string, status: ReplyStatus, unbloc
   [...woken, t.agentId].forEach(drain);
 }
 
-/** A turn that hit its step or time limit ends failed, with a notice and a blocked report, so nothing waits on it. */
+/** A turn that hit its step or time limit before its terminal call ends failed, with a notice and a blocked report, so nothing waits on it. */
 function finishTurn(t: StartedTurn, text: string | null): void {
   if (text !== STEP_LIMIT_TEXT && text !== TIME_LIMIT_TEXT) {
     if (text) addAgentText(t, text);
