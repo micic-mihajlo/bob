@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { FIRST_MESSAGE, speakable } from "@/lib/voice/speech";
 import type { AgentId } from "@/lib/types";
 import { voiceTurn } from "./api";
+import { MIC_BLOCKED } from "./mic";
 import { useMicLevels } from "./use-mic-levels";
 import type { VoiceCallState, VoicePanelPhase } from "./VoicePanel";
 
@@ -78,7 +79,7 @@ export function useBrowserCall(agentId: AgentId): VoiceCallState {
       r.onerror = (event) => {
         if (!FATAL.has(event.error)) return;
         fatal = true;
-        setError(event.error === "not-allowed" ? "Allow the microphone to talk to Bob." : `The browser stopped listening: ${event.error}.`);
+        setError(event.error === "not-allowed" || event.error === "service-not-allowed" ? MIC_BLOCKED : `The browser stopped listening: ${event.error}.`);
       };
       r.onend = () => {
         recognizer = null;
