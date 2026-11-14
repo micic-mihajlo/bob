@@ -17,6 +17,7 @@ export interface SendInput {
   requestId: RequestId;
   approvalId?: string;
   continues?: MessageId;
+  automatic?: boolean;
 }
 
 export type SendErrorCode =
@@ -43,7 +44,7 @@ const refuse = (code: SendErrorCode, message: string): SendResult => ({ ok: fals
 /** Deliveries agents have created for one request, which is what the budget counts. */
 export function budgetUsed(s: State, requestId: RequestId): number {
   const sentByAgents = new Set(
-    s.messages.filter((m) => m.requestId === requestId && m.from.kind === "agent").map((m) => m.id),
+    s.messages.filter((m) => m.requestId === requestId && m.from.kind === "agent" && !m.automatic).map((m) => m.id),
   );
   return s.deliveries.filter((d) => sentByAgents.has(d.messageId)).length;
 }
@@ -103,7 +104,7 @@ const nextQueueOrder = (s: State) => s.deliveries.reduce((max, d) => Math.max(ma
 
 function overBudget(s: State, input: SendInput, count: number): boolean {
   // Replies are exempt: refusing one would leave the asker waiting, and a reply cannot start more work.
-  return input.from.kind === "agent" && !input.replyTo && budgetUsed(s, input.requestId) + count > REQUEST_DELIVERY_BUDGET;
+  return input.from.kind === "agent" && !input.replyTo && !input.automatic && budgetUsed(s, input.requestId) + count > REQUEST_DELIVERY_BUDGET;
 }
 
 function budgetRefusal(s: State, input: SendInput): { state: State; result: SendResult } {
@@ -128,6 +129,7 @@ function buildMessage(input: SendInput, to: AgentId[]): Message {
     replyTo: input.replyTo,
     ...(input.approvalId ? { approvalId: input.approvalId } : {}),
     ...(input.continues ? { continues: input.continues } : {}),
+    ...(input.automatic ? { automatic: true as const } : {}),
     at: nowIso(),
   };
 }
