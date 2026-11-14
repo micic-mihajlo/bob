@@ -40,6 +40,11 @@
   display: block;
 }
 
+.bob-chat-empty .agent-chat-empty-title > span {
+  display: inline-block;
+  text-wrap: balance;
+}
+
 .agent-chat-empty-ready,
 .agent-chat-empty-description {
   color: var(--bob-text-muted);
