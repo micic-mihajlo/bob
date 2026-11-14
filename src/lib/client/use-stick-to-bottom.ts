@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { anchorNewMessages, tallyNewMessages, type NewMessageTally, type TimelineRow } from "./new-message-tally";
 
 /** How close to the end still counts as reading the newest item. */
 const PINNED_SLACK_PX = 48;
@@ -15,6 +16,8 @@ export interface StickToBottom {
   jumpToNewest: () => void;
   /** Lets the view rest away from the end, as when it scrolls to an older item on purpose. */
   unpin: () => void;
+  /** Drops the count of new items without moving the view. */
+  clearUnseen: () => void;
 }
 
 /** The scroller's size; a scroll event at a new size came from layout, not from the person. */
@@ -29,13 +32,17 @@ function prefersReducedMotion(): boolean {
 /**
  * Keeps a thread on its newest item unless the person scrolled up. While they read older items, new
  * ones are counted instead of pulling the view down. Mount it once per thread.
+ *
+ * With `rows`, only the rows the reader would call a new message are counted, as the reference's
+ * pill counts them; without, every new item counts.
  */
-export function useStickToBottom(itemCount: number): StickToBottom {
+export function useStickToBottom(itemCount: number, rows?: readonly TimelineRow[]): StickToBottom {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const pinnedRef = useRef(true);
   const lastLayout = useRef("");
   const seenCount = useRef(itemCount);
+  const tally = useRef<NewMessageTally>(anchorNewMessages(rows ?? []));
   const [pinned, setPinned] = useState(true);
   const [unseen, setUnseen] = useState(0);
 
@@ -50,8 +57,14 @@ export function useStickToBottom(itemCount: number): StickToBottom {
     const added = itemCount - seenCount.current;
     seenCount.current = itemCount;
     if (pinnedRef.current) toEnd(false);
-    else if (added > 0) setUnseen((count) => count + added);
-  }, [itemCount, toEnd]);
+    else if (!rows && added > 0) setUnseen((count) => count + added);
+  }, [itemCount, rows, toEnd]);
+
+  useLayoutEffect(() => {
+    if (!rows) return;
+    tally.current = tallyNewMessages(tally.current, rows, pinnedRef.current);
+    setUnseen(tally.current.count);
+  }, [rows]);
 
   // Rows that grow in place, such as the live steps, keep a pinned view at the end.
   useEffect(() => {
@@ -79,20 +92,29 @@ export function useStickToBottom(itemCount: number): StickToBottom {
     const atEnd = element.scrollHeight - element.scrollTop - element.clientHeight <= PINNED_SLACK_PX;
     pinnedRef.current = atEnd;
     setPinned(atEnd);
-    if (atEnd) setUnseen(0);
+    if (atEnd) {
+      tally.current = { ...tally.current, count: 0 };
+      setUnseen(0);
+    }
   }, [toEnd]);
 
   const jumpToNewest = useCallback(() => {
     pinnedRef.current = true;
     setPinned(true);
+    tally.current = { ...tally.current, count: 0 };
     setUnseen(0);
     toEnd(true);
   }, [toEnd]);
+
+  const clearUnseen = useCallback(() => {
+    tally.current = { ...tally.current, count: 0 };
+    setUnseen(0);
+  }, []);
 
   const unpin = useCallback(() => {
     pinnedRef.current = false;
     setPinned(false);
   }, []);
 
-  return { scrollRef, contentRef, pinned, unseen, onScroll, jumpToNewest, unpin };
+  return { scrollRef, contentRef, pinned, unseen, onScroll, jumpToNewest, unpin, clearUnseen };
 }

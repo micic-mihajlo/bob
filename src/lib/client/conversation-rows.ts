@@ -138,3 +138,61 @@ export function buildConversationRows(
   const after = (index: number) => placed.filter((entry) => entry.anchor === index).map((entry) => entry.row);
   return [...rows.flatMap((row, index) => [row, ...after(index)]), ...after(-1)];
 }
+
+/**
+ * How long a run of messages by one sender stays one block. Beyond it the time returns, because a
+ * reply an hour later is a new turn of the conversation, not a continuation.
+ */
+const CHAT_GROUPING_WINDOW_MS = 5 * 60_000;
+
+/** A row of a transcript, as the two fields the grouping rule reads. */
+export interface SenderRunRow {
+  /** Who wrote the row: "you" or "agent". */
+  author: string;
+  createdAt?: string;
+}
+
+/** Do two messages fall close enough together to stay one block? An unreadable time says no. */
+function withinGroupingWindow(previousIso: string | undefined, currentIso: string | undefined): boolean {
+  if (previousIso === undefined || currentIso === undefined) return false;
+  const previous = new Date(previousIso).getTime();
+  const current = new Date(currentIso).getTime();
+  if (Number.isNaN(previous) || Number.isNaN(current)) return false;
+  return current - previous <= CHAT_GROUPING_WINDOW_MS;
+}
+
+/**
+ * Does this row continue the run above it, and so draw no time of its own?
+ *
+ * `previous` is absent for the first row of the transcript, which always opens a run.
+ * `previousDrawsTime` is false for a row that carries no time the reader can see, such as an
+ * activity marker: the run it interrupts cannot continue under it. `startsDay` is true when a day
+ * separator stands above the row, which opens a run the same way a new sender does.
+ */
+export function continuesSenderRun(
+  previous: SenderRunRow | undefined,
+  current: SenderRunRow,
+  options: { previousDrawsTime: boolean; startsDay: boolean },
+): boolean {
+  if (previous === undefined || !options.previousDrawsTime || options.startsDay) return false;
+  if (previous.author !== current.author) return false;
+  return withinGroupingWindow(previous.createdAt, current.createdAt);
+}
+
+/** The sender a run of rows breaks on. */
+export function senderRunRow(row: ConversationRow): SenderRunRow {
+  return { author: row.kind === "user" ? "you" : row.kind === "agent" ? "agent" : row.kind, createdAt: row.at };
+}
+
+/** A row that renders only an action marker, with no bubble of its own. */
+export function markerRow(row: ConversationRow): boolean {
+  return row.kind === "sent" || row.kind === "received" || row.kind === "notice";
+}
+
+/**
+ * Does this row draw a time of its own? A marker carries the marker's own time, and steps, an
+ * approval and an artifact draw a card instead of a message row, so none can hold a run open.
+ */
+export function rowDrawsTime(row: ConversationRow): boolean {
+  return row.kind === "user" || row.kind === "agent";
+}
