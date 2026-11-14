@@ -8,9 +8,7 @@
  * (mode 0700). Only that user and root can connect. Agents run as the same user and already have
  * full access to its files, so the socket gives them nothing new. The socket answers a closed list
  * of requests: status, the email-code sign-in, the sign-in with an operator's one-time claim, the
- * server name, sign-out and a Mobile Connect code. It never sends the session token, the sign-in code
- * or the claim back. The Mobile Connect code signs one phone
- * in to the account of the server; the account service lets it work for one sign-in, for two minutes.
+ * server name and sign-out. It never sends the session token, the sign-in code or the claim back.
  *
  * The protocol is HTTP with form bodies and `key=value` text lines, so the command needs only
  * `curl --unix-socket`.
@@ -25,13 +23,11 @@ import { INPUT_LIMITS } from "@bob/contracts/input-limits";
 import type { CentralAuthState } from "@bob/contracts/ipc";
 import { sourceText } from "@bob/i18n/source";
 import { Deferred, Effect } from "effect";
-import QRCode from "qrcode";
 import { runCauseEffect } from "../backend/effect-boundary";
 import type { CentralAuthManager } from "./central-auth-manager";
 import type { HostService } from "./host-service";
 import { readBodyWithin } from "./http-body";
-import { createHostedMobileConnect } from "./mobile-connect-host";
-import { RemoteWorkflowError, remoteCall, toRemoteWorkflowError } from "./remote-service-effects";
+import { RemoteWorkflowError, remoteCall, } from "./remote-service-effects";
 import type { ServerMemory } from "./server-memory";
 
 const CONTROL_SOCKET_FILE = "control.sock";
@@ -69,7 +65,6 @@ export interface ServerModeOptions {
     | "canPersistSession"
     | "redeemServerClaim"
     | "logout"
-    | "createMobileConnect"
   >;
   host: Pick<HostService, "getStatus" | "configure" | "start" | "updateIdentity" | "getMobileConnectHost">;
   /** The memory guard, so that `status` shows the memory ceiling and the turn limit. */
@@ -213,8 +208,6 @@ export class ServerMode {
         return runCauseEffect(this.#claimLogin(body.get("claim") ?? "", body.get("name")));
       case "POST /v1/name":
         return runCauseEffect(this.#rename(body.get("name") ?? ""));
-      case "POST /v1/mobile-connect":
-        return runCauseEffect(this.#mobileConnect());
       case "POST /v1/logout":
         await runCauseEffect(
           this.#options.centralAuth.logout().pipe(Effect.mapError(({ cause }) => new RemoteWorkflowError({ cause }))),
@@ -327,21 +320,6 @@ export class ServerMode {
     return this.#status();
   });
 
-  /**
-   * A Mobile Connect code as a QR code for a terminal, in base64 because an answer line holds no line
-   * break. The terminal has no other way to show the code to a phone.
-   */
-  readonly #mobileConnect = Effect.fn("ServerMode.mobileConnect")(function* (
-    this: ServerMode,
-  ): Effect.fn.Return<Answer, RemoteWorkflowError> {
-    const account = this.#options.centralAuth.getState();
-    if (account.status !== "signed_in") return issueFailure(account);
-    // A publish that runs now can give the host its name. The code binds the host that it publishes.
-    yield* this.publish();
-    const ticket = yield* createHostedMobileConnect(this.#options).pipe(toRemoteWorkflowError);
-    const qr = yield* remoteCall(() => QRCode.toString(ticket.qrData, { type: "terminal", small: true }));
-    return { status: 200, lines: { qr: Buffer.from(qr).toString("base64"), expires_at: ticket.expiresAt } };
-  });
 
   readonly #rename = Effect.fn("ServerMode.rename")(function* (
     this: ServerMode,

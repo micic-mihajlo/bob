@@ -529,7 +529,7 @@ import type {
   WorkflowVersionInput,
   WorkflowWebhookSecret,
 } from "./ipc-workflows";
-import type { AccountSession, MobileConnectedDevice, MobileConnectLink, MobileConnectTicket } from "./mobile-connect";
+import type { AccountSession } from "./mobile-connect";
 
 declare const payloadType: unique symbol;
 declare const resultType: unique symbol;
@@ -1254,15 +1254,8 @@ export const IPC_ENDPOINTS = {
     verifyEmailCode: request<VerifyEmailCodeInput, CentralAuthState>()("auth:verify-email-code"),
     updateName: request<string, CentralAuthState>()("auth:update-name"),
     updateAvatar: request<AvatarImageInput | null, CentralAuthState>()("auth:update-avatar"),
-    createMobileConnect: request<undefined, MobileConnectTicket>()("auth:create-mobile-connect"),
-    cancelMobileConnect: request<undefined, void>()("auth:cancel-mobile-connect"),
-    getMobileConnectLink: request<undefined, MobileConnectLink | null>()("auth:get-mobile-connect-link"),
-    createMobileConnectLink: request<undefined, MobileConnectLink>()("auth:create-mobile-connect-link"),
-    revokeMobileConnectLink: request<undefined, void>()("auth:revoke-mobile-connect-link"),
-    listMobileConnectedDevices: request<undefined, MobileConnectedDevice[]>()("auth:list-mobile-connected-devices"),
     listAccountSessions: request<undefined, AccountSession[]>()("auth:list-account-sessions"),
     revokeAccountSession: request<string, void>()("auth:revoke-account-session"),
-    revokeMobileConnectedDevice: request<string, void>()("auth:revoke-mobile-connected-device"),
     logout: request<undefined, CentralAuthState>()("auth:logout"),
     event: event<CentralAuthState>()("auth:event"),
   },

@@ -8,20 +8,13 @@ export interface AccountPort {
   agent: Pick<BobDesktopApi["agent"], "getUsage">;
   auth: Pick<
     BobDesktopApi["auth"],
-    | "cancelMobileConnect"
-    | "createMobileConnect"
-    | "createMobileConnectLink"
-    | "getMobileConnectLink"
     | "getState"
     | "listAccountSessions"
-    | "listMobileConnectedDevices"
     | "logout"
     | "onEvent"
     | "requestEmailCode"
     | "retry"
     | "revokeAccountSession"
-    | "revokeMobileConnectedDevice"
-    | "revokeMobileConnectLink"
     | "updateAvatar"
     | "updateName"
     | "verifyEmailCode"

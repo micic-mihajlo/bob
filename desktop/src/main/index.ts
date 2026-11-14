@@ -681,7 +681,7 @@ function registerIpcHandlers({
     ...macAutomationIpcHandlers({ platform: process.platform }),
     ...providerIpcHandlers({ service, providerRuntimes, credentials: providerCredentials, openLink }),
     ...voiceIpcHandlers({ voice, speech, service }),
-    ...accountIpcHandlers({ centralAuth, host }),
+    ...accountIpcHandlers({ centralAuth }),
     ...skillIpcHandlers({ skills, getMainWindow: getDialogParent, translate: language.translate }),
     ...agentFolderIpcHandlers({
       service,
