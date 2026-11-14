@@ -9,6 +9,7 @@ import { cx } from "@/components/ui/classes";
 import { formatChatTimestamp } from "@/lib/client/chat-time";
 import { displayName } from "@/lib/client/crew";
 import type { Agent, AgentId } from "@/lib/types";
+import { AgentMessageText } from "./AgentMessageText";
 
 /** The reference's neutral marker colour, which the captain's grey face also wears. */
 const NEUTRAL_AGENT_COLOR = "#e4e4e4";
@@ -100,9 +101,9 @@ export function AgentMessageMarker({ direction, expectsReply, agentIds, text, at
         </span>
         {expanded ? (
           <div className="chat-action-message-text">
-            <span className="ui-text" data-variant="body-sm" data-tone="primary">
-              {text}
-            </span>
+            <div className="ui-text message-markdown" data-variant="body-sm" data-tone="primary">
+              <AgentMessageText text={text} />
+            </div>
           </div>
         ) : null}
       </div>
