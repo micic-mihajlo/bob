@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/Surface";
 import { displayName } from "@/lib/client/crew";
 import { formatDeadline } from "@/lib/client/format";
 import { requestUsageLine } from "@/lib/client/requests";
-import { hasPlan, roadmapSteps, WORK_ORDER_STATUS_LABEL, workOrderProgress, type StepPhase } from "@/lib/client/roadmap-view";
+import { forUserLine, hasPlan, roadmapSteps, WORK_ORDER_STATUS_LABEL, workOrderProgress, type StepPhase } from "@/lib/client/roadmap-view";
 import type { WorkOrder } from "@/lib/types";
 
 const PHASE_LABEL: Record<StepPhase, string> = { done: "Done", current: "Now", next: "Up next" };
@@ -64,7 +64,7 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                 <p className="bob-roadmap-label">Goal</p>
                 <h3 className="bob-roadmap-goal">{goal?.title ?? "No goal set yet"}</h3>
                 {goal?.why ? <p className="bob-roadmap-muted">{goal.why}</p> : null}
-                {goal?.user ? <p className="bob-roadmap-muted">For {goal.user}</p> : null}
+                {goal?.user ? <p className="bob-roadmap-muted">{forUserLine(goal.user)}</p> : null}
                 {goal?.behaviour ? <p className="bob-roadmap-muted">{goal.behaviour}</p> : null}
                 {goal?.acceptance ? <p className="bob-roadmap-muted">{goal.acceptance}</p> : null}
                 {goal?.deadline ? <p className="bob-roadmap-muted">By {formatDeadline(goal.deadline)}</p> : null}
