@@ -7,6 +7,7 @@ import { useBob } from "@/components/features/window/BobContext";
 import { IconButton } from "@/components/ui/Button";
 import { keepTabInside } from "@/components/ui/focus-trap";
 import { fetchWhy } from "@/lib/client/api";
+import { requestLabel, requestOrigin } from "@/lib/client/requests";
 import { formatElapsed } from "@/lib/client/format";
 import { buildWhyTrace, type WhySpan, type WhyTraceModel } from "@/lib/client/why-trace";
 import type { MessageId } from "@/lib/types";
@@ -29,7 +30,7 @@ function TraceTotal({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TraceRow({ span }: { span: WhySpan }) {
+function TraceRow({ span, text }: { span: WhySpan; text: string }) {
   const kind = span.fromPerson ? "tool" : "model";
   const Glyph = span.fromPerson ? User : Bot;
   const label = [span.detail, span.label].filter(Boolean).join(" · ");
@@ -44,8 +45,8 @@ function TraceRow({ span }: { span: WhySpan }) {
             data-slot="button"
             data-variant="ghost"
             data-size="xs"
-            aria-label={`${span.name} ${span.detail}: ${span.text}`}
-            title={span.text}
+            aria-label={`${span.name} ${span.detail}: ${text}`}
+            title={text}
           >
             <span className="trace-glyph" aria-hidden="true" data-agent={span.fromPerson ? undefined : ""}>
               <Glyph className="trace-glyph-icon" />
@@ -53,7 +54,7 @@ function TraceRow({ span }: { span: WhySpan }) {
             <span className="trace-span-name" title={span.name}>
               {span.name}
             </span>
-            <span className="trace-span-detail">{span.text}</span>
+            <span className="trace-span-detail">{text}</span>
           </button>
         </div>
         <div className="trace-lane">
@@ -78,7 +79,8 @@ function TraceRow({ span }: { span: WhySpan }) {
  * reference's trace waterfall. The last row is the sentence the person typed.
  */
 export function WhyTraceDialog() {
-  const { whyMessageId, whyPullRequestId, closeWhy } = useBob();
+  const { snapshot, whyMessageId, whyPullRequestId, closeWhy } = useBob();
+  const inbox = snapshot.inbox ?? [];
   const [state, setState] = useState<TraceState | null>(null);
   const content = useRef<HTMLDivElement>(null);
 
@@ -113,6 +115,15 @@ export function WhyTraceDialog() {
   const current = state !== null && state.messageId === whyMessageId ? state : null;
   const trace = current?.status === "ready" ? current.trace : null;
   const origin = trace?.spans.at(-1);
+  const from = origin ? requestOrigin(origin.text, inbox) : null;
+  const startedWith =
+    origin && from
+      ? from.kind === "inbox"
+        ? `From the inbox: ${from.source}`
+        : from.kind === "build"
+          ? `${origin.name} pressed Build this on “${from.title}”`
+          : `${origin.name} wrote “${from.text}”`
+      : null;
 
   return createPortal(
     <div className="ui-dialog-overlay" onMouseDown={(event) => event.target === event.currentTarget && closeWhy()}>
@@ -155,7 +166,7 @@ export function WhyTraceDialog() {
                   </div>
                   <ol className="trace-rows">
                     {trace.spans.map((span) => (
-                      <TraceRow key={span.id} span={span} />
+                      <TraceRow key={span.id} span={span} text={span.fromPerson ? requestLabel(span.text, inbox) : span.text} />
                     ))}
                   </ol>
                 </>
@@ -170,9 +181,9 @@ export function WhyTraceDialog() {
             </div>
           </div>
           <footer className="trace-footer">
-            {origin ? (
-              <p className="trace-empty-description" title={origin.text}>
-                {origin.name} wrote “{origin.text}”
+            {startedWith ? (
+              <p className="trace-empty-description" title={startedWith}>
+                {startedWith}
               </p>
             ) : (
               <span />

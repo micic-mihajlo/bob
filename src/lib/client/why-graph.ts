@@ -1,4 +1,5 @@
-import type { Approval, Artifact, GraphView, GraphViewNode } from "@/lib/types";
+import type { Approval, Artifact, GraphView, GraphViewNode, InboxItem } from "@/lib/types";
+import { requestOrigin } from "./requests";
 
 /** The pull request whose path Why? draws: the artifact itself, or the one a review is about. */
 export const pullRequestIdOf = (artifact: Artifact): string | null =>
@@ -30,11 +31,14 @@ const LINK: Record<string, string> = { CAUSED_BY: "because of", CONTINUES: "answ
 const GATE_STATUS: Record<Approval["status"], string> = { pending: "Waiting for you", approved: "Approved", denied: "Denied" };
 const VERDICT: Record<NonNullable<Artifact["review"]>["verdict"], string> = { approve: "Approved", request_changes: "Changes requested" };
 
-/** What the live snapshot knows about the gate's reviews and approvals, to tell repeated ones apart. */
+/** What the live snapshot knows: the gate's reviews and approvals, to tell repeated ones apart, and the inbox a path can start from. */
 export interface GateFacts {
   approvals: readonly Approval[];
   artifacts: readonly Artifact[];
+  inbox?: readonly InboxItem[];
 }
+
+const ORIGIN_TITLE = { typed: "You wrote", inbox: "From the inbox", build: "You pressed Build this" } as const;
 
 const atHead = (word: string, sha: string | undefined) => (sha ? `${word} at ${sha.slice(0, 7)}` : word);
 
@@ -78,12 +82,13 @@ export function buildPathGraph(view: GraphView, facts: GateFacts = { approvals: 
     const message = byId.get(next);
     if (!message) break;
     const sender = byId.get(edge("SENT", "to", next)[0]?.from ?? "");
-    const origin = next === view.rootMessageId;
-    columns.push({
-      link,
-      nodes: [{ id: next, kind: origin ? "origin" : "message", title: origin ? "You wrote" : `${name(sender)} wrote`, label: message.label }],
-    });
-    if (origin) break;
+    if (next === view.rootMessageId) {
+      const from = requestOrigin(message.label, facts.inbox ?? []);
+      const label = from.kind === "inbox" ? from.source : from.kind === "build" ? from.title : from.text;
+      columns.push({ link, nodes: [{ id: next, kind: "origin", title: ORIGIN_TITLE[from.kind], label }] });
+      break;
+    }
+    columns.push({ link, nodes: [{ id: next, kind: "message", title: `${name(sender)} wrote`, label: message.label }] });
     const hop = view.edges.find((e) => e.from === next && e.type in LINK);
     link = (hop && LINK[hop.type]) ?? "because of";
     next = hop?.to;

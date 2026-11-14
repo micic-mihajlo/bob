@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { GraphView } from "@/lib/types";
+import type { GraphView, InboxItem } from "@/lib/types";
 import { buildPathGraph } from "../why-graph";
 
 const VIEW: GraphView = {
@@ -46,6 +46,21 @@ describe("buildPathGraph", () => {
       ["because of", ["message:You wrote:Yes, an accountant"]],
       ["answers", ["origin:You wrote:customers want to export invoices as CSV"]],
     ]);
+  });
+
+  it("names an inbox item as the origin, not the triage prompt that handed it over", () => {
+    const view: GraphView = {
+      ...VIEW,
+      nodes: VIEW.nodes.map((n) => (n.id === "msg_ask" ? { ...n, label: 'Inbox item inb_1: an error from "production error, Nov 14". Triage it.' } : n)),
+    };
+    const inbox = [
+      { id: "inb_1", kind: "error", source: "production error, Nov 14", text: "", at: "", messageId: "m", status: "triaged", candidates: [] } as InboxItem,
+    ];
+    expect(buildPathGraph(view, { approvals: [], artifacts: [], inbox }).columns.at(-1)?.nodes[0]).toMatchObject({
+      kind: "origin",
+      title: "From the inbox",
+      label: "production error, Nov 14",
+    });
   });
 
   it("keeps what it can when the gate and the turn are missing", () => {
