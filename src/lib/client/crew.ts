@@ -18,6 +18,8 @@ export function displayName(agent: Pick<Agent, "code" | "name">): string {
 }
 
 export function threadStatusOf(snapshot: Snapshot, agent: Agent): ThreadStatus {
+  const threadState = snapshot.threadState?.[agent.id];
+  if (threadState) return threadState.closed ? "closed" : threadState.needsYou ? "needs_you" : threadState.status;
   const given = snapshot.threadStatus?.[agent.id];
   if (given) return given;
   if (agent.closedAt) return "closed";

@@ -1,0 +1,24 @@
+/* A work order's title opens its thread, so it is a button that keeps the roadmap task's text look. */
+button.bob-roadmap-task-title {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.bob-roadmap-task-title:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+button.bob-roadmap-task-title:disabled {
+  cursor: default;
+}
+
+button.bob-roadmap-task-title:focus-visible {
+  border-radius: var(--bob-radius-sm);
+  box-shadow: var(--bob-focus-ring);
+  outline: none;
+}

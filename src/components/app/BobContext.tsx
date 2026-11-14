@@ -25,6 +25,12 @@ interface BobContextValue {
   panelKind: PanelKind;
   panelTab: PanelTab;
   setPanelTab: (tab: PanelTab) => void;
+  /** The docked panel covers the chat. */
+  panelMaximized: boolean;
+  setPanelMaximized: (maximized: boolean) => void;
+  /** The side panel's width in pixels; the panel's resizer sets it. */
+  panelWidth: number;
+  setPanelWidth: (width: number) => void;
   /** Selects a thread, shows one of its panel tabs and opens the panel. */
   openThreadTab: (agentId: AgentId, tab: PanelTab) => void;
   focusTarget: FocusTarget | null;
@@ -55,6 +61,8 @@ export function BobProvider({ snapshot, connected, children }: { snapshot: Snaps
   );
   // One remembered tab per kind of thread, so switching threads never lands on a tab it lacks.
   const [panelTabs, setPanelTabs] = useState<Readonly<Record<PanelKind, PanelTab>>>(FIRST_TABS);
+  const [panelMaximized, setPanelMaximized] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(380);
   const [focusTarget, setFocusTarget] = useState<FocusTarget | null>(null);
   const [whyMessageId, setWhyMessageId] = useState<MessageId | null>(null);
   const [newAgentOpen, setNewAgentOpen] = useState(false);
@@ -104,6 +112,10 @@ export function BobProvider({ snapshot, connected, children }: { snapshot: Snaps
       panelKind,
       panelTab: panelTabs[panelKind],
       setPanelTab,
+      panelMaximized,
+      setPanelMaximized,
+      panelWidth,
+      setPanelWidth,
       openThreadTab,
       focusTarget,
       focusThread,
@@ -127,6 +139,8 @@ export function BobProvider({ snapshot, connected, children }: { snapshot: Snaps
       panelKind,
       panelTabs,
       setPanelTab,
+      panelMaximized,
+      panelWidth,
       openThreadTab,
       focusTarget,
       focusThread,
