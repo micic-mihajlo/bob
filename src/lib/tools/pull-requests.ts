@@ -8,6 +8,7 @@ import { getState, transact } from "../store";
 import { threadWorkspace, workspaceOptions } from "../thread-workspace";
 import { findPullRequest, isPullRequest, nextPullRequestNumber, type PullRequestArtifact } from "../threads";
 import type { Agent, Artifact, ReviewFinding } from "../types";
+import { afterLocalMerge, mergeOnGitHub, postReviewToGitHub, publishToGitHub } from "../integrations/github";
 import { conflictsWithMain, git, mergePullRequest, openPullRequest, type Workspace } from "../workspace";
 import { askForReReview, askToUpdateBranch, handFindingsToBuilder, maxFixRounds, reviewGateRefusal } from "./handoff";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
@@ -75,11 +76,13 @@ export async function openPullRequestTool(input: OpenInput, ctx: ToolContext): P
   const opened = await openPullRequest(ws, { branch, title: input.title, body: input.body });
   if (!opened.ok) return fail(opened.error);
   const pr = transact((x) => upsertPullRequest(x, ctx, agent, branch, input, opened));
+  const github = await publishToGitHub(s.project.id, pr.id);
   const reviewer = askForReReview(pr);
   return done({
     pullRequestId: pr.id,
     number: pr.pullRequest.number,
     branch,
+    ...(github ? { github: "url" in github ? github.url : `not published: ${github.error}` } : {}),
     files: pr.pullRequest.files,
     patch: opened.patch.slice(0, PATCH_PREVIEW),
     next: reviewer
@@ -125,9 +128,10 @@ function reviewArtifact(input: ReviewInput, pr: PullRequestArtifact, ctx: ToolCo
   };
 }
 
-export function recordReview(input: ReviewInput, ctx: ToolContext): ToolOutput {
+export async function recordReview(input: ReviewInput, ctx: ToolContext): Promise<ToolOutput> {
   const out = storeReview(input, ctx);
   const pr = typeof out.result.reviewId === "string" ? findPullRequest(getState(), input.pullRequestId) : undefined;
+  if (pr) await postReviewToGitHub(pr.id, { verdict: input.verdict, findings: reviewArtifactFindings(input), summary: input.summary });
   if (!pr || input.verdict !== "request_changes") return out;
   const reviewer = agentById(getState(), ctx.agentId)?.name ?? ctx.agentId;
   const handed = handFindingsToBuilder(pr, reviewer, reviewArtifactFindings(input));
@@ -192,7 +196,10 @@ export async function mergePullRequestTool(input: z.infer<typeof mergeSchema>): 
   if (!pr) return fail(`No pull request ${input.pullRequestId}. Call list_threads or read the artifacts for valid ids.`);
   const refused = approvalRefusal(s, pr);
   if (refused) return fail(refused);
+  const remote = pr.pullRequest.merged ? null : await mergeOnGitHub(s.project.id, pr.id);
   const result = pr.pullRequest.merged ? null : await mergePullRequest(s.project.id, { branch: pr.pullRequest.branch }, workspaceOptions());
+  if (result?.ok) await afterLocalMerge(s.project.id, pr.id);
+  const mainMoved = !!result?.ok && (!result.alreadyMerged || !!remote?.mainMoved);
   if (result && !result.ok) {
     const conflict = await conflictsWithMain(s.project.id, pr.pullRequest.branch, workspaceOptions());
     const owner = conflict.ok && conflict.conflicts.length > 0 ? askToUpdateBranch(pr, conflict.conflicts) : null;
@@ -207,10 +214,12 @@ export async function mergePullRequestTool(input: z.infer<typeof mergeSchema>): 
     return fresh ? markMerged(x, fresh) : { state: x, value: null };
   });
   recordReleaseNote(pr.id);
-  const updating = result && !result.alreadyMerged ? await updateConflictingPullRequests(s.project.id, pr.id) : [];
+  const updating = mainMoved ? await updateConflictingPullRequests(s.project.id, pr.id) : [];
   const also = updating.length ? ` ${updating.map((u) => `#${u.number}`).join(", ")} now conflicts with main; its build thread was asked to update its branch.` : "";
   const next = `Merged. Close this work order's threads with close_thread.${also}`;
-  return done({ merged: true, alreadyMerged: !result || result.alreadyMerged, number: pr.pullRequest.number, workOrderId, next }, { wake: updating.map((u) => u.owner) });
+  const github = findPullRequest(getState(), pr.id)?.pullRequest.github;
+  const onGitHub = github ? { github: github.merged ? `merged ${github.url}` : `not merged on GitHub: ${github.error ?? remote?.error ?? "unknown"}` } : {};
+  return done({ merged: true, alreadyMerged: !mainMoved, number: pr.pullRequest.number, workOrderId, next, ...onGitHub }, { wake: updating.map((u) => u.owner) });
 }
 
 /** After a merge, every other open pull request that now conflicts with main goes back to its owner, so none is stranded. */

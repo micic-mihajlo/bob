@@ -206,6 +206,38 @@ export interface PullRequestData {
   /** Unified diff against main, capped. */
   patch: string;
   merged: boolean;
+  /** The real pull request on GitHub, when BOB_GITHUB publishes it. */
+  github?: GitHubPullRequest;
+  /** Why the last publish to GitHub failed, cleared when one succeeds. */
+  githubError?: string;
+  /** The preview deployment built for this head, once a review checked it (BOB_PREVIEWS=vercel). */
+  preview?: PreviewDeployment;
+}
+
+export interface GitHubPullRequest {
+  /** owner/name */
+  repo: string;
+  number: number;
+  url: string;
+  via: "gh" | "composio";
+  /** The GitHub branch the change lives on. */
+  head: string;
+  /** The GitHub branch it merges into. */
+  base: string;
+  merged: boolean;
+  /** The last review or merge step that failed on GitHub, if any. */
+  error?: string;
+}
+
+export interface PreviewDeployment {
+  url: string | null;
+  state: "building" | "ready" | "error" | "missing";
+  source: "vercel" | "github";
+  /** The head the deployment was built from. */
+  headSha: string;
+  /** Vercel's page for the deployment, when known. */
+  inspectorUrl?: string;
+  check?: { ok: boolean; status: number | null; detail: string; at: string };
 }
 
 export interface ReviewFinding {
