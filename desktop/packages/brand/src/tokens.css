@@ -100,7 +100,7 @@
   --bob-bg-surface-raised: #222223;
   --bob-bg-control: #1c1c1d;
   --bob-bg-control-hover: #232324;
-  --bob-bg-control-active: #2a2a2c;
+  --bob-bg-control-active: #2e2e30;
   --bob-tabs-bar-bg: #1a1a1b;
   --bob-tabs-pill-bg: #2a2a2c;
   --bob-bg-overlay: rgba(18, 18, 19, 0.92);
@@ -513,7 +513,7 @@
   --bob-bg-surface-raised: #ffffff;
   --bob-bg-control: #ffffff;
   --bob-bg-control-hover: #f7f7f8;
-  --bob-bg-control-active: #ededef;
+  --bob-bg-control-active: #e4e4e7;
   --bob-tabs-bar-bg: rgba(0, 0, 0, 0.04);
   --bob-tabs-pill-bg: #ffffff;
   --bob-bg-overlay: rgba(250, 250, 251, 0.92);

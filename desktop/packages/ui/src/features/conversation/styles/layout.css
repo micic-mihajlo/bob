@@ -28,12 +28,12 @@
  * padding is relative to the panel, so the settings panel width is subtracted where it shows.
  */
 .conversation-panel > .composer-wrap {
-  padding-inline: max(var(--bob-space-1-5), calc((100% - var(--conversation-column-width) - 12px) / 2));
+  padding-inline: max(var(--bob-space-3), calc((100% - var(--conversation-column-width) - 12px) / 2));
 }
 
 .conversation-panel:has(.settings-panel) > .composer-wrap {
   padding-inline: max(
-    var(--bob-space-1-5),
+    var(--bob-space-3),
     calc((100% - var(--settings-panel-width, 360px) - var(--conversation-column-width) - 12px) / 2)
   );
 }

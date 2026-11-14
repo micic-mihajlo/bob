@@ -193,9 +193,9 @@
   display: grid;
   overflow: hidden;
   border: 0;
-  border-radius: var(--bob-radius-lg);
+  border-radius: var(--bob-radius-card);
   background: var(--bob-bg-surface);
-  box-shadow: none;
+  box-shadow: var(--bob-shadow-card);
 }
 
 .settings-modal-card.ui-card {

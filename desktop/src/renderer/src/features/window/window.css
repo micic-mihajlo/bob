@@ -62,9 +62,9 @@
     padding-left: var(--bob-space-6);
   }
 
-  /* One card holds the sidebar, the chat and the side panel, below the top row. The frame draws the
-   * card, and the panes have no background of their own, so the card's line and its four rounded
-   * corners show. The padding keeps the panes inside the card's line. */
+  /* The rail and the sidebar sit on the frame, and one card holds the chat and the side panel, a
+   * few pixels in from the top, right and bottom. The frame draws the card, and the panes have no
+   * background of their own, so the card's hairline and its four rounded corners show. */
   .app-window > .app-frame-edge {
     position: relative;
     isolation: isolate;
@@ -75,16 +75,26 @@
   .app-window > .app-frame-edge::before {
     position: absolute;
     z-index: -1;
-    inset: calc(var(--left-header-height) - 1px) var(--window-edge) var(--window-edge) 0;
-    border: 1px solid var(--bob-border);
+    inset: var(--bob-space-1-5) var(--window-edge) var(--window-edge) var(--left-panel-width, 0);
+    border: 0.5px solid var(--bob-border-strong);
     border-radius: var(--bob-radius-card);
     background: var(--bob-bg-canvas);
+    box-shadow: var(--bob-shadow-card);
     content: "";
     pointer-events: none;
   }
 
   .app-window > .app-frame-edge.app-frame-with-server-rail::before {
-    left: var(--server-rail-width);
+    left: calc(var(--server-rail-width) + var(--left-panel-width, 0));
+  }
+
+  .app-window > .app-frame-edge > .app-frame-panes {
+    padding-top: var(--bob-space-1-5);
+  }
+
+  /* The card's top row reads as its header: a hairline under it, as on every page of the card. */
+  .app-window > .app-frame-edge :is(.conversation-header, .side-panel-header) {
+    border-bottom: 0.5px solid var(--bob-border);
   }
 
   .app-window > .app-frame-edge > .server-rail {
@@ -100,7 +110,7 @@
   /* The sidebar shows the card, and the channel title sits on the top row, so an avatar outline takes
    * the colour of the one it is on. */
   .app-window > .app-frame-edge > .sidebar {
-    --agent-avatar-outline: var(--bob-bg-canvas);
+    --agent-avatar-outline: var(--window-frame);
   }
 
   .app-window > .app-frame-edge .channel-title {
@@ -114,11 +124,7 @@
   /* The line between the agent list and the chat starts at the card's top line. In the top row, a short
    * line sits above it. */
   .app-window > .app-frame-edge > .sidebar::before {
-    inset: var(--left-header-height) 0 0 auto;
-    width: 1px;
-    border: 0;
-    border-radius: 0;
-    background: var(--bob-border);
+    content: none;
   }
 
   .app-window > .app-frame-edge > .sidebar:not(.sidebar-compact) .sidebar-topbar::after,
@@ -137,7 +143,7 @@
   }
 
   .app-window > .app-frame-edge > .sidebar:not(.sidebar-compact) .sidebar-topbar::after {
-    right: 0;
+    content: none;
   }
 
   /* A side panel is the right part of the card. Its line to the chat starts at the card's top line. */
@@ -656,7 +662,8 @@
 }
 
 .settings-page-nav-group .settings-modal-nav-item[data-selected] {
-  background: var(--bob-bg-control-hover);
+  background: var(--bob-bg-surface);
+  box-shadow: var(--bob-shadow-card);
   color: var(--bob-text-primary);
   font-weight: var(--bob-weight-medium);
 }
