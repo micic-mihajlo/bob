@@ -30,10 +30,10 @@ const execFileAsync = promisify(execFile);
 /** Read at call time, so a hot reload that kept an older config object still gets the default. */
 export const workspaceOptions = (): WorkspaceOptions => ({ root: getConfig().workspaceRoot ?? defaultRoot() });
 
-/** The project's own repository, or BOB_PROJECT_REPO (a URL or a local path) to bring one in; else the invoices template. */
-const sourceOf = (project: Project): ProjectSource => {
+/** The project's own repository, or BOB_PROJECT_REPO (a URL or a local path) to bring one in; else the template it was made from. */
+export const sourceOf = (project: Project): ProjectSource => {
   const repo = project.repo || process.env.BOB_PROJECT_REPO;
-  return repo ? { kind: "git", url: repo } : { kind: "template" };
+  return repo ? { kind: "git", url: repo } : { kind: "template", template: project.template ?? "invoices" };
 };
 
 /** The thread's own clone, made on first use along with the project's shared repository. */

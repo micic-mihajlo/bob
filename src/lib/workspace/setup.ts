@@ -3,10 +3,17 @@ import { appendFile, chmod, mkdir, realpath, rename, rm, stat, writeFile } from 
 import path from "node:path";
 import { agentIdentity, checkId, MAIN_BRANCH, MERGE_IDENTITY, projectLayout, rootOf } from "./layout";
 import { gitOrThrow } from "./run-git";
+import { BLANK_TS_FILES } from "./template/blank-ts";
 import { TEMPLATE_FILES } from "./template/files";
+import type { ProjectTemplate } from "../types";
 import type { ProjectLayout, ProjectSource, Workspace, WorkspaceOptions } from "./types";
 
 const CLONE_TIMEOUT_MS = 120_000;
+
+const TEMPLATES: Record<ProjectTemplate, { files: readonly { path: string; content: string }[]; commit: string }> = {
+  invoices: { files: TEMPLATE_FILES, commit: "Start the invoices app" },
+  "blank-ts": { files: BLANK_TS_FILES, commit: "Start a blank TypeScript project" },
+};
 
 // Agents push branches; main moves only through mergePullRequest, which updates the ref directly.
 // Lowercased because on a case-insensitive disk a loose refs/heads/MAIN file shadows a packed main.
@@ -32,7 +39,7 @@ export async function ensureProject(
   if (await exists(path.join(layout.origin, "HEAD"))) return { origin: layout.origin };
   await mkdir(layout.home, { recursive: true });
   await buildThenRename(layout.origin, async (tmp) => {
-    if (source.kind === "template") await seedTemplate(layout, tmp);
+    if (source.kind === "template") await seedTemplate(layout, tmp, TEMPLATES[source.template ?? "invoices"]);
     else await cloneSource(layout, source.url, tmp);
     await protectMain(layout, tmp);
   });
@@ -66,20 +73,20 @@ export async function ensureWorkspace(
   return { root: await realpath(dir), projectId, agentId, project };
 }
 
-async function seedTemplate(layout: ProjectLayout, bare: string): Promise<void> {
+async function seedTemplate(layout: ProjectLayout, bare: string, template: (typeof TEMPLATES)[ProjectTemplate]): Promise<void> {
   const run = { cwd: layout.dir, home: layout.home, identity: MERGE_IDENTITY };
   await gitOrThrow({ ...run, args: ["init", "--quiet", "--bare", `--initial-branch=${MAIN_BRANCH}`, bare] });
   const scratch = `${bare}-seed`;
   try {
     await gitOrThrow({ ...run, args: ["init", "--quiet", `--initial-branch=${MAIN_BRANCH}`, scratch] });
-    for (const file of TEMPLATE_FILES) {
+    for (const file of template.files) {
       const target = path.join(scratch, file.path);
       await mkdir(path.dirname(target), { recursive: true });
       await writeFile(target, file.content, "utf8");
     }
     const inScratch = { ...run, cwd: scratch };
     await gitOrThrow({ ...inScratch, args: ["add", "--all"] });
-    await gitOrThrow({ ...inScratch, args: ["commit", "--quiet", "--no-verify", "-m", "Start the invoices app"] });
+    await gitOrThrow({ ...inScratch, args: ["commit", "--quiet", "--no-verify", "-m", template.commit] });
     await gitOrThrow({ ...inScratch, args: ["push", "--quiet", bare, `${MAIN_BRANCH}:refs/heads/${MAIN_BRANCH}`] });
   } finally {
     await rm(scratch, { recursive: true, force: true });

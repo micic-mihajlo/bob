@@ -42,6 +42,20 @@ describe("projects", { timeout: 60_000 }, () => {
     expect(getState().threads.bob).toHaveLength(before);
   });
 
+  it("starts a blank TypeScript project that records its template and holds nothing about invoices", async () => {
+    const opened = await openProject({ name: "blank-one", template: "blank-ts" });
+    expect(opened).toMatchObject({ ok: true, project: { id: "blank-one", repo: null, template: "blank-ts" } });
+    const files = await projectFiles(getState().project);
+    expect(files).toEqual([".gitignore", "README.md", "package.json", "src/index.test.ts", "src/index.ts", "tsconfig.json"]);
+    const { BLANK_TS_FILES } = await import("../workspace/template/blank-ts");
+    expect(BLANK_TS_FILES.map((f) => f.content).join("\n")).not.toMatch(/invoice/i);
+  });
+
+  it("records the invoices sample as the template of a new project that names none", async () => {
+    const opened = await openProject({ name: "shop-three" });
+    expect(opened).toMatchObject({ ok: true, project: { id: "shop-three", template: "invoices" } });
+  });
+
   it("brings in a repository by local path", async () => {
     const dir = mkdtempSync(path.join(os.tmpdir(), "bob-repo-"));
     const git = (...args: string[]) => execFileSync("git", ["-C", dir, ...args], { stdio: "ignore" });
