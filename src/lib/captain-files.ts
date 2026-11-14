@@ -1,6 +1,7 @@
 import { resultLine } from "./brain/script-plan";
 import { nowIso } from "./ids";
 import { changelogFile } from "./release-notes";
+import { requestControls } from "./usage";
 import { agentName, type State } from "./state";
 import { needsYou, threadStateOf } from "./thread-status";
 import { isPullRequest } from "./threads";
@@ -27,9 +28,12 @@ function askOf(s: State, item: NeedsYouItem): string {
 /** What needs the person right now, newest first, one line each with the ask. */
 export function digestFile(s: State): string {
   const asks = needsYou(s).map((n) => askOf(s, n));
-  if (asks.length === 0) return "Nothing needs you right now.\n";
-  if (asks.length === 1) return `1 thing needs you: ${asks[0]}\n`;
-  return [`${asks.length} things need you:`, ...asks.map((a) => `- ${a}`)].join("\n") + "\n";
+  const alerts = requestControls(s)
+    .filter((r, i) => r.running || i === 0)
+    .flatMap((r) => r.alerts.map((a) => `Alert: ${a}.`));
+  const head =
+    asks.length === 0 ? "Nothing needs you right now.\n" : asks.length === 1 ? `1 thing needs you: ${asks[0]}\n` : [`${asks.length} things need you:`, ...asks.map((a) => `- ${a}`)].join("\n") + "\n";
+  return alerts.length ? `${head}\n${alerts.join("\n")}\n` : head;
 }
 
 function crewRow(s: State, agent: Agent, needs: NeedsYouItem[]): string {
