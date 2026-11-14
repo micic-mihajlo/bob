@@ -2,6 +2,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { decideApproval, postUserMessage } from "../actions";
 import { setBrainOverride } from "../brain";
 import { addInboxItem, inboxItem, promoteInboxOrder, SAMPLE_INBOX } from "../inbox";
+import { candidateOutcome } from "../client/inbox";
 import { buildSnapshot } from "../snapshot";
 import { messageById } from "../state";
 import { needsYou } from "../thread-status";
@@ -122,6 +123,26 @@ describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_
     it("with no function in common, prefers the title that shares the error's words", () => {
       expect(followUpOf([pr(1, "Add CSV export to the invoices page", "+function downloadCsv() {"), pr(2, "Add overdueInvoices filter with oldest-due first", "+export function overdueInvoices() {")])).toBe(1);
     });
+  });
+
+  it("tells the triage turn what already shipped, and an ask a merged pull request already does gets no new work order", async () => {
+    const shippedPr = { id: "art_pr1", kind: "pull_request", agentId: "bob", requestId: "req_csv", title: "Add invoice CSV export with a test", detail: "", at: "", pullRequest: { number: 1, branch: "b1", headSha: "abc", files: [{ path: "src/invoices.ts", additions: 3, deletions: 0 }], patch: "+function downloadCsv() {", merged: true } } as unknown as Artifact;
+    update((s) => ({ ...s, artifacts: [...s.artifacts, shippedPr] }));
+    const added = addInboxItem(MEETING);
+    if (!added.ok) throw new Error(added.error);
+    await settle();
+    const item = inboxItem(getState(), added.inboxId)!;
+    expect(messageById(getState(), item.messageId)?.text).toMatch(/Already shipped \(data\)[\s\S]*- #1 "Add invoice CSV export with a test"/);
+    const ctx = asBob(requestOf(added.inboxId));
+    const wrong = await callTool("triage_inbox", { inboxId: added.inboxId, candidates: [{ quote: CSV.quote, ask: CSV.ask, shippedIn: 9 }] }, ctx);
+    expect(String(wrong.result.error)).toMatch(/No merged pull request #9/);
+    const triaged = await callTool("triage_inbox", { inboxId: added.inboxId, candidates: [{ quote: CSV.quote, ask: CSV.ask, shippedIn: 1 }, OVERDUE] }, ctx);
+    expect(triaged.result.error).toBeUndefined();
+    expect(String(triaged.result.next)).toMatch(/Already shipped, so not planned again: "Export all invoices as CSV" in #1/);
+    expect((getState().roadmap.backlog ?? []).map((w) => w.title)).toEqual([OVERDUE.ask]);
+    const csv = inboxItem(getState(), added.inboxId)?.candidates.find((c) => c.quote === CSV.quote);
+    expect(csv?.shippedIn).toEqual({ pullRequestId: "art_pr1", number: 1 });
+    expect(candidateOutcome(csv!, getState().roadmap)).toEqual({ kind: "shipped", number: 1 });
   });
 
   it("Learn: a merge that touches the module an error names resolves it, and a new error about the shipped change reopens it as a follow-up", async () => {

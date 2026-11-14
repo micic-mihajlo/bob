@@ -322,6 +322,8 @@ export interface InboxCandidate {
   workOrderId: string | null;
   /** On a vague ask: what the captain asked the person. */
   question: string | null;
+  /** A merged pull request that already does this ask, so no work order was made. */
+  shippedIn?: { pullRequestId: string; number: number } | null;
 }
 
 /** Raw material that came in before anyone typed a request: a meeting, feedback, or a production error. */

@@ -83,11 +83,16 @@ function shippedMatches(s: State, text: string): PullRequestArtifact[] {
     .map((x) => x.pr);
 }
 
-function framed(item: InboxItem): string {
+const mergedPullRequests = (s: State): PullRequestArtifact[] => s.artifacts.filter((a): a is PullRequestArtifact => isPullRequest(a) && a.pullRequest.merged);
+
+function framed(s: State, item: InboxItem): string {
   const follow = item.followUpOf ? `\nThis error names files that #${item.followUpOf.number} changed, which already shipped, so its asks are follow-ups to #${item.followUpOf.number}.` : "";
+  const merged = mergedPullRequests(s).map((pr) => `- #${pr.pullRequest.number} ${JSON.stringify(pr.title)}, asked as ${JSON.stringify(requestAsk(s, pr.requestId) ?? pr.title)}`);
+  const shipped = merged.length > 0 && item.kind !== "error" ? [`Already shipped (data). For an ask one of these already does, pass its number as shippedIn instead of planning it again:\n${merged.join("\n")}`] : [];
   return [
     `Inbox item ${item.id}: ${item.kind === "error" ? "an" : "a"} ${item.kind} from ${JSON.stringify(item.source)}.${follow}`,
     "Triage it: pull out every ask it holds and record them with one triage_inbox call. Do not start threads, set the goal or plan today; the person promotes work from the backlog.",
+    ...shipped,
     "---",
     item.text,
   ].join("\n");
@@ -112,7 +117,7 @@ export function addInboxItem(input: { kind: InboxKind; source: string; text: str
     candidates: [],
     ...(shipped ? { followUpOf: { pullRequestId: shipped.id, number: shipped.pullRequest.number } } : {}),
   };
-  const sent = send({ from: { kind: "user" }, to: [captain.id], text: framed({ ...draft, messageId: "" }), expectsReply: false, replyTo: null, causedBy: null, requestId: newId("req"), inboxId: id });
+  const sent = send({ from: { kind: "user" }, to: [captain.id], text: framed(s, { ...draft, messageId: "" }), expectsReply: false, replyTo: null, causedBy: null, requestId: newId("req"), inboxId: id });
   if (!sent.ok) return { ok: false, error: sent.error.message };
   update((x) => {
     const reopened = shipped ? inboxItems(x).map((i) => (i.kind === "error" && i.resolvedBy?.pullRequestId === shipped.id ? { ...i, status: "reopened" as const } : i)) : inboxItems(x);
@@ -121,6 +126,11 @@ export function addInboxItem(input: { kind: InboxKind; source: string; text: str
   drain(captain.id);
   return { ok: true, inboxId: id };
 }
+
+const shippedAsks = (candidates: InboxCandidate[]): string => {
+  const shipped = candidates.filter((c) => c.shippedIn);
+  return shipped.length ? `Already shipped, so not planned again: ${shipped.map((c) => `${JSON.stringify(c.ask)} in #${c.shippedIn?.number}`).join(", ")}; tell the person.` : "";
+};
 
 export const triageInboxSchema = z.object({
   inboxId: z.string().min(1).describe("The inbox item's id, such as inb_..."),
@@ -133,6 +143,7 @@ export const triageInboxSchema = z.object({
         behaviour: z.string().optional().describe("What they can do afterwards. Leave out when the item does not say."),
         acceptance: z.string().optional().describe("One check a test could assert. Leave out when the item does not say."),
         question: z.string().optional().describe("For an ask you cannot test yet: the one question for the person."),
+        shippedIn: z.number().int().positive().optional().describe("The number of a merged pull request that already does this ask. No work order is made."),
       }),
     )
     .min(1)
@@ -157,6 +168,14 @@ export function triageInbox(input: z.infer<typeof triageInboxSchema>, ctx: ToolC
     for (const c of input.candidates) {
       const quote = c.quote.trim();
       const prior = candidates.find((x) => x.quote === quote);
+      if (c.shippedIn !== undefined) {
+        const pr = mergedPullRequests(s).find((p) => p.pullRequest.number === c.shippedIn);
+        if (!pr) return { state: s, value: fail(`No merged pull request #${c.shippedIn}. Pass shippedIn only for one listed as already shipped.`) };
+        const next: InboxCandidate = { id: prior?.id ?? newId("ask"), quote, ask: c.ask, verdict: "testable", workOrderId: prior?.workOrderId ?? null, question: null, shippedIn: { pullRequestId: pr.id, number: pr.pullRequest.number } };
+        if (prior) candidates[candidates.indexOf(prior)] = next;
+        else candidates.push(next);
+        continue;
+      }
       const testable = [c.user, c.behaviour, c.acceptance].every((v) => !!v?.trim());
       if (!testable && !c.question?.trim()) return { state: s, value: fail(`${JSON.stringify(c.ask)} is not testable yet: give user, behaviour and acceptance, or the question for the person.`) };
       let workOrderId = prior?.workOrderId ?? null;
@@ -175,6 +194,7 @@ export function triageInbox(input: z.infer<typeof triageInboxSchema>, ctx: ToolC
     const state = patchItem({ ...s, roadmap }, item.id, { candidates, status: item.status === "new" ? "triaged" : item.status });
     const next = [
       created.length ? `Added to the backlog: ${created.map((w) => `${w.id} ${JSON.stringify(w.title)}`).join(", ")}.` : "No new work orders.",
+      shippedAsks(candidates),
       vague.length ? `The person sees ${vague.length} question${vague.length === 1 ? "" : "s"} under Needs you; ask them in your reply too.` : "",
       "Start nothing: the person promotes backlog work. End your turn with what you found, in a few lines.",
     ].filter(Boolean).join(" ");
