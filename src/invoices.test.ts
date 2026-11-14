@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addInvoice, markPaid, outstanding, overdue, SAMPLE_INVOICES, totalCents } from "./invoices";
+import { addInvoice, markPaid, outstanding, overdue, overdueInvoices, SAMPLE_INVOICES, totalCents, type Invoice } from "./invoices";
 
 describe("invoices", () => {
   it("adds an invoice and refuses a duplicate id", () => {
@@ -21,5 +21,36 @@ describe("invoices", () => {
 
   it("totals amounts in cents", () => {
     expect(totalCents(SAMPLE_INVOICES)).toBe(182950);
+  });
+});
+
+describe("overdueInvoices", () => {
+  const fixture: Invoice[] = [
+    { id: "INV-2001", customer: "Overdue Co", amountCents: 10000, status: "sent", issuedDate: "2026-10-01", dueDate: "2026-11-14" },
+    { id: "INV-2002", customer: "Paid Co", amountCents: 20000, status: "paid", issuedDate: "2026-10-01", dueDate: "2026-10-31" },
+    { id: "INV-2003", customer: "Later Co", amountCents: 30000, status: "sent", issuedDate: "2026-11-01", dueDate: "2026-12-01" },
+  ];
+
+  it("keeps only sent invoices strictly past their due date", () => {
+    expect(overdueInvoices(fixture, "2026-11-20").map((i) => i.id)).toEqual(["INV-2001"]);
+    expect(overdueInvoices(fixture, "2026-11-14")).toEqual([]);
+  });
+
+  it("orders multiple overdue invoices oldest due date first", () => {
+    const many: Invoice[] = [
+      { id: "INV-3001", customer: "Alpha", amountCents: 100, status: "sent", issuedDate: "2026-10-01", dueDate: "2026-11-14" },
+      { id: "INV-3002", customer: "Beta", amountCents: 200, status: "sent", issuedDate: "2026-08-01", dueDate: "2026-09-30" },
+      { id: "INV-3003", customer: "Gamma", amountCents: 300, status: "sent", issuedDate: "2026-09-01", dueDate: "2026-10-20" },
+    ];
+    expect(overdueInvoices(many, "2026-11-20").map((i) => i.id)).toEqual(["INV-3002", "INV-3003", "INV-3001"]);
+  });
+
+  it("does not mutate its input", () => {
+    const many: Invoice[] = [
+      { id: "INV-4001", customer: "Alpha", amountCents: 100, status: "sent", issuedDate: "2026-10-01", dueDate: "2026-11-14" },
+      { id: "INV-4002", customer: "Beta", amountCents: 200, status: "sent", issuedDate: "2026-08-01", dueDate: "2026-09-30" },
+    ];
+    overdueInvoices(many, "2026-11-20");
+    expect(many.map((i) => i.id)).toEqual(["INV-4001", "INV-4002"]);
   });
 });
