@@ -1,0 +1,31 @@
+/* Bob's own additions to the reference sidebar, in its tokens. */
+
+/* The footer island says which brain runs the agents, and whether the window is live. */
+.sidebar-update-island .account-update-island {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.sidebar-brain-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bob-space-1-5);
+  color: var(--bob-text-secondary);
+  font-size: var(--bob-text-sm);
+}
+
+.sidebar-brain-sync::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bob-text-muted);
+  content: "";
+}
+
+.sidebar-brain-sync[data-live]::before {
+  background: var(--bob-success);
+}
+
+.new-agent-form {
+  display: grid;
+  gap: var(--bob-space-3);
+}
