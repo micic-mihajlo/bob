@@ -2,7 +2,7 @@ import type { AgentId, Approval, Artifact, ChangedFile, PullRequestData, ReviewD
 
 export type PullRequestArtifact = Artifact & { pullRequest: PullRequestData };
 export type ReviewArtifact = Artifact & { review: ReviewData };
-export type PullRequestState = "open" | "approved" | "merged" | "closed";
+export type PullRequestState = "open" | "approved" | "awaiting_merge" | "merged" | "closed";
 
 export function isPullRequest(artifact: Artifact): artifact is PullRequestArtifact {
   return artifact.pullRequest !== undefined;
@@ -32,13 +32,25 @@ export function reviewsForThread(artifacts: readonly Artifact[], agentId: AgentI
     .sort(newestFirst);
 }
 
-export function pullRequestState(artifact: PullRequestArtifact): PullRequestState {
-  return artifact.pullRequest.merged ? "merged" : artifact.status;
+/**
+ * Merged wins. Short of that, a merge approval for this pull request that is still pending, or that
+ * the person gave for its current head, means it waits at the merge gate.
+ */
+export function pullRequestState(artifact: PullRequestArtifact, approvals: readonly Approval[]): PullRequestState {
+  if (artifact.pullRequest.merged || artifact.status === "merged") return "merged";
+  if (artifact.status === "closed") return "closed";
+  const atGate = approvals.some(
+    (approval) =>
+      approval.pullRequestId === artifact.id &&
+      (approval.status === "pending" || (approval.status === "approved" && approval.headSha === artifact.pullRequest.headSha)),
+  );
+  return atGate ? "awaiting_merge" : artifact.status;
 }
 
 export const PULL_REQUEST_STATE_LABEL: Record<PullRequestState, string> = {
   open: "Open",
   approved: "Approved",
+  awaiting_merge: "Awaiting merge",
   merged: "Merged",
   closed: "Closed",
 };
