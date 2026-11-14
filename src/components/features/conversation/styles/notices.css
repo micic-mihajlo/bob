@@ -121,3 +121,9 @@
   border-color: color-mix(in srgb, var(--notice-accent) 45%, transparent);
   background: transparent;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .composer-notice {
+    animation: none;
+  }
+}

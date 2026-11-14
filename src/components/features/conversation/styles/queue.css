@@ -281,3 +281,10 @@
     transform: translate3d(0, 0, 0) scale(1);
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-queue-panel,
+  .agent-queue-item-entering {
+    animation: none;
+  }
+}
