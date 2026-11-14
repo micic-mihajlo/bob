@@ -3,6 +3,7 @@ import { decideApproval, postUserMessage } from "../actions";
 import { setBrainOverride } from "../brain";
 import { scriptBrain } from "../brain/script";
 import type { Brain, TurnContext } from "../brain/types";
+import { alwaysViolations } from "../invariants";
 import { getState } from "../store";
 import { isPullRequest, type PullRequestArtifact } from "../threads";
 import { settle } from "../turns";
@@ -45,6 +46,27 @@ async function approve(text: string): Promise<void> {
   await until(() => !!prOf(text)?.pullRequest.merged, `"${text.slice(0, 20)}" merged`);
 }
 
+/**
+ * The scripted brain, except that the captain skips its first review start for `text`'s pull request, as when the
+ * crew is full. `other`'s review reports only after that skip, so its approving report is the captain's next wake.
+ */
+function skipFirstReview(text: string, other: string) {
+  let skipped = false;
+  const brain: Brain = {
+    async next(ctx) {
+      if (ctx.moves.length === 0 && ctx.agent.crewRole === "review" && ctx.agent.workOrderId === builderOf(other)?.workOrderId) while (!skipped) await sleep(10);
+      const move = await scriptBrain.next(ctx);
+      const id = prOf(text)?.id;
+      const review = id ? move.toolCalls.find((c) => c.name === "start_thread" && (c.input as { brief?: string }).brief?.includes(id)) : undefined;
+      if (skipped || !review) return move;
+      skipped = true;
+      return { text: "The crew is full; the review starts when a thread reports.", toolCalls: move.toolCalls.filter((c) => c !== review) };
+    },
+  };
+  const reviewing = () => getState().agents.some((a) => a.crewRole === "review" && !a.closedAt && a.workOrderId === builderOf(other)?.workOrderId);
+  return { brain, skipped: () => skipped, reviewing };
+}
+
 describe("two requests in flight", { timeout: 60_000 }, () => {
   beforeEach(freshTeam);
   afterAll(freshTeam);
@@ -63,6 +85,21 @@ describe("two requests in flight", { timeout: 60_000 }, () => {
       expect(getState().artifacts.filter((a) => isPullRequest(a) && a.pullRequest.merged)).toHaveLength(2);
       expect(getState().approvals.filter((a) => a.status === "pending")).toHaveLength(0);
       expect(getState().agents.filter((a) => a.kind === "crew" && !a.closedAt)).toHaveLength(0);
+      const s = getState();
+      expect(s.approvals.map((a) => a.requestId)).toEqual(s.approvals.map((a) => s.artifacts.find((x) => x.id === a.pullRequestId)?.requestId));
+      expect(alwaysViolations(s)).toEqual([]);
     });
   }
+
+  it("starts a review it could not start before, when another request's review reports its approval", async () => {
+    const { brain, skipped, reviewing } = skipFirstReview(OVERDUE, CSV);
+    setBrainOverride(brain);
+    postUserMessage("bob", CSV);
+    await until(reviewing, "the CSV review starts");
+    postUserMessage("bob", OVERDUE);
+    await settle();
+    expect(skipped()).toBe(true);
+    expect(pendingFor(CSV)).toBeTruthy();
+    expect(pendingFor(OVERDUE)).toBeTruthy();
+  });
 });

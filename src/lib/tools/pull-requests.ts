@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { acceptanceTampering } from "../acceptance";
 import { newId, nowIso } from "../ids";
 import { resolveOnMerge } from "../inbox";
 import { completeWorkOrder, updateWorkOrder } from "../roadmap";
@@ -13,6 +14,8 @@ import type { Agent, Artifact, InboxItem, ReviewFinding } from "../types";
 import { afterLocalMerge, mergeOnGitHub, postReviewToGitHub, publishToGitHub } from "../integrations/github";
 import { conflictsWithMain, git, mergePullRequest, openPullRequest, type Workspace } from "../workspace";
 import { askForReReview, askToUpdateBranch, handFindingsToBuilder, maxFixRounds, reviewGateRefusal } from "./handoff";
+import { verificationRefusal } from "../verification";
+import { treeOfCommit } from "../verify/run";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
 
 const PATCH_PREVIEW = 6_000;
@@ -23,7 +26,7 @@ export const openPullRequestSchema = z.object({
   commitMessage: z.string().min(1).optional().describe("Commits every uncommitted change with this message first. Defaults to the title."),
 });
 type OpenInput = z.infer<typeof openPullRequestSchema>;
-type Opened = { headSha: string; files: PullRequestArtifact["pullRequest"]["files"]; patch: string };
+type Opened = { headSha: string; files: PullRequestArtifact["pullRequest"]["files"]; patch: string; tree: string | null };
 
 function linkWorkOrder(s: State, agent: Agent, artifactId: string): State {
   if (!agent.workOrderId) return s;
@@ -34,7 +37,7 @@ function linkWorkOrder(s: State, agent: Agent, artifactId: string): State {
 /** A second call on the same branch updates the open pull request instead of numbering a new one. */
 function upsertPullRequest(s: State, ctx: ToolContext, agent: Agent, branch: string, input: OpenInput, opened: Opened) {
   const existing = s.artifacts.find((a): a is PullRequestArtifact => isPullRequest(a) && a.pullRequest.branch === branch && !a.pullRequest.merged);
-  const data = { branch, headSha: opened.headSha, files: opened.files, patch: opened.patch, merged: false };
+  const data = { branch, headSha: opened.headSha, files: opened.files, patch: opened.patch, merged: false, ...(opened.tree ? { tree: opened.tree } : {}) };
   if (existing) {
     const pullRequest = { ...existing.pullRequest, ...data };
     const state = patchArtifact(s, existing.id, { title: input.title, detail: input.body, status: "open", pullRequest });
@@ -77,7 +80,8 @@ export async function openPullRequestTool(input: OpenInput, ctx: ToolContext): P
   if (!committed.ok) return fail(committed.error);
   const opened = await openPullRequest(ws, { branch, title: input.title, body: input.body });
   if (!opened.ok) return fail(opened.error);
-  const pr = transact((x) => upsertPullRequest(x, ctx, agent, branch, input, opened));
+  const tree = await treeOfCommit(ws, opened.headSha);
+  const pr = transact((x) => upsertPullRequest(x, ctx, agent, branch, input, { ...opened, tree }));
   const github = await publishToGitHub(s.project.id, pr.id);
   const reviewer = askForReReview(pr);
   return done({
@@ -130,7 +134,18 @@ function reviewArtifact(input: ReviewInput, pr: PullRequestArtifact, ctx: ToolCo
   };
 }
 
-export async function recordReview(input: ReviewInput, ctx: ToolContext): Promise<ToolOutput> {
+/** A change to an acceptance test always blocks: the verdict becomes request_changes with a high finding per file. */
+function withAcceptanceFindings(input: ReviewInput): ReviewInput {
+  const s = getState();
+  const pr = findPullRequest(s, input.pullRequestId);
+  const tampered = pr ? acceptanceTampering(s, pr) : [];
+  if (tampered.length === 0) return input;
+  const findings = tampered.map((t) => ({ ...t, line: null, category: "tests" as const, severity: "high" as const, confidence: 1 }));
+  return { ...input, verdict: "request_changes", findings: [...input.findings, ...findings] };
+}
+
+export async function recordReview(given: ReviewInput, ctx: ToolContext): Promise<ToolOutput> {
+  const input = withAcceptanceFindings(given);
   const out = storeReview(input, ctx);
   const pr = typeof out.result.reviewId === "string" ? findPullRequest(getState(), input.pullRequestId) : undefined;
   if (pr) await postReviewToGitHub(pr.id, { verdict: input.verdict, findings: reviewArtifactFindings(input), summary: input.summary });
@@ -197,7 +212,7 @@ export async function mergePullRequestTool(input: z.infer<typeof mergeSchema>): 
   const s = getState();
   const pr = findPullRequest(s, input.pullRequestId);
   if (!pr) return fail(`No pull request ${input.pullRequestId}. Call list_threads or read the artifacts for valid ids.`);
-  const refused = approvalRefusal(s, pr);
+  const refused = approvalRefusal(s, pr) ?? (pr.pullRequest.merged ? null : verificationRefusal(s, pr));
   if (refused) return fail(refused);
   const remote = pr.pullRequest.merged ? null : await mergeOnGitHub(s.project.id, pr.id);
   const result = pr.pullRequest.merged ? null : await mergePullRequest(s.project.id, { branch: pr.pullRequest.branch }, workspaceOptions());

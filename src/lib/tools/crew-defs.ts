@@ -1,14 +1,18 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { z } from "zod";
-import { failedTests, isAcceptanceTest, isTestCommand, testRunLabel } from "../acceptance";
+import { ACCEPTANCE_WRITE_LABEL, acceptanceLock, failedTests, lockedAcceptance, isAcceptanceTest, isTestCommand, testRunLabel } from "../acceptance";
 import { getConfig, getState } from "../store";
 import { threadWorkspace } from "../thread-workspace";
 import { editFile, ensureWorkspaceDeps, git, listFiles, readFile, runCommand, writeFile, type Workspace } from "../workspace";
-import type { ToolContext, ToolOutput } from "./context";
+import { fail, type ToolContext, type ToolOutput } from "./context";
 import { clip, define, fromResult, type ToolDef } from "./define";
 import { openPullRequestSchema, openPullRequestTool, recordReview, recordReviewSchema } from "./pull-requests";
 import { recordNote, recordNoteSchema, report, reportSchema } from "./report";
 import { PREVIEW_TOOLS } from "../integrations/vercel/check-preview";
 import { startSubagent, startSubagentSchema } from "../subagents";
+import { VERIFY_TOOLS } from "./verify";
+import { proposeAcceptanceChange, proposeAcceptanceChangeSchema } from "./acceptance-change";
 
 const READ_ONLY_GIT = ["status", "diff", "log", "show", "fetch", "switch", "checkout"] as const;
 const MAX_BATCH = 20;
@@ -22,6 +26,9 @@ const workspaceOf = (ctx: ToolContext) => threadWorkspace(getState().project, ct
 async function inWorkspace(ctx: ToolContext, run: (ws: Workspace) => Promise<{ ok: true } | { ok: false; error: string }>): Promise<ToolOutput> {
   return fromResult(await run(await workspaceOf(ctx)));
 }
+
+/** A whole write is refused when it touches a locked acceptance test, so the step shows the refusal. */
+const lockOf = (ctx: ToolContext, paths: string[]) => paths.map((p) => acceptanceLock(getState(), ctx.agentId, p)).find((x) => x !== null) ?? null;
 
 const names = (paths: string[]) => clip(paths.join(", "), 70);
 
@@ -77,10 +84,12 @@ const writeFilesDef = define({
     files: z.array(z.object({ path: relPath("File to write"), content: z.string().describe("The complete new content") })).min(1).max(MAX_BATCH),
   }),
   sets: ["build", "subagent"],
-  label: (i) => (i.files.some((f) => isAcceptanceTest(f.path)) ? "Writing the acceptance test" : `Writing ${names(i.files.map((f) => f.path))}`),
+  label: (i) => (i.files.some((f) => isAcceptanceTest(f.path)) ? ACCEPTANCE_WRITE_LABEL : `Writing ${names(i.files.map((f) => f.path))}`),
   execute: async (i, ctx) => {
     const ws = await workspaceOf(ctx);
     const items: Record<string, unknown>[] = [];
+    const locked = lockOf(ctx, i.files.map((f) => f.path));
+    if (locked) return fail(locked);
     for (const f of i.files) {
       const out = await writeFile(ws, f.path, f.content);
       items.push(out.ok ? { path: out.path, bytes: out.bytes } : { path: f.path, error: out.error });
@@ -100,6 +109,8 @@ const editFilesDef = define({
   execute: async (i, ctx) => {
     const ws = await workspaceOf(ctx);
     const items: Record<string, unknown>[] = [];
+    const locked = lockOf(ctx, i.edits.map((e) => e.path));
+    if (locked) return fail(locked);
     for (const e of i.edits) {
       const out = await editFile(ws, e.path, e.oldText, e.newText);
       items.push(out.ok ? { path: out.path, bytes: out.bytes } : { path: e.path, error: out.error });
@@ -124,8 +135,13 @@ const runDef = define({
     const ws = await workspaceOf(ctx);
     const deps = getConfig().installDeps ? await ensureWorkspaceDeps(ws) : null;
     const setup = deps?.ok && deps.state.kind === "failed" ? `Installing dependencies failed (${deps.state.command}): ${deps.state.output}` : undefined;
+    const locked = lockedAcceptance(getState(), ctx.agentId);
+    const kept = locked ? await fs.readFile(path.join(ws.root, locked), "utf8").catch(() => null) : null;
     const out = await runCommand(ws, i.command, (i.timeoutSeconds ?? 120) * 1000);
+    const restored = locked && kept !== null && (await fs.readFile(path.join(ws.root, locked), "utf8").catch(() => null)) !== kept;
+    if (restored) await fs.writeFile(path.join(ws.root, locked), kept);
     if (!out.ok) return { result: { error: out.error } };
+    if (restored) return { result: { error: `That command changed ${locked}, your locked acceptance test, so Bob put it back. Fix the code until it passes. If you are sure the test itself is wrong, call propose_acceptance_change with the corrected file and why; only the person can approve it.`, output: out.output } };
     const { ok: _ok, ...rest } = out;
     const failedTestsShown = isTestCommand(i.command) && (failedTests(out.output) ?? 0) > 0;
     const note = out.timedOut
@@ -187,6 +203,7 @@ export const CREW_TOOLS: ToolDef[] = [
     execute: recordReview,
   }),
   ...PREVIEW_TOOLS,
+  ...VERIFY_TOOLS,
   define({
     name: "record_artifact",
     description: "Record what you found as a note the captain and the person can read. Cite the files you read.",
@@ -203,6 +220,15 @@ export const CREW_TOOLS: ToolDef[] = [
     sets: ["build", "research"],
     label: (i) => `Starting a subagent: ${clip(i.title)}`,
     execute: startSubagent,
+  }),
+  define({
+    name: "propose_acceptance_change",
+    description:
+      "Only when your acceptance test is locked and you are sure the test itself is wrong: send the whole corrected file and why, citing the work order's done-means line. A person sees the diff and decides; you cannot change the locked test any other way. Your turn ends here.",
+    schema: proposeAcceptanceChangeSchema,
+    sets: ["build"],
+    label: () => "Asking to change the acceptance test",
+    execute: proposeAcceptanceChange,
   }),
   define({
     name: "report",

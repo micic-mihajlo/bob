@@ -1,5 +1,6 @@
 import { liveAsks } from "./asks";
 import { brainKind } from "./brain";
+import { claudeStatus } from "./claude-connection";
 import { linearStatus } from "./integrations/linear/config";
 import { openAsk, openFollowUp, openInboxQuestion } from "./brain/intake";
 import { policyFor } from "./policy";
@@ -103,5 +104,6 @@ export function buildSnapshot(s: State): Snapshot {
     inbox: s.inbox ?? [],
     answering: answeringOf(s),
     linear: linearStatus(),
+    claude: claudeStatus(),
   };
 }

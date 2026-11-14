@@ -1,11 +1,12 @@
 "use client";
 
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, KeyRound, Plus } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useBob } from "@/components/features/window/BobContext";
 import { buttonClass } from "@/components/ui/classes";
 import { listProjects, openProject } from "@/lib/client/api";
 import type { Project } from "@/lib/types";
+import { ConnectClaudeDialog } from "./ConnectClaudeDialog";
 import { OpenProjectDialog, TEMPLATE_LABELS } from "./OpenProjectDialog";
 
 /**
@@ -16,6 +17,7 @@ export function ProjectMenu() {
   const { snapshot, selectAgent } = useBob();
   const [open, setOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [claudeOpen, setClaudeOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([snapshot.project]);
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -138,12 +140,35 @@ export function ProjectMenu() {
             </span>
             <span>Open a project</span>
           </button>
+          <div role="separator" />
+          <button
+            type="button"
+            role="menuitem"
+            className="server-menu-add"
+            onClick={() => {
+              setOpen(false);
+              setClaudeOpen(true);
+            }}
+          >
+            <span className="server-menu-add-circle" aria-hidden="true">
+              <KeyRound />
+            </span>
+            <span>{snapshot.claude?.connected ? "Claude connected" : "Connect your Claude"}</span>
+          </button>
         </div>
       ) : null}
       {dialogOpen ? (
         <OpenProjectDialog
           onClose={() => {
             setDialogOpen(false);
+            requestAnimationFrame(() => trigger.current?.focus());
+          }}
+        />
+      ) : null}
+      {claudeOpen ? (
+        <ConnectClaudeDialog
+          onClose={() => {
+            setClaudeOpen(false);
             requestAnimationFrame(() => trigger.current?.focus());
           }}
         />

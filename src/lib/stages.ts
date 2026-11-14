@@ -88,6 +88,7 @@ You never touch the code. When a thread reports, check that the report answers t
     milestone: "Every pull request reviewed, approved by the person and merged",
     lesson: `Ship is review plus an approved merge. A review thread reads the diff and records findings with a category, a severity and a confidence.
 Changes requested go back to the build thread, and the review checks again after the fix.
+The head must also pass verify_change: its contract, its fast-check properties and its mutants. A Lean proof is shown when it closes.
 When the review approves, the person approves the merge. Nothing merges without that approval.`,
     criteria: [{ label: "Every work order in today is merged", met: (r) => allToday(r, (status) => status === "done") }],
     moves: [

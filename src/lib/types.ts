@@ -193,6 +193,8 @@ export interface Approval {
   pullRequestId?: string;
   /** The pull request's head when the person was asked. Merging refuses once the head has moved. */
   headSha?: string;
+  /** Set when a build thread asks to change its locked acceptance test: approving writes exactly this content. */
+  acceptanceChange?: { path: string; content: string };
 }
 
 /** Something an agent produced: a pull request, a note, a review. */
@@ -235,6 +237,10 @@ export interface PullRequestData {
   githubError?: string;
   /** The preview deployment built for this head, once a review checked it (BOB_PREVIEWS=vercel). */
   preview?: PreviewDeployment;
+  /** The git tree of the head, which a verification must match. */
+  tree?: string;
+  /** The head's verification as one line, kept current with the trace block. */
+  verification?: string;
 }
 
 export interface GitHubPullRequest {
@@ -481,6 +487,8 @@ export interface Snapshot {
   answering?: { agentId: AgentId; requestId: RequestId; ask: string; question: string | null } | null;
   /** Linear as an inbox source: on with BOB_LINEAR=on, and the last pull's error. */
   linear?: { on: boolean; error: string | null };
+  /** Whether the person's own Claude is connected for SDK turns. Never the credential. */
+  claude?: ClaudeStatus;
 }
 
 /** Model use the factory recorded for one request, from the AI SDK's usage on each call. */
@@ -599,6 +607,22 @@ export const THREAD_MODELS = [
   "deepseek/deepseek-v4.1-flash-fast",
 ] as const;
 
+/** The Claude models a crew thread can run on once the person connects their own Claude. */
+export const CLAUDE_MODELS = ["claude-sonnet", "claude-opus", "claude-haiku"] as const;
+export type ClaudeModel = (typeof CLAUDE_MODELS)[number];
+
+/** How the person's own Claude is connected: a `claude setup-token` token, an Anthropic API key, or this computer's Claude Code login. */
+export type ClaudeMethod = "oauth-token" | "api-key" | "claude-code";
+
+/** Whether the person's own Claude is connected, and how. Never holds the credential. */
+export interface ClaudeStatus {
+  connected: boolean;
+  method: ClaudeMethod | null;
+  /** "file" when connected in Bob, "env" when CLAUDE_CODE_OAUTH_TOKEN or BOB_ANTHROPIC_API_KEY is set. */
+  from: "file" | "env" | null;
+  connectedAt: string | null;
+}
+
 /**
  * Routes. Every POST answers `{ ok: true }` or `{ ok: false, error: string }` unless noted.
  *
@@ -617,6 +641,9 @@ export const THREAD_MODELS = [
  * GET  /api/agents/:id/changes            -> WorkspaceChanges               that thread's branch against main
  * POST /api/agents/:id/close              {}                                close a crew thread
  * POST /api/agents/:id/model              { model }                         pick a crew thread's model, one of THREAD_MODELS
+ * GET  /api/claude                        -> ClaudeStatus                   whether the person's own Claude is connected
+ * POST /api/claude                        { method, secret? }               connect it; the secret is stored server-side only -> { ok, status }
+ * DELETE /api/claude                      -> { ok, status }                 disconnect it; SDK turns go back to Token Pass
  * POST /api/reset                         { warm? }                         back to the seeded team; warm also re-makes the project and installs its deps
  * GET  /api/inbox                         -> InboxItem[]                    raw materials, newest first
  * POST /api/inbox                         { kind, source, text }            a meeting, feedback or error; the captain triages it
@@ -644,6 +671,7 @@ export const API = {
   why: (messageId: MessageId) => `/api/why?messageId=${encodeURIComponent(messageId)}`,
   graph: (prId: string) => `/api/graph?prId=${encodeURIComponent(prId)}`,
   reset: "/api/reset",
+  claude: "/api/claude",
   projects: "/api/projects",
   verification: "/api/verification",
   voice: "/api/voice",

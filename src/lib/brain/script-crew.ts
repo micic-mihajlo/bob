@@ -1,4 +1,4 @@
-import { acceptancePathIn, acceptanceTestPath } from "../acceptance";
+import { acceptanceIn, acceptancePathIn, acceptanceTestPath } from "../acceptance";
 import type { State } from "../state";
 import { findPullRequest, isPullRequest, type PullRequestArtifact } from "../threads";
 import type { CrewRole } from "../types";
@@ -21,12 +21,29 @@ function testsLine(done: CallRecord[]): string {
   return run.result.passed ? `${TEST_COMMAND} passed` : `${TEST_COMMAND} failed (${String(run.result.note ?? "non-zero exit")})`;
 }
 
-/** Acceptance test first: write it, show it red on its own, then implement and show the whole suite green. */
+/** What each verify_change run found, for the Evidence line. */
+function verifyLine(done: CallRecord[]): string | null {
+  const runs = done.filter((c) => c.name === "verify_change" && typeof c.result.line === "string").map((c) => c.result);
+  if (runs.length === 0) return null;
+  const [first, last] = [runs[0], runs[runs.length - 1]];
+  const caught = Array.isArray(first.findings) ? String((first.findings[0] as { comment?: string } | undefined)?.comment ?? "") : "";
+  if (runs.length === 1 || first === last) return `verify_change: ${String(first.line)}`;
+  return `verify_change first: ${String(first.line)}${caught ? ` (${caught})` : ""}; after adding the property that kills it: ${String(last.line)}`;
+}
+
+/**
+ * Acceptance test first: write it, show it red on its own, then implement and show the whole suite green.
+ * A change to source code then writes its contract and properties and runs verify_change; the first draft
+ * of the properties lets a mutant live, and the second kills it, before the pull request opens.
+ */
 function buildPlan(ctx: TurnContext, brief: string): Plan {
   const change = changeFor(brief);
   const goal = goalOf(brief);
   const acceptance = acceptancePathIn(brief) ?? acceptanceTestPath(ctx.agent.workOrderId ?? ctx.agent.id);
   const files = [{ path: acceptance, content: change.acceptance(goal) }, ...change.files(goal)];
+  const verification = change.verification;
+  const contract = `verify/${ctx.agent.workOrderId ?? "contract"}.json`;
+  const criteria = acceptanceIn(brief) ?? goal;
   return {
     steps: [
       () => [call("read_files", { paths: ["src/invoices.ts"] })],
@@ -34,6 +51,14 @@ function buildPlan(ctx: TurnContext, brief: string): Plan {
       () => [call("run", { command: `npx vitest run ${acceptance}` })],
       () => [call("write_files", { files: files.slice(1) })],
       () => [runTests()],
+      ...(verification
+        ? [
+            () => [call("write_files", { files: verification.files(contract, criteria) })],
+            () => [call("verify_change", {})],
+            (done: CallRecord[]) => (resultOf(done, "verify_change")?.passed === false ? [call("write_files", { files: verification.fix(contract, criteria) })] : []),
+            (done: CallRecord[]) => (done.filter((c) => c.name === "verify_change").length === 1 && resultOf(done, "verify_change")?.passed === false ? [call("verify_change", {})] : []),
+          ]
+        : []),
       () => [call("open_pull_request", { ...change.pullRequest, commitMessage: change.commit })],
       (done) => {
         const pr = resultOf(done, "open_pull_request");
@@ -41,7 +66,8 @@ function buildPlan(ctx: TurnContext, brief: string): Plan {
         const result = `Opened pull request #${pr.number} (id ${pr.pullRequestId}) on branch ${pr.branch}: ${change.pullRequest.title}.`;
         const red = done.find((c) => c.name === "run" && "passed" in c.result && c.result.passed === false);
         const first = red ? `${acceptance} failed on its own first; ` : "";
-        return [call("report", { text: formatted("done", result, `${files.map((f) => f.path).join(", ")}; ${first}${testsLine(done)}; read the diff against main`) })];
+        const verified = verifyLine(done);
+        return [call("report", { text: formatted("done", result, `${files.map((f) => f.path).join(", ")}; ${first}${testsLine(done)}; ${verified ? `${verified}; ` : ""}read the diff against main`) })];
       },
     ],
     reply: (done) => {

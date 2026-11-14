@@ -1,13 +1,13 @@
 import os from "node:os";
 import { readClaudeConnection, type ClaudeMethod } from "../claude-connection";
-import { isThreadModel, LIGHT_MODEL, STRONG_MODEL } from "../models";
+import { isClaudeModel, isThreadModel, LIGHT_MODEL, STRONG_MODEL } from "../models";
+import type { ClaudeModel } from "../types";
+
+export { isClaudeModel } from "../models";
+export { CLAUDE_MODELS, type ClaudeModel } from "../types";
 
 export const GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh";
 
-/** The Claude models a thread can pick once a Claude is connected, as Bob ids, with the alias the SDK takes. */
-export const CLAUDE_MODELS = ["claude-sonnet", "claude-opus", "claude-haiku"] as const;
-export type ClaudeModel = (typeof CLAUDE_MODELS)[number];
-export const isClaudeModel = (model: string | undefined): model is ClaudeModel => (CLAUDE_MODELS as readonly string[]).includes(model ?? "");
 const DEFAULT_CLAUDE_MODEL: ClaudeModel = "claude-sonnet";
 
 export interface EngineAuth {

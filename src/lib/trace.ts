@@ -2,6 +2,8 @@ import { acceptanceIn, acceptanceLine, acceptanceOf } from "./acceptance";
 import { goalOf } from "./roadmap";
 import type { State } from "./state";
 import type { Artifact, RequestId } from "./types";
+import { isPullRequest } from "./threads";
+import { verificationStatus } from "./verification";
 import { traceWhy } from "./why";
 
 /**
@@ -20,6 +22,8 @@ export interface RequestTrace {
   /** The acceptance test file and its red and green runs, as the block's line. */
   acceptanceTest: string | null;
   review: string;
+  /** The verification of the head, as one line. */
+  verification: string;
   approval: string;
 }
 
@@ -62,6 +66,7 @@ export function traceOf(s: State, pr: Artifact): RequestTrace {
     acceptance: acceptanceIn(brief) ?? goalOf(s.roadmap, pr.requestId)?.acceptance ?? null,
     acceptanceTest: acceptanceLine(acceptanceOf(s, pr.agentId), pr.pullRequest?.files.map((f) => f.path) ?? []),
     review: reviewLine(s, pr),
+    verification: isPullRequest(pr) ? verificationStatus(s, pr) : "not run",
     approval: approvalLine(s, pr),
   };
 }
@@ -78,6 +83,7 @@ export function traceBlock(t: RequestTrace): string {
     `- Work order: ${t.workOrderTitle ?? "none"}${t.acceptance ? `. Acceptance: ${t.acceptance}` : ""}`,
     ...(t.acceptanceTest ? [t.acceptanceTest] : []),
     `- Review: ${t.review}`,
+    `- Verification: ${t.verification}`,
     `- Approval: ${t.approval}`,
     CLOSE,
   ].join("\n");
@@ -96,10 +102,11 @@ export function withPullRequestTraces(s: State): State {
   let changed = false;
   const artifacts = s.artifacts.map((a) => {
     if (a.kind !== "pull_request") return a;
-    const detail = withTraceBlock(a.detail, traceBlock(traceOf(s, a)));
-    if (detail === a.detail) return a;
+    const trace = traceOf(s, a);
+    const detail = withTraceBlock(a.detail, traceBlock(trace));
+    if (detail === a.detail && (!a.pullRequest || a.pullRequest.verification === trace.verification)) return a;
     changed = true;
-    return { ...a, detail };
+    return { ...a, detail, ...(a.pullRequest ? { pullRequest: { ...a.pullRequest, verification: trace.verification } } : {}) };
   });
   return changed ? { ...s, artifacts } : s;
 }

@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { setThreadModel } from "@/lib/client/api";
 import { cx } from "@/components/ui/classes";
-import { THREAD_MODELS, type Agent } from "@/lib/types";
+import { useBob } from "@/components/features/window/BobContext";
+import { CLAUDE_MODELS, THREAD_MODELS, type Agent } from "@/lib/types";
 
 /** The model as the reference's model pill shows it: the name after the provider. */
 export function modelName(model: string): string {
+  if (/^claude-[a-z]+$/.test(model)) return `Claude ${model.charAt(7).toUpperCase()}${model.slice(8)}`;
   return model.split("/").at(-1) ?? model;
 }
 
@@ -34,6 +36,8 @@ export function ModelPicker({ agent }: { agent: Agent }) {
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const name = modelName(agent.model);
+  const claude = useBob().snapshot.claude?.connected === true;
+  const models: readonly string[] = claude ? CLAUDE_MODELS : THREAD_MODELS;
 
   useEffect(() => {
     if (anchor === null) return;
@@ -114,7 +118,9 @@ export function ModelPicker({ agent }: { agent: Agent }) {
               <div className="provider-model-heading">
                 <div className="provider-model-heading-text">
                   <strong>Model</strong>
-                  <span>{agent.code ?? agent.name} runs on it from its next turn</span>
+                  <span>
+                    {agent.code ?? agent.name} runs on {claude ? "your Claude" : "it"} from its next turn
+                  </span>
                 </div>
               </div>
               {error ? (
@@ -123,7 +129,7 @@ export function ModelPicker({ agent }: { agent: Agent }) {
                 </div>
               ) : null}
               <div className="provider-model-list">
-                {THREAD_MODELS.map((model) => {
+                {models.map((model) => {
                   const selected = model === agent.model;
                   return (
                     <button

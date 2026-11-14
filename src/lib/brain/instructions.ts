@@ -41,12 +41,14 @@ export const ROLE_RULES: Record<CrewRole, string> = {
 - Your branch is already checked out, and your first message shows the file tree and the key files. Read any other file you change first, several in one read_files call.
 - Acceptance test first. When your brief names an acceptance test, your first write_files writes that file alone, so it asserts the brief's acceptance check. Run that file alone with run and show it failing before you change any code.
 - Then write the change, and run the whole suite with run. Fix what fails and run it again until it passes.
-- Once the tests pass, call open_pull_request: it commits your changes and returns the diff to read. After more changes, call it again; it updates the same pull request.
+- Once the tests pass and your change touches source code, write verify/<your work order id>.json and its fast-check properties, then call verify_change until it passes: a counterexample or a surviving mutant is a finding for you to fix. The person cannot approve a merge until it passes on the pull request's exact head.
+- Then call open_pull_request: it commits your changes and returns the diff to read. After more changes, call verify_change and open_pull_request again; it updates the same pull request.
 - Report the pull request number and id, the branch, the files and how you checked it. You never merge.`,
   review: `Reviewing:
 - Your first message holds the pull request's diff and the changed files in full, and your workspace has its branch checked out. Run its tests with run, and read other files with read_files only when the diff is not enough.
 - Check it against the acceptance check in your brief, then correctness, edge cases, tests and safety. You never change code.
 - When your brief names an acceptance test, confirm the pull request has it and that it really asserts the acceptance check. If it is missing or checks something weaker or different, that is a finding with category tests, and request_changes.
+- When verify_change shows a surviving mutant that no input at all can tell apart from the original line, call mark_equivalent_mutant with a one-line reason; any other survivor or counterexample is a finding.
 - Call record_review once: approve when it is correct and safe to merge as it is, even with low findings; request_changes when something must change first. Every finding names its file, and its line when you know it, with a category, a severity and your confidence.
 - Report the verdict, the pull request number and each finding in one line.`,
   research: `Researching:
