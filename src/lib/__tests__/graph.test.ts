@@ -92,6 +92,25 @@ describe("Bob's state as a graph", { timeout: 60_000 }, () => {
     expect(chain).toEqual(traceWhy(s, pr.messageId!).map((h) => h.message.id));
   });
 
+  it("traces a pull request opened after an approval decision back through the turn that asked, to the typed sentence", async () => {
+    const s = await walkthrough();
+    const pr = prOf(s);
+    const asked = s.turns.find((t) => t.messageIds.includes(pr.messageId!))!;
+    const decision = { ...s.messages.find((m) => m.id === pr.messageId)!, id: "msg_decision", from: { kind: "user" as const }, to: [pr.agentId], text: "Approved: Change the acceptance test?", causedBy: null, approvalId: "apr_test" };
+    const approval = { id: "apr_test", agentId: pr.agentId, turnId: asked.id, requestId: pr.requestId, title: "Change the acceptance test?", detail: "", status: "approved" as const, at: decision.at };
+    const after: State = {
+      ...s,
+      messages: [...s.messages, decision],
+      approvals: [...s.approvals, approval],
+      artifacts: s.artifacts.map((a) => (a.id === pr.id ? { ...a, messageId: decision.id } : a)),
+    };
+    const hops = traceWhy(after, decision.id);
+    expect(hops.map((h) => h.message.id)).toEqual([decision.id, ...traceWhy(s, pr.messageId!).map((h) => h.message.id)]);
+    expect(hops.at(-1)?.message.text).toBe(VAGUE);
+    const view = viewFromGraph(toGraph(after), pr.id)!;
+    expect(view.nodes.filter((n) => n.kind === "Message").map((n) => n.id)).toEqual(hops.map((h) => h.message.id));
+  });
+
   it("is off unless BOB_STORE=hydra and a key are both set", () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
     expect(hydraConfig()).toBeNull();

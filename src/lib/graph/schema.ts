@@ -1,5 +1,5 @@
 import { questionBefore } from "../brain/intake";
-import { agentName, type State } from "../state";
+import { agentName, causeOf, type State } from "../state";
 import type { Message } from "../types";
 
 /**
@@ -121,7 +121,8 @@ export function toGraph(s: State): Graph {
   for (const m of s.messages) {
     const item = m.inboxId ? inbox.get(m.inboxId) : undefined;
     const question = m.continues ? questionBefore(s, m.to[0], m) : null;
-    const next = m.causedBy ?? m.continues ?? null;
+    const next = causeOf(s, m);
+    const continued = !m.causedBy && !m.approvalId;
     node("Message", m.id, short(m.text), {
       text: m.text.slice(0, TEXT_CAP),
       requestId: m.requestId,
@@ -132,7 +133,7 @@ export function toGraph(s: State): Graph {
       toNames: JSON.stringify(m.to.map((id) => agentName(s, id))),
       expectsReply: m.expectsReply,
       replyTo: m.replyTo,
-      causedBy: m.causedBy,
+      causedBy: continued ? m.causedBy : next,
       continues: m.continues,
       approvalId: m.approvalId,
       automatic: m.automatic,
@@ -147,7 +148,7 @@ export function toGraph(s: State): Graph {
     });
     if (m.from.kind === "user") edge("User", USER_ID, "SENT", "Message", m.id);
     else edge("Agent", m.from.agentId, "SENT", "Message", m.id);
-    if (next) edge("Message", m.id, "CAUSED_BY", "Message", next, m.causedBy ? "caused_by" : "continues");
+    if (next) edge("Message", m.id, "CAUSED_BY", "Message", next, continued ? "continues" : "caused_by");
     if (m.approvalId) edge("Message", m.id, "DECIDES", "Approval", m.approvalId);
   }
 
