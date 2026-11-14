@@ -59,9 +59,6 @@ const config: KnipConfig = {
         // Each file in scripts/ is a command that package.json, CI or another script runs.
         "scripts/**/*.ts",
         "tools/**/*.ts",
-        // The prototype skill builds its stories on this helper. No story on main uses it, because
-        // prototype stories are deleted after the decision (.agents/skills/prototype/SKILL.md).
-        "src/renderer/stories/prototype-support.tsx",
       ],
       project: ["src/**/*.{ts,tsx,css}", "scripts/**/*.ts", "tools/**/*.ts"],
       ignoreDependencies: [
@@ -122,9 +119,6 @@ const config: KnipConfig = {
       project: ["src/**/*.ts"],
     },
     "packages/i18n": {
-      // apps/auth-api/vite.config.ts puts this file in place of the static catalog modules by path.
-      // Metro resolves mobile-catalogs.native.ts in place of mobile-catalogs.ts.
-      entry: ["src/lazy-catalogs.ts", "src/mobile-catalogs.native.ts"],
       project: ["src/**/*.{ts,tsx,css}"],
     },
     "packages/*": {
