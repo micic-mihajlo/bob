@@ -5,7 +5,7 @@ import path from "node:path";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { postUserMessage, resetAll } from "../actions";
 import { listProjects, openProject, projectFor } from "../projects";
-import { getState, resetState, update } from "../store";
+import { getState, replaceState, resetState, update } from "../store";
 import { projectFiles } from "../thread-workspace";
 import { settle } from "../turns";
 import { freshTeam } from "./helpers";
@@ -106,5 +106,24 @@ describe("projects", { timeout: 60_000 }, () => {
     const result = await openProject({ name: "shop-two" });
     expect(result).toMatchObject({ ok: false });
     expect(getState().project.id).toBe("invoices-app");
+  });
+
+  it("keeps every other project when the sample is reset, and the active one across a restart", async () => {
+    expect(await openProject({ name: "mine", template: "blank-ts" })).toMatchObject({ ok: true });
+    postUserMessage("bob", "hello from mine");
+    await settle();
+    const ids = () => listProjects().projects.map((p) => p.id);
+    const before = ids();
+    expect(before).toEqual(expect.arrayContaining(["mine", "invoices-app"]));
+
+    replaceState(getState());
+    expect(getState().project.id).toBe("mine");
+    expect(ids()).toEqual(before);
+
+    expect(await resetAll({ sample: true })).toEqual({ ok: true });
+    expect(getState().project.id).toBe("invoices-app");
+    expect(ids().sort()).toEqual([...before].sort());
+    expect(await openProject({ name: "mine" })).toMatchObject({ ok: true, project: { id: "mine", template: "blank-ts" } });
+    expect(getState().threads.bob.some((i) => i.kind === "user_text" && i.text === "hello from mine")).toBe(true);
   });
 });

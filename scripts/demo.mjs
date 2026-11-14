@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * pnpm demo: checks the machine, builds and starts Bob, resets it to a clean seed with the project's
- * repository and dependencies already made, and prints what is on and off. Plain JavaScript so it can
+ * pnpm demo: checks the machine, builds and starts Bob, resets the invoices sample to a clean seed with its
+ * repository and dependencies already made, and prints what is on and off. Every other project is kept. Plain JavaScript so it can
  * check the Node version before anything else runs.
  *
  *   pnpm demo                 production build on port 3000, live model when .env.local has the key
  *   pnpm demo --prewarm       also starts one coding request in the background, so a PR is under way
  *   pnpm demo --scripted      the scripted brain, whatever .env.local says (the mid-demo fallback)
- *   pnpm demo --keep          keep the current state instead of resetting it
+ *   pnpm demo --keep          keep the current state instead of resetting the sample
  *   pnpm demo --dev           next dev instead of a production build
  *   pnpm demo --port 3001
  *
@@ -127,7 +127,7 @@ for (;;) {
 
 try {
   if (!opts.keep) {
-    say("demo: resetting to the demo seed and preparing the project (repository, dependencies)");
+    say("demo: resetting the invoices sample and preparing it (repository, dependencies); other projects are kept");
     const reset = await call("/api/reset", { warm: true, sample: true });
     const deps = reset.deps ?? { kind: "none" };
     if (deps.kind === "failed") say(`demo: WARNING the project's dependency install failed (${deps.command}); each thread will install its own. ${String(deps.output).slice(-300)}`);

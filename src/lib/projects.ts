@@ -23,7 +23,8 @@ function parked(): Map<string, State> {
   return (g[KEY] ??= new Map());
 }
 
-function park(s: State): void {
+/** Saves a project's whole state aside, in memory and in .data/projects, so switching or a reset never loses it. */
+export function park(s: State): void {
   if (!hasProject(s.project)) return;
   parked().set(s.project.id, s);
   if (!getConfig().persist) return;
