@@ -8,7 +8,7 @@ import { threadWorkspace, workspaceOptions } from "../thread-workspace";
 import { findPullRequest, isPullRequest, nextPullRequestNumber, type PullRequestArtifact } from "../threads";
 import type { Agent, Artifact, ReviewFinding } from "../types";
 import { conflictsWithMain, git, mergePullRequest, openPullRequest, type Workspace } from "../workspace";
-import { askForReReview, askToUpdateBranch, handFindingsToBuilder, MAX_FIX_ROUNDS } from "./handoff";
+import { askForReReview, askToUpdateBranch, handFindingsToBuilder, MAX_FIX_ROUNDS, reviewGateRefusal } from "./handoff";
 import { done, fail, type ToolContext, type ToolOutput } from "./context";
 
 const PATCH_PREVIEW = 6_000;
@@ -174,7 +174,10 @@ function approvalRefusal(s: State, pr: PullRequestArtifact): string | null {
   if (approved.some((a) => a.headSha === pr.pullRequest.headSha)) return null;
   const n = `#${pr.pullRequest.number}`;
   if (approved.length > 0) {
-    return `${n} changed after the person approved it, so that approval no longer covers it. Call request_approval again with pullRequestId "${pr.id}", say what changed, and end your turn.`;
+    const stale = `${n} changed after the person approved it, so that approval no longer covers it.`;
+    return reviewGateRefusal(s, pr)
+      ? `${stale} It goes back through review on its new head by itself. Tell the person that, and end your turn.`
+      : `${stale} Its review already approves the new head: call request_approval again with pullRequestId "${pr.id}", say what changed, and end your turn.`;
   }
   if (approvals.some((a) => a.status === "pending")) return `The person has not decided on merging ${n} yet. End your turn and wait for the decision.`;
   return `Merging ${n} needs the person's approval first. Call request_approval with pullRequestId "${pr.id}", tell the person what will be merged, and end your turn.`;
