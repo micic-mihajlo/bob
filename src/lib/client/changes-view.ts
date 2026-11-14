@@ -25,3 +25,12 @@ export function countsOf(diff: DiffFile, files: readonly ChangedFile[]): { addit
     deletions: diff.lines.filter((line) => line.kind === "del").length,
   };
 }
+
+/**
+ * What the Changes pane shows: the thread's pull request when it has one, so the diff is the one that
+ * goes to review; else its live branch against main.
+ */
+export function panelChangesView(answer: WorkspaceChanges | null, pullRequest: PullRequestArtifact | undefined): ChangesView | null {
+  if (pullRequest) return changesView(null, pullRequest);
+  return changesView(answer, undefined);
+}

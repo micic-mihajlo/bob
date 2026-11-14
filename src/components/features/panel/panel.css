@@ -1,0 +1,286 @@
+/* Rules the side panel needs from reference sheets that were not copied whole. */
+
+/* From the reference remote-desktop.css: an open pane takes its width from the chat. */
+.conversation-panel.browser-panel-active {
+  padding-right: var(--browser-panel-width, 380px);
+}
+
+/*
+ * Bob's panes the reference has no pane for (Review, Verified, the pull request card) use the
+ * roadmap pane's body, card and label values, so they read as the same family.
+ */
+.bob-review-panel,
+.bob-verified-panel {
+  overflow: hidden;
+}
+
+.bob-pane-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--bob-space-3);
+  overflow-y: auto;
+  padding: var(--bob-space-4);
+}
+
+.bob-pane-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bob-space-2);
+  padding: var(--bob-space-4);
+}
+
+.bob-pane-card :is(h3, p, ul) {
+  margin: 0;
+}
+
+.bob-pane-label {
+  margin: 0;
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+  font-weight: var(--bob-weight-semibold);
+  letter-spacing: var(--bob-tracking-wide);
+  text-transform: uppercase;
+}
+
+.bob-pane-title {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+  font-size: var(--bob-text-md);
+  font-weight: var(--bob-weight-semibold);
+  line-height: var(--bob-leading-md);
+}
+
+.bob-pane-muted {
+  margin: 0;
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+}
+
+.bob-pane-empty {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bob-space-2);
+  padding: var(--bob-space-8) var(--bob-space-4);
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+  text-align: center;
+}
+
+.bob-pane-empty > p {
+  max-width: 260px;
+  margin: 0;
+}
+
+.bob-pane-empty > svg {
+  width: var(--bob-icon-lg);
+  height: var(--bob-icon-lg);
+  stroke-width: var(--bob-icon-stroke);
+}
+
+.file-preview-content > .bob-pane-empty {
+  min-height: 100%;
+}
+
+/* Changes: the pull request, the changed files, then one code block per file. */
+.bob-changes {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--bob-space-3);
+  padding: var(--bob-space-3) var(--bob-space-3) var(--bob-space-8);
+}
+
+.bob-changes > .message-code-block {
+  scroll-margin-top: var(--bob-space-3);
+}
+
+.bob-pr-head {
+  display: flex;
+  align-items: center;
+  gap: var(--bob-space-2);
+}
+
+.bob-pr-icon {
+  width: var(--bob-icon-sm);
+  height: var(--bob-icon-sm);
+  flex: none;
+  color: var(--bob-text-muted);
+}
+
+.bob-pr-number {
+  color: var(--bob-text-secondary);
+  font-size: var(--bob-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.bob-pr-why {
+  margin-left: auto;
+}
+
+.bob-pr-why svg,
+.bob-verified-refresh svg {
+  width: var(--bob-icon-xs);
+  height: var(--bob-icon-xs);
+}
+
+.bob-pr-title {
+  font-size: var(--bob-text-md);
+  font-weight: var(--bob-weight-semibold);
+  line-height: var(--bob-leading-md);
+  overflow-wrap: anywhere;
+}
+
+.bob-pr-branch {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--bob-space-1-5);
+  font-family: var(--bob-font-mono);
+}
+
+.bob-pr-branch > svg {
+  width: var(--bob-icon-xs);
+  height: var(--bob-icon-xs);
+  flex: none;
+}
+
+.bob-pr-branch-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Review: the verdict, then each finding with its severity, category, confidence and place. */
+.bob-review-head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--bob-space-2);
+}
+
+.bob-review-detail {
+  color: var(--bob-text-secondary);
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+}
+
+.bob-review-findings {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  list-style: none;
+}
+
+.bob-review-finding {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bob-space-1);
+  padding: var(--bob-space-2) 0;
+}
+
+.bob-review-finding + .bob-review-finding {
+  border-top: 1px solid var(--bob-border);
+}
+
+.bob-review-finding-head {
+  display: flex;
+  align-items: center;
+  gap: var(--bob-space-1-5);
+}
+
+.bob-review-confidence {
+  margin-left: auto;
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.bob-review-where {
+  overflow: hidden;
+  color: var(--bob-text-secondary);
+  font-family: var(--bob-font-mono);
+  font-size: var(--bob-text-xs, 12px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bob-review-comment {
+  font-size: var(--bob-text-sm);
+  line-height: var(--bob-leading-sm);
+  overflow-wrap: anywhere;
+}
+
+/* Crew: an avatar takes the place of the subagent status icon. */
+.bob-crew-avatar {
+  display: inline-block;
+  width: var(--bob-icon-sm);
+  height: var(--bob-icon-sm);
+}
+
+.bob-crew-code {
+  color: var(--bob-text-secondary);
+  font-family: var(--bob-font-mono);
+  font-size: var(--bob-text-sm);
+}
+
+.bob-crew-panel .subagents-list {
+  width: 100%;
+}
+
+.subagents-live[data-state="running"] .bob-crew-spin {
+  color: var(--bob-accent);
+  animation: ui-spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subagents-live[data-state="running"] .bob-crew-spin {
+    animation: none;
+  }
+}
+
+/* Verified: the overall check, then one task list per rule. */
+.bob-verified-icon {
+  width: var(--bob-icon-sm);
+  height: var(--bob-icon-sm);
+  flex: none;
+  color: var(--bob-text-muted);
+}
+
+.bob-verified-refresh {
+  align-self: flex-start;
+}
+
+.bob-verified-rule {
+  width: 100%;
+}
+
+.bob-verified-chips {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--bob-space-1);
+}
+
+/* A theorem that holds is not a finished chore: no strike line, full colour. */
+.bob-verified-rule .task-list-item[data-state="done"] .task-list-item-label {
+  color: var(--bob-text-primary);
+}
+
+.bob-verified-rule .task-list-item-text::after {
+  content: none;
+}
+
+/* Native scrollbars inside the panel follow the dark surface. */
+.browser-panel {
+  color-scheme: dark;
+}

@@ -363,4 +363,5 @@ export const API = {
   agentClose: (id: AgentId) => `/api/agents/${id}/close`,
   why: (messageId: MessageId) => `/api/why?messageId=${encodeURIComponent(messageId)}`,
   reset: "/api/reset",
+  verification: "/api/verification",
 } as const;

@@ -104,3 +104,19 @@ export function splitPath(path: string): { dir: string; base: string } {
   const slash = path.lastIndexOf("/");
   return slash < 0 ? { dir: "", base: path } : { dir: path.slice(0, slash + 1), base: path.slice(slash + 1) };
 }
+
+/** The code token a diff line paints with in a code block: added, removed, or a hunk header. */
+export function diffLineToken(kind: DiffLineKind): "insert" | "deleted" | "section" | "cmnt" | undefined {
+  if (kind === "add") return "insert";
+  if (kind === "del") return "deleted";
+  if (kind === "hunk") return "section";
+  if (kind === "note") return "cmnt";
+  return undefined;
+}
+
+const DIFF_SIGN: Record<DiffLineKind, string> = { add: "+", del: "-", context: " ", hunk: "", note: "\\ " };
+
+/** A diff line as the unified diff prints it, sign included. */
+export function diffLineText(line: DiffLine): string {
+  return `${DIFF_SIGN[line.kind]}${line.text}`;
+}
