@@ -23,13 +23,13 @@ function gateHolds(r: Roadmap): boolean {
   const today = r.today;
   switch (r.stage) {
     case 1:
-      return r.goal !== null;
+      return !!r.goal?.user && !!r.goal.behaviour && !!r.goal.acceptance;
     case 2:
-      return today.length > 0;
+      return today.some((w) => w.status !== "done");
     case 3:
-      return today.length > 0 && today.every((w) => w.status === "done");
+      return today.length > 0 && today.every((w) => w.status === "done" || w.artifactId !== null);
     case 4:
-      return today.length > 0 && today.every((w) => w.artifactId !== null);
+      return today.length > 0 && today.every((w) => w.status === "done");
     default:
       return true;
   }
@@ -40,7 +40,10 @@ const STATUSES: WorkOrderStatus[] = ["open", "running", "review", "done", "stale
 function randomOp(r: Roadmap, rand: () => number): { name: string; result: RoadmapResult } {
   const pool = [...r.today, ...(r.backlog ?? [])];
   const choice = Math.floor(rand() * 7);
-  if (choice === 0) return { name: "setGoal", result: setGoal(r, { title: rand() < 0.2 ? " " : "Invoices export as CSV" }) };
+  if (choice === 0) {
+    const testable = rand() < 0.6 ? { user: "Accountants", behaviour: "Export invoices as CSV", acceptance: "One row per invoice" } : { acceptance: rand() < 0.5 ? "" : null };
+    return { name: "setGoal", result: setGoal(r, { title: rand() < 0.2 ? " " : "Invoices export as CSV", ...testable }) };
+  }
   if (choice === 1) return { name: "setRoadmap", result: setRoadmap(r, ["Export", "Docs", "Tests", "Polish"].filter(() => rand() < 0.7)) };
   if (choice === 2) {
     const ids = pool.filter(() => rand() < 0.5).map((w) => w.id);

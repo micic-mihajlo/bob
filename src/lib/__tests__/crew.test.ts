@@ -11,7 +11,8 @@ import { traceWhy } from "../why";
 import { git, listFiles } from "../workspace";
 import { expectQuiet, freshTeam } from "./helpers";
 
-const REQUEST = "Customers want to export invoices as CSV. Keep it small: one work order.";
+const REQUEST =
+  "Customers want to export invoices as CSV: all invoices, columns id, customer, amount, status and due date. Done when invoicesToCsv returns a header row and one row per invoice. Keep it small: one work order.";
 const asBob = { agentId: "bob", turnId: "turn_test", requestId: "req_test", causedBy: null };
 const GIT_TIMEOUT = 60_000;
 
@@ -57,6 +58,9 @@ describe("captain and crew, scripted, end to end", { timeout: GIT_TIMEOUT }, () 
     expect(after.agents.filter((a) => a.kind === "crew").every((a) => !!a.closedAt)).toBe(true);
     expect(buildSnapshot(after).threadStatus?.["inv-1"]).toBe("closed");
     expect(after.drive.find((f) => f.name === "DIGEST.md")?.content).toMatch(/Nothing needs you/);
+    expect(after.roadmap.stageTitle).toBe("Learn");
+    expect(after.drive.find((f) => f.name === "NOTES.md")?.content).toMatch(/Shipped #1: Add CSV export for invoices[\s\S]*Acceptance: Done when invoicesToCsv/);
+    expect(after.roadmap.backlog?.map((w) => w.title)).toEqual([`Follow up on #1: ${verdict?.findings[0].comment}`]);
 
     const fresh = await threadWorkspace(after.project, "checker");
     await git(fresh, ["pull", "origin", "main"]);

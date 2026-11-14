@@ -1,7 +1,7 @@
 export type ReplyStatus = "done" | "partial" | "blocked";
 
 export const REPLY_FORMAT_HELP =
-  "A reply is three lines: 'Status: done|partial|blocked', 'Result: ...', 'Evidence: ...' (a file, test, command or none). A blocked reply adds 'Unblock: ...'.";
+  "Format the reply as three lines: 'Status: done|partial|blocked', 'Result: <concrete outcome>', 'Evidence: <file, test, command, or none>'. When Status is blocked, add a fourth line, 'Unblock: <the one action that unblocks the task>'. Do not acknowledge without a Status line, and do not leave the sender waiting for a result.";
 
 const field = (text: string, name: string): string | null => {
   const match = new RegExp(`^${name}:[ \\t]*(.+)$`, "m").exec(text);

@@ -1,7 +1,7 @@
 {
   "ok": true,
   "lean": "Lean (version 4.35.0, x86_64-unknown-linux-gnu, commit eb6cafb7290e8bd5f2937522d8d804f58f02bafc, Release)",
-  "sourceHash": "7fb1181d49070feb392244ed4fc403da32967519d67cf78a404e506c4164330b",
+  "sourceHash": "d2690242c891f4e9a7934224f01f78cd6294bbdf98e00d2f93b5fe8af753681f",
   "theorems": [
     {
       "name": "BobFormal.MergeGate.merge_needs_approval",

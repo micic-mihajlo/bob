@@ -1,40 +1,54 @@
-import { messageById, type State } from "../state";
+import type { State } from "../state";
 import { isPullRequest, type PullRequestArtifact } from "../threads";
 import type { Agent, Artifact, ReviewData } from "../types";
+import { intakeTexts, pushbackRounds } from "./intake";
 import { changeFor } from "./script-changes";
-import { call, resultOf, succeeded, summarize, type Plan } from "./script-plan";
+import { inspectRequest, type IntentDraft } from "./script-intake";
+import { call, resultOf, succeeded, type Plan } from "./script-plan";
 import type { CallRecord, InboundItem, TurnContext } from "./types";
 
+/** The work order set_roadmap made for this request: the first title is always the new one. */
 const newOrder = (done: CallRecord[]) => (resultOf(done, "set_roadmap")?.workOrders as { id: string; title: string }[] | undefined)?.[0];
 
-function buildBrief(request: string, workTitle: string): string {
+function buildBrief(intent: IntentDraft, texts: string[], workTitle: string): string {
   return [
     `Goal: ${workTitle}.`,
-    `Context: the person wrote ${JSON.stringify(request)}`,
+    `Context: the person wrote ${texts.map((t) => JSON.stringify(t)).join(" then ")}. User: ${intent.user}. Acceptance: ${intent.acceptance}.`,
+    ...(intent.assumptions.length > 0 ? [`Assumed: ${intent.assumptions.join("; ")}.`] : []),
     "Area: the invoices module under src/, next to src/invoices.ts and src/format.ts.",
-    "Constraints: keep it small, change no existing behaviour, add a test next to the code.",
-    "Done means: committed on your branch, diff read, a pull request open, and a report with Status / Result / Evidence.",
+    "You can rely on: the Invoice type in src/invoices.ts and the project's test setup.",
+    "Out of scope: the UI and any change to existing behaviour.",
+    "Done means: committed on your branch, diff read, a test next to the code, a pull request open, and a report with Status / Result / Evidence.",
   ].join("\n");
 }
 
-function requestPlan(ctx: TurnContext, request: string): Plan {
+function requestPlan(ctx: TurnContext): Plan {
   const road = ctx.initial.roadmap;
-  const workTitle = changeFor(request).workTitle(request);
-  const goal = road.goal?.title ?? summarize(request);
+  const items = ctx.initial.threads[ctx.agent.id] ?? [];
+  const texts = intakeTexts(items);
+  const change = changeFor(texts.join("\n"));
+  const decision = inspectRequest(texts, pushbackRounds(items), change);
+  if (decision.kind === "ask") return { steps: [], reply: () => decision.reply };
+  const { intent } = decision;
+  const workTitle = intent.title;
+  const fresh = road.stage === 1;
   return {
     steps: [
-      () => [...(road.goal ? [] : [call("set_goal", { title: goal })]), ...(road.stage === 1 ? [call("advance_stage", {})] : [])],
-      () => [call("set_roadmap", { workOrderTitles: [workTitle] })],
+      () => [
+        call("set_goal", { title: intent.title, user: intent.user, behaviour: intent.behaviour, acceptance: intent.acceptance, assumptions: intent.assumptions }),
+        ...(fresh ? [call("advance_stage", {})] : []),
+      ],
+      () => [call("set_roadmap", { workOrderTitles: [workTitle, ...(road.backlog ?? []).map((w) => w.title).filter((t) => t !== workTitle)] })],
       (done) => {
         const order = newOrder(done);
         if (!order) return [];
         const keep = road.today.filter((w) => w.status !== "done").map((w) => w.id);
         const today = call("set_today", { workOrderIds: [...keep, order.id].slice(-3) });
-        return road.stage <= 2 ? [today, call("advance_stage", {})] : [today];
+        return fresh || road.stage === 2 ? [today, call("advance_stage", {})] : [today];
       },
       (done) => {
         const order = newOrder(done);
-        return order ? [call("start_thread", { role: "build", title: workTitle, brief: buildBrief(request, workTitle), workOrderId: order.id })] : [];
+        return order ? [call("start_thread", { role: "build", title: workTitle, brief: buildBrief(intent, texts, workTitle), workOrderId: order.id })] : [];
       },
       (done) => {
         const started = resultOf(done, "start_thread");
@@ -44,10 +58,14 @@ function requestPlan(ctx: TurnContext, request: string): Plan {
     reply: (done) => {
       const started = resultOf(done, "start_thread");
       if (!started) return `I planned "${workTitle}", but could not start a thread for it. ${String(done.find((c) => c.name === "start_thread")?.result.error ?? "")}`.trim();
-      return `I planned "${workTitle}" for today. ${started.code} is building it on branch ${started.branch} and will report back to me.`;
+      const assumed = intent.assumptions.length > 0 ? ` Going with: ${intent.assumptions.join("; ")}.` : "";
+      const doneWhen = intent.assumptions.some((a) => a.startsWith("Acceptance")) ? "" : ` Done when ${lowerFirst(intent.acceptance)}.`;
+      return `${started.code} is building "${workTitle}" on ${started.branch}.${doneWhen}${assumed}`;
     },
   };
 }
+
+const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1).replace(/\.$/, "");
 
 interface Facts {
   pr?: PullRequestArtifact;
@@ -88,7 +106,13 @@ const REPORT_RULES: Rule[] = [
       const p = pr as PullRequestArtifact;
       const detail = `Merges ${prLine(p)} into main. Files: ${filesLine(p)}. Review: approved with ${review?.review.findings.length ?? 0} finding(s).`;
       return {
-        steps: [() => [call("write_drive", { name: "DIGEST.md", content: `Approve merging #${p.pullRequest.number}: ${p.title}.\n` }), call("request_approval", { title: `Merge #${p.pullRequest.number}: ${p.title}`, detail, pullRequestId: p.id })]],
+        steps: [
+          () => [
+            call("advance_stage", {}),
+            call("write_drive", { name: "DIGEST.md", content: `Approve merging #${p.pullRequest.number}: ${p.title}.\n` }),
+            call("request_approval", { title: `Merge #${p.pullRequest.number}: ${p.title}`, detail, pullRequestId: p.id }),
+          ],
+        ],
         reply: () => `The review approved #${p.pullRequest.number}. ${detail} Approve it and I will merge.`,
       };
     },
@@ -132,23 +156,42 @@ function decisionPlan(ctx: TurnContext, decision: NonNullable<InboundItem["decis
   }
   const owner = s.agents.find((a) => a.id === pr.agentId);
   const threads = s.agents.filter((a) => a.kind === "crew" && !a.closedAt && (a.id === pr.agentId || (!!owner?.workOrderId && a.workOrderId === owner.workOrderId)));
+  const findings = [...s.artifacts].reverse().find((a) => a.review?.pullRequestId === pr.id)?.review?.findings ?? [];
+  const followUps = findings.map((f) => `Follow up on #${pr.pullRequest.number}: ${f.comment}`);
+  const backlog = (s.roadmap.backlog ?? []).map((w) => w.title).filter((t) => !followUps.includes(t));
+  const merged = (done: CallRecord[]) => succeeded(done, "merge_pull_request");
   return {
     steps: [
       () => [call("merge_pull_request", { pullRequestId: pr.id })],
-      (done) => (succeeded(done, "merge_pull_request") ? threads.map((t) => call("close_thread", { threadId: t.id })) : []),
-      (done) => (succeeded(done, "merge_pull_request") ? [call("write_drive", { name: "DIGEST.md", content: "Nothing needs you right now.\n" }), call("advance_stage", {})] : []),
+      (done) => (merged(done) ? threads.map((t) => call("close_thread", { threadId: t.id })) : []),
+      (done) => (merged(done) ? [call("write_drive", { name: "DIGEST.md", content: "Nothing needs you right now.\n" }), call("advance_stage", {})] : []),
+      (done) => (merged(done) ? [call("write_drive", { name: "NOTES.md", content: learnNote(s, pr, findings) })] : []),
+      (done) => (merged(done) && followUps.length > 0 ? [call("set_roadmap", { workOrderTitles: [...backlog, ...followUps] })] : []),
     ],
     reply: (done) =>
-      succeeded(done, "merge_pull_request")
-        ? `Merged #${pr.pullRequest.number} "${pr.title}" into main. The work order is done and its threads are closed.`
+      merged(done)
+        ? `Merged #${pr.pullRequest.number} "${pr.title}" into main and closed its threads.${followUps.length > 0 ? ` ${followUps.length} follow-up${followUps.length > 1 ? "s" : ""} from the review went to the backlog.` : ""}`
         : `I could not merge #${pr.pullRequest.number}: ${String(done.find((c) => c.name === "merge_pull_request")?.result.error ?? "unknown error")}`,
   };
+}
+
+/** The Learn entry: what shipped, whether its acceptance check held, and what the review found, after the notes so far. */
+function learnNote(s: State, pr: PullRequestArtifact, findings: ReviewData["findings"]): string {
+  const earlier = s.drive.find((f) => f.name === "NOTES.md")?.content.trimEnd() ?? "";
+  const acceptance = s.roadmap.goal?.acceptance;
+  const entry = [
+    `## Shipped #${pr.pullRequest.number}: ${pr.title}`,
+    `- Intent: ${s.roadmap.goal?.title ?? pr.title}${s.roadmap.goal?.user ? `, for ${s.roadmap.goal.user}` : ""}`,
+    ...(acceptance ? [`- Acceptance: ${acceptance} (approved by review and merged)`] : []),
+    ...(findings.length > 0 ? findings.map((f) => `- Review (${f.severity}, ${f.path}): ${f.comment}`) : ["- Review: no findings"]),
+  ].join("\n");
+  return [earlier, entry].filter(Boolean).join("\n\n") + "\n";
 }
 
 export function captainPlan(ctx: TurnContext): Plan {
   const decision = ctx.inbound.find((i) => i.rule === "decision" && i.decision)?.decision;
   if (decision) return decisionPlan(ctx, decision);
   const ask = ctx.inbound.find((i) => i.rule === "person");
-  if (ask) return requestPlan(ctx, messageById(ctx.initial, ask.messageId)?.text ?? ask.text);
+  if (ask) return requestPlan(ctx);
   return reportPlan(ctx);
 }

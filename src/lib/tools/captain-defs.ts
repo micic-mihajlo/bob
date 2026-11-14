@@ -79,7 +79,8 @@ export const CAPTAIN_TOOLS: ToolDef[] = [
   }),
   define({
     name: "set_goal",
-    description: "Set or update the project goal. Setting it again keeps all progress.",
+    description:
+      "Record the request's intent: a title, the user, the behaviour and the acceptance check, plus any assumptions you made. The Intent stage cannot be left until user, behaviour and acceptance are set. Setting it again keeps all progress.",
     schema: setGoalSchema,
     sets: ["captain"],
     label: (i) => `Set the goal: ${clip(i.title)}`,

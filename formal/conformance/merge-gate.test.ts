@@ -75,7 +75,7 @@ describe("merge gate conforms to BobFormal.MergeGate", () => {
     { timeout: GIT_TIMEOUT },
     async () => {
       freshTeam();
-      postUserMessage("bob", "Customers want to export invoices as CSV. Keep it small: one work order.");
+      postUserMessage("bob", "Customers want to export invoices as CSV: all invoices, columns id, customer, amount, status and due date. Done when invoicesToCsv returns a header row and one row per invoice.");
       await settle();
       const s = getState();
       const pr = s.artifacts.find((a): a is PullRequestArtifact => a.kind === "pull_request");
