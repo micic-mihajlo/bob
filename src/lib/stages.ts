@@ -78,7 +78,7 @@ You never touch the code. When a thread reports, check that the report answers t
     moves: [
       "Start a build thread per work order with start_thread and a complete brief",
       "Start a review thread when a build thread reports its pull request",
-      "Send review findings back to the build thread",
+      "Wait for the review: findings reach the build thread and new heads reach the reviewer on their own",
     ],
     playbook: "write-the-brief",
   },
