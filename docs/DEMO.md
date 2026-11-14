@@ -16,7 +16,7 @@ Then:
 git clone https://github.com/micic-mihajlo/bob.git && cd bob
 pnpm install                 # about a minute
 cp <the BOB Captain drive>/secrets/bob.env.local .env.local    # or write AI_GATEWAY_API_KEY=... into .env.local
-pnpm demo --prewarm
+pnpm demo
 ```
 
 Open http://localhost:3000.
@@ -33,24 +33,33 @@ Open http://localhost:3000.
   Project          invoices-app (invoices template)
 ```
 
-`--prewarm` sends the captain one coding request (overdue invoices) as soon as the server is up. A real PR takes a minute or two, so start it before you walk up. On a live model it reaches the merge approval under Needs you in about 90 seconds. Other flags: `--scripted` (the fallback below), `--keep` (start without resetting), `--dev` (`next dev` instead of a production build), and `--port 3001`. Logs go to `.data/demo/`.
+Other flags: `--prewarm` (see the optional order below), `--scripted` (the fallback below), `--keep` (start without resetting), `--dev` (`next dev` instead of a production build), and `--port 3001`. Logs go to `.data/demo/`.
 
 On macOS, `run` has no namespace sandbox. Every run step says so ("plain shell"). Commands still run in the thread's own checkout, with a scrubbed environment and no API keys, but the file system isn't sealed the way it is on Linux. `pnpm verify` works on a Mac once Lean is installed (it prints the one-line elan install). Without Lean it skips the proofs and still runs the conformance tests. The demo doesn't need it.
 
 ## The 3-minute script
 
-The numbers in brackets are the ten checks `pnpm walkthrough` times.
+The numbers in brackets are the ten checks `pnpm walkthrough` times. Each request gets its own track on the roadmap (Intent, Spec, Build, Ship, Learn) and moves on its own gates, so the two requests below never wait on each other. The times are from three clean live runs of this exact order on main at 03b6a25 (captain kimi-k3.1-pro, crew deepseek-v4.1-flash, sandbox on), counted from when you type the CSV request.
 
 | Time | What happens | Steps |
 | --- | --- | --- |
-| before | `pnpm demo --prewarm`. The overdue-invoices request runs in the background and waits at its merge approval. | 1 |
+| before | `pnpm demo`. Nothing runs yet. | 1 |
 | 0:00 | One breath: one agent is a tool, a team needs a foreman, and nobody can see what a swarm is doing or why. The invoices project is already open. | 1 |
-| 0:15 | Type "customers want to export invoices as CSV". Bob pushes back until it can be tested. Answer it, and the roadmap fills in and a build thread starts. | 2 |
-| 0:45 | Open the build thread: it reads files, writes code and runs the tests in its own checkout. The run step shows the command, the sandbox mode and the output. | 3 |
-| 1:10 | Switch to the pre-warmed request under Needs you. Show its PR diff and the review thread's verdict, then approve. It merges, the roadmap moves and its threads close. It ran beside the CSV request on its own branch without colliding. | 4, 5, 6, 8 |
-| 2:00 | The CSV request reaches its approval (about 80 seconds on the live model). Approve it, and say how long the whole loop took. | 6, 7 |
-| 2:25 | Click Why? on the CSV PR. The chain of messages ends at the sentence you typed. | 10 |
+| 0:05 | Type "customers want to export invoices as CSV". It gets its own track at Intent. Bob pushes back with one question (about 10 s). Answer it, and the CSV track moves through Spec to Build and a build thread starts (20 to 32 s). | 2 |
+| 0:35 | While the CSV build runs, type the overdue request (below). It gets a second track. Its build thread starts about 18 s later, and both build at once, each in its own checkout on its own branch. If Bob asks who it's for (one run in four), answer "For the accountant on the invoices page who chases late payments. Go ahead with your defaults." | 2, 8 |
+| 0:55 | Open the CSV build thread: it reads files, writes code and runs the tests in its own checkout. The run step shows the command, the sandbox mode and the output. | 3 |
+| 1:20 | The first merge card arrives under Needs you, 80 to 106 s in (CSV first in one run, overdue first in two). Show its PR diff and the review thread's verdict, then approve. It merges, its track moves to Learn and its threads close. The other track stays at Build or Ship. | 4, 5, 6 |
+| 1:45 | The second card. Both PRs touch src/page.ts, so when the second one conflicts with the first merge, its build thread brings in main, the review checks the new head, and the card comes back for that head: about 45 s more, and you approve twice (seen in one run). Approve it, and say how long the whole loop took: both merged at 111, 133 and 147 s. | 6, 7, 8 |
+| 2:25 | Click Why? on the CSV PR. The chain runs through your answer and ends at the sentence you typed. Why? on the overdue PR ends at its own sentence. | 10 |
 | 2:50 | Close: a team you can read, steer and audit. | |
+
+The overdue request, to paste: "List overdue invoices: add overdueInvoices(invoices, today) in src/invoices.ts that returns the sent invoices whose due date is before today, oldest due date first, and show how many are overdue in the page summary. Done means a vitest test passes for one overdue, one paid and one not-yet-due invoice."
+
+If the review asks for changes, the build thread gets a fix round first. In the one run where that happened, the CSV merge card came about 80 s after the findings, at 168 s in. Fill the wait with step 3 or the Why? on the PR that already merged.
+
+### Optional: a pre-warmed request
+
+`pnpm demo --prewarm` sends the overdue request as soon as the server is up, and it waits at its merge approval, its track at Ship, about 50 to 85 s later. Then type the CSV request: it gets its own track, moves to Build and starts its build thread while overdue still waits at Ship. Approving overdue moves only its own track to Learn. This saves the overdue build on stage, but the CSV PR then lands on a main that already has overdue's change in the same files, so expect the conflict round above before the CSV card arrives. Why? on the CSV PR still ends at the sentence you typed. This order was run live once, before #111: the stage path and Why? held, but the CSV build stalled on that conflict at its step limit. #111 fixes that stall, and this order hasn't been run live since, so use the default order when it matters.
 
 For questions: kill the server mid-run and start it again with `pnpm demo --keep`, and nothing is lost or stranded (step 9). The inbox is the other story to tell. In the Inbox pane, "Add a sample call and error" has the captain triage a customer call and a production error into quoted backlog work. Nothing builds until you press Build this, and a merge that fixes the error marks it resolved.
 
