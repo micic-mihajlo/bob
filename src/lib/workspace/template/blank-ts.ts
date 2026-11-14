@@ -24,6 +24,7 @@ const packageJson = `{
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "fast-check": "4.10.2",
     "typescript": "5.9.3",
     "vitest": "5.1.0"
   }
