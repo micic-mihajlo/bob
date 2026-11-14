@@ -134,7 +134,7 @@ export function ChangesPane({ agent, onClose }: { agent: Agent; onClose: () => v
               key: file.path,
               name: base,
               at: "",
-              meta: [dir.replace(/\/$/, ""), `+${file.additions} −${file.deletions}`].filter(Boolean),
+              meta: [`+${file.additions} −${file.deletions}`, dir.replace(/\/$/, "")].filter(Boolean),
               actionLabel: `Show the diff of ${file.path}`,
               disabled: index < 0,
               onOpen: () => document.getElementById(`bob-diff-${agent.id}-${index}`)?.scrollIntoView({ block: "start", behavior: "smooth" }),
