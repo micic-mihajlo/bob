@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, FolderOpen, Inbox, Map as MapIcon, Users, type LucideIcon } from "lucide-react";
+import { Bot, FolderOpen, Inbox, Map as MapIcon, Network, Users, type LucideIcon } from "lucide-react";
 import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
 import { MotionTooltip } from "@/components/ui/MotionTooltip";
@@ -22,6 +22,7 @@ const CAPTAIN_PAGES: ReadonlyArray<{ tab: PanelTab; label: string; icon: LucideI
   { tab: "inbox", label: "Inbox", icon: Inbox },
   { tab: "crew", label: "Blobs", icon: Users },
   { tab: "drive", label: "Drive", icon: FolderOpen },
+  { tab: "codebase", label: "Codebase", icon: Network },
 ];
 
 /** The page rail at the left of the window. Agents is the page; the rest open the captain's panel. */
