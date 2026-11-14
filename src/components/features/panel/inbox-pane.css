@@ -92,6 +92,7 @@
 }
 
 .bob-inbox-title h3 {
+  text-wrap: balance;
   color: var(--bob-text-primary);
   font-size: var(--bob-text-sm);
   font-weight: var(--bob-weight-semibold);
@@ -102,6 +103,10 @@
   color: var(--bob-text-muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+}
+
+.bob-inbox-title p > span {
+  white-space: nowrap;
 }
 
 .bob-inbox-text {
