@@ -17,6 +17,7 @@ export function PreviewPane() {
       <div className="bob-preview-bar">
         <strong>{title}</strong>
         {view ? <span className="bob-preview-number">pull request #{view.number}</span> : null}
+        {view?.self ? <span className="bob-preview-number">Preview · offline (no model)</span> : null}
         {ready ? (
           <a className="bob-preview-open" href={url} target="_blank" rel="noreferrer">
             <ExternalLink aria-hidden="true" />

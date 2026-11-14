@@ -1,5 +1,5 @@
 import { execFile, spawn, type ChildProcess } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -94,7 +94,10 @@ async function waitReady(running: Running): Promise<void> {
       await new Promise((resolve) => setTimeout(resolve, 500));
       continue;
     }
-    if (running.view.self) await fetch(`${base}/api/projects`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "bob", template: "blank-ts" }) }).catch(() => undefined);
+    if (running.view.self) {
+      const seeded = await fetch(`${base}/api/state`, { cache: "no-store" }).then((r) => r.json() as Promise<{ project?: { id?: string } }>, () => null);
+      if (!seeded?.project?.id) await fetch(`${base}/api/projects`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "bob", template: "blank-ts" }) }).catch(() => undefined);
+    }
     running.view = { ...running.view, status: "ready" };
   }
 }
@@ -128,6 +131,13 @@ export async function startPreview(pullRequestId: string): Promise<{ ok: true; p
     NEXT_TELEMETRY_DISABLED: "1",
     ...(self ? { BOB_DURABLE: "off", BOB_BRAIN: "script", BOB_SANDBOX: "off" } : {}),
   };
+  if (self) {
+    const dir = path.join(ws.root, ".data");
+    const seed = { ...getState(), rev: 0, turns: [], deliveries: [], approvals: [], live: {} };
+    await mkdir(dir, { recursive: true })
+      .then(() => writeFile(path.join(dir, "state.json"), JSON.stringify(seed)))
+      .catch(() => undefined);
+  }
   const child = spawn("npm", ["run", "dev"], { cwd: ws.root, env: env as NodeJS.ProcessEnv, detached: true, stdio: "ignore" });
   const next: Running = {
     view: { pullRequestId: pr.id, number: pr.pullRequest.number, sha: head, label: self ? "Bob" : s.project.name, port, status: "starting", self },
