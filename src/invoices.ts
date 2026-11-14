@@ -35,11 +35,6 @@ export function overdue(invoices: readonly Invoice[], today: string): Invoice[] 
   return invoices.filter((invoice) => invoice.status === "sent" && invoice.dueDate < today);
 }
 
-/** True when one invoice is not paid and its due date is before today. Dates compare as ISO strings. */
-export function isOverdue(invoice: Invoice, today: string): boolean {
-  return invoice.status !== "paid" && invoice.dueDate < today;
-}
-
 export function totalCents(list: readonly Invoice[]): number {
   return list.reduce((sum, invoice) => sum + invoice.amountCents, 0);
 }
