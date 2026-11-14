@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PULL_REQUEST_STATE_LABEL, previewStatus, pullRequestState, reasonWithoutFiles, type PullRequestArtifact } from "../pull-requests";
+import { PULL_REQUEST_STATE_LABEL, previewStatus, pullRequestOfThread, pullRequestState, reasonWithoutFiles, type PullRequestArtifact } from "../pull-requests";
 import type { Approval, PreviewDeployment, PullRequestData } from "@/lib/types";
 
 const pullRequest = (status: PullRequestArtifact["status"], merged = false): PullRequestArtifact => ({
@@ -28,6 +28,24 @@ const approval = (status: Approval["status"], overrides: Partial<Approval> = {})
   pullRequestId: "pr-1",
   headSha: "abc1234",
   ...overrides,
+});
+
+describe("pullRequestOfThread", () => {
+  const review = {
+    ...pullRequest("approved"),
+    id: "rev-1",
+    kind: "review" as const,
+    agentId: "inv-2",
+    pullRequest: undefined,
+    review: { pullRequestId: "pr-1", verdict: "approve" as const, findings: [] },
+  };
+
+  it("gives a build thread the pull request it opened and a review thread the one it reviewed", () => {
+    const artifacts = [pullRequest("approved"), review];
+    expect(pullRequestOfThread(artifacts, "inv-1")?.id).toBe("pr-1");
+    expect(pullRequestOfThread(artifacts, "inv-2")?.id).toBe("pr-1");
+    expect(pullRequestOfThread(artifacts, "bob")).toBeUndefined();
+  });
 });
 
 describe("pull request state", () => {
