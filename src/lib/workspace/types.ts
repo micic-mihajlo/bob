@@ -14,6 +14,8 @@ export interface ProjectLayout {
   /** Empty HOME for git, so the host user's global config never applies. */
   home: string;
   agentsDir: string;
+  /** A checkout of main with the project's dependencies installed once, copied into each workspace. */
+  deps: string;
 }
 
 /** One agent's checkout of a project. `root` is the only directory its file tools can touch. */

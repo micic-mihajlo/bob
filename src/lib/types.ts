@@ -117,7 +117,19 @@ export interface Turn {
 export type ThreadItem =
   | { kind: "user_text"; id: string; text: string; at: string }
   | { kind: "agent_text"; id: string; turnId: TurnId; text: string; at: string }
-  | { kind: "step"; id: string; turnId: TurnId; tool: string; label: string; at: string }
+  | {
+      kind: "step";
+      id: string;
+      turnId: TurnId;
+      tool: string;
+      label: string;
+      at: string;
+      /** Set when the call finishes: failed for a tool error or a command that exited non-zero. */
+      outcome?: "ok" | "failed";
+      /** What the call produced, for the step to show: a command's output, or the error. */
+      detail?: string;
+      seconds?: number;
+    }
   | {
       kind: "message_out";
       id: string;

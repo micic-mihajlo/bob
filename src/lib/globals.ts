@@ -7,6 +7,8 @@ export interface Config {
   persist: boolean;
   /** Where thread workspaces live. Unset means `<cwd>/.data/workspaces`. */
   workspaceRoot?: string;
+  /** Install project dependencies for thread commands. Off under tests, which must not reach the network. */
+  installDeps: boolean;
 }
 
 export interface BobGlobals {
@@ -35,7 +37,7 @@ export function globals(): BobGlobals {
       state: null,
       listeners: new Set(),
       persistTimer: null,
-      config: { pace: defaultPace(), persist: !process.env.VITEST },
+      config: { pace: defaultPace(), persist: !process.env.VITEST, installDeps: !process.env.VITEST },
       inflight: new Set(),
       brainOverride: null,
       pendingBoot: null,

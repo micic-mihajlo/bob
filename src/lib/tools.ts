@@ -75,13 +75,41 @@ export async function callTool(name: string, rawInput: unknown, ctx: ToolContext
   if (!def) return fail(`${name} is not one of your tools. Use only the tools you were given.`);
   const parsed = def.schema.safeParse(rawInput);
   const label = parsed.success ? safeLabel(def, parsed.data) : name;
-  update((s) => addThreadItem(s, ctx.agentId, { kind: "step", ...stamp(), turnId: ctx.turnId, tool: name, label }));
+  const step = stamp();
+  update((s) => addThreadItem(s, ctx.agentId, { kind: "step", ...step, turnId: ctx.turnId, tool: name, label }));
+  const started = Date.now();
+  const out = await runParsed(def, parsed, name, ctx);
+  finishStep(ctx.agentId, step.id, def, parsed.success ? parsed.data : undefined, out.result, (Date.now() - started) / 1000);
+  return out;
+}
+
+async function runParsed(def: ToolDef, parsed: z.ZodSafeParseResult<unknown>, name: string, ctx: ToolContext): Promise<ToolOutput> {
   if (!parsed.success) return fail(`Invalid input for ${name}: ${z.prettifyError(parsed.error)}`);
   try {
     return await def.execute(parsed.data as never, ctx);
   } catch (error) {
     return fail(error instanceof Error ? error.message : "The tool failed.");
   }
+}
+
+const DETAIL_LIMIT = 4_000;
+
+/** Marks the step done, failed when the tool errored or a command did not pass, with what it produced. */
+function finishStep(agentId: string, stepId: string, def: ToolDef, input: unknown, result: Record<string, unknown>, seconds: number): void {
+  const failed = "error" in result || result.passed === false;
+  let detail: string | undefined;
+  try {
+    detail = def.detail?.(input as never, result);
+  } catch {
+    detail = undefined;
+  }
+  detail = (detail ?? (typeof result.error === "string" ? result.error : undefined))?.slice(0, DETAIL_LIMIT);
+  const patch = { outcome: failed ? ("failed" as const) : ("ok" as const), seconds: Math.round(seconds * 10) / 10, ...(detail ? { detail } : {}) };
+  update((s) => {
+    const items = s.threads[agentId];
+    if (!items?.some((i) => i.id === stepId)) return s;
+    return { ...s, threads: { ...s.threads, [agentId]: items.map((i) => (i.id === stepId && i.kind === "step" ? { ...i, ...patch } : i)) } };
+  });
 }
 
 function safeLabel(def: ToolDef, input: unknown): string {
