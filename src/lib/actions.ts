@@ -1,4 +1,4 @@
-import { openAsk, openInboxQuestion } from "./brain/intake";
+import { openAsk, openFollowUp, openInboxQuestion } from "./brain/intake";
 import { globals } from "./globals";
 import { newId } from "./ids";
 import { isThreadModel, unknownModel } from "./models";
@@ -59,13 +59,14 @@ function steerInto(agentId: AgentId, messageId: string, deliveryId: string, text
 
 /**
  * A person's message. While the captain's question is open, a message to the captain answers it and joins that
- * request, unless the person marked it a new request. While only an inbox question is open, the message answers that
+ * request, unless the person marked it a new request. The same holds for the captain's question after the person
+ * declined a merge: the answer joins that pull request's request. While only an inbox question is open, the message answers that
  * inbox item: it continues the item's message but keeps a request of its own.
  */
 export function postUserMessage(agentId: AgentId, text: string, mode: SendMode = "queue", via?: "voice", newRequest = false): ActionResult<{ messageId: string; steered: boolean }> {
   const agent = agentById(getState(), agentId);
   if (!agent) return unknownAgent(agentId);
-  const ask = agent.kind === "captain" && !newRequest ? openAsk(getState(), agentId) : null;
+  const ask = agent.kind === "captain" && !newRequest ? (openAsk(getState(), agentId) ?? openFollowUp(getState(), agentId)) : null;
   const inbox = agent.kind === "captain" && !newRequest && !ask ? openInboxQuestion(getState()) : null;
   const sent = send({
     from: { kind: "user" },
