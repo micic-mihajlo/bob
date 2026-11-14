@@ -37,7 +37,7 @@ describe("captain and crew, scripted, end to end", { timeout: GIT_TIMEOUT }, () 
 
     const pr = prOf();
     expect(pr?.pullRequest?.number).toBe(1);
-    expect(pr?.pullRequest?.files.map((f) => f.path)).toEqual(["src/csv.test.ts", "src/csv.ts"]);
+    expect(pr?.pullRequest?.files.map((f) => f.path)).toEqual([expect.stringMatching(/^src\/acceptance\/wo_\w+\.test\.ts$/), "src/csv.ts"]);
     expect(pr?.pullRequest?.patch).toContain("invoicesToCsv");
     const verdict = s.artifacts.find((a) => a.kind === "review")?.review;
     expect(verdict?.verdict).toBe("approve");
@@ -127,7 +127,7 @@ describe("captain and crew, scripted, end to end", { timeout: GIT_TIMEOUT }, () 
     const file = await browseWorkspace(s, "inv-1", "src/csv.ts");
     expect(file.ok && file.kind === "file" && file.content).toContain("export function invoicesToCsv");
     const changes = await workspaceChanges(s, "inv-1");
-    expect(changes.ok && changes.files.map((f) => f.path)).toEqual(["src/csv.test.ts", "src/csv.ts"]);
+    expect(changes.ok && changes.files.map((f) => f.path)).toEqual([expect.stringMatching(/^src\/acceptance\/wo_\w+\.test\.ts$/), "src/csv.ts"]);
     expect(changes.ok && changes.patch).toContain("+export function invoicesToCsv");
     expect((await browseWorkspace(s, "bob", "")).ok).toBe(false);
   });

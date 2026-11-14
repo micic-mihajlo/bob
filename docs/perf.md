@@ -124,6 +124,22 @@ What changed for the tail:
 - **Retries and a fallback (bob#47).** Each move tries its model twice, then a fallback model (kimi-k3-fast for the captain, glm-5.3-fast for the crew), with 1 s and 3 s between attempts. Each attempt has a timeout: 60 s for the captain, 120 s for the crew. A hung call used to hold the turn for 180 s and then fail it.
 - **Liveness (bob#55, bob#58).** Text and started tool calls stream into `state.live` while the model writes them, and a crew turn opens with a finished "Read N files" step for the files it was given. These don't change the timings. They make the thread visibly busy during the 5 to 25 s a model call takes.
 
+## Acceptance test first
+
+A build thread now writes the work order's acceptance check as `src/acceptance/<work order id>.test.ts` before any code. It runs that file alone and shows it failing, then implements and runs the whole suite. Three live runs through merge on the branch (kimi-k3.1-pro captain, deepseek-v4.1-flash crew):
+
+| Run | To approval | To closed | Build turn | Acceptance test written → first code edit |
+| --- | --- | --- | --- | --- |
+| 1 | 64 s | 65 s | 18 s | 4.9 s |
+| 2 | 54 s | 55 s | 17 s | 5.0 s |
+| 3 | 54 s | 54 s | 19 s | 7.4 s |
+
+All three completed with no failed turns or stalls, and every review approved and named the acceptance test. The median to approval was 54 s, against 63 s in the ten runs above, so the red run fits inside run-to-run noise.
+
+The red step (writing the test, running it alone, one more model call) cost 5 to 7 s, well under the 15 s budget. The red run was a single targeted file from the start (`npx vitest run <file>`), and the green run is the whole suite.
+
+In run 3 the model piped its red run through `tail`, and the pipe hid the exit code. The `run` tool now fails a test command whose output reports failing tests, whatever the exit code. The brief also says to run the file without a pipe.
+
 ## What changed
 
 - **A shell per thread.** `run` executes one bash command in the thread's own checkout, in its own process group. A timeout (120 s by default, at most 600 s) kills the whole group. The command gets an environment built from scratch: no API keys, `HOME` set to the project's own folder, and `node_modules/.bin` on the `PATH`. Output over 12,000 characters keeps its head and tail. The step in the thread shows the command, its output and whether it passed.

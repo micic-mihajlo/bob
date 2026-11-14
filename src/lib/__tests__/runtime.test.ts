@@ -46,9 +46,20 @@ describe("crew runtime", { timeout: GIT_TIMEOUT }, () => {
     expect(String(passed.result.output)).toContain(build.branch);
     const failed = await callTool("run", { command: "echo broken && exit 2" }, ctx);
     expect(failed.result).toMatchObject({ exitCode: 2, passed: false });
-    const [ok, bad] = stepsOf(build.id).filter((s) => s.tool === "run" && s.label !== "Running npm test");
+    const [ok, bad] = stepsOf(build.id).filter((s) => s.tool === "run" && !s.label.startsWith("Tests "));
     expect(ok).toMatchObject({ label: "Running ls src && git branch --show-current", outcome: "ok" });
     expect(bad).toMatchObject({ outcome: "failed", detail: expect.stringContaining("broken") });
+  });
+
+  it("labels a finished test run with its result, and fails one whose output shows failing tests behind a pipe", async () => {
+    const build = await buildThread();
+    const ctx = { ...asBob, agentId: build.id };
+    const masked = await callTool("run", { command: "printf 'Tests  1 failed | 2 passed (3)\\n' | tail -5 # test" }, ctx);
+    expect(masked.result).toMatchObject({ exitCode: 0, passed: false });
+    const passing = await callTool("run", { command: "printf 'Tests  3 passed (3)\\n' # test" }, ctx);
+    expect(passing.result).toMatchObject({ exitCode: 0, passed: true });
+    const runs = stepsOf(build.id).filter((s) => s.tool === "run").slice(-2);
+    expect(runs.map((s) => [s.label, s.outcome])).toEqual([["Tests failed (1)", "failed"], ["Tests passed", "ok"]]);
   });
 
   it("commits pending changes when it opens the pull request", async () => {

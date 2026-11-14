@@ -175,7 +175,7 @@ const CATEGORY: Record<string, RegExp> = {
   write: /write|edit|patch|apply|create_file/i,
   command: /bash|shell|run|exec|command|terminal|git/i,
 };
-const TEST_RUN = /\b(npm|pnpm|yarn|bun|npx)\s+(run\s+)?test\b|\bvitest\b|\bjest\b/i;
+const TEST_RUN = /\b(npm|pnpm|yarn|bun|npx)\s+(run\s+)?test\b|\bvitest\b|\bjest\b|^Tests (passed|failed)\b/i;
 
 function categories(steps: Step[]): string[] {
   const found = new Set<string>();

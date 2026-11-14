@@ -99,13 +99,15 @@ const DETAIL_LIMIT = 4_000;
 function finishStep(agentId: string, stepId: string, def: ToolDef, input: unknown, result: Record<string, unknown>, seconds: number): void {
   const failed = "error" in result || result.passed === false;
   let detail: string | undefined;
+  let label: string | undefined;
   try {
     detail = def.detail?.(input as never, result);
+    label = def.doneLabel?.(input as never, result);
   } catch {
     detail = undefined;
   }
   detail = (detail ?? (typeof result.error === "string" ? result.error : undefined))?.slice(0, DETAIL_LIMIT);
-  const patch = { outcome: failed ? ("failed" as const) : ("ok" as const), seconds: Math.round(seconds * 10) / 10, ...(detail ? { detail } : {}) };
+  const patch = { outcome: failed ? ("failed" as const) : ("ok" as const), seconds: Math.round(seconds * 10) / 10, ...(detail ? { detail } : {}), ...(label ? { label } : {}) };
   update((s) => {
     const items = s.threads[agentId];
     if (!items?.some((i) => i.id === stepId)) return s;
