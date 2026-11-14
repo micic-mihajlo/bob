@@ -1,8 +1,6 @@
 import {
   type AgentBrowserProfile,
-  agentAutomationAllowed,
   assignedSkillCount,
-  DEFAULT_AGENT_DEFAULTS,
   type FilePreview,
 } from "@bob/contracts/ipc";
 import { BookMarked, Folder, Gauge, Puzzle, Table2, Upload } from "@bob/ui";
@@ -24,13 +22,10 @@ import { createBrowserProfilesStore } from "../browser/stores/browser-profiles-s
 import { type AgentFilesOptions, AgentFilesSettings } from "../files/AgentFilesSettings";
 import { createStorageUsage } from "../files/storage-usage";
 import { AgentMemoriesModal } from "./AgentMemoriesModal";
-import { type RoutineSelectionRequest } from "./AgentRoutinesSettings";
 import { AgentSkillsModal, type AgentSkillsMode, type SkillDetail } from "./AgentSkillsModal";
 import { conversationPort, type SharedTableCalls } from "./conversation-port";
 import type { ConversationRuntime } from "./conversation-runtime";
 import { agentMemoriesPort } from "./memories-port";
-import type { EventRoutinesApi } from "./routine-webhooks-api";
-import { type AgentRoutinesApi, agentRoutinesPort, eventRoutinesPort, type RoutinesPort } from "./routines-port";
 import { SharedTablesModal } from "./SharedTablesModal";
 
 interface AgentSettingsPanelProps
@@ -50,9 +45,6 @@ interface AgentSettingsPanelProps
   onOpenUsage?: ((trigger: HTMLButtonElement) => void) | undefined;
   onWidthChange: (width: number) => void;
   skillSelectionRequest?: { skillId: string } | null | undefined;
-  routineSelectionRequest?: RoutineSelectionRequest | null | undefined;
-  onRoutineSelectionRequestHandled?: ((nonce: number) => void) | undefined;
-  onOpenRoutineRun?: ((messageId: string) => void) | undefined;
   skillsMode?: AgentSkillsMode | undefined;
   /** The joined server that runs the agent, for the `host` skills mode. */
   skillsServerId?: string | undefined;
@@ -63,10 +55,6 @@ interface AgentSettingsPanelProps
   tablesVisible?: boolean | undefined;
   /** Names the agent that keeps each set of records. Threaded like `customProviders`, for the same reason. */
   agents?: readonly AgentProfile[] | undefined;
-  /** Event routine calls for a host that advertises `events-v1`; absent keeps the released schedule API. */
-  eventRoutines?: EventRoutinesApi | undefined;
-  /** The released schedule API of a client without the desktop port. Absent, preload sends it. */
-  routines?: AgentRoutinesApi | undefined;
   onCreateSkill?: (() => void) | undefined;
   onTrySkill?: ((skill: SkillDetail) => void) | undefined;
   /** Reads a file in the agent workspace, on the computer that runs the agent. */
@@ -108,7 +96,6 @@ export default function AgentSettingsPanel(props: AgentSettingsPanelProps) {
   const [draft, setDraft] = createStore({
     tables: { count: 0, open: false },
     memories: { count: 0, open: false },
-    routines: { count: 0, open: false },
     files: { open: false },
     skills: { count: 0, open: false, reopenAfterMarketplace: false },
   });
@@ -162,21 +149,6 @@ export default function AgentSettingsPanel(props: AgentSettingsPanelProps) {
     };
   };
   const memoriesPort = createMemo(() => agentMemoriesPort(props.agent.id, props.agent.name, props.memoryLimit ?? null));
-  const legacyRoutinesPort = createMemo(() =>
-    agentRoutinesPort(
-      props.agent.id,
-      props.localHost === true && agentAutomationAllowed(props.agent, props.agentDefaults ?? DEFAULT_AGENT_DEFAULTS),
-      // Set only for the host on this computer, the one place the policy is kept.
-      props.localHost === true,
-      props.routines,
-    ),
-  );
-  const routinesPort = createMemo(() => {
-    const eventApi = props.eventRoutines ?? props.adminCalls?.eventRoutines;
-    return eventApi
-      ? eventRoutinesPort({ kind: "agent", id: props.agent.id }, eventApi, legacyRoutinesPort())
-      : legacyRoutinesPort();
-  });
   const skillsMode = () => props.skillsMode ?? "mutable";
   const tableCalls = (): SharedTableCalls => props.adminCalls?.sharedTables ?? conversationPort().agent;
   const skillCalls = () =>
@@ -194,7 +166,7 @@ export default function AgentSettingsPanel(props: AgentSettingsPanelProps) {
   );
 
   // An effect runs again for an equal value, and each activity of the agent gives a new agent
-  // object. The memo keeps an open view, such as a routine edit, until the agent changes.
+  // object. The memo keeps an open view, such as the memories, until the agent changes.
   const currentAgentId = createMemo(() => props.agent.id);
   createEffect(
     () => ({
@@ -207,7 +179,6 @@ export default function AgentSettingsPanel(props: AgentSettingsPanelProps) {
       setDraft((state) => {
         state.tables.open = false;
         state.memories.open = false;
-        state.routines.open = false;
         state.files.open = false;
         state.skills.open = false;
         state.skills.reopenAfterMarketplace = false;
@@ -225,23 +196,17 @@ export default function AgentSettingsPanel(props: AgentSettingsPanelProps) {
       void untrack(() => loadSkillsCount(agentId));
       if (!remoteClient) {
         loadMemoriesCount(agentId);
-        untrack(() => loadRoutinesCount(routinesPort()));
       }
     },
   );
 
-  // The counts follow a memory or routine change, also one that the agent makes in a turn.
+  // The count follows a memory change, also one that the agent makes in a turn.
   createEffect(
-    () => (props.remoteClient ? null : ([currentAgentId(), memoriesPort(), routinesPort()] as const)),
+    () => (props.remoteClient ? null : ([currentAgentId(), memoriesPort()] as const)),
     (sources) => {
       if (!sources) return;
-      const [agentId, memories, routines] = sources;
-      const stopMemories = memories.subscribe(() => loadMemoriesCount(agentId));
-      const stopRoutines = routines.subscribe(() => loadRoutinesCount(routines));
-      return () => {
-        stopMemories();
-        stopRoutines();
-      };
+      const [agentId, memories] = sources;
+      return memories.subscribe(() => loadMemoriesCount(agentId));
     },
   );
 
@@ -256,16 +221,6 @@ export default function AgentSettingsPanel(props: AgentSettingsPanelProps) {
       });
   }
 
-  function loadRoutinesCount(port: RoutinesPort): void {
-    void port
-      .list()
-      .catch(() => [])
-      .then((items) => {
-        setDraft((state) => {
-          state.routines.count = items.length;
-        });
-      });
-  }
 
   // The count follows a skill change made anywhere, as the dialog does.
   createEffect(
@@ -318,16 +273,6 @@ export default function AgentSettingsPanel(props: AgentSettingsPanelProps) {
     },
   );
 
-  createEffect(
-    () => ({ request: props.routineSelectionRequest, agentId: props.agent.id }),
-    ({ request }) => {
-      if (request) {
-        setDraft((state) => {
-          state.routines.open = true;
-        });
-      }
-    },
-  );
 
   // The request stays set after the dialog closes, and it is read again at each activity of the agent.
   // The memo opens the dialog again only for a new request.
@@ -346,7 +291,7 @@ export default function AgentSettingsPanel(props: AgentSettingsPanelProps) {
       width={panelWidth()}
       onResize={setPanelWidth}
       onResizeEnd={saveSettingsPanelWidth}
-      detailOpen={draft.routines.open || draft.files.open}
+      detailOpen={draft.files.open}
       links={
         <>
           <Show when={sessionSettings()}>

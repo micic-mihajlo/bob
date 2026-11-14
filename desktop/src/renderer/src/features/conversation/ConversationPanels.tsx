@@ -19,7 +19,6 @@ import { useConversationController } from "./conversation-controller-context";
 import { conversationRuntime } from "./conversation-runtime";
 import { useConversationViewScope } from "./conversation-scope";
 import { agentSkillsMode } from "./installed-skills-source";
-import { desktopChatEventRoutinesApi } from "./routine-webhooks-api";
 
 const BROWSER_PANEL_DEFAULT_RATIO = 0.5;
 const BROWSER_PANEL_MIN = 220;
@@ -101,11 +100,9 @@ export function ConversationPanels(panelProps: { onOpenUsage?: ((trigger: HTMLBu
     setActiveRightPanel,
     setBrowserPanelWidth,
     setSettingsPanelWidth,
-    handleRoutineSettingsRequest,
     sidebarFilePreview,
     settingsOpen,
     skillSettingsRequest,
-    routineSettingsRequest,
     settingsModel,
     settingsProvider,
     settingsReasoning,
@@ -499,14 +496,7 @@ export function ConversationPanels(panelProps: { onOpenUsage?: ((trigger: HTMLBu
               onUpdateRuntimeSettings={updateRuntimeSettings}
               onSetAgentAvatar={props.onSetAgentAvatar}
               skillSelectionRequest={skillSettingsRequest()?.agentId === agent().id ? skillSettingsRequest() : null}
-              routineSelectionRequest={
-                routineSettingsRequest()?.agentId === agent().id ? routineSettingsRequest() : null
-              }
-              onRoutineSelectionRequestHandled={handleRoutineSettingsRequest}
-              onOpenRoutineRun={props.onOpenSearchMessage ? openRoutineRunMessage : undefined}
               files={agentFiles(props.server, agent().id)}
-              eventRoutines={desktopChatEventRoutinesApi(props.server, props.runtime)}
-              routines={props.runtime?.routines}
             />
           </Loading>
         )}
