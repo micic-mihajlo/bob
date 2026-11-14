@@ -1,3 +1,4 @@
+import { acceptanceIn, acceptanceLine, acceptanceOf } from "./acceptance";
 import type { State } from "./state";
 import type { Artifact, RequestId } from "./types";
 import { traceWhy } from "./why";
@@ -15,6 +16,8 @@ export interface RequestTrace {
   ask: string | null;
   answers: { question: string; answer: string }[];
   acceptance: string | null;
+  /** The acceptance test file and its red and green runs, as the block's line. */
+  acceptanceTest: string | null;
   review: string;
   approval: string;
 }
@@ -55,7 +58,8 @@ export function traceOf(s: State, pr: Artifact): RequestTrace {
     thread: agent?.code ?? pr.agentId,
     ask: person.at(-1)?.message.text ?? null,
     answers: person.flatMap((h) => (h.question ? [{ question: h.question, answer: h.message.text }] : [])).reverse(),
-    acceptance: /^.*?Acceptance:[ \t]*(.+?)\.?$/m.exec(brief)?.[1] ?? s.roadmap.goal?.acceptance ?? null,
+    acceptance: acceptanceIn(brief) ?? s.roadmap.goal?.acceptance ?? null,
+    acceptanceTest: acceptanceLine(acceptanceOf(s, pr.agentId), pr.pullRequest?.files.map((f) => f.path) ?? []),
     review: reviewLine(s, pr),
     approval: approvalLine(s, pr),
   };
@@ -71,6 +75,7 @@ export function traceBlock(t: RequestTrace): string {
     `- Asked: ${t.ask ? quote(t.ask) : "not recorded"}`,
     ...t.answers.map((a) => `- Bob asked: ${quote(a.question)} The person answered: ${quote(a.answer)}`),
     `- Work order: ${t.workOrderTitle ?? "none"}${t.acceptance ? `. Acceptance: ${t.acceptance}` : ""}`,
+    ...(t.acceptanceTest ? [t.acceptanceTest] : []),
     `- Review: ${t.review}`,
     `- Approval: ${t.approval}`,
     CLOSE,

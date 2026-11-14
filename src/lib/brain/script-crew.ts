@@ -1,3 +1,4 @@
+import { acceptancePathIn, acceptanceTestPath } from "../acceptance";
 import type { State } from "../state";
 import { findPullRequest, isPullRequest, type PullRequestArtifact } from "../threads";
 import type { CrewRole } from "../types";
@@ -20,21 +21,27 @@ function testsLine(done: CallRecord[]): string {
   return run.result.passed ? `${TEST_COMMAND} passed` : `${TEST_COMMAND} failed (${String(run.result.note ?? "non-zero exit")})`;
 }
 
+/** Acceptance test first: write it, show it red on its own, then implement and show the whole suite green. */
 function buildPlan(ctx: TurnContext, brief: string): Plan {
   const change = changeFor(brief);
   const goal = goalOf(brief);
-  const files = change.files(goal);
+  const acceptance = acceptancePathIn(brief) ?? acceptanceTestPath(ctx.agent.workOrderId ?? ctx.agent.id);
+  const files = [{ path: acceptance, content: change.acceptance(goal) }, ...change.files(goal)];
   return {
     steps: [
       () => [call("read_files", { paths: ["src/invoices.ts"] })],
-      () => [call("write_files", { files })],
+      () => [call("write_files", { files: files.slice(0, 1) })],
+      () => [call("run", { command: `npx vitest run ${acceptance}` })],
+      () => [call("write_files", { files: files.slice(1) })],
       () => [runTests()],
       () => [call("open_pull_request", { ...change.pullRequest, commitMessage: change.commit })],
       (done) => {
         const pr = resultOf(done, "open_pull_request");
         if (!pr) return [];
         const result = `Opened pull request #${pr.number} (id ${pr.pullRequestId}) on branch ${pr.branch}: ${change.pullRequest.title}.`;
-        return [call("report", { text: formatted("done", result, `${files.map((f) => f.path).join(", ")}; ${testsLine(done)}; read the diff against main`) })];
+        const red = done.find((c) => c.name === "run" && "passed" in c.result && c.result.passed === false);
+        const first = red ? `${acceptance} failed on its own first; ` : "";
+        return [call("report", { text: formatted("done", result, `${files.map((f) => f.path).join(", ")}; ${first}${testsLine(done)}; read the diff against main`) })];
       },
     ],
     reply: (done) => {
@@ -53,17 +60,24 @@ function pullRequestIn(s: State, brief: string): PullRequestArtifact | undefined
 function reviewPlan(ctx: TurnContext, brief: string): Plan {
   const pr = pullRequestIn(ctx.initial, brief);
   if (!pr) return { steps: [], reply: () => `${formatted("blocked", "The brief names no pull request I can find.", "none")}\nUnblock: send the pull request number and branch.` };
-  const finding = changeFor(pr.title).finding;
+  const acceptance = acceptancePathIn(brief);
+  const missing = acceptance !== null && !pr.pullRequest.files.some((f) => f.path === acceptance);
+  const low = changeFor(pr.title).finding;
+  const finding = missing
+    ? { path: acceptance, line: null, category: "tests" as const, severity: "medium" as const, confidence: 0.9, comment: `The acceptance test ${acceptance} is missing, so nothing shows the work order's check holds.` }
+    : { ...low, path: acceptance && low.category === "tests" ? acceptance : low.path };
+  const verdict = missing ? "request_changes" : "approve";
+  const summary = missing ? "Read the diff. The acceptance test is missing." : "Read the diff and the acceptance test, which asserts the work order's check. Correct and safe to merge; one low finding.";
   const { branch, number } = pr.pullRequest;
   return {
     steps: [
       () => [call("git", { args: ["fetch", "origin"] })],
       () => [call("git", { args: ["diff", `origin/main...origin/${branch}`] })],
-      () => [call("record_review", { pullRequestId: pr.id, verdict: "approve", findings: [finding], summary: "Read the diff and the tests. Correct and safe to merge; one low finding." })],
+      () => [call("record_review", { pullRequestId: pr.id, verdict, findings: [finding], summary })],
     ],
     reply: (done) =>
       resultOf(done, "record_review")
-        ? formatted("done", `Approved #${number} with one low finding: ${finding.comment}`, `review ${String(resultOf(done, "record_review")?.reviewId)}, git diff origin/main...origin/${branch}`)
+        ? formatted("done", missing ? `Requested changes on #${number}: ${finding.comment}` : `Approved #${number} with one low finding: ${finding.comment}`, `review ${String(resultOf(done, "record_review")?.reviewId)}, git diff origin/main...origin/${branch}`)
         : `${formatted("blocked", `Could not record the review of #${number}.`, "none")}\nUnblock: check the pull request id.`,
   };
 }
