@@ -1,6 +1,6 @@
 import { liveAsks } from "./asks";
 import { brainKind } from "./brain";
-import { openAsk, openInboxQuestion } from "./brain/intake";
+import { openAsk, openFollowUp, openInboxQuestion } from "./brain/intake";
 import { policyFor } from "./policy";
 import { releaseNotesOf } from "./release-notes";
 import { tracksOf } from "./roadmap";
@@ -70,14 +70,14 @@ function threadOf(s: State, agentId: AgentId): ThreadView {
 function answeringOf(s: State): Snapshot["answering"] {
   const captain = s.agents.find((a) => a.kind === "captain");
   if (!captain) return null;
-  const ask = openAsk(s, captain.id);
+  const ask = openAsk(s, captain.id) ?? openFollowUp(s, captain.id);
   if (!ask) {
     const inbox = openInboxQuestion(s);
     const requestId = inbox && messageById(s, inbox.item.messageId)?.requestId;
     return inbox && requestId ? { agentId: captain.id, requestId, ask: inbox.candidate.quote, question: inbox.candidate.question } : null;
   }
   const question = [...(s.threads[captain.id] ?? [])].reverse().find((i) => i.kind === "agent_text" && i.text.includes("?"));
-  return { agentId: captain.id, requestId: ask.requestId, ask: ask.text, question: question?.kind === "agent_text" ? question.text : null };
+  return { agentId: captain.id, requestId: ask.requestId, ask: ask.approvalId ? (requestAsk(s, ask.requestId) ?? ask.text) : ask.text, question: question?.kind === "agent_text" ? question.text : null };
 }
 
 export function buildSnapshot(s: State): Snapshot {

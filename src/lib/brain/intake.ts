@@ -40,6 +40,21 @@ export function openInboxQuestion(s: State): { item: InboxItem; candidate: Inbox
   return null;
 }
 
+/**
+ * The person's decision the captain asked about: its latest turn handled a denied merge card and ended on a
+ * question, and the person has not written since. The answer joins that request.
+ */
+export function openFollowUp(s: State, captainId: AgentId): Message | null {
+  const turn = s.turns.filter((t) => t.agentId === captainId).at(-1);
+  if (!turn || turn.status !== "completed") return null;
+  const denial = turn.messageIds.map((id) => s.messages.find((m) => m.id === id)).find((m) => !!m?.approvalId && s.approvals.find((a) => a.id === m.approvalId)?.status === "denied");
+  if (!denial) return null;
+  const final = (s.threads[captainId] ?? []).filter((i) => i.kind === "agent_text" && i.turnId === turn.id).at(-1);
+  if (final?.kind !== "agent_text" || !final.text.includes("?")) return null;
+  const since = turn.endedAt ?? turn.startedAt;
+  return s.messages.some((m) => m.from.kind === "user" && m.to.includes(captainId) && m.at > since) ? null : denial;
+}
+
 export function openAsk(s: State, captainId: AgentId): Message | null {
   const items = s.threads[captainId] ?? [];
   const acted = new Set(items.flatMap((i) => (i.kind === "step" ? [i.turnId] : [])));
