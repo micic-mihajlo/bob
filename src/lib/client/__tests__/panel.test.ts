@@ -115,6 +115,17 @@ describe("trackViews", () => {
     expect(view.backlog.map((o) => o.id)).toEqual(["e"]);
   });
 
+  it("shows the track that finished last, not the one started last", () => {
+    const view = trackViews({
+      ...roadmap,
+      tracks: [
+        { ...track("r1", 5), updatedAt: "2026-11-14T13:23:04Z" },
+        { ...track("r2", 5), updatedAt: "2026-11-14T13:20:00Z" },
+      ],
+    });
+    expect(view.tracks.map((t) => t.key)).toEqual(["r1"]);
+  });
+
   it("shows a roadmap saved before tracks as one track", () => {
     const view = trackViews(roadmap);
     expect(view.tracks).toHaveLength(1);
