@@ -1,7 +1,7 @@
 import { liveAsks } from "./asks";
 import { brainKind } from "./brain";
 import { messageById, runningTurn, type State } from "./state";
-import { needsYou, threadStatusOf } from "./thread-status";
+import { needsYou, threadStateOf, threadStatusOf } from "./thread-status";
 import type { AgentActivity, AgentId, Delivery, Snapshot, ThreadView, WaitingOn } from "./types";
 
 function activityOf(s: State, agentId: AgentId): AgentActivity {
@@ -73,6 +73,7 @@ export function buildSnapshot(s: State): Snapshot {
     roadmap: s.roadmap,
     brain: brainKind(),
     threadStatus: Object.fromEntries(s.agents.map((a) => [a.id, threadStatusOf(s, a, needs)])),
+    threadState: Object.fromEntries(s.agents.map((a) => [a.id, threadStateOf(s, a, needs)])),
     needsYou: needs,
     drive: s.drive ?? [],
   };
