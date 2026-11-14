@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/Progress";
 import { Card } from "@/components/ui/Surface";
 import { displayName } from "@/lib/client/crew";
 import { formatDeadline } from "@/lib/client/format";
-import { requestLabel, requestUsageLine } from "@/lib/client/requests";
+import { requestLabel, requestUsage } from "@/lib/client/requests";
 import {
   forUserLine,
   hasPlan,
@@ -202,30 +202,33 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
           <Card className="bob-roadmap-card">
             <h3 className="bob-roadmap-label">Requests</h3>
             <ul className="bob-roadmap-list">
-              {requests.map((request) => (
-                <li key={request.requestId} className="bob-roadmap-request" data-running={request.running ? "true" : undefined}>
-                  <div className="bob-roadmap-request-head">
-                    <p className="bob-roadmap-request-ask">{requestLabel(request.ask, inbox)}</p>
-                    {request.running ? <Badge variant="secondary">Running</Badge> : null}
-                  </div>
-                  <p className="bob-roadmap-task-meta">
-                    {requestUsageLine(request, budgets)
-                      .split(" · ")
-                      .map((part, index) => (
-                        <span key={part} className="bob-roadmap-usage-part">
-                          {index > 0 ? " · " : null}
-                          {part}
-                        </span>
-                      ))}
-                  </p>
-                  {request.alerts.map((alert) => (
-                    <p key={alert} className="bob-roadmap-request-alert">
-                      <TriangleAlert aria-hidden="true" />
-                      {alert}
-                    </p>
-                  ))}
-                </li>
-              ))}
+              {requests.map((request) => {
+                const usage = requestUsage(request, budgets, snapshot.brain === "model");
+                return (
+                  <li key={request.requestId} className="bob-roadmap-request" data-running={request.running ? "true" : undefined}>
+                    <div className="bob-roadmap-request-head">
+                      <p className="bob-roadmap-request-ask">{requestLabel(request.ask, inbox)}</p>
+                      {request.running ? <Badge variant="secondary">Running</Badge> : null}
+                    </div>
+                    {usage ? (
+                      <p className="bob-roadmap-task-meta">
+                        {usage.split(" · ").map((part, index) => (
+                          <span key={part} className="bob-roadmap-usage-part">
+                            {index > 0 ? " · " : null}
+                            {part}
+                          </span>
+                        ))}
+                      </p>
+                    ) : null}
+                    {request.alerts.map((alert) => (
+                      <p key={alert} className="bob-roadmap-request-alert">
+                        <TriangleAlert aria-hidden="true" />
+                        {alert}
+                      </p>
+                    ))}
+                  </li>
+                );
+              })}
             </ul>
           </Card>
         ) : null}

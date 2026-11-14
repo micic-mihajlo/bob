@@ -42,6 +42,21 @@ export function answeringQuote(answering: { ask: string; question: string | null
   return line?.split(/(?<=[.!?])\s+(?=\S)/).pop() ?? answering.ask;
 }
 
+/** A request has used half of any budget: from here its use reads against the limits. */
+export function nearBudget(request: RequestControl, budgets: RequestBudgets): boolean {
+  return request.seconds >= budgets.maxMinutes * 30 || request.modelCalls >= budgets.maxModelCalls / 2 || request.costUsd >= budgets.maxCostUsd / 2;
+}
+
+/**
+ * The usage line a request shows, or null when it would only be noise: nothing with the scripted
+ * brain or before the first model call, plain use while it is well inside its budgets, and use
+ * against the limits once any budget is half spent.
+ */
+export function requestUsage(request: RequestControl, budgets: RequestBudgets | undefined, live: boolean): string | null {
+  if (!live || request.modelCalls === 0) return null;
+  return requestUsageLine(request, budgets && nearBudget(request, budgets) ? budgets : undefined);
+}
+
 /** One request's use against its limits: "1m 37s of 3m · 12 of 90 model calls · $0.04 of $1.00". */
 export function requestUsageLine(request: RequestControl, budgets?: RequestBudgets): string {
   const time = formatElapsed(request.seconds * 1000);
