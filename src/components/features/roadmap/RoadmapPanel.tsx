@@ -2,6 +2,7 @@
 
 import "./roadmap-panel.css";
 import { Check, Map as MapIcon, TriangleAlert } from "lucide-react";
+import { Fragment } from "react";
 import { useBob } from "@/components/features/window/BobContext";
 import { PaneFrame, PaneHeader } from "@/components/features/panel/PaneFrame";
 import { Badge } from "@/components/ui/Badge";
@@ -18,12 +19,17 @@ import {
   trackViews,
   WORK_ORDER_STATUS_LABEL,
   trackProgress,
+  type RoadmapStep,
   type StepPhase,
   type TrackView,
 } from "@/lib/client/roadmap-view";
 import type { WorkOrder } from "@/lib/types";
 
-const PHASE_LABEL: Record<StepPhase, string> = { done: "Done", current: "Now", next: "Up next" };
+const PHASE_LABEL: Record<StepPhase, string> = {
+  done: "Done",
+  current: "Now",
+  next: "Up next",
+};
 
 /**
  * The roadmap beside the captain's chat. Each request still moving gets a card: its goal and how far
@@ -55,33 +61,26 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
     </li>
   );
 
-  const stages = (track: TrackView) => {
-    const steps = roadmapSteps(track);
-    if (steps.length === 0) return null;
-    return (
-      <section className="bob-roadmap-section">
-        <h4 className="bob-roadmap-label">Stages</h4>
-        <ol className="bob-roadmap-timeline">
-          {steps.map(({ gate, phase }) => (
-            <li key={`${gate.stage}-${gate.title}`} className="bob-roadmap-step" data-phase={phase} aria-current={phase === "current" ? "step" : undefined}>
-              <span className="bob-roadmap-node" role="img" aria-label={PHASE_LABEL[phase]}>
-                {phase === "done" ? <Check aria-hidden="true" /> : null}
-              </span>
-              <div className="bob-roadmap-step-body">
-                {phase === "current" ? (
-                  <p className="bob-roadmap-stage">
-                    Stage {track.stage} of {roadmap.totalStages}: {track.stageTitle}
-                  </p>
-                ) : null}
-                <p className="bob-roadmap-step-title">{gate.title}</p>
-                {phase === "current" && track.backlog.length > 0 ? <ul className="bob-roadmap-plan">{track.backlog.map(planItem)}</ul> : null}
-              </div>
-            </li>
-          ))}
-        </ol>
-      </section>
-    );
-  };
+  const timeline = (track: TrackView, steps: RoadmapStep[]) => (
+    <ol className="bob-roadmap-timeline">
+      {steps.map(({ gate, phase }) => (
+        <li key={`${gate.stage}-${gate.title}`} className="bob-roadmap-step" data-phase={phase} aria-current={phase === "current" ? "step" : undefined}>
+          <span className="bob-roadmap-node" role="img" aria-label={PHASE_LABEL[phase]}>
+            {phase === "done" ? <Check aria-hidden="true" /> : null}
+          </span>
+          <div className="bob-roadmap-step-body">
+            {phase === "current" ? (
+              <p className="bob-roadmap-stage">
+                Stage {track.stage} of {roadmap.totalStages}: {track.stageTitle}
+              </p>
+            ) : null}
+            <p className="bob-roadmap-step-title">{gate.title}</p>
+            {phase === "current" && track.backlog.length > 0 ? <ul className="bob-roadmap-plan">{track.backlog.map(planItem)}</ul> : null}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
 
   return (
     <PaneFrame className="bob-roadmap-panel" label="Roadmap">
@@ -95,15 +94,22 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
         ) : (
           <>
             {!started ? (
-              <Card className="bob-roadmap-card">
-                <p className="bob-roadmap-label">Goal</p>
-                <h3 className="bob-roadmap-goal">Nothing planned yet</h3>
-                <p className="bob-roadmap-muted">
-                  Tell Bob what you want built. Bob asks until the request can be tested, then sets the goal, cuts it into work orders and starts a thread for
-                  each.
-                </p>
-                {tracks[0] ? stages(tracks[0]) : null}
-              </Card>
+              <>
+                <Card className="bob-roadmap-card">
+                  <p className="bob-roadmap-label">Goal</p>
+                  <h3 className="bob-roadmap-goal">Nothing planned yet</h3>
+                  <p className="bob-roadmap-muted">
+                    Tell Bob what you want built. Bob asks until the request can be tested, then sets the goal, cuts it into work orders and starts a thread for
+                    each.
+                  </p>
+                </Card>
+                {tracks[0] && roadmapSteps(tracks[0]).length > 0 ? (
+                  <Card className="bob-roadmap-card">
+                    <h3 className="bob-roadmap-label">Roadmap</h3>
+                    {timeline(tracks[0], roadmapSteps(tracks[0]))}
+                  </Card>
+                ) : null}
+              </>
             ) : null}
 
             {started
@@ -111,34 +117,37 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                   const { goal } = track;
                   const progress = trackProgress(track, roadmap.totalStages);
                   const asked = track.ask ? requestLabel(track.ask, inbox) : null;
+                  const steps = roadmapSteps(track);
                   return (
-                    <Card key={track.key} className="bob-roadmap-card" aria-label={goal?.title ?? "Goal"}>
-                      <p className="bob-roadmap-label">Goal</p>
-                      <h3 className="bob-roadmap-goal">{goal?.title ?? "No goal set yet"}</h3>
-                      {asked ? (
-                        <p className="bob-roadmap-ask" title={asked}>
-                          {asked === track.ask ? `“${asked}”` : asked}
+                    <Fragment key={track.key}>
+                      <Card className="bob-roadmap-card" aria-label={goal?.title ?? "Goal"}>
+                        <p className="bob-roadmap-label">Goal</p>
+                        <h3 className="bob-roadmap-goal">{goal?.title ?? "No goal set yet"}</h3>
+                        {asked ? (
+                          <p className="bob-roadmap-ask" title={asked}>
+                            {asked === track.ask ? `“${asked}”` : asked}
+                          </p>
+                        ) : null}
+                        {goal?.why ? <p className="bob-roadmap-muted">{goal.why}</p> : null}
+                        {goal?.user ? <p className="bob-roadmap-muted">{forUserLine(goal.user)}</p> : null}
+                        {goal?.behaviour ? <p className="bob-roadmap-muted">{goal.behaviour}</p> : null}
+                        {goal?.acceptance ? <p className="bob-roadmap-muted">{goal.acceptance}</p> : null}
+                        {goal?.deadline ? <p className="bob-roadmap-muted">By {formatDeadline(goal.deadline)}</p> : null}
+                        <Progress
+                          className="bob-roadmap-progress"
+                          value={progress.done}
+                          minValue={0}
+                          maxValue={Math.max(progress.total, 1)}
+                          aria-label="Work orders done toward the goal"
+                        />
+                        <p className="bob-roadmap-earned">
+                          {progress.done} of {progress.total} work orders done
+                          {progress.followUps > 0 ? ` · ${progress.followUps} follow-up${progress.followUps === 1 ? "" : "s"}` : null}
                         </p>
-                      ) : null}
-                      {goal?.why ? <p className="bob-roadmap-muted">{goal.why}</p> : null}
-                      {goal?.user ? <p className="bob-roadmap-muted">{forUserLine(goal.user)}</p> : null}
-                      {goal?.behaviour ? <p className="bob-roadmap-muted">{goal.behaviour}</p> : null}
-                      {goal?.acceptance ? <p className="bob-roadmap-muted">{goal.acceptance}</p> : null}
-                      {goal?.deadline ? <p className="bob-roadmap-muted">By {formatDeadline(goal.deadline)}</p> : null}
-                      <Progress
-                        className="bob-roadmap-progress"
-                        value={progress.done}
-                        minValue={0}
-                        maxValue={Math.max(progress.total, 1)}
-                        aria-label="Work orders done toward the goal"
-                      />
-                      <p className="bob-roadmap-earned">
-                        {progress.done} of {progress.total} work orders done
-                        {progress.followUps > 0 ? ` · ${progress.followUps} follow-up${progress.followUps === 1 ? "" : "s"}` : null}
-                      </p>
+                      </Card>
 
-                      <section className="bob-roadmap-section">
-                        <h4 className="bob-roadmap-label">Today</h4>
+                      <Card className="bob-roadmap-card">
+                        <h3 className="bob-roadmap-label">Today</h3>
                         <ul className="bob-roadmap-list">
                           {track.today.length === 0 ? <li className="bob-roadmap-muted">No work orders for today yet.</li> : null}
                           {track.today.slice(0, 3).map((order) => {
@@ -167,10 +176,15 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                             );
                           })}
                         </ul>
-                      </section>
+                      </Card>
 
-                      {stages(track)}
-                    </Card>
+                      {steps.length > 0 ? (
+                        <Card className="bob-roadmap-card">
+                          <h3 className="bob-roadmap-label">Roadmap</h3>
+                          {timeline(track, steps)}
+                        </Card>
+                      ) : null}
+                    </Fragment>
                   );
                 })
               : null}
