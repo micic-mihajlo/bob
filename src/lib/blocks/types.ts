@@ -167,3 +167,5 @@ export interface BlockHost {
   answerOf: (blockId: string) => AnsweredBlock | undefined;
   onAnswer: (answer: AnsweredBlock) => void;
 }
+
+export { parseReply } from "./parse-reply";

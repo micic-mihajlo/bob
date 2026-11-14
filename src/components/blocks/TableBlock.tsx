@@ -1,22 +1,12 @@
 "use client";
 
-import { Check, X } from "lucide-react";
 import { useMemo } from "react";
 import { parseInline } from "@/lib/blocks/inline";
-import { isComparison, markOf, tableToCsv } from "@/lib/blocks/table";
+import { isComparison, tableToCsv } from "@/lib/blocks/table";
 import type { TableBlock as TableData } from "@/lib/blocks/types";
 import { CopyButton } from "./CopyButton";
 import { InlineView } from "./InlineView";
-
-function Mark({ cell }: { cell: string }) {
-  const mark = markOf(cell);
-  if (mark === null) return <InlineView nodes={parseInline(cell)} />;
-  return (
-    <span className="blk-mark" data-mark={mark} role="img" aria-label={mark === "yes" ? "Yes" : "No"}>
-      {mark === "yes" ? <Check size={12} strokeWidth={2.5} aria-hidden="true" /> : <X size={12} strokeWidth={2.5} aria-hidden="true" />}
-    </span>
-  );
-}
+import { TableMark } from "./TableMark";
 
 export function TableBlock({ table }: { table: TableData }) {
   const comparison = useMemo(() => isComparison(table), [table]);
@@ -45,7 +35,7 @@ export function TableBlock({ table }: { table: TableData }) {
                     </th>
                   ) : (
                     <td key={column} data-align={table.align[column] ?? undefined}>
-                      {comparison ? <Mark cell={cell} /> : <InlineView nodes={parseInline(cell)} />}
+                      {comparison ? <TableMark cell={cell} /> : <InlineView nodes={parseInline(cell)} />}
                     </td>
                   ),
                 )}

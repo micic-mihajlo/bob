@@ -62,7 +62,19 @@ function finish(draft: Draft): DiffFile {
   };
 }
 
-/** Reads one hunk by its `@@` counts, so a removed line that starts with `--` is not a header. */
+/** A `diff --git` line, a hunk header, or a `---`/`+++` pair that a hunk header follows. */
+function startsHeader(lines: readonly string[], index: number): boolean {
+  const line = lines[index] ?? "";
+  if (line.startsWith("diff --git ") || line.startsWith("@@")) return true;
+  return line.startsWith("--- ") && (lines[index + 1] ?? "").startsWith("+++ ") && (lines[index + 2] ?? "").startsWith("@@");
+}
+
+const KIND_OF_SIGN: Record<string, DiffLineKind> = { "+": "add", "-": "del", " ": "context" };
+
+/**
+ * Reads one hunk. Agents often write wrong `@@` counts, so prefixed lines are read until the next
+ * header; the counts only decide whether a bare empty line is a context line or the hunk's end.
+ */
 function readHunk(lines: readonly string[], start: number): { hunk: DiffHunk; next: number } | null {
   const found = HUNK_HEADER.exec(lines[start] ?? "");
   if (!found) return null;
@@ -74,33 +86,28 @@ function readHunk(lines: readonly string[], start: number): { hunk: DiffHunk; ne
   let newNo = newStart;
   let body: DiffLine[] = [];
   let index = start + 1;
-  const take = (line: DiffLine) => {
-    body = [...body, line];
-  };
-  while (index < lines.length) {
+  while (index < lines.length && !startsHeader(lines, index)) {
     const line = lines[index] ?? "";
-    const sign = line.charAt(0);
-    if (sign === "\\") {
-      const last = body[body.length - 1];
+    const last = body[body.length - 1];
+    if (line.startsWith("\\")) {
       if (last) body = [...body.slice(0, -1), { ...last, noNewline: true }];
-    } else if (oldLeft <= 0 && newLeft <= 0) {
-      break;
-    } else if (sign === "+" && newLeft > 0) {
-      take({ kind: "add", text: line.slice(1), oldNo: null, newNo, noNewline: false });
-      newLeft -= 1;
-      newNo += 1;
-    } else if (sign === "-" && oldLeft > 0) {
-      take({ kind: "del", text: line.slice(1), oldNo, newNo: null, noNewline: false });
+      index += 1;
+      continue;
+    }
+    const blankContext = line === "" && oldLeft > 0 && newLeft > 0 && index < lines.length - 1;
+    const kind = blankContext ? "context" : KIND_OF_SIGN[line.charAt(0)];
+    if (kind === undefined) break;
+    body = [
+      ...body,
+      { kind, text: line.slice(1), oldNo: kind === "add" ? null : oldNo, newNo: kind === "del" ? null : newNo, noNewline: false },
+    ];
+    if (kind !== "add") {
       oldLeft -= 1;
       oldNo += 1;
-    } else if ((sign === " " || line === "") && oldLeft > 0 && newLeft > 0) {
-      take({ kind: "context", text: line.slice(1), oldNo, newNo, noNewline: false });
-      oldLeft -= 1;
+    }
+    if (kind !== "del") {
       newLeft -= 1;
-      oldNo += 1;
       newNo += 1;
-    } else {
-      break;
     }
     index += 1;
   }
@@ -109,7 +116,6 @@ function readHunk(lines: readonly string[], start: number): { hunk: DiffHunk; ne
 
 const EMPTY: Draft = { oldPath: null, newPath: null, renamed: false, binary: false, hunks: [] };
 
-/** Applies one git extended header line, such as `rename from`, to the file being read. */
 function applyHeader(draft: Draft, line: string): Draft {
   if (line.startsWith("new file mode")) return { ...draft, oldPath: null };
   if (line.startsWith("deleted file mode")) return { ...draft, newPath: null };

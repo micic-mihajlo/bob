@@ -73,6 +73,24 @@ describe("parsePatch", () => {
     expect(plain.map((file) => [file.oldPath, file.newPath, file.status])).toEqual([["a.txt", "b.txt", "renamed"]]);
   });
 
+  it("keeps lines past an under-counted hunk header and stops at the next file", () => {
+    const patch = "--- a/x.ts\n+++ b/x.ts\n@@ -1 +1 @@\n-a\n+b\n+c\n context\n--- a/y.ts\n+++ b/y.ts\n@@ -1 +1 @@\n-y\n+z\n";
+    const [first, second] = parsePatch(patch);
+    expect(first?.hunks[0]?.lines.map((line) => [line.kind, line.text, line.oldNo, line.newNo])).toEqual([
+      ["del", "a", 1, null],
+      ["add", "b", null, 1],
+      ["add", "c", null, 2],
+      ["context", "context", 2, 3],
+    ]);
+    expect(second?.newPath).toBe("y.ts");
+    expect(second?.hunks[0]?.lines).toHaveLength(2);
+  });
+
+  it("does not invent a blank line when the header over-counts", () => {
+    const [file] = parsePatch("--- a/x\n+++ b/x\n@@ -1,5 +1,5 @@\n-a\n+b\n");
+    expect(file?.hunks[0]?.lines.map((line) => line.kind)).toEqual(["del", "add"]);
+  });
+
   it("tells a patch from text that only looks like one", () => {
     expect(isPatch(PATCH)).toBe(true);
     expect(isPatch("+ added a thing\n- removed a thing")).toBe(false);

@@ -1,36 +1,16 @@
-import { CircleCheck, Clock3 } from "lucide-react";
 import { useId, type ReactNode } from "react";
 import type { BlockStatus } from "@/lib/blocks/types";
-
-/** The line under a settled block: the answer with a check, or that the question expired. */
-export function BlockOutcome({ status, title, children }: { status: BlockStatus; title?: string; children?: ReactNode }) {
-  if (status === "pending") return null;
-  const answered = status === "answered";
-  return (
-    <p className="blk-outcome" role="status">
-      {answered ? (
-        <CircleCheck className="icon icon-answered" size={14} aria-hidden="true" />
-      ) : (
-        <Clock3 className="icon icon-expired" size={14} aria-hidden="true" />
-      )}
-      <span className="blk-outcome-text">
-        {title ? <span className="blk-outcome-title">{title} · </span> : null}
-        {answered ? children : "Expired before an answer"}
-      </span>
-    </p>
-  );
-}
+import { BlockOutcome } from "./BlockOutcome";
 
 interface BlockCardProps {
   title: string;
   status: BlockStatus;
-  /** Shows only the outcome line, for blocks that freeze into one line. */
+  /** Only the outcome line, for a block that freezes to one line once answered. */
   collapsed?: boolean;
   outcome?: ReactNode;
   children?: ReactNode;
 }
 
-/** The frame of an interactive block: a title, the controls, and once settled the outcome. */
 export function BlockCard({ title, status, collapsed = false, outcome, children }: BlockCardProps) {
   const titleId = useId();
   if (collapsed) {

@@ -1,23 +1,8 @@
-/* The box is a manual popover, so full screen lifts it into the top layer without moving the frame,
-   which would reload the page. Until then it has none of the browser's popover styles. */
+/* Full screen promotes this box with the popover API in place; moving the frame would reload the page. */
 .blk-visual {
   position: relative;
   min-width: 0;
   max-width: min(var(--chat-width), 100%);
-}
-
-.blk-visual[popover]:not(:popover-open) {
-  position: relative;
-  inset: auto;
-  display: block;
-  width: auto;
-  height: auto;
-  margin: 0;
-  overflow: visible;
-  border: 0;
-  padding: 0;
-  background: var(--color-transparent);
-  color: inherit;
 }
 
 .blk-visual:not(:popover-open) > .blk-visual-surface {

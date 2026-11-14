@@ -140,7 +140,6 @@
   }
 }
 
-/* A held button fills from the left while it is held. */
 .blk-hold {
   user-select: none;
   touch-action: none;
@@ -169,7 +168,6 @@
   position: relative;
 }
 
-/* Confirm preview */
 .blk-preview {
   max-height: calc(var(--leading-md) * 16 + var(--gap-3) * 2);
   overflow-y: auto;
@@ -196,4 +194,12 @@
 .blk-preview-toggle {
   align-self: flex-start;
   margin-top: calc(var(--gap-2) * -1);
+}
+
+/* The global reduced-motion rule would leave a 1ms transition; the fill should not move at all. */
+@media (prefers-reduced-motion: reduce) {
+  .blk-hold-fill,
+  .blk-hold[data-holding] .blk-hold-fill {
+    transition: none !important;
+  }
 }

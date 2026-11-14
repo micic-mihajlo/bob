@@ -52,7 +52,6 @@ function delimited(marker: string, type: "strong" | "em" | "del"): Rule {
   };
 }
 
-/** The index of the `)` that balances the `(` at `open`, or -1. */
 function closingParen(text: string, open: number): number {
   let depth = 0;
   for (let index = open; index < text.length; index += 1) {

@@ -16,15 +16,12 @@ interface HoldButtonProps {
   children: ReactNode;
 }
 
-/**
- * Confirms after a full hold, or after a click and a second click. A plain click only arms it:
- * taps, screen readers and switch access send clicks, and a stray one must not confirm.
- */
+/** Assistive tech can only click, never hold, so two clicks are an equal path to confirm. */
 export function HoldButton({ holdMs, variant, disabled, describedBy, onConfirm, armedLabel, children }: HoldButtonProps) {
   const [holding, setHolding] = useState(false);
   const [armed, setArmed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // The click that ends a full hold is not a first click.
+  // Releasing after a completed hold also fires click; this swallows it.
   const completed = useRef(false);
 
   function cancel(): void {

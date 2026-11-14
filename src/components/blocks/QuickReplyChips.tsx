@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import type { AnswerByKind, InteractiveProps, QuickRepliesBlock } from "@/lib/blocks/types";
-import { BlockOutcome } from "./BlockCard";
+import { BlockOutcome } from "./BlockOutcome";
 
 type Answer = AnswerByKind["quick_replies"];
 
-/** A row of reply chips with no card: once one is picked it stays marked and the rest fade. */
 export function QuickReplyChips({ block, status, answer, onAnswer }: { block: QuickRepliesBlock } & InteractiveProps<"quick_replies">) {
   const [local, setLocal] = useState<Answer | null>(null);
   const chosen = answer ?? local;

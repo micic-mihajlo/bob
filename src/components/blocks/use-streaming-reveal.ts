@@ -5,7 +5,6 @@ import { nextReveal, REVEAL_TIMING, type RevealChunk } from "@/lib/blocks/reveal
 
 export interface StreamingReveal {
   shown: number;
-  /** The recent steps, still fading in. */
   trail: readonly RevealChunk[];
 }
 

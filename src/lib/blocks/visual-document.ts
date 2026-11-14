@@ -3,7 +3,7 @@ export const VISUAL_HEIGHT = { min: 80, initial: 240, max: 600 } as const;
 /** Tags every message the frame's script posts, so the parent can tell them from other messages. */
 export const VISUAL_MESSAGE_SOURCE = "blocks-visual";
 
-/** The variables a visual page can use, and the app tokens that give their values. */
+/** Page variable name, then the app token it is read from. */
 export const VISUAL_THEME_TOKENS: ReadonlyArray<readonly [string, string]> = [
   ["--fg", "--color-ink"],
   ["--fg-secondary", "--color-ink-secondary"],
@@ -56,17 +56,19 @@ function themeStyle(theme: VisualTheme): string {
 
 const REPORTER = `<script>(()=>{const post=(m)=>parent.postMessage(Object.assign({source:${JSON.stringify(
   VISUAL_MESSAGE_SOURCE,
-)}},m),"*");let last=-1;const report=()=>{const b=document.body;if(!b)return;const h=Math.ceil(b.getBoundingClientRect().bottom+parseFloat(getComputedStyle(b).marginBottom||"0"));if(h!==last){last=h;post({type:"size",height:h});}};const start=()=>{report();new ResizeObserver(report).observe(document.body);};if(document.body)start();else addEventListener("DOMContentLoaded",start);addEventListener("load",report);addEventListener("keydown",(e)=>{if(e.key==="Escape")post({type:"escape"});});})();</script>`;
+)}},m),"*");let last=-1;const report=()=>{const b=document.body;if(!b)return;const h=Math.ceil(b.getBoundingClientRect().bottom+parseFloat(getComputedStyle(b).marginBottom||"0"));if(h>0&&h!==last){last=h;post({type:"size",height:h});}};const start=()=>{report();new ResizeObserver(report).observe(document.body);};if(document.body)start();else addEventListener("DOMContentLoaded",start);addEventListener("load",report);addEventListener("resize",report);addEventListener("keydown",(e)=>{if(e.key==="Escape")post({type:"escape"});});})();</script>`;
 
 /**
- * The page the frame loads: the agent's HTML with the theme variables and a script that reports
- * its height and forwards Escape, because a key pressed inside the frame never reaches the app.
+ * The agent's HTML plus theme variables and a reporter script. Escape is forwarded because keys
+ * pressed inside the frame never reach the app. A frame that loads off screen or hidden can measure
+ * its body as zero until the browser renders it, so a zero is never reported; the resize observer
+ * sends the real height once it renders.
  */
 export function buildVisualDocument(html: string, theme: VisualTheme): string {
   const head = `<meta charset="utf-8">${themeStyle(theme)}${REPORTER}`;
-  const headTag = /<head[^>]*>/i.exec(html);
+  const headTag = /<head(?:\s[^>]*)?>/i.exec(html);
   if (headTag) return html.replace(headTag[0], () => `${headTag[0]}${head}`);
-  const htmlTag = /<html[^>]*>/i.exec(html);
+  const htmlTag = /<html(?:\s[^>]*)?>/i.exec(html);
   if (htmlTag) return html.replace(htmlTag[0], () => `${htmlTag[0]}<head>${head}</head>`);
   return `<!doctype html><html><head>${head}</head><body>${html}</body></html>`;
 }

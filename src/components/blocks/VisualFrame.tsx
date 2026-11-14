@@ -8,10 +8,6 @@ import { useVisualTheme } from "./use-visual-theme";
 /** No `allow-same-origin`: the page gets an opaque origin and can only talk to the app by message. */
 const SANDBOX = "allow-scripts";
 
-/**
- * An agent's HTML page in a sandboxed frame that fits its content up to a cap. Full screen lifts
- * the box into the top layer in place, so the page keeps its state.
- */
 export function VisualFrame({ title, html }: { title: string; html: string }) {
   const theme = useVisualTheme();
   const page = useMemo(() => (theme ? buildVisualDocument(html, theme) : null), [html, theme]);
@@ -40,7 +36,11 @@ export function VisualFrame({ title, html }: { title: string; html: string }) {
         exit();
       }
     };
-    const onToggle = () => setFullscreen(element.matches(":popover-open"));
+    const onToggle = () => {
+      const open = element.matches(":popover-open");
+      if (!open) element.removeAttribute("popover");
+      setFullscreen(open);
+    };
     const onBackdrop = (event: MouseEvent) => {
       if (event.target === element) exit();
     };
@@ -64,10 +64,19 @@ export function VisualFrame({ title, html }: { title: string; html: string }) {
     wasFullscreen.current = fullscreen;
   }, [fullscreen]);
 
+  // The popover attribute is set only while full screen: until the kit's CSS loads, the browser's
+  // own popover style hides the box, and a frame that loads hidden measures its page as empty.
+  function enterFullscreen(): void {
+    const element = box.current;
+    if (!element || element.matches(":popover-open")) return;
+    element.popover = "manual";
+    element.showPopover();
+  }
+
   const height = clampVisualHeight(reported);
 
   return (
-    <div ref={box} className="blk-visual" popover="manual" aria-label={fullscreen ? title : undefined} role={fullscreen ? "dialog" : undefined} aria-modal={fullscreen || undefined}>
+    <div ref={box} className="blk-visual" aria-label={fullscreen ? title : undefined} role={fullscreen ? "dialog" : undefined} aria-modal={fullscreen || undefined}>
       <section className="blk-visual-surface">
         {fullscreen ? (
           <header className="blk-visual-header">
@@ -92,7 +101,7 @@ export function VisualFrame({ title, html }: { title: string; html: string }) {
           />
         )}
       </section>
-      <button ref={expand} type="button" className="blk-icon-btn blk-visual-expand" aria-label={`Open ${title} full screen`} onClick={() => box.current?.showPopover()}>
+      <button ref={expand} type="button" className="blk-icon-btn blk-visual-expand" aria-label={`Open ${title} full screen`} onClick={enterFullscreen}>
         <Maximize2 className="icon" size={12} aria-hidden="true" />
       </button>
     </div>

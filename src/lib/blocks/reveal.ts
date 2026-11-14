@@ -1,10 +1,9 @@
-/** Timings for the word-by-word reveal of a streaming reply. */
 export const REVEAL_TIMING = {
   stepMs: 40,
   fadeMs: 300,
   /** How far behind the received text the shown text may fall before it speeds up. */
   catchUpMs: 400,
-  /** The slowest speed, so the last words of a backlog do not crawl. */
+  /** A floor on speed, for when the backlog is small. */
   minCharsPerSecond: 120,
 } as const;
 
@@ -24,10 +23,7 @@ export interface RevealStep {
 
 const WORD = /\s*\S+\s+/y;
 
-/**
- * Advances the shown length by whole words. The budget grows with the backlog, so the shown text
- * stays about `catchUpMs` behind the received text however fast it arrives.
- */
+/** Shows whole words only, at a rate proportional to the backlog, so the lag stays near `catchUpMs`. */
 export function nextReveal(input: RevealInput, timing = REVEAL_TIMING): RevealStep {
   const { target, streaming } = input;
   const backlog = target.length - input.shown;
@@ -40,13 +36,13 @@ export function nextReveal(input: RevealInput, timing = REVEAL_TIMING): RevealSt
     word.lastIndex = shown;
     const found = word.exec(target);
     if (!found) {
-      // The rest is one word with nothing after it: it waits while it may still grow.
+      // No whitespace after the final word yet, so it may be cut mid-word: hold it until the stream ends.
       return streaming ? { shown, budget: Math.min(budget, 0) } : { shown: target.length, budget: 0 };
     }
     shown += found[0].length;
     budget -= found[0].length;
   }
-  // A long word, such as a URL, overshoots. Owe at most one minimum step, so the next words do not stall.
+  // Capping the debt keeps one very long token from freezing the reveal for several steps.
   return { shown, budget: Math.max(budget, -minimum) };
 }
 

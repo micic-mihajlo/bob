@@ -2,49 +2,14 @@
 
 import { useId } from "react";
 import type { FormField } from "@/lib/blocks/types";
+import { FieldLabel } from "./FieldLabel";
+import { FieldNotes } from "./FieldNotes";
 
 interface FormFieldInputProps {
   field: FormField;
   value: string;
   error: string | undefined;
   onChange: (value: string) => void;
-}
-
-function Label({ field, htmlFor }: { field: FormField; htmlFor?: string }) {
-  const content = (
-    <>
-      {field.label}
-      {field.required ? (
-        <span className="blk-required" aria-hidden="true">
-          *
-        </span>
-      ) : null}
-    </>
-  );
-  return htmlFor ? (
-    <label className="blk-field-label" htmlFor={htmlFor}>
-      {content}
-    </label>
-  ) : (
-    <legend className="blk-field-label">{content}</legend>
-  );
-}
-
-function Notes({ field, error, hintId, errorId }: { field: FormField; error?: string; hintId: string; errorId: string }) {
-  return (
-    <>
-      {field.hint && !error ? (
-        <p id={hintId} className="blk-field-hint">
-          {field.hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p id={errorId} className="blk-field-error">
-          {error}
-        </p>
-      ) : null}
-    </>
-  );
 }
 
 export function FormFieldInput({ field, value, error, onChange }: FormFieldInputProps) {
@@ -64,7 +29,7 @@ export function FormFieldInput({ field, value, error, onChange }: FormFieldInput
   if (field.type === "segmented") {
     return (
       <fieldset className="blk-field" data-invalid={error ? "" : undefined} aria-describedby={describedBy}>
-        <Label field={field} />
+        <FieldLabel field={field} />
         <div className="blk-segmented" role="group" aria-label={field.label}>
           {field.options.map((option, index) => (
             <button
@@ -79,14 +44,14 @@ export function FormFieldInput({ field, value, error, onChange }: FormFieldInput
             </button>
           ))}
         </div>
-        <Notes field={field} error={error} hintId={hintId} errorId={errorId} />
+        <FieldNotes field={field} error={error} hintId={hintId} errorId={errorId} />
       </fieldset>
     );
   }
 
   return (
     <div className="blk-field" data-invalid={error ? "" : undefined}>
-      <Label field={field} htmlFor={inputId} />
+      <FieldLabel field={field} htmlFor={inputId} />
       {field.type === "textarea" ? (
         <textarea {...common} value={value} placeholder={field.placeholder} rows={3} onChange={(event) => onChange(event.target.value)} />
       ) : field.type === "select" ? (
@@ -113,7 +78,7 @@ export function FormFieldInput({ field, value, error, onChange }: FormFieldInput
           onChange={(event) => onChange(event.target.value)}
         />
       )}
-      <Notes field={field} error={error} hintId={hintId} errorId={errorId} />
+      <FieldNotes field={field} error={error} hintId={hintId} errorId={errorId} />
     </div>
   );
 }

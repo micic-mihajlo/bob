@@ -27,7 +27,6 @@ export function ChoiceCard({ block, status, answer, onAnswer }: { block: ChoiceB
 
   function submit(): void {
     if (locked || picked.length === 0) return;
-    // The answer lists options in the order the block shows them, not the order they were clicked.
     const value = { selected: block.options.filter((option) => picked.includes(option.id)).map((option) => option.id) };
     setLocal(value);
     onAnswer(value);

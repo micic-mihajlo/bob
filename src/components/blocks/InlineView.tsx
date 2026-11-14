@@ -1,6 +1,5 @@
 import type { Inline } from "@/lib/blocks/inline";
 
-/** Renders parsed inline markdown as React elements; no HTML from the reply reaches the DOM. */
 export function InlineView({ nodes }: { nodes: readonly Inline[] }) {
   return nodes.map((node, index) => {
     switch (node.type) {

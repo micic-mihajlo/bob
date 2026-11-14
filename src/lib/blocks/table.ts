@@ -51,7 +51,7 @@ export function readTable(lines: readonly string[], start: number): { table: Tab
   if (!head.includes("|") || /^\s/.test(head)) return null;
   const header = splitRow(head);
   const align = separatorAligns(lines[start + 1] ?? "", header.length);
-  if (!align || header.length < 1) return null;
+  if (!align || header.length < 2) return null;
   const end = lines.findIndex((line, index) => index > start + 1 && (line.trim() === "" || !line.includes("|")));
   const next = end < 0 ? lines.length : end;
   const rows = lines.slice(start + 2, next).map((line) => {

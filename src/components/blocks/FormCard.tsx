@@ -5,21 +5,9 @@ import { cleanValues, fieldError, formErrors, type FormErrors, type FormValues }
 import type { AnswerByKind, FormBlock, InteractiveProps } from "@/lib/blocks/types";
 import { BlockCard } from "./BlockCard";
 import { FormFieldInput } from "./FormFieldInput";
+import { FormSummary } from "./FormSummary";
 
 type Answer = AnswerByKind["form"];
-
-function Summary({ block, values }: { block: FormBlock; values: Readonly<Record<string, string>> }) {
-  return (
-    <dl className="blk-summary">
-      {block.fields.map((field) => (
-        <div key={field.id}>
-          <dt>{field.label}</dt>
-          <dd>{values[field.id] ?? "—"}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
 
 export function FormCard({ block, status, answer, onAnswer }: { block: FormBlock } & InteractiveProps<"form">) {
   const [values, setValues] = useState<FormValues>({});
@@ -31,10 +19,11 @@ export function FormCard({ block, status, answer, onAnswer }: { block: FormBlock
   if (chosen !== null) {
     return (
       <BlockCard title={block.title} status="answered" outcome="Sent">
-        <Summary block={block} values={chosen.values} />
+        <FormSummary block={block} values={chosen.values} />
       </BlockCard>
     );
   }
+  if (settled === "answered") return <BlockCard title={block.title} status="answered" collapsed />;
 
   function change(id: string, value: string): void {
     setValues({ ...values, [id]: value });

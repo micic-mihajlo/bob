@@ -148,3 +148,12 @@
     color: var(--color-ink);
   }
 }
+
+/* These sit inside clipped boxes, so an outside ring would be cut off. */
+.blk-code-body:focus-visible,
+.blk-diff-toggle:focus-visible,
+.blk-diff-scroll:focus-visible,
+.blk-table-scroll:focus-visible,
+.blk-preview:focus-visible {
+  box-shadow: var(--focus-ring-inset);
+}

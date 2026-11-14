@@ -2,10 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
-/**
- * A long preview stops at about 16 lines and scrolls. The button under it is there only when the
- * text is cut off, because a hidden scroll bar does not say that more text is there.
- */
+/** macOS hides scroll bars, so an explicit toggle is the only cue that the preview is truncated. */
 export function ConfirmPreview({ text }: { text: string }) {
   const id = useId();
   const box = useRef<HTMLDivElement>(null);
