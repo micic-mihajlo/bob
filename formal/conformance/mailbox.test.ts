@@ -12,13 +12,21 @@ const BUDGET = 12;
 const REQ = "req_formal";
 const REPLY = "Status: done\nResult: Looked at it.\nEvidence: none";
 
-/** BobFormal.Mailbox.accepts, written against the real state. */
+/** BobFormal.Mailbox.Box.owed for one agent: unanswered deliveries to it of agent asks. */
+const owedTo = (s: State, agentId: string) =>
+  s.deliveries.filter((d) => {
+    const m = messageById(s, d.messageId);
+    return d.recipientAgentId === agentId && !d.answered && !!m?.expectsReply && m.from.kind === "agent";
+  });
+
+/** BobFormal.Mailbox.accepts and answersOwed, written against the real state. */
 function modelAccepts(s: State, i: SendInput): boolean {
   const to = [...new Set(i.to)];
   if (to.length === 0) return false;
   if (i.from.kind === "agent" && to.includes(i.from.agentId)) return false;
   if (i.replyTo && i.expectsReply) return false;
   if (i.replyTo && !messageById(s, i.replyTo)) return false;
+  if (i.replyTo && i.from.kind === "agent" && !owedTo(s, i.from.agentId).some((d) => d.messageId === i.replyTo)) return false;
   return !(i.from.kind === "agent" && !i.replyTo && budgetUsed(s, i.requestId) + to.length > BUDGET);
 }
 
@@ -39,19 +47,15 @@ function counters(s: State) {
   };
 }
 
-/** A random send that follows the factory's reply rule: a reply answers one owed ask, to the asker. */
+/** A random send. Replies go back to the sender of the replied-to message, as `route` does, and are sometimes not owed. */
 function randomSend(s: State, rand: () => number, ids: string[]): SendInput {
   const sender = pick(rand, ids);
   const causedBy = s.messages.length > 0 ? pick(rand, s.messages).id : null;
-  const owed = s.deliveries.filter((d) => {
-    const m = messageById(s, d.messageId);
-    return d.recipientAgentId === sender && !d.answered && !!m?.expectsReply && m.from.kind === "agent";
-  });
+  const owed = owedTo(s, sender);
   const base = { from: { kind: "agent" as const, agentId: sender }, causedBy, requestId: REQ };
-  if (owed.length > 0 && rand() < 0.5) {
-    const ask = messageById(s, pick(rand, owed).messageId) as Message;
-    const asker = ask.from.kind === "agent" ? ask.from.agentId : sender;
-    return { ...base, to: [asker], text: REPLY, replyTo: ask.id, expectsReply: rand() < 0.1 };
+  const replyTo = owed.length > 0 && rand() < 0.5 ? messageById(s, pick(rand, owed).messageId) : s.messages.length > 0 && rand() < 0.2 ? pick(rand, s.messages) : undefined;
+  if (replyTo?.from.kind === "agent" && replyTo.from.agentId !== sender) {
+    return { ...base, to: [replyTo.from.agentId], text: REPLY, replyTo: replyTo.id, expectsReply: rand() < 0.1 };
   }
   return { ...base, to: subset(rand, ids), text: "Please look at this.", replyTo: null, expectsReply: rand() < 0.6 };
 }
@@ -81,17 +85,15 @@ describe("mailbox conforms to BobFormal.Mailbox", () => {
     }
   });
 
-  it("known gap (send_message_replies_unbounded): two teammates can answer each other's replies past the bound", () => {
+  it("ping_pong_stops: a teammate cannot answer a reply, so the ping-pong ends after one answer", () => {
     const ctx = (agentId: string, causedBy: string | null) => ({ agentId, turnId: "turn_formal", requestId: REQ, causedBy });
     const first = sendMessage({ recipientAgentIds: ["reviewer"], text: "Can you check this?" }, ctx("coder", null));
-    let last = String(first.result.messageId);
-    let replier = "reviewer";
-    for (let k = 1; k <= 40; k++) {
-      const out = sendMessage({ recipientAgentIds: [], text: REPLY, replyToMessageId: last }, ctx(replier, last));
-      expect(out.result.error).toBeUndefined();
-      last = String(out.result.messageId);
-      replier = replier === "reviewer" ? "coder" : "reviewer";
-    }
-    expect(budgetUsed(getState(), REQ)).toBeGreaterThan(2 * BUDGET);
+    const answer = sendMessage({ recipientAgentIds: [], text: REPLY, replyToMessageId: String(first.result.messageId) }, ctx("reviewer", String(first.result.messageId)));
+    expect(answer.result.error).toBeUndefined();
+    const again = sendMessage({ recipientAgentIds: [], text: REPLY, replyToMessageId: String(first.result.messageId) }, ctx("reviewer", String(first.result.messageId)));
+    expect(String(again.result.error)).toMatch(/not waiting for your answer/);
+    const back = sendMessage({ recipientAgentIds: [], text: REPLY, replyToMessageId: String(answer.result.messageId) }, ctx("coder", String(answer.result.messageId)));
+    expect(String(back.result.error)).toMatch(/not waiting for your answer/);
+    expect(getState().messages.filter((m) => m.requestId === REQ)).toHaveLength(2);
   });
 });

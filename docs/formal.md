@@ -31,13 +31,14 @@ Mirrors `openPullRequestTool`, `recordReview` and `mergePullRequestTool` in `src
 
 ### Loop termination (`formal/BobFormal/Mailbox.lean`)
 
-Mirrors `applySend`, `validate`, `overBudget`, `budgetUsed` and `markAnswered` in `src/lib/mailbox.ts`, `planRelays` in `src/lib/relay.ts` and `report` in `src/lib/tools/report.ts`.
+Mirrors `applySend`, `validate`, `overBudget`, `budgetUsed`, `answersOwedAsk` and `markAnswered` in `src/lib/mailbox.ts`.
 
 - `first_sends_within_budget`: in one request, agents start at most 12 deliveries of new work.
-- `deliveries_bounded`: when every reply answers one owed ask, a request sees at most 24 agent deliveries, so every message cascade ends.
+- `deliveries_bounded`: a request sees at most 24 agent deliveries, because every reply must answer one unanswered ask, so every message cascade ends.
 - `agent_messages_bounded`: at most 24 agent messages are accepted in one request, and after that every agent send is refused.
+- `ping_pong_stops`: two teammates cannot keep answering each other's replies: after the one answer an ask is owed, a reply to a reply is refused.
 
-The captain and crew threads only reply through the automatic relay and `report`, and both answer one unanswered ask addressed to them, so the bound covers the factory path.
+The mailbox enforces the reply rule for every sender: `send_message`, the automatic relay and `report` all go through it.
 
 ### Stage order (`formal/BobFormal/Roadmap.lean`)
 
@@ -58,10 +59,10 @@ The mailbox itself does not check `causedBy`; the proof relies on every caller p
 
 ## Gaps the proofs found
 
-The first versions of these models found two gaps, each proved as a theorem and reproduced against the real code by a test named after it.
+The first versions of these models found two gaps, each proved as a counterexample and reproduced against the real code. Both are fixed, and the theorems and tests named below now prove the fixed rules.
 
 - Fixed: the approval used to record the pull request but not its head, so commits the build thread pushed and re-opened after the person was asked were what merged. Approvals now store `headSha` when `requestApproval` creates them, and `approvalRefusal` refuses the merge once the head has moved, asking for a new approval. `head_swap_refused` and `merge_needs_approval` prove the fixed rule.
-- Open: `send_message_replies_unbounded`: replies are exempt from the budget, and `route` in `src/lib/tools/messaging.ts` only checks that the replied-to message was sent to you. Two teammates a person added can answer each other's replies forever (the test sends 40 in one request). Captain and crew threads cannot do this, since they reply only through the relay and `report`.
+- Fixed: replies are exempt from the budget, and `send_message` used to accept a reply to any message sent to you, so two teammates a person added could answer each other's replies forever. The mailbox now accepts a reply only when it answers an unanswered ask sent to the replier, and only back to the asker (`answersOwedAsk`, refusal code `reply_not_owed`), which is the rule the relay already followed. `deliveries_bounded` now covers every sender, and `ping_pong_stops` proves the old loop is cut after one answer.
 
 ## How the proofs stay tied to the code
 

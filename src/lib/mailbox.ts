@@ -25,6 +25,7 @@ export type SendErrorCode =
   | "self_send"
   | "unknown_recipient"
   | "unknown_reply_target"
+  | "reply_not_owed"
   | "reply_expects_reply"
   | "closed_recipient"
   | "crew_rule"
@@ -82,7 +83,20 @@ function validate(s: State, input: SendInput, to: AgentId[]): SendResult | null 
   if (input.replyTo && !messageById(s, input.replyTo)) {
     return refuse("unknown_reply_target", "That message id does not exist. Use the id from the message you received.");
   }
+  if (input.replyTo && input.from.kind === "agent" && !answersOwedAsk(s, input.from.agentId, input.replyTo, to)) {
+    return refuse(
+      "reply_not_owed",
+      "That message is not waiting for your answer: it asked for no reply, or you already answered it. A reply goes once, to the asker alone. To say more, send a new message without replyToMessageId.",
+    );
+  }
   return null;
+}
+
+/** A reply answers one ask sent to the replier that nobody has answered yet, and goes back to the asker alone. */
+function answersOwedAsk(s: State, replier: AgentId, replyTo: MessageId, to: AgentId[]): boolean {
+  const ask = messageById(s, replyTo);
+  if (!ask?.expectsReply || ask.from.kind !== "agent" || to.length !== 1 || to[0] !== ask.from.agentId) return false;
+  return s.deliveries.some((d) => d.messageId === replyTo && d.recipientAgentId === replier && !d.answered);
 }
 
 const nextQueueOrder = (s: State) => s.deliveries.reduce((max, d) => Math.max(max, d.queueOrder), 0) + 1;
