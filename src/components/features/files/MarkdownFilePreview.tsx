@@ -53,6 +53,7 @@ function BlockView({ block }: { block: Block }) {
             <li key={index} data-checked={item.checked === null ? undefined : String(item.checked)}>
               {item.checked !== null ? <input type="checkbox" checked={item.checked} readOnly disabled aria-label={item.checked ? "Done" : "Not done"} /> : null}{" "}
               <InlineText parts={item.inline} />
+              {item.sublist ? <BlockView block={item.sublist} /> : null}
             </li>
           ))}
         </Tag>
