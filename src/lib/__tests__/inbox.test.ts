@@ -2,6 +2,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { decideApproval, postUserMessage } from "../actions";
 import { setBrainOverride } from "../brain";
 import { addInboxItem, inboxItem, promoteInboxOrder, SAMPLE_INBOX } from "../inbox";
+import { buildSnapshot } from "../snapshot";
 import { messageById } from "../state";
 import { needsYou } from "../thread-status";
 import { getState } from "../store";
@@ -62,6 +63,22 @@ describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_
     await callTool("triage_inbox", { inboxId: added.inboxId, candidates: [{ ...SLOW, user: "the accountant", behaviour: "the invoice list loads in under a second", acceptance: "a test lists 1,000 invoices in under 100 ms" }] }, ctx);
     expect(getState().roadmap.backlog?.map((w) => w.title)).toEqual([CSV.ask, OVERDUE.ask, SLOW.ask]);
     expect(needsYou(getState()).some((n) => n.title.startsWith("Unclear ask"))).toBe(false);
+  });
+
+  it("a reply while an inbox question is open answers that item, unless the person marks it a new request", async () => {
+    const added = addInboxItem(MEETING);
+    if (!added.ok) throw new Error(added.error);
+    await settle();
+    await callTool("triage_inbox", { inboxId: added.inboxId, candidates: [CSV, SLOW] }, asBob(requestOf(added.inboxId)));
+    const item = inboxItem(getState(), added.inboxId)!;
+    expect(buildSnapshot(getState()).answering).toEqual({ agentId: "bob", requestId: requestOf(added.inboxId), ask: SLOW.quote, question: SLOW.question });
+    const fresh = postUserMessage("bob", "Also add a dark mode.", "queue", undefined, true);
+    expect(fresh.ok && messageById(getState(), fresh.messageId)?.continues).toBeFalsy();
+    const answer = postUserMessage("bob", "Searching the list is slow.");
+    const sent = answer.ok ? messageById(getState(), answer.messageId) : undefined;
+    expect(sent?.continues).toBe(item.messageId);
+    expect(sent?.requestId).not.toBe(requestOf(added.inboxId));
+    await settle();
   });
 
   it("a promoted work order builds from a brief whose Why? ends at the quoted line and its source", async () => {
