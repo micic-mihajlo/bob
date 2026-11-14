@@ -24,6 +24,7 @@ import {
 } from "@/lib/client/pull-requests";
 import { useKeyedLoad } from "@/lib/client/use-keyed-load";
 import { useWorkspaceSource } from "@/lib/client/workspace-source";
+import { useDiffComments } from "./DiffComments";
 import type { Agent } from "@/lib/types";
 
 /** Past this, a file shows a note instead of more rows, so one huge file can't stall the panel. */
@@ -36,6 +37,8 @@ const STATE_VARIANT: Record<PullRequestState, BadgeVariant> = {
   merged: "success-light",
   closed: "secondary",
 };
+
+const NO_DIFFS: DiffFile[] = [];
 
 const STATUS_LABEL: Record<DiffFile["status"], string> = { added: "New", deleted: "Deleted", renamed: "Renamed", modified: "Diff" };
 
@@ -92,6 +95,8 @@ export function ChangesPane({ agent, onClose }: { agent: Agent; onClose: () => v
   const name = displayName(agent);
   const totals = changeTotals(view?.files ?? []);
   const patch = pullRequest?.pullRequest.patch ?? (loaded.data?.ok ? loaded.data.patch : undefined);
+  const diffId = (index: number) => `bob-diff-${agent.id}-${index}`;
+  const commentsFor = useDiffComments(pullRequest, view?.diffs ?? NO_DIFFS, diffId, MAX_LINES);
 
   const body = () => {
     if (view === null) {
@@ -145,11 +150,12 @@ export function ChangesPane({ agent, onClose }: { agent: Agent; onClose: () => v
           return (
             <CodeBlock
               key={diff.path}
-              id={`bob-diff-${agent.id}-${index}`}
+              id={diffId(index)}
               filename={diff.path}
               language={`${STATUS_LABEL[diff.status]} +${counts.additions} −${counts.deletions}`}
               code={diff.lines.map(diffLineText).join("\n")}
               lines={diffLines(diff)}
+              {...commentsFor(index)}
             />
           );
         })}

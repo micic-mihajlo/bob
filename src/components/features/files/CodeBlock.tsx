@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Copy } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 
 export interface CodeToken {
@@ -24,9 +24,12 @@ export function plainCodeLines(code: string): CodeLine[] {
 function useCopy(text: string) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(text);
@@ -51,6 +54,9 @@ export function CodeBlock({
   lines,
   actions,
   id,
+  lineState,
+  onLineClick,
+  afterLine,
 }: {
   code: string;
   language: string;
@@ -59,6 +65,12 @@ export function CodeBlock({
   /** Buttons after Copy. */
   actions?: ReactNode;
   id?: string;
+  /** A line's state for styling, such as selected or pinned, as its data-line-state. */
+  lineState?: (index: number) => string | undefined;
+  /** Makes lines clickable, for selecting them. */
+  onLineClick?: (index: number, event: MouseEvent) => void;
+  /** Rendered under a line, such as a comment pinned to it. */
+  afterLine?: (index: number) => ReactNode;
 }) {
   const { copied, copy } = useCopy(code);
   const shown = lines ?? plainCodeLines(code);
@@ -87,18 +99,21 @@ export function CodeBlock({
       <pre className="message-code-scroll" tabIndex={0}>
         <code>
           {shown.map((line, index) => (
-            <span key={index} className="message-code-line">
-              <span className="message-code-line-number" aria-hidden="true">
-                {line.number ?? ""}
+            <Fragment key={index}>
+              <span className="message-code-line" data-line-state={lineState?.(index)} onClick={onLineClick ? (event) => onLineClick(index, event) : undefined}>
+                <span className="message-code-line-number" aria-hidden="true">
+                  {line.number ?? ""}
+                </span>
+                <span className="message-code-line-source">
+                  {line.tokens.map((token, part) => (
+                    <span key={part} data-code-token={token.type}>
+                      {token.text}
+                    </span>
+                  ))}
+                </span>
               </span>
-              <span className="message-code-line-source">
-                {line.tokens.map((token, part) => (
-                  <span key={part} data-code-token={token.type}>
-                    {token.text}
-                  </span>
-                ))}
-              </span>
-            </span>
+              {afterLine?.(index)}
+            </Fragment>
           ))}
         </code>
       </pre>

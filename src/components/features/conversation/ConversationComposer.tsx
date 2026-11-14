@@ -16,6 +16,7 @@ import { QuickActions } from "./AgentChatEmptyState";
 import { AwaitingReplies, type AwaitingReplyItem } from "./AwaitingReplies";
 import { ComposerEditor } from "./ComposerEditor";
 import { ComposerErrorBanner } from "./ComposerErrorBanner";
+import { useDraft } from "./composer-drafts";
 import { expandComposerMentions } from "./composer-tokens";
 import { StopIcon } from "./conversation-icons";
 
@@ -90,10 +91,10 @@ function ComposerAddMenu({ open, onOpenChange, disabled, onClosed }: { open: boo
 
 /** Everything under the chat: the waits and the queue in one card, any notice, then the message box. */
 export function ConversationComposer({ agent, thread, working, quickActions }: ConversationComposerProps) {
-  const { snapshot, agentsById, draftFor, setDraft, setAwaiting } = useBob();
+  const { snapshot, agentsById, setAwaiting } = useBob();
   const activity = snapshot.activity[agent.id];
   const turnSince = activity?.state === "working" ? activity.since : null;
-  const draft = draftFor(agent.id);
+  const [draft, setDraft] = useDraft(snapshot.project.id, agent.id);
   const [submitting, setSubmitting] = useState(false);
   // The error stands for its own chat: it shows only there, until the person closes it or a send succeeds.
   const [failure, setFailure] = useState<{ agentId: string; message: string } | null>(null);
@@ -131,7 +132,7 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
   };
 
   const submit = async (mode?: SendMode) => {
-    if (await send(draft, mode)) setDraft(agent.id, "");
+    if (await send(draft, mode)) setDraft("");
   };
 
   const stop = async () => {
@@ -144,7 +145,7 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
   };
 
   const prefill = (text: string) => {
-    setDraft(agent.id, text);
+    setDraft(text);
     focusComposer();
   };
 
@@ -217,7 +218,7 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
             placeholder={quote && !newRequest ? "Reply…" : label}
             ariaLabel={label}
             focusRequest={composerFocusRequest}
-            onValueChange={(text) => setDraft(agent.id, text)}
+            onValueChange={(text) => setDraft(text)}
             onSubmit={() => void submit()}
             onSteer={steers ? () => void submit("steer") : undefined}
             onPickerOpenChange={setPickerOpen}

@@ -1,0 +1,16 @@
+{
+  // Bob's captain on Pi Durable: one Durable Object per Bob project runs the captain's turns. A sibling of
+  // bob-durable (wrangler.jsonc), deployed with `npx wrangler deploy -c wrangler.captain.jsonc`, then
+  // `wrangler secret put BOB_DURABLE_SECRET -c wrangler.captain.jsonc` and the same for AI_GATEWAY_API_KEY.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bob-captain",
+  "main": "src/captain.ts",
+  "compatibility_date": "2026-10-26",
+  "compatibility_flags": ["nodejs_compat"],
+  "upload_source_maps": true,
+  "durable_objects": {
+    "bindings": [{ "name": "BOB_CAPTAIN", "class_name": "BobCaptain" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BobCaptain"] }],
+  "observability": { "enabled": true }
+}

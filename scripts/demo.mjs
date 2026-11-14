@@ -91,6 +91,7 @@ fs.mkdirSync(LOG_DIR, { recursive: true });
 const serverEnv = { ...process.env, PORT: String(PORT) };
 if (opts.scripted) serverEnv.BOB_BRAIN = "script";
 if (opts.self) serverEnv.BOB_GITHUB_BASE = process.env.BOB_GITHUB_BASE?.trim() || SELF.prBase;
+if (opts.self && !env.BOB_GITHUB?.trim() && has("COMPOSIO_API_KEY")) serverEnv.BOB_GITHUB = "composio";
 serverEnv.BOB_ENGINE = env.BOB_ENGINE?.trim() || "sdk";
 const next = path.join(ROOT, "node_modules", ".bin", "next");
 
