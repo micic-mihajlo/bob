@@ -49,6 +49,7 @@ describe("captain and crew, scripted, end to end", { timeout: GIT_TIMEOUT }, () 
     expect(snap.needsYou?.map((n) => [n.kind, n.approvalId])).toEqual([["approval", approval?.id]]);
     expect(snap.threadStatus?.bob).toBe("needs_you");
     expect(snap.threadState?.bob).toEqual({ status: "waiting", needsYou: true, closed: false });
+    expect(s.drive.find((f) => f.name === "DIGEST.md")?.content).toBe("1 thing needs you: approve the merge of #1\n");
     expect(snap.threadState?.["inv-1"]).toEqual({ status: "idle", needsYou: false, closed: false });
     expectQuiet(s);
 
@@ -63,7 +64,8 @@ describe("captain and crew, scripted, end to end", { timeout: GIT_TIMEOUT }, () 
     expect(buildSnapshot(after).threadState?.bob).toEqual({ status: "idle", needsYou: false, closed: false });
     expect(after.drive.find((f) => f.name === "DIGEST.md")?.content).toMatch(/Nothing needs you/);
     expect(after.roadmap.stageTitle).toBe("Learn");
-    expect(after.drive.find((f) => f.name === "NOTES.md")?.content).toMatch(/Shipped #1: Add CSV export for invoices[\s\S]*Acceptance: Done when invoicesToCsv/);
+    expect(after.drive.find((f) => f.name === "NOTES.md")?.content).toMatch(/Acceptance: Done when invoicesToCsv[\s\S]*## Shipped\n- #1 Add CSV export for invoices\. Review: approve, low/);
+    expect(after.drive.find((f) => f.name === "CREW.md")?.content).toMatch(/\| INV-1 \| build \| closed \| inv-1-csv-export-for-invoices \| #1 \(merged\) \| Opened pull request #1/);
     expect(after.roadmap.backlog?.map((w) => w.title)).toEqual([`Follow up on #1: ${verdict?.findings[0].comment}`]);
 
     const fresh = await threadWorkspace(after.project, "checker");
