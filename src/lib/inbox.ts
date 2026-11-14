@@ -7,6 +7,7 @@ import { getState, transact, update } from "./store";
 import { isPullRequest, requestAsk, type PullRequestArtifact } from "./threads";
 import { done, fail, type ToolContext, type ToolOutput } from "./tools/context";
 import { drain } from "./turns";
+import { askOnLinear } from "./integrations/linear/outbound";
 import type { InboxCandidate, InboxItem, InboxKind, LinearIssueRef, RequestId, WorkOrder } from "./types";
 
 export const INBOX_KINDS = ["meeting", "feedback", "error"] as const;
@@ -162,7 +163,7 @@ export const triageInboxSchema = z.object({
  * that ask, so a vague one becomes a work order once the person answers.
  */
 export function triageInbox(input: z.infer<typeof triageInboxSchema>, ctx: ToolContext): ToolOutput {
-  return transact<ToolOutput>((s) => {
+  const out = transact<ToolOutput>((s) => {
     const item = inboxItem(s, input.inboxId);
     if (!item) return { state: s, value: fail(`No inbox item ${input.inboxId}.`) };
     const missing = input.candidates.filter((c) => !item.text.includes(c.quote.trim()));
@@ -206,6 +207,8 @@ export function triageInbox(input: z.infer<typeof triageInboxSchema>, ctx: ToolC
     void ctx;
     return { state, value: done({ inboxId: item.id, workOrders: created.map((w) => ({ id: w.id, title: w.title })), vague: vague.map((c) => ({ ask: c.ask, question: c.question })), next }) };
   });
+  void askOnLinear(input.inboxId);
+  return out;
 }
 
 /** The captain's view of open inbox questions, so an answer from the person can be triaged again. */

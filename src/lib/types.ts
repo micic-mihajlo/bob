@@ -354,6 +354,10 @@ export interface LinearIssueRef {
   title: string;
   url: string;
   teamId: string;
+  /** The merged pull request Bob commented on the issue and closed it with. */
+  shippedIn?: string;
+  /** The inbox asks whose question Bob already posted on the issue. */
+  askedIds?: string[];
 }
 
 export interface StageGate {
