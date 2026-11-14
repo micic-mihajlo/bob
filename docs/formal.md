@@ -71,4 +71,8 @@ Both are proved as theorems and reproduced against the real code by a conformanc
 - `roadmap.test.ts`: random roadmap calls: the model's gate matches `unmetCriteria`, only `advanceStage` moves the stage, and only by one.
 - `merge-gate.test.ts`: random approvals, reviews and decisions: merge refuses exactly when the model's gate is shut, and only the person approves.
 
-`formal/theorems.json` lists every theorem with its plain statement. `pnpm verify` writes `formal/last-check.json` with the Lean version, each theorem's axioms and a hash of the Lean sources, so a stale check is detectable.
+`formal/theorems.json` lists every theorem with its plain statement. `pnpm verify` writes `formal/last-check.json` with the Lean version, each theorem's axioms and a hash of the Lean sources; `last-check.test.ts` fails when the Lean sources change without a new check being recorded.
+
+## In the product
+
+`GET /api/verification` returns every theorem with its rule, its plain statement, the code it mirrors, whether it is a proof or a proved gap, its axioms, and a status: `passed` when the recorded check matches the current Lean sources, `stale` when they changed since, `unchecked` when no check was recorded.

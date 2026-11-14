@@ -4,11 +4,11 @@
  * Without Lean it skips the proofs with a note and still runs the conformance tests.
  */
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { sourceHash } from "./source-hash.mjs";
 
 const formal = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.dirname(formal);
@@ -24,15 +24,6 @@ const fail = (message) => {
 function findLake() {
   const candidates = [process.env.LAKE, "lake", path.join(os.homedir(), ".elan", "bin", "lake")].filter(Boolean);
   return candidates.find((c) => run(c, ["--version"]).status === 0) ?? null;
-}
-
-/** Hash of every Lean source and the catalog, so a stale check is detectable. */
-export function sourceHash() {
-  const dir = path.join(formal, "BobFormal");
-  const files = ["BobFormal.lean", "lakefile.toml", "lean-toolchain", "theorems.json", ...readdirSync(dir).sort().map((f) => path.join("BobFormal", f))];
-  const hash = createHash("sha256");
-  for (const f of files) hash.update(f).update(readFileSync(path.join(formal, f)));
-  return hash.digest("hex");
 }
 
 function checkProofs(lake) {
@@ -59,7 +50,7 @@ function checkProofs(lake) {
   });
   const lean = run(lake, ["env", "lean", "--version"]).stdout.trim();
   console.log(`verify: ${theorems.length} theorems checked, none uses sorry (${lean}).`);
-  return { ok: true, lean, sourceHash: sourceHash(), theorems };
+  return { ok: true, lean, sourceHash: sourceHash(formal), theorems };
 }
 
 const lake = findLake();
