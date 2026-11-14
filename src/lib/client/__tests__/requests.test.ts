@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { InboxItem, RequestControl } from "@/lib/types";
-import { answeringQuote, requestLabel, requestUsageLine } from "../requests";
+import { answeringQuote, requestLabel, requestUsage, requestUsageLine } from "../requests";
 
 const request: RequestControl = {
   requestId: "req_1",
@@ -23,6 +23,24 @@ describe("requestUsageLine", () => {
 
   it("reads the use alone without limits", () => {
     expect(requestUsageLine({ ...request, modelCalls: 1, seconds: 8 })).toBe("8s · 1 model call · $0.04");
+  });
+});
+
+describe("requestUsage", () => {
+  const budgets = { maxMinutes: 3, maxModelCalls: 90, maxCostUsd: 1 };
+
+  it("shows nothing for the scripted brain or before the first model call", () => {
+    expect(requestUsage(request, budgets, false)).toBeNull();
+    expect(requestUsage({ ...request, modelCalls: 0, costUsd: 0 }, budgets, true)).toBeNull();
+  });
+
+  it("shows plain use while every budget is less than half spent", () => {
+    expect(requestUsage({ ...request, seconds: 30 }, budgets, true)).toBe("30s · 12 model calls · $0.04");
+  });
+
+  it("reads against the limits once any budget is half spent", () => {
+    expect(requestUsage(request, budgets, true)).toBe("1m 37s of 3m · 12 of 90 model calls · $0.04 of $1.00");
+    expect(requestUsage({ ...request, seconds: 30, modelCalls: 45 }, budgets, true)).toBe("30s of 3m · 45 of 90 model calls · $0.04 of $1.00");
   });
 });
 
