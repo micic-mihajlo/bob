@@ -1,3 +1,4 @@
+import path from "node:path";
 import { goalOf } from "./roadmap";
 import type { State } from "./state";
 import { findPullRequest } from "./threads";
@@ -32,7 +33,7 @@ export function briefWithAcceptance(s: State, agent: Agent, brief: string): stri
   if (acceptancePathIn(brief) === path) return brief;
   const line =
     agent.crewRole === "build"
-      ? `Acceptance test: ${path}. Write it first, on its own, so it asserts: ${check}. Run that file alone, without a pipe (npx vitest run ${path}), and show it failing, then implement, then run the whole suite (npm test) and show it passing.`
+      ? `Acceptance test: ${path}. Write it first, on its own, so it asserts: ${check}. Run that file alone, without a pipe (npx vitest run ${path}), and show it failing, then implement, then run the whole suite (npm test) and show it passing. Once it has run red it is locked: fix the code, not the test.`
       : `Acceptance test: ${path} should assert: ${check}. Confirm it does. If it is missing or checks something else, record a finding with category tests.`;
   return `${brief.trim()}\n${line}`;
 }
@@ -95,4 +96,68 @@ export function acceptanceLine(record: AcceptanceRecord | null, files: readonly 
   const red = record.red ? `red (\`${record.red.command}\`, ${record.red.failed ?? "some"} failed)` : "never seen failing";
   const green = record.green ? `green (\`${record.green.command}\`)` : "not seen passing";
   return `- Acceptance test: \`${record.path}\`: ${red} → ${green}`;
+}
+
+/** The label of a step that writes a build thread's acceptance test, on either engine. */
+export const ACCEPTANCE_WRITE_LABEL = "Writing the acceptance test";
+const WRITE_TOOLS = new Set(["write_files", "edit_files"]);
+
+const stepsOf = (s: State, agentId: AgentId): Step[] => (s.threads[agentId] ?? []).filter((i): i is Step => i.kind === "step");
+
+/** The index of the first failing test run after the thread wrote its acceptance test, or -1 while it has not run red. */
+function redAt(steps: Step[]): number {
+  const wrote = steps.findIndex((i) => i.tool === "write_files" && i.label === ACCEPTANCE_WRITE_LABEL);
+  if (wrote < 0) return -1;
+  return steps.findIndex((i, n) => n > wrote && i.outcome === "failed" && runOf(i) !== null);
+}
+
+function ownAcceptance(s: State, agentId: AgentId): string | null {
+  const agent = s.agents.find((a) => a.id === agentId);
+  if (agent?.kind !== "crew" || agent.crewRole !== "build" || !agent.workOrderId) return null;
+  return acceptanceTestPath(agent.workOrderId);
+}
+
+/**
+ * Why a build thread may not write `file` now, or null when it may. Its own acceptance test locks once it has
+ * run red, so a failing check is fixed in the code; another work order's acceptance test is never its to change.
+ */
+export function acceptanceLock(s: State, agentId: AgentId, file: string): string | null {
+  const own = ownAcceptance(s, agentId);
+  const rel = path.normalize(file);
+  if (!own || !isAcceptanceTest(rel)) return null;
+  if (rel !== own) return `${rel} is another work order's acceptance test, so it is not yours to change. Leave it as it is.`;
+  if (redAt(stepsOf(s, agentId)) < 0) return null;
+  return `${rel} is locked: it is your acceptance test and it has already run red, so it is the check, not the code. Fix the code until it passes. If you think the test itself is wrong, stop and report blocked, saying why.`;
+}
+
+/** The build thread's acceptance test once it is locked, or null. */
+export function lockedAcceptance(s: State, agentId: AgentId): string | null {
+  const own = ownAcceptance(s, agentId);
+  return own && redAt(stepsOf(s, agentId)) >= 0 ? own : null;
+}
+
+/** Acceptance files the diff changes that were already there before it, so not this pull request's own new test. */
+function changedExistingAcceptance(patch: string): string[] {
+  return patch.split(/^diff --git /m).slice(1).flatMap((block) => {
+    const names = /^a\/(\S+) b\/(\S+)/.exec(block);
+    if (!names || !(isAcceptanceTest(names[1]) || isAcceptanceTest(names[2]))) return [];
+    return /^new file mode/m.test(block) ? [] : [names[2]];
+  });
+}
+
+/**
+ * Blocking review findings for a pull request that changes an acceptance test: one already on main, or its own
+ * after that test ran red. Either way the test that passes is not the check the work order agreed to.
+ */
+export function acceptanceTampering(s: State, pr: { agentId: AgentId; pullRequest: { patch: string } }): { path: string; comment: string }[] {
+  const found = changedExistingAcceptance(pr.pullRequest.patch).map((file) => ({
+    path: file,
+    comment: `This pull request changes ${file}, an acceptance test that is already on main. Restore it: an acceptance test only changes with its own work order.`,
+  }));
+  const own = ownAcceptance(s, pr.agentId);
+  const steps = stepsOf(s, pr.agentId);
+  const red = redAt(steps);
+  const edited = red >= 0 && steps.slice(red + 1).some((i) => WRITE_TOOLS.has(i.tool) && i.outcome === "ok" && (i.label === ACCEPTANCE_WRITE_LABEL || (!!own && i.label.includes(own))));
+  if (own && edited) found.push({ path: own, comment: `${own} was edited after it ran red, so the test that passes is not the one that failed. Restore the version that ran red and fix the code instead.` });
+  return found;
 }

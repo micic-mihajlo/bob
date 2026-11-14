@@ -1,7 +1,7 @@
 import path from "node:path";
 import { createSdkMcpServer, query, tool, type HookCallback, type Options, type SdkMcpToolDefinition, type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import type { z } from "zod";
-import { isAcceptanceTest } from "../acceptance";
+import { acceptanceLock, ACCEPTANCE_WRITE_LABEL, isAcceptanceTest } from "../acceptance";
 import { globals } from "../globals";
 import { LIGHT_MODEL, STRONG_MODEL } from "../models";
 import { addThreadItem, stamp } from "../state-ops";
@@ -83,8 +83,11 @@ const TOOL_GUIDANCE = [
 
 const relOf = (root: string, p: unknown) => (typeof p === "string" && p ? path.relative(root, path.resolve(root, p)) || "." : ".");
 
-/** The PreToolUse guard: a file tool may only touch the thread's workspace, never .git, and nothing else runs natively. */
-export function workspaceGuard(root: string): HookCallback {
+/**
+ * The PreToolUse guard: a file tool may only touch the thread's workspace, never .git, nor a locked acceptance
+ * test, and nothing else runs natively.
+ */
+export function workspaceGuard(root: string, agentId: AgentId): HookCallback {
   const deny = (reason: string) => ({ hookSpecificOutput: { hookEventName: "PreToolUse" as const, permissionDecision: "deny" as const, permissionDecisionReason: reason } });
   return async (input) => {
     if (input.hook_event_name !== "PreToolUse") return {};
@@ -95,6 +98,8 @@ export function workspaceGuard(root: string): HookCallback {
     const target = args.file_path ?? args.path;
     if (target === undefined) return {};
     const rel = relOf(root, target);
+    const locked = name === "Write" || name === "Edit" ? acceptanceLock(getState(), agentId, rel) : null;
+    if (locked) return deny(locked);
     const confined = name === "Write" ? await confineForWrite(root, rel) : await confineExisting(root, rel);
     return confined.ok ? {} : deny(confined.error);
   };
@@ -108,7 +113,7 @@ function nativeStep(root: string, name: string, args: Record<string, unknown>): 
     case "Edit":
       return { tool: "edit_files", label: `Editing ${file}` };
     case "Write":
-      return { tool: "write_files", label: isAcceptanceTest(file) ? "Writing the acceptance test" : `Writing ${file}` };
+      return { tool: "write_files", label: isAcceptanceTest(file) ? ACCEPTANCE_WRITE_LABEL : `Writing ${file}` };
     case "Glob":
       return { tool: "list_files", label: `Finding ${String(args.pattern ?? "files")}` };
     case "Grep":
@@ -177,7 +182,7 @@ export async function runSdkTurn(
     settingSources: [],
     permissionMode: "bypassPermissions",
     allowDangerouslySkipPermissions: true,
-    hooks: { PreToolUse: [{ hooks: [workspaceGuard(root)] }] },
+    hooks: { PreToolUse: [{ hooks: [workspaceGuard(root, agent.id)] }] },
     includePartialMessages: true,
     persistSession: false,
     maxTurns: MAX_SDK_TURNS,
