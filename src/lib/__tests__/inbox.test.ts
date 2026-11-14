@@ -105,13 +105,23 @@ describe("the inbox: raw materials in, triaged into the backlog", { timeout: 60_
     expect(hops.at(-1)?.message.from.kind).toBe("user");
   });
 
-  it("links an error to the shipped pull request whose diff has the function its stack names, not just the newest one on that file", () => {
-    const pr = (number: number, patch: string) =>
-      ({ id: `art_pr${number}`, kind: "pull_request", agentId: "bob", title: `#${number}`, detail: "", at: "", pullRequest: { number, branch: `b${number}`, headSha: "abc", files: [{ path: "src/invoices.ts", additions: 3, deletions: 0 }], patch, merged: true } }) as unknown as Artifact;
-    update((s) => ({ ...s, artifacts: [...s.artifacts, pr(1, "+export function exportInvoices(invoices: Invoice[]) {"), pr(2, "+export function overdueInvoices(invoices: Invoice[], today: string) {")] }));
-    const added = addInboxItem(ERROR);
-    if (!added.ok) throw new Error(added.error);
-    expect(inboxItem(getState(), added.inboxId)?.followUpOf).toEqual({ pullRequestId: "art_pr1", number: 1 });
+  describe("links an error to the shipped pull request it is about, not just the newest one on that file", () => {
+    const pr = (number: number, title: string, patch: string) =>
+      ({ id: `art_pr${number}`, kind: "pull_request", agentId: "bob", requestId: `req_${number}`, title, detail: "", at: "", pullRequest: { number, branch: `b${number}`, headSha: "abc", files: [{ path: "src/invoices.ts", additions: 3, deletions: 0 }], patch, merged: true } }) as unknown as Artifact;
+    const followUpOf = (artifacts: Artifact[]) => {
+      update((s) => ({ ...s, artifacts: [...s.artifacts, ...artifacts] }));
+      const added = addInboxItem(ERROR);
+      if (!added.ok) throw new Error(added.error);
+      return inboxItem(getState(), added.inboxId)?.followUpOf?.number;
+    };
+
+    it("prefers the diff that has the function its stack names", () => {
+      expect(followUpOf([pr(1, "#1", "+export function exportInvoices(invoices: Invoice[]) {"), pr(2, "#2", "+export function overdueInvoices(invoices: Invoice[], today: string) {")])).toBe(1);
+    });
+
+    it("with no function in common, prefers the title that shares the error's words", () => {
+      expect(followUpOf([pr(1, "Add CSV export to the invoices page", "+function downloadCsv() {"), pr(2, "Add overdueInvoices filter with oldest-due first", "+export function overdueInvoices() {")])).toBe(1);
+    });
   });
 
   it("Learn: a merge that touches the module an error names resolves it, and a new error about the shipped change reopens it as a follow-up", async () => {

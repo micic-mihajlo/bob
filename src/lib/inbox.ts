@@ -4,7 +4,7 @@ import { send } from "./mailbox";
 import { addSourcedOrder } from "./roadmap";
 import { captainOf, messageById, type State } from "./state";
 import { getState, transact, update } from "./store";
-import { isPullRequest, type PullRequestArtifact } from "./threads";
+import { isPullRequest, requestAsk, type PullRequestArtifact } from "./threads";
 import { done, fail, type ToolContext, type ToolOutput } from "./tools/context";
 import { drain } from "./turns";
 import type { InboxCandidate, InboxItem, InboxKind, RequestId, WorkOrder } from "./types";
@@ -59,15 +59,28 @@ const baseName = (path: string) => path.split("/").pop() ?? path;
 /** Function names in the item's stack frames, such as exportInvoices in "at exportInvoices (src/invoices.ts:31:18)". */
 const framedFunctions = (text: string): string[] => [...text.matchAll(/\bat (?:[\w$]+\.)*([\w$]+) \(/g)].map((m) => m[1]);
 
-/** Merged pull requests whose changed files the item mentions: those whose diff has a function its stack names first, then newest first. */
+const STOP_WORDS = new Set(["the", "and", "for", "with", "add", "has", "was", "not", "its", "from", "into", "this", "that"]);
+const wordsOf = (text: string): Set<string> => new Set((text.toLowerCase().match(/[a-z]{3,}/g) ?? []).filter((w) => !STOP_WORDS.has(w)));
+
+/**
+ * Merged pull requests whose changed files the item mentions, best match first: a diff that has a function the
+ * stack names, then the most words shared with the pull request's title and the ask it came from, then newest.
+ */
 function shippedMatches(s: State, text: string): PullRequestArtifact[] {
   const mentioned = new Set(mentionedFiles(text));
   const functions = framedFunctions(text);
-  const namesOne = (pr: PullRequestArtifact) => functions.some((f) => new RegExp(`\\b${f.replace(/\$/g, "\\$")}\\b`).test(pr.pullRequest.patch));
+  const words = wordsOf(text);
+  const score = (pr: PullRequestArtifact) => {
+    const named = functions.some((f) => new RegExp(`\\b${f.replace(/\$/g, "\\$")}\\b`).test(pr.pullRequest.patch));
+    const shared = [...wordsOf(`${pr.title} ${requestAsk(s, pr.requestId ?? "") ?? ""}`)].filter((w) => words.has(w)).length;
+    return (named ? 1000 : 0) + shared;
+  };
   return s.artifacts
     .filter((a): a is PullRequestArtifact => isPullRequest(a) && a.pullRequest.merged && a.pullRequest.files.some((f) => mentioned.has(baseName(f.path))))
     .reverse()
-    .sort((a, b) => Number(namesOne(b)) - Number(namesOne(a)));
+    .map((pr) => ({ pr, score: score(pr) }))
+    .sort((a, b) => b.score - a.score)
+    .map((x) => x.pr);
 }
 
 function framed(item: InboxItem): string {
