@@ -57,15 +57,12 @@ import type { StorageUsageService } from "../../backend/storage-usage";
 import type { TeamChatStore } from "../../backend/team-chat-store";
 import type { WorkflowsHandle } from "../../backend/workflows/workflows";
 import type { AgentImportService } from "../agent-import-service";
-import type { BitwardenConnectorService } from "../bitwarden-connector-service";
 import type { BrowserViewGateway } from "../browser-view-gateway";
-import type { GitHubConnectorService } from "../github-connector-service";
 import type { HostedSiteDesktopService } from "../hosted-site-service";
 import type { InstanceTransferService } from "../instance-transfer-service";
 import type { McpToolRuntimePreparation } from "../ipc/mcp-server-handlers";
 import type { LiveActivityPushService } from "../live-activity-push";
 import type { McpHostSignIns } from "../mcp-host-sign-ins";
-import type { OnePasswordConnectorService } from "../onepassword-connector-service";
 import type { ProviderAccountsHost } from "../provider-accounts-host";
 import type { ProviderHostSignIns } from "../provider-host-sign-ins";
 import type { PushNotificationService } from "../push-notifications";
@@ -172,9 +169,8 @@ export type TeamApiMcpSignIns = Pick<
   "start" | "status" | "cancel" | "signOut" | "list" | "app" | "saveApp" | "removeApp"
 >;
 
-/** `connectors-v1`: the GitHub connection and the messaging connections of this host. */
+/** `connectors-v1`: the messaging connections of this host. */
 export interface TeamApiConnectors {
-  github: Pick<GitHubConnectorService, "status" | "pages" | "connect" | "cancel" | "disconnect" | "repositories">;
   messaging: Pick<
     MessagingService,
     | "slackOverview"
@@ -466,14 +462,7 @@ export type TeamApiRemoteScreen = Pick<
 > &
   Partial<Pick<RemoteScreenGateway, "checkSetup" | "test">>;
 
-/** `onepassword-connector-v1`: the 1Password connection of this host, by a service account token. */
-export type TeamApiOnePasswordConnector = Pick<
-  OnePasswordConnectorService,
-  "status" | "refreshLogins" | "connectWithToken" | "disconnect"
->;
 
-/** `bitwarden-connector-v1`: the Bitwarden connection of this host, by an API key and the master password. */
-export type TeamApiBitwardenConnector = Pick<BitwardenConnectorService, "status" | "connectWithApiKey" | "disconnect">;
 
 /** `vault-v1`: the Vault of this host, for an owner or admin. The route uses no CSV import. */
 export type TeamApiVault = VaultService;
@@ -488,8 +477,6 @@ export interface TeamApiOptions {
   mcpSignIns?: TeamApiMcpSignIns | undefined;
   signInRelay?: TeamApiSignInRelay | undefined;
   connectors?: TeamApiConnectors | undefined;
-  onePasswordConnector?: TeamApiOnePasswordConnector | undefined;
-  bitwardenConnector?: TeamApiBitwardenConnector | undefined;
   vault?: TeamApiVault | undefined;
   providerHostSignIns?: TeamApiProviderHostSignIns | undefined;
   providerAccounts?: TeamApiProviderAccounts | undefined;

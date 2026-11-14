@@ -30,7 +30,6 @@ import { serverRoleCanAdminister } from "../servers/server-capabilities";
 import { useServerSettings } from "../servers/server-settings";
 import { serverUpdateBadge, showServerUpdate } from "../servers/server-update-flow";
 import { useServers } from "../servers/servers-context";
-import { useSettings } from "../settings/settings-context";
 import { usePresence } from "../team/team-context";
 import { SidebarUpdateIsland } from "../updates/SidebarUpdateIsland";
 import { createMachineCard } from "./machine-card";
@@ -71,7 +70,6 @@ export function WorkspaceSidebar(props: { peopleEnabled: boolean }) {
   );
   const { openServerSettings, serverSettingsOpen } = useServerSettings();
   const serverActions = useServerActions();
-  const { setSkillsMarketplaceOpen } = useSettings();
   const {
     agentList,
     agentListConnecting,
@@ -360,8 +358,6 @@ export function WorkspaceSidebar(props: { peopleEnabled: boolean }) {
           <SidebarUpdateIsland />
         </>
       }
-      marketplaceSupported={!BOB_SINGLE_BOT}
-      onOpenMarketplace={() => setSkillsMarketplaceOpen(true)}
       agentsConnecting={agentListConnecting()}
       emptyAction={
         !BOB_SINGLE_BOT && agentList().length === 0 && agentListSettled()

@@ -178,7 +178,6 @@ import type {
   PreviewWorkspaceFileInput,
   WorkspaceDirectory,
 } from "./ipc-attachments";
-import type { BitwardenConnectorStatus, BitwardenHostConnectInput } from "./ipc-bitwarden-connector";
 import type {
   BrowserBounds,
   BrowserControlState,
@@ -287,7 +286,6 @@ import type {
   ExternalLinkPreference,
 } from "./ipc-external-links";
 import type { ComposioConnectInput, ComposioStatus } from "./ipc-composio";
-import type { GitHubConnectorRepositories, GitHubConnectorStatus } from "./ipc-github-connector";
 import type { ApplyHermesImportInput, HermesImportPreview } from "./ipc-hermes-import";
 import type { HiddenAgentsSnapshot, SetAgentHiddenInput } from "./ipc-hidden-agents";
 import type { HostAnalytics, HostAnalyticsInput } from "./ipc-host-analytics";
@@ -363,11 +361,6 @@ import type {
   TelegramOverview,
 } from "./ipc-messaging";
 import type { NotificationOpenedEvent, NotificationPreference } from "./ipc-notifications";
-import type {
-  OnePasswordConnectInput,
-  OnePasswordConnectorStatus,
-  OnePasswordHostConnectInput,
-} from "./ipc-onepassword-connector";
 import type { PromptCacheTtl, PromptCacheTtlSetting } from "./ipc-prompt-cache";
 import type {
   DetectedModelServer,
@@ -1117,41 +1110,6 @@ export const IPC_ENDPOINTS = {
     status: request<undefined, ComposioStatus>()("composio:status"),
     connect: request<ComposioConnectInput, ComposioStatus>()("composio:connect"),
   },
-  // The built-in GitHub connection of this computer. The token stays in main; every answer is the
-  // status only. The `host*` endpoints reach the connection of a joined server (`connectors-v1`): the
-  // host runs the device flow, and main opens its GitHub pages in this computer's browser.
-  githubConnector: {
-    status: request<undefined, GitHubConnectorStatus>()("github-connector:status"),
-    connect: request<undefined, GitHubConnectorStatus>()("github-connector:connect"),
-    cancel: request<undefined, GitHubConnectorStatus>()("github-connector:cancel"),
-    disconnect: request<undefined, GitHubConnectorStatus>()("github-connector:disconnect"),
-    repositories: request<undefined, GitHubConnectorRepositories>()("github-connector:repositories"),
-    openVerification: request<undefined, void>()("github-connector:open-verification"),
-    openInstall: request<undefined, void>()("github-connector:open-install"),
-    changed: event<GitHubConnectorStatus>()("github-connector:changed"),
-    hostStatus: scopedQuery<GitHubConnectorStatus, "required">()("github-connector:host-status"),
-    hostConnect: scopedQuery<GitHubConnectorStatus, "required">()("github-connector:host-connect"),
-    hostCancel: scopedQuery<GitHubConnectorStatus, "required">()("github-connector:host-cancel"),
-    hostDisconnect: scopedQuery<GitHubConnectorStatus, "required">()("github-connector:host-disconnect"),
-    hostRepositories: scopedQuery<GitHubConnectorRepositories, "required">()("github-connector:host-repositories"),
-    hostOpenVerification: scopedQuery<void, "required">()("github-connector:host-open-verification"),
-    hostOpenInstall: scopedQuery<void, "required">()("github-connector:host-open-install"),
-  },
-  // The Bitwarden connection of this computer. The session key goes from the renderer to main once,
-  // in `connect`; every answer is the status only. The `host*` endpoints do the same for a joined
-  // server (`bitwarden-connector-v1`), with an API key and the master password: a session key from
-  // this computer cannot open the host's vault.
-  bitwardenConnector: {
-    status: request<undefined, BitwardenConnectorStatus>()("bitwarden-connector:status"),
-    connect: request<string, BitwardenConnectorStatus>()("bitwarden-connector:connect"),
-    disconnect: request<undefined, BitwardenConnectorStatus>()("bitwarden-connector:disconnect"),
-    changed: event<BitwardenConnectorStatus>()("bitwarden-connector:changed"),
-    hostStatus: scopedQuery<BitwardenConnectorStatus, "required">()("bitwarden-connector:host-status"),
-    hostConnect: scopedRequest<BitwardenHostConnectInput, BitwardenConnectorStatus, "required">()(
-      "bitwarden-connector:host-connect",
-    ),
-    hostDisconnect: scopedQuery<BitwardenConnectorStatus, "required">()("bitwarden-connector:host-disconnect"),
-  },
   // The Vault of this computer. Lists carry no password, card number or security code: `reveal`
   // returns one when the user asks, and `copy` writes one to the clipboard in main. The `host*`
   // endpoints do the same for one server: a joined server answers through `vault-v1`, to an owner
@@ -1171,28 +1129,6 @@ export const IPC_ENDPOINTS = {
     hostReveal: scopedRequest<VaultSecretRequest, string, "required">()("vault:host-reveal"),
     hostCopy: scopedRequest<VaultSecretRequest, void, "required">()("vault:host-copy"),
     hostReset: scopedQuery<VaultState, "required">()("vault:host-reset"),
-  },
-  // The 1Password connection of this computer. The token goes from the renderer to main once, in
-  // `connectWithToken`; every answer is the status only. The `host*` endpoints do the same for a
-  // joined server (`onepassword-connector-v1`), with a token only: the host has no 1Password app.
-  onePasswordConnector: {
-    status: request<undefined, OnePasswordConnectorStatus>()("onepassword-connector:status"),
-    // Looks again for the CLI and the 1Password app's CLI integration, for a page that opens or regains focus.
-    checkSetup: request<undefined, OnePasswordConnectorStatus>()("onepassword-connector:check-setup"),
-    // Downloads the CLI release that main pins, into a folder that Bob owns.
-    installCli: request<undefined, OnePasswordConnectorStatus>()("onepassword-connector:install-cli"),
-    // Opens the 1Password app, or its download page when it is not installed.
-    openApp: request<undefined, void>()("onepassword-connector:open-app"),
-    connect: request<OnePasswordConnectInput, OnePasswordConnectorStatus>()("onepassword-connector:connect"),
-    connectWithToken: request<string, OnePasswordConnectorStatus>()("onepassword-connector:connect-with-token"),
-    cancel: request<undefined, OnePasswordConnectorStatus>()("onepassword-connector:cancel"),
-    disconnect: request<undefined, OnePasswordConnectorStatus>()("onepassword-connector:disconnect"),
-    changed: event<OnePasswordConnectorStatus>()("onepassword-connector:changed"),
-    hostStatus: scopedQuery<OnePasswordConnectorStatus, "required">()("onepassword-connector:host-status"),
-    hostConnectWithToken: scopedRequest<OnePasswordHostConnectInput, OnePasswordConnectorStatus, "required">()(
-      "onepassword-connector:host-connect-with-token",
-    ),
-    hostDisconnect: scopedQuery<OnePasswordConnectorStatus, "required">()("onepassword-connector:host-disconnect"),
   },
   hostedSites: {
     // The sites of one server. A joined server answers through `hosted-sites-v1`.
@@ -1812,9 +1748,6 @@ export const IPC_GROUP_PATHS = {
   messaging: "messaging",
   hostAdmin: "hostAdmin",
   composio: "composio",
-  githubConnector: "githubConnector",
-  onePasswordConnector: "onePasswordConnector",
-  bitwardenConnector: "bitwardenConnector",
   vault: "vault",
   hostedSites: "hostedSites",
   routineFeed: "routineFeed",
