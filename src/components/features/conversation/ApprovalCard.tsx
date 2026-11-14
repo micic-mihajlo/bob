@@ -74,7 +74,29 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
             <strong>{pullRequest.pullRequest.branch}</strong>
           </div>
         ) : null}
-        {pullRequest?.pullRequest.verification ? (
+        {pullRequest?.pullRequest.proof?.status === "proved" ? (
+          <div className="approval-detail-row approval-proof">
+            <span className="approval-detail-label">Proved in Lean</span>
+            {pullRequest.pullRequest.proof.theorems.map((theorem, index) => (
+              <code key={theorem} className="approval-proof-statement">
+                {pullRequest.pullRequest.proof?.status === "proved" ? (pullRequest.pullRequest.proof.statements?.[index] ?? `theorem ${theorem}`) : theorem}
+              </code>
+            ))}
+            <p className="approval-detail-text">proved by lake build at {pullRequest.pullRequest.headSha.slice(0, 7)}</p>
+            <p className="approval-detail-text">
+              {pullRequest.pullRequest.proof.cases > 0
+                ? `The same ${pullRequest.pullRequest.proof.cases} cases run through the Lean model and the TypeScript, and every output matches.`
+                : "No cases link the Lean model to the TypeScript yet: the proof covers the model only."}
+            </p>
+            {pullRequest.pullRequest.counts ? <span className="approval-proof-counts">{pullRequest.pullRequest.counts}</span> : null}
+          </div>
+        ) : pullRequest?.pullRequest.proof && pullRequest.pullRequest.counts ? (
+          <div className="approval-detail-row approval-proof">
+            <span className="approval-detail-label">Verification</span>
+            <strong>{pullRequest.pullRequest.proof.status === "running" ? "Lean proof running" : `not proved: ${pullRequest.pullRequest.proof.reason}`}</strong>
+            <span className="approval-proof-counts">{pullRequest.pullRequest.counts}</span>
+          </div>
+        ) : pullRequest?.pullRequest.verification ? (
           <div className="approval-detail-row">
             <span className="approval-detail-label">Verification</span>
             <strong>{pullRequest.pullRequest.verification}</strong>

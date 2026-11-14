@@ -31,7 +31,7 @@ export interface MutantRun {
 }
 
 export type Proof =
-  | { status: "proved"; theorems: string[]; axioms: string[]; cases: number; seconds: number }
+  | { status: "proved"; theorems: string[]; axioms: string[]; cases: number; seconds: number; statements?: string[] }
   | { status: "not_proved"; reason: string }
   | { status: "skipped"; reason: string }
   | { status: "running" };
@@ -72,18 +72,24 @@ export const gatePassed = (v: Verification, waivers: readonly EquivalentMutant[]
 
 const plural = (n: number, one: string, many: string) => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
 
-/** The skip reason when Lean is set up but cannot run here; the line shows it as is. */
-export const LEAN_SKIPPED_HERE = "Lean proof skipped on this machine";
+/** The skip reason when Lean is set up but cannot run here. */
+export const LEAN_SKIPPED_HERE = "Lean can't run on this machine";
 
 export function proofLine(p: Proof): string {
   if (p.status === "proved") return "proved in Lean";
   if (p.status === "running") return "Lean proof running";
-  if (p.status === "skipped") return p.reason === LEAN_SKIPPED_HERE ? p.reason : `Lean skipped: ${p.reason}`;
+  if (p.status === "skipped") return `not proved: ${p.reason}`;
   return `not proved in Lean: ${p.reason}`;
 }
 
 /** One compact line, as the trace block and the approval card show it. */
 export function verificationLine(v: Verification, waivers: readonly EquivalentMutant[] = []): string {
+  if (!v.contract.ok) return `no contract: ${v.contract.error ?? "unreadable"}`;
+  return `${countsLine(v, waivers)} · ${proofLine(v.proof)}`;
+}
+
+/** Properties, cases and mutants, without the proof: the approval card's second line. */
+export function countsLine(v: Verification, waivers: readonly EquivalentMutant[] = []): string {
   if (!v.contract.ok) return `no contract: ${v.contract.error ?? "unreadable"}`;
   const runs = v.properties.runs;
   const parts = [plural(runs.length, "property", "properties"), plural(runs.reduce((n, r) => n + r.runs, 0), "case", "cases")];
@@ -95,7 +101,6 @@ export function verificationLine(v: Verification, waivers: readonly EquivalentMu
   const killed = v.mutation.mutants.filter((m) => m.killed).length;
   if (v.mutation.error) parts.push(`mutants not run: ${v.mutation.error}`);
   else parts.push(v.mutation.mutants.length ? `${killed}/${total} mutants killed${equivalent ? ` · ${equivalent} equivalent` : ""}` : "no mutants on the changed lines");
-  parts.push(proofLine(v.proof));
   return parts.join(" · ");
 }
 
