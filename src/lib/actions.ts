@@ -4,8 +4,8 @@ import { newId } from "./ids";
 import { interrupt, type InterruptResult } from "./interrupt";
 import { send } from "./mailbox";
 import { relayOwed } from "./relay";
-import { agentById } from "./state";
-import { patchApproval } from "./state-ops";
+import { agentById, runningTurn } from "./state";
+import { addThreadItem, patchApproval, patchDelivery, patchTurn, stamp } from "./state-ops";
 import { getState, resetState, transact, update } from "./store";
 import { addAgent, type NewAgentInput } from "./team";
 import { removeProjectWorkspaces } from "./thread-workspace";
@@ -40,7 +40,21 @@ export function boot(): void {
 
 const unknownAgent = (agentId: AgentId) => ({ ok: false as const, error: `No agent with id ${agentId}.` });
 
-export function postUserMessage(agentId: AgentId, text: string): ActionResult<{ messageId: string }> {
+/** How a message reaches a thread that is working: steer lands at its next step, queue runs after the turn. */
+export type SendMode = "steer" | "queue";
+
+/** Hands a just-sent person message to the agent's running turn, which reads it at its next step. */
+function steerInto(agentId: AgentId, messageId: string, deliveryId: string, text: string): boolean {
+  return transact((s) => {
+    const turn = runningTurn(s, agentId);
+    if (!turn) return { state: s, value: false };
+    const joined = patchTurn(s, turn.id, { messageIds: [...turn.messageIds, messageId] });
+    const claimed = patchDelivery(joined, deliveryId, { status: "completed", turnId: turn.id });
+    return { state: addThreadItem(claimed, agentId, { kind: "user_text", ...stamp(), text }), value: true };
+  });
+}
+
+export function postUserMessage(agentId: AgentId, text: string, mode: SendMode = "queue"): ActionResult<{ messageId: string; steered: boolean }> {
   const agent = agentById(getState(), agentId);
   if (!agent) return unknownAgent(agentId);
   const ask = agent.kind === "captain" ? openAsk(getState(), agentId) : null;
@@ -55,8 +69,9 @@ export function postUserMessage(agentId: AgentId, text: string): ActionResult<{ 
     ...(ask ? { continues: ask.id } : {}),
   });
   if (!sent.ok) return { ok: false, error: sent.error.message };
-  drain(agentId);
-  return { ok: true, messageId: sent.message.id };
+  const steered = mode === "steer" && steerInto(agentId, sent.message.id, sent.deliveries[0].id, sent.message.text);
+  if (!steered) drain(agentId);
+  return { ok: true, messageId: sent.message.id, steered };
 }
 
 export function createAgentByPerson(input: NewAgentInput): ActionResult<{ agentId: AgentId }> {

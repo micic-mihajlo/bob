@@ -49,7 +49,7 @@ export function buildContext(s: State, initial: State, t: StartedTurn, moves: Mo
   const agent = agentById(s, t.agentId);
   const turn = s.turns.find((x) => x.id === t.turnId);
   if (!agent || !turn) return null;
-  const messages = t.messageIds.map((id) => messageById(s, id)).filter((m): m is Message => !!m);
+  const messages = turn.messageIds.map((id) => messageById(s, id)).filter((m): m is Message => !!m);
   const inbound = messages.map((m) => inboundItem(s, m));
   const requestIds = [...new Set(messages.map((m) => m.requestId))];
   const input = [

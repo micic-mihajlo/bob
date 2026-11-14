@@ -76,7 +76,7 @@ const PLANS: Record<CrewRole, (ctx: TurnContext, brief: string) => Plan> = { bui
 
 export function crewPlan(ctx: TurnContext, role: CrewRole): Plan {
   const person = ctx.inbound.find((i) => i.rule === "person");
-  if (person) return { steps: [], reply: () => `I am ${ctx.agent.code}, working on "${ctx.agent.title}". I report to the captain when it is done.` };
+  if (person && !ctx.inbound.some((i) => i.rule === "request")) return { steps: [], reply: () => `I am ${ctx.agent.code}, working on "${ctx.agent.title}". I report to the captain when it is done.` };
   const brief = ctx.inbound.find((i) => i.rule === "request");
   if (brief && ctx.initial.artifacts.some((a) => a.agentId === ctx.agent.id)) {
     return { steps: [], reply: () => formatted("partial", "Read the new message. My earlier result stands; nothing changed.", "none") };
