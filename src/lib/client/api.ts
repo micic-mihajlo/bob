@@ -54,6 +54,11 @@ export function setThreadModel(agentId: AgentId, model: string): Promise<ActionR
   return post(API.agentModel(agentId), { model });
 }
 
+/** A comment on lines of a pull request's diff; it goes to the pull request's build thread. */
+export function commentOnLines(pullRequestId: string, input: { path: string; startLine: number; endLine: number; text: string }): Promise<ActionResult> {
+  return post(API.pullRequestComments(pullRequestId), input);
+}
+
 export function decideApproval(approvalId: string, decision: "approved" | "denied"): Promise<ActionResult> {
   return post(API.approval(approvalId), { decision });
 }

@@ -18,6 +18,7 @@ const KIND: Record<Artifact["kind"], { badge: string; tone: FileReferenceTone }>
   pull_request: { badge: "PR", tone: "source" },
   review: { badge: "REV", tone: "script" },
   note: { badge: "NOTE", tone: "default" },
+  comment: { badge: "NOTE", tone: "default" },
 };
 
 const STATUS_VARIANT: Record<PullRequestState, BadgeVariant> = {

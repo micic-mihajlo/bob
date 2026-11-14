@@ -209,7 +209,7 @@ export interface Approval {
 /** Something an agent produced: a pull request, a note, a review. */
 export interface Artifact {
   id: string;
-  kind: "pull_request" | "review" | "note";
+  kind: "pull_request" | "review" | "note" | "comment";
   title: string;
   detail: string;
   status: "open" | "approved" | "merged" | "closed";
@@ -223,6 +223,19 @@ export interface Artifact {
   pullRequest?: PullRequestData;
   /** Present on a review: what the reviewer concluded about one pull request. */
   review?: ReviewData;
+  /** Present on a comment: the lines of a pull request the person commented on. */
+  lineComment?: LineComment;
+}
+
+/** A person's comment on lines of a pull request's diff. It counts as resolved once the pull request has a newer head. */
+export interface LineComment {
+  pullRequestId: string;
+  path: string;
+  /** Line numbers in the new version of the file, or the old one for removed lines. */
+  startLine: number;
+  endLine: number;
+  /** The head the person commented on. */
+  headSha: string;
 }
 
 export interface ChangedFile {
@@ -716,4 +729,5 @@ export const API = {
   inbox: "/api/inbox",
   inboxPromote: "/api/inbox/promote",
   inboxLinearSync: "/api/inbox/linear/sync",
+  pullRequestComments: (id: string) => `/api/pull-requests/${id}/comments`,
 } as const;

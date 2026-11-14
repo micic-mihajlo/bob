@@ -316,3 +316,148 @@
 .browser-panel {
   color-scheme: dark;
 }
+
+/* Line comments on a pull request's diff. Lines with a number can be selected; a comment pins under its last line as a post-it. */
+.bob-changes .message-code-line[data-line-state] {
+  cursor: pointer;
+}
+
+.bob-changes .message-code-line[data-line-state="selectable"]:hover {
+  background: var(--bob-bg-control-hover);
+}
+
+.bob-changes .message-code-line[data-line-state="selected"] {
+  background: var(--bob-accent-soft);
+  box-shadow: inset 2px 0 0 var(--bob-accent);
+}
+
+.bob-changes .message-code-line[data-line-state="pinned"] {
+  box-shadow: inset 2px 0 0 var(--bob-postit-pin);
+}
+
+.bob-changes {
+  --bob-postit-bg: color-mix(in oklab, #ffd84d 24%, var(--bob-bg-surface-raised));
+  --bob-postit-ink: var(--bob-text-primary);
+  --bob-postit-pin: var(--bob-danger);
+  --bob-postit-tilt: -0.5deg;
+  --bob-postit-shadow: 0 1px 1px rgb(0 0 0 / 0.12), 0 10px 18px -10px rgb(0 0 0 / 0.55);
+}
+
+/* The code scrolls sideways; a comment stays in view at the pane's width. */
+.bob-changes .message-code-scroll {
+  container-type: inline-size;
+}
+
+.bob-line-comment,
+.bob-line-composer,
+.bob-line-comment-affordance {
+  position: sticky;
+  left: var(--bob-space-3);
+  display: flex;
+  box-sizing: border-box;
+  width: calc(100cqi - 2 * var(--bob-space-3));
+  flex-direction: column;
+  gap: var(--bob-space-1);
+  margin: var(--bob-space-2) var(--bob-space-3) var(--bob-space-3);
+  font-family: var(--bob-font-sans);
+  font-size: var(--bob-text-sm);
+  line-height: 1.45;
+  white-space: normal;
+  cursor: default;
+}
+
+.bob-line-comment {
+  position: relative;
+  padding: var(--bob-space-3) var(--bob-space-3) var(--bob-space-2);
+  border-radius: 2px 2px 8px 2px;
+  background: var(--bob-postit-bg);
+  box-shadow: var(--bob-postit-shadow);
+  color: var(--bob-postit-ink);
+  transform: rotate(var(--bob-postit-tilt));
+  transition:
+    transform 160ms ease-out,
+    box-shadow 160ms ease-out;
+}
+
+.bob-line-comment::before {
+  position: absolute;
+  top: -5px;
+  left: 14px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--bob-postit-pin);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.5),
+    inset -2px -2px 0 rgb(0 0 0 / 0.22);
+  content: "";
+}
+
+.bob-line-comment[data-focused] {
+  --bob-postit-tilt: 0deg;
+  --bob-postit-shadow: 0 0 0 2px var(--bob-accent), 0 12px 22px -10px rgb(0 0 0 / 0.6);
+}
+
+.bob-line-comment[data-state="resolved"] {
+  --bob-postit-bg: var(--bob-bg-control);
+  --bob-postit-pin: var(--bob-text-dim);
+  --bob-postit-tilt: 0deg;
+  --bob-postit-shadow: none;
+  padding: var(--bob-space-1) var(--bob-space-3);
+  color: var(--bob-text-secondary);
+}
+
+.bob-line-comment-resolved > summary {
+  cursor: pointer;
+  color: var(--bob-text-muted);
+}
+
+.bob-line-comment-resolved[open] > summary {
+  margin-bottom: var(--bob-space-1);
+}
+
+.bob-line-comment-text {
+  overflow-wrap: anywhere;
+}
+
+.bob-line-comment-meta {
+  color: var(--bob-text-muted);
+  font-size: 12px;
+}
+
+.bob-line-composer-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 56px;
+  resize: vertical;
+  font: inherit;
+}
+
+.bob-line-composer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--bob-space-1);
+}
+
+.bob-line-composer-error {
+  color: var(--bob-danger-text);
+}
+
+.bob-line-comment-affordance {
+  width: auto;
+  align-items: flex-start;
+  margin-top: var(--bob-space-1);
+  margin-bottom: var(--bob-space-1);
+}
+
+.bob-line-comment-affordance kbd {
+  margin-left: var(--bob-space-1);
+  color: var(--bob-text-muted);
+  font-family: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bob-line-comment {
+    transition: none;
+  }
+}
