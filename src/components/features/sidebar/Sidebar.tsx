@@ -108,8 +108,12 @@ export function Sidebar({ compact = false, onExpand }: { compact?: boolean; onEx
           <div className="account-update-island__copy" role="status" aria-live="polite">
             <strong>{snapshot.brain === "model" ? "Live model" : "Scripted agents"}</strong>
           </div>
-          <span className="sidebar-brain-sync" data-live={connected ? "" : undefined}>
-            {connected ? "Live" : "Polling"}
+          <span
+            className="sidebar-brain-sync"
+            data-live={connected ? "" : undefined}
+            title={connected ? "Updates stream in as they happen" : "The live stream dropped, so the app checks for updates"}
+          >
+            {connected ? "Synced" : "Polling"}
           </span>
         </div>
       </div>
