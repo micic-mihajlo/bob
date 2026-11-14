@@ -3,12 +3,12 @@
  * names that bundle after Bob, so the Dock reads the same as a packaged build. It changes nothing on
  * other platforms, and nothing when the bundle is not there.
  */
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const DEV_APP_NAME = "Bob and B(l)obs";
-const plist = join(import.meta.dir, "..", "node_modules", "electron", "dist", "Electron.app", "Contents", "Info.plist");
+const plist = fileURLToPath(new URL("../node_modules/electron/dist/Electron.app/Contents/Info.plist", import.meta.url));
 
 if (process.platform === "darwin" && existsSync(plist)) {
   for (const key of ["CFBundleName", "CFBundleDisplayName"]) {
