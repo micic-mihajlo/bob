@@ -5,8 +5,8 @@ import { globals } from "./globals";
 import { seedState } from "./seed";
 import type { State } from "./state";
 import { getConfig, getState, loadState, update } from "./store";
-import { workspaceOptions } from "./thread-workspace";
-import type { Project } from "./types";
+import { sourceOf, workspaceOptions } from "./thread-workspace";
+import type { Project, ProjectTemplate } from "./types";
 import { ensureProject, prepareProjectDeps, projectLayout, rootOf } from "./workspace";
 
 /**
@@ -84,10 +84,10 @@ function busy(s: State): boolean {
 
 /**
  * Opens a project: a parked one by name, a repository by URL or local path, or a new project from
- * the invoices template. Its shared repository is made once, before the switch, so a bad URL
- * leaves the active project as it was.
+ * a template (the invoices sample unless another is named). Its shared repository is made once,
+ * before the switch, so a bad URL leaves the active project as it was.
  */
-export async function openProject(input: { repo?: string; name?: string }): Promise<ActionResult<{ project: Project }>> {
+export async function openProject(input: { repo?: string; name?: string; template?: ProjectTemplate }): Promise<ActionResult<{ project: Project }>> {
   const wanted = projectFor(input);
   if (!wanted) return { ok: false, error: "Give a repository URL, a local path, or a project name." };
   const current = getState();
@@ -96,10 +96,10 @@ export async function openProject(input: { repo?: string; name?: string }): Prom
     return { ok: false, error: `Bob is still working in ${current.project.name}. Let its threads finish, or stop them, then switch.` };
   }
   const saved = unpark(wanted.id);
-  const project = saved?.project ?? wanted;
+  const project = saved?.project ?? (wanted.repo ? wanted : { ...wanted, template: input.template ?? "invoices" });
   const options = workspaceOptions();
   try {
-    await ensureProject(project.id, project.repo ? { kind: "git", url: project.repo } : { kind: "template" }, options);
+    await ensureProject(project.id, sourceOf(project), options);
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "The project could not be prepared." };
   }
