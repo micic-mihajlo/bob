@@ -17,7 +17,7 @@ import { causeIn, planningRequest } from "./planning";
 
 export const startThreadSchema = z.object({
   role: z.enum(["build", "review", "research"]).describe("build changes code on its own branch; review checks one pull request; research answers a question from the code."),
-  title: z.string().min(1).max(80).describe("What the thread does, in a few words, such as \"CSV export for invoices\"."),
+  title: z.string().min(1).max(80).describe("What the thread does, in a few words, such as \"Rate-limit the login route\"."),
   brief: z.string().min(1).describe("The thread's first message. It sees nothing else, so it must stand alone."),
   workOrderId: z.string().optional().describe("The work order in today this thread serves."),
   model: z.string().optional().describe(`The model the thread runs on, one of ${THREAD_MODELS.join(", ")}. Leave it out for the default.`),

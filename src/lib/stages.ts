@@ -32,7 +32,7 @@ export const STAGES: readonly StageDef[] = [
     gateTitle: "The request is testable",
     milestone: "A request with a named user, a behaviour and an acceptance check",
     lesson: `Nothing starts until the request can be tested. A testable request names who needs it, what they can do afterwards, and one check that proves it works.
-"Customers want to export invoices as CSV" is a wish. "An accountant on the invoices page clicks Export and gets a file with one row per invoice: id, customer, amount, status, due date" is a request.
+"Users want dark mode" is a wish. "A signed-in user turns on Dark mode on the settings page, and every screen shows the dark theme until they turn it off" is a request.
 Ask one or two sharp questions about what is missing, in one message. At most two rounds, then go on with the gaps filled by assumptions you state.`,
     criteria: [
       { label: "A named user", met: (r) => filled(r.goal?.user) },
@@ -40,7 +40,7 @@ Ask one or two sharp questions about what is missing, in one message. At most tw
       { label: "An acceptance check", met: (r) => filled(r.goal?.acceptance) },
     ],
     moves: [
-      "Ask which records and fields are in scope, and where in the app it lives",
+      "Ask what exactly is in scope, and where in the app it lives",
       "Ask for the acceptance check as one sentence a test could assert",
       "Record the intent with set_goal: user, behaviour, acceptance and any assumptions",
     ],
@@ -51,7 +51,7 @@ Ask one or two sharp questions about what is missing, in one message. At most tw
     gateTitle: "The work is cut into work orders",
     milestone: "Work orders with IDs, at most three in today",
     lesson: `Spec turns the intent into work orders a thread can finish alone: one change, one branch, one pull request each.
-A title is a verb and a thing ("Add invoicesToCsv with a test"), small enough to review in a few minutes.
+A title is a verb and a thing ("Export the report as CSV with a test"), small enough to review in a few minutes.
 Every work order gets an ID, and the ID follows the change to its pull request and its merge, so anyone can ask why a change exists.
 At most three go in today. The rest wait in the backlog.`,
     criteria: [{ label: "At least one open work order is in today", met: (r) => r.today.some((w) => w.status !== "done") }],
