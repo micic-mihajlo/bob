@@ -738,6 +738,7 @@
   font-size: var(--bob-text-lg);
   line-height: var(--bob-leading-lg);
   overflow-wrap: anywhere;
+  white-space: pre-line;
 }
 
 @keyframes approval-card-in {
