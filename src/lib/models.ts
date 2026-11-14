@@ -5,10 +5,10 @@ import { CLAUDE_MODELS, THREAD_MODELS, type Agent, type ClaudeModel } from "./ty
  * Gateway model ids: a strong model for the captain, a lighter one for every crew role and standing
  * agent. Set BOB_MODEL_STRONG and BOB_MODEL_LIGHT to use others.
  */
-export const STRONG_MODEL = process.env.BOB_MODEL_STRONG || "moonshotai/kimi-k3.1-pro";
+export const STRONG_MODEL = process.env.BOB_MODEL_STRONG || "deepseek/deepseek-v4.1-flash";
 export const LIGHT_MODEL = process.env.BOB_MODEL_LIGHT || "deepseek/deepseek-v4.1-flash";
 /** What a move falls back to after its own model failed twice. Set BOB_MODEL_FALLBACK_STRONG and BOB_MODEL_FALLBACK_LIGHT to use others. */
-export const STRONG_FALLBACK = process.env.BOB_MODEL_FALLBACK_STRONG || "moonshotai/kimi-k3-fast";
+export const STRONG_FALLBACK = process.env.BOB_MODEL_FALLBACK_STRONG || "zai/glm-5.3-fast";
 export const LIGHT_FALLBACK = process.env.BOB_MODEL_FALLBACK_LIGHT || "zai/glm-5.3-fast";
 
 export type { ClaudeModel } from "./types";
