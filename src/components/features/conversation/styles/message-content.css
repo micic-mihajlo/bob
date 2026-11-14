@@ -1742,3 +1742,50 @@
 .reference-chip.message-reference-chip > .sr-only {
   user-select: none;
 }
+
+/* An agent's Status / Result / Evidence report: its status, the result, then the evidence under a rule. */
+.bob-report {
+  display: grid;
+  justify-items: start;
+  gap: var(--bob-space-2);
+}
+
+.bob-report > :not(.bob-report-status) {
+  justify-self: stretch;
+}
+
+.bob-report-facts {
+  display: grid;
+  gap: var(--bob-space-2);
+  margin: 0;
+  padding-top: var(--bob-space-2);
+  border-top: 1px solid var(--bob-border);
+}
+
+.bob-report-facts > div {
+  display: grid;
+  gap: 2px;
+}
+
+.bob-report-facts dt {
+  color: var(--bob-text-muted);
+  font-size: var(--bob-text-sm);
+}
+
+.bob-report-facts dd {
+  margin: 0;
+  color: var(--bob-text-secondary);
+  font-size: var(--bob-text-sm);
+  line-height: 18px;
+}
+
+.bob-report-facts :not(pre) > code {
+  padding-block: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.bob-report-facts [data-tone="blocked"] dt {
+  color: var(--bob-danger-text);
+}
+

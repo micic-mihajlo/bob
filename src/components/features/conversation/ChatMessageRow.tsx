@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import { formatChatTimestamp } from "@/lib/client/chat-time";
 import { CopyGlyph } from "./conversation-icons";
+import { AgentMessageText } from "./AgentMessageText";
 import { MarkdownMessageText } from "./MarkdownMessageText";
 
 export interface ChatMessageRowProps {
@@ -57,7 +58,7 @@ export function ChatMessageRow({ id, author, name, text, at, animate = false, vo
               <div className="message-content-resize">
                 <div className="message-content-blocks">
                   <div className="message-copy message-markdown" data-selection-message-id={id}>
-                    <MarkdownMessageText text={text} />
+                    {user ? <MarkdownMessageText text={text} /> : <AgentMessageText text={text} />}
                   </div>
                 </div>
               </div>
