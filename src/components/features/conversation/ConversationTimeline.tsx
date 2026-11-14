@@ -4,10 +4,12 @@ import { X } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
+import { stillAwaiting } from "@/lib/client/awaiting";
 import { dayMarkerLabel } from "@/lib/client/chat-time";
 import { buildConversationRows, type ConversationRow } from "@/lib/client/conversation-rows";
 import { pendingSteps } from "@/lib/client/live-move";
 import { liveSteps, type LiveTurn } from "@/lib/client/thread-rows";
+import { useNow } from "@/lib/client/use-now";
 import { useStickToBottom } from "@/lib/client/use-stick-to-bottom";
 import type { Agent, ThreadView } from "@/lib/types";
 import { AgentActivityIndicator, DEFAULT_ACTIVITY_LABEL } from "./AgentActivity";
@@ -148,9 +150,12 @@ export interface ConversationTimelineProps {
 
 /** The chat rows, then the live activity line of a running turn. Mount it once per thread. */
 export function ConversationTimeline({ agent, thread, empty }: ConversationTimelineProps) {
-  const { snapshot, focusTarget, clearFocus } = useBob();
+  const { snapshot, focusTarget, clearFocus, awaiting } = useBob();
   const activity = snapshot.activity[agent.id];
   const live: LiveTurn | null = activity?.state === "working" ? { since: activity.since, turnId: activity.turnId } : null;
+  const sent = awaiting[agent.id];
+  const now = useNow(sent !== undefined);
+  const pendingReply = !live && sent !== undefined && stillAwaiting(sent, thread.items, now || sent.at);
   const rows = useMemo(
     () => buildConversationRows(thread.items, live, agent.id, snapshot.artifacts),
     // The live turn is keyed by its start, so a new snapshot object for the same turn does not rebuild.
@@ -168,7 +173,7 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
   // Rows that were there when the thread opened stand still; rows that arrive later enter.
   const [initialIds] = useState<ReadonlySet<string>>(() => new Set(rows.map((row) => row.id)));
   const { scrollRef, contentRef, pinned, unseen, onScroll, jumpToNewest, unpin } = useStickToBottom(
-    rows.length + running.length + (live ? 1 : 0) + (streamed ? 1 : 0),
+    rows.length + running.length + (live || pendingReply ? 1 : 0) + (streamed ? 1 : 0),
   );
 
   // Opening the thread from a needs-you item scrolls to its approval card.
@@ -226,7 +231,11 @@ export function ConversationTimeline({ agent, thread, empty }: ConversationTimel
         </div>
         <div className="conversation-live">
           <div className="agent-activity-slot" data-reserved="false">
-            {live && activity?.state === "working" ? <AgentActivityIndicator agent={agent} label={label} since={activity.since} steps={running} /> : null}
+            {live && activity?.state === "working" ? (
+              <AgentActivityIndicator agent={agent} label={label} since={activity.since} steps={running} />
+            ) : pendingReply ? (
+              <AgentActivityIndicator agent={agent} label="Thinking…" since={new Date(sent.at).toISOString()} steps={[]} />
+            ) : null}
           </div>
         </div>
       </div>

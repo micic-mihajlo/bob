@@ -37,7 +37,7 @@ export interface ConversationComposerProps {
 
 /** Everything under the chat: the waits and the queue in one card, any notice, then the message box. */
 export function ConversationComposer({ agent, thread, working, quickActions }: ConversationComposerProps) {
-  const { snapshot, agentsById, draftFor, setDraft } = useBob();
+  const { snapshot, agentsById, draftFor, setDraft, setAwaiting } = useBob();
   const activity = snapshot.activity[agent.id];
   const turnSince = activity?.state === "working" ? activity.since : null;
   const draft = draftFor(agent.id);
@@ -71,9 +71,12 @@ export function ConversationComposer({ agent, thread, working, quickActions }: C
     if (message === "" || submitting) return false;
     setSubmitting(true);
     setError(null);
+    // The agent's face and a pending line answer the send at once; the real activity line replaces them.
+    setAwaiting(agent.id, { count: thread.items.length, at: Date.now() });
     const result = await sendMessage(agent.id, message, mode, answering !== null && newRequest);
     setSubmitting(false);
     if (!result.ok) {
+      setAwaiting(agent.id, null);
       setError(result.error);
       return false;
     }

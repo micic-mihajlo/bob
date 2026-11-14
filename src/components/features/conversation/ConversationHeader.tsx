@@ -9,7 +9,9 @@ import { SidePanelToggle } from "@/components/features/panel/SidePanel";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { BadgeVariant } from "@/components/ui/classes";
+import { stillAwaiting } from "@/lib/client/awaiting";
 import { THREAD_STATUS_LABEL, threadStatusOf } from "@/lib/client/crew";
+import { useNow } from "@/lib/client/use-now";
 import type { Agent, ThreadStatus } from "@/lib/types";
 
 const STATUS_BADGE: Partial<Record<ThreadStatus, BadgeVariant>> = {
@@ -28,7 +30,10 @@ function StatusIcon({ status }: { status: ThreadStatus }) {
 
 /** The top of the chat: the agent and what it is for, its state, the model, and the side panel button. */
 export function ConversationHeader({ agent }: { agent: Agent }) {
-  const { snapshot, panelOpen, togglePanel } = useBob();
+  const { snapshot, panelOpen, togglePanel, awaiting } = useBob();
+  const sent = awaiting[agent.id];
+  const now = useNow(sent !== undefined);
+  const thinking = sent !== undefined && stillAwaiting(sent, snapshot.threads[agent.id]?.items ?? [], now || sent.at);
   const status = threadStatusOf(snapshot, agent);
   const variant = STATUS_BADGE[status];
   const subtitle = agent.kind === "captain" ? null : agent.title;
@@ -44,7 +49,7 @@ export function ConversationHeader({ agent }: { agent: Agent }) {
           aria-label={`${agent.name}: ${panelOpen ? "close" : "open"} the side panel`}
           onClick={togglePanel}
         >
-          <AgentAvatar agent={agent} mood={agentMood(snapshot, agent.id)} />
+          <AgentAvatar agent={agent} mood={thinking ? "working" : agentMood(snapshot, agent.id)} />
           <h1>{agent.name}</h1>
         </Button>
         {subtitle ? (
