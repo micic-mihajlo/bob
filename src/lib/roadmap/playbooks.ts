@@ -87,8 +87,8 @@ In NOTES.md, a few lines: what shipped and its pull request, whether the accepta
 ## Step 2: Follow-ups
 Turn each finding worth doing into a backlog work order. Keep the backlog short; drop what nobody needs.
 
-## Step 3: Next cycle
-The next request goes back to Intent. Record it with set_goal and inspect it like the first.
+## Step 3: The next request
+Inspect the next request like the first: user, behaviour, acceptance check. Then record it with set_goal and plan from the backlog.
 
 ## Done when
 NOTES.md has the result and the backlog has the follow-ups.`;

@@ -103,12 +103,12 @@ When the review approves, the person approves the merge. Nothing merges without 
     milestone: "What shipped and what it taught us is in the plan",
     lesson: `Learn feeds the result back into the plan. Write in NOTES.md what shipped, whether the acceptance check held, and what the review found.
 Turn follow-ups into backlog work orders, so the next request starts from what this one taught.
-The next request starts a new cycle at Intent.`,
+A new request is inspected the same way as the first before you plan it.`,
     criteria: [],
     moves: [
       "Write what shipped and what the review found in NOTES.md",
       "Add follow-ups to the backlog with set_roadmap",
-      "Record the next request with set_goal, which starts a new cycle",
+      "Inspect the next request, then record it with set_goal",
     ],
     playbook: "feed-back",
   },

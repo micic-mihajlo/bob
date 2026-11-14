@@ -19,7 +19,7 @@ function intakeLine(roadmap: Roadmap, rounds: number): string {
 function situation(roadmap: Roadmap, rounds: number): string {
   const stage = STAGES[roadmap.stage - 1];
   const unmet = new Set(unmetCriteria(roadmap));
-  const criteria = stage.criteria.map((c) => `- ${c.label}: ${unmet.has(c.label) ? "not met" : "met"}`).join("\n") || "- none: the last stage. A new request starts the next cycle with set_goal.";
+  const criteria = stage.criteria.map((c) => `- ${c.label}: ${unmet.has(c.label) ? "not met" : "met"}`).join("\n") || "- none: the last stage. A new request is inspected, then recorded with set_goal.";
   const view = {
     intent: roadmap.goal,
     stage: `${roadmap.stage} of ${roadmap.totalStages}: ${roadmap.stageTitle}`,

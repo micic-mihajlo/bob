@@ -6,6 +6,7 @@ Models the roadmap in `src/lib/roadmap.ts` with the stages of `src/lib/stages.ts
 What each definition mirrors:
 - `STAGE_COUNT`: `STAGES.length`; `MAX_TODAY`: `MAX_TODAY`.
 - `gateHolds`: `unmetCriteria r` being empty, stage by stage, from the `criteria` in `STAGES`.
+- `Roadmap.goal`: the intent is testable (user, behaviour and acceptance all set).
 - `Op.setGoal`: `setGoal` (refused without a title). `Op.setRoadmap`: `setRoadmap`, which only
   replaces the backlog. `Op.setToday`: `setToday` (at most `MAX_TODAY`). `Op.updateWorkOrder`:
   `updateWorkOrder` and `completeWorkOrder`, which the pull request tools also call.
@@ -33,9 +34,9 @@ structure Roadmap where
 def gateHolds (r : Roadmap) : Bool :=
   match r.stage with
   | 1 => r.goal
-  | 2 => !r.today.isEmpty
-  | 3 => !r.today.isEmpty && r.today.all (·.done)
-  | 4 => !r.today.isEmpty && r.today.all (·.artifact)
+  | 2 => r.today.any (!·.done)
+  | 3 => !r.today.isEmpty && r.today.all (fun w => w.done || w.artifact)
+  | 4 => !r.today.isEmpty && r.today.all (·.done)
   | _ => true
 
 inductive Op where

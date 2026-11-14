@@ -1,4 +1,3 @@
-import { STAGES } from "../stages";
 import type { State } from "../state";
 import { isPullRequest, type PullRequestArtifact } from "../threads";
 import type { Agent, Artifact, ReviewData } from "../types";
@@ -32,7 +31,7 @@ function requestPlan(ctx: TurnContext): Plan {
   if (decision.kind === "ask") return { steps: [], reply: () => decision.reply };
   const { intent } = decision;
   const workTitle = intent.title;
-  const fresh = road.stage === 1 || road.stage === STAGES.length;
+  const fresh = road.stage === 1;
   return {
     steps: [
       () => [

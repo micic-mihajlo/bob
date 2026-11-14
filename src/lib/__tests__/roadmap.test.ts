@@ -72,17 +72,13 @@ describe("roadmap rules", () => {
     expect(renamed.today).toEqual(scheduled.today);
   });
 
-  it("starts the next cycle at Intent from Learn, keeping the backlog and inspecting the new intent", () => {
-    const spec = unwrap(advanceStage(planned(["a", "follow-up"])));
+  it("never goes back a stage when a new intent is recorded", () => {
+    const spec = unwrap(advanceStage(planned(["a"])));
     const [a] = spec.backlog ?? [];
     const built = unwrap(updateWorkOrder(unwrap(setToday(spec, [a.id])), a.id, { status: "review", artifactId: "art_pr" }));
-    const merged = unwrap(completeWorkOrder(unwrap(advanceStage(unwrap(advanceStage(built)))), a.id, "art_pr"));
-    const learn = unwrap(advanceStage(merged));
-    const next = unwrap(setGoal(learn, { title: "Import invoices" }));
-    expect(next.stageTitle).toBe("Intent");
-    expect(next.today).toEqual([]);
-    expect(next.backlog?.map((w) => w.title)).toEqual(["follow-up"]);
-    expect(next.goal?.acceptance).toBeNull();
-    expect(advanceStage(next).ok).toBe(false);
+    const learn = unwrap(advanceStage(unwrap(completeWorkOrder(unwrap(advanceStage(unwrap(advanceStage(built)))), a.id, "art_pr"))));
+    const next = unwrap(setGoal(learn, { title: "Import invoices", acceptance: "Imported rows match the file" }));
+    expect(next.stageTitle).toBe("Learn");
+    expect(next.goal).toMatchObject({ title: "Import invoices", user: TESTABLE.user, acceptance: "Imported rows match the file" });
   });
 });

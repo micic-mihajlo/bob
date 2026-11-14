@@ -53,15 +53,13 @@ export interface GoalInput {
 const clean = (value: string | null | undefined) => value?.trim() || null;
 
 /**
- * Records the request's intent. Mid-cycle it renames or sharpens the intent and keeps stage, today and
- * backlog, so setting it twice loses no progress. From the last stage it starts the next cycle at
- * Intent: the new intent must pass inspection again, finished work leaves today, and the backlog stays.
+ * Records the request's intent. Setting it again renames or sharpens it and keeps stage, today and
+ * backlog, so setting it twice loses no progress. A part left out keeps its earlier value.
  */
 export function setGoal(r: Roadmap, input: GoalInput, at: string = nowIso()): RoadmapResult {
   const title = input.title.trim();
   if (!title) return fail("A goal needs a title. Call set_goal again with a short title.");
-  const nextCycle = r.stage >= STAGES.length;
-  const prior = nextCycle ? null : r.goal;
+  const prior = r.goal;
   const pick = (key: "why" | "deadline" | "user" | "behaviour" | "acceptance") =>
     input[key] !== undefined ? clean(input[key]) : (prior?.[key] ?? null);
   const assumptions = (input.assumptions ?? prior?.assumptions ?? []).map((a) => a.trim()).filter(Boolean);
@@ -74,8 +72,7 @@ export function setGoal(r: Roadmap, input: GoalInput, at: string = nowIso()): Ro
     acceptance: pick("acceptance"),
     assumptions,
   };
-  if (!nextCycle) return finalize({ ...r, goal }, at);
-  return finalize({ ...r, goal, stage: 1, today: r.today.filter((w) => w.status !== "done") }, at);
+  return finalize({ ...r, goal }, at);
 }
 
 const newOrder = (title: string): WorkOrder => ({
