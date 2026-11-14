@@ -25,7 +25,6 @@
     "typecheck": "bun ../../scripts/type-checker.ts --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@norbert_bodziony/bloub": "catalog:",
     "@bob/contracts": "workspace:*"
   },
   "peerDependencies": {

@@ -1785,7 +1785,6 @@ function IslandAvatar(props: { agent: DynamicIslandAgentIdentity; working?: bool
       // looking at it. Work still animates on its own.
       motion="hover"
       mood={props.working ? "working" : "idle"}
-      shape="cercle"
       class="dynamic-island-surface-avatar"
     />
   );
