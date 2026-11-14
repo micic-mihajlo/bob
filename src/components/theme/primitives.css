@@ -521,9 +521,9 @@
 }
 
 .ui-checkbox-input:checked + .ui-checkbox-visual {
-  border-color: var(--bob-accent);
-  background: var(--bob-accent);
-  color: var(--bob-text-primary);
+  border-color: var(--bob-surface-light);
+  background: var(--bob-surface-light);
+  color: var(--bob-text-on-light);
 }
 
 .ui-checkbox-input:focus-visible + .ui-checkbox-visual {
