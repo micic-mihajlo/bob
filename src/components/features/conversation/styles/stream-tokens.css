@@ -1,0 +1,7 @@
+/* The timings of the streaming reveal: the step, the fade of each revealed step, and how far the shown text stays behind. */
+:root {
+  --stream-gap: 40ms;
+  --stream-fade: 300ms;
+  --stream-catch-up: 400ms;
+  --stream-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
