@@ -6,6 +6,7 @@ import { useBob } from "@/components/features/window/BobContext";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/classes";
 import { displayName } from "@/lib/client/crew";
+import { formatAgoSince } from "@/lib/format-time";
 import {
   changeTotals,
   isPullRequest,
@@ -116,6 +117,8 @@ function PullRequestCardView({ artifact, animate }: { artifact: PullRequestArtif
   const state = pullRequestState(artifact, snapshot.approvals);
   const [mergedOnMount] = useState(state === "merged");
   const titleId = `pull-request-${artifact.id}-title`;
+  // The artifact's `at` is when the pull request was opened. The label follows the render, with no timer.
+  const openedAgo = formatAgoSince(artifact.at);
   return (
     <article aria-labelledby={titleId} className={cx("conversation-interaction-card chat-action-card", animate && "chat-action-entry-animated")} data-artifact-id={artifact.id}>
       <header className="chat-action-card-header">
@@ -123,7 +126,10 @@ function PullRequestCardView({ artifact, animate }: { artifact: PullRequestArtif
           <GitPullRequest />
         </span>
         <div className="chat-action-card-heading">
-          <span className="chat-action-card-eyebrow">Opened pull request #{artifact.pullRequest.number}</span>
+          <span className="chat-action-card-eyebrow">
+            Opened pull request #{artifact.pullRequest.number}
+            <span className="chat-action-card-opened-ago"> · {openedAgo}</span>
+          </span>
           <h3 className="chat-action-card-title" id={titleId}>
             {artifact.title}
           </h3>
