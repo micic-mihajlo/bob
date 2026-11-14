@@ -22,8 +22,6 @@ import { WorkspaceDirectConversation } from "./features/conversation/WorkspaceDi
 import { useCustomAgentUsagePolling } from "./features/custom-agents/custom-agent-usage-polling";
 import { WorkspaceServerOnboarding } from "./features/onboarding/WorkspaceServerOnboarding";
 import { useRemoteDesktop } from "./features/remote-desktop/remote-desktop-context";
-import { WorkspaceRoutineFlows } from "./features/routine-flows/WorkspaceRoutineFlows";
-import { createRoutineTimezonePrompt, desktopRoutineZoneTargets } from "./features/schedule/routine-timezone-prompt";
 import { createHostedUpsellOffline } from "./features/servers/hosted-server-upsell-controller";
 import { createServerConnectionToast } from "./features/servers/server-connection-toast";
 import { useServerScope } from "./features/servers/server-scope";
@@ -207,7 +205,6 @@ export function WorkspaceShell(props: { account: () => CentralAuthUser }) {
   if (!chatWindow) {
     // The update dialog explains the restart of the update that it follows.
     createHostRestartToasts(() => remoteHosts().filter((host) => !followsServerUpdate(host.id)));
-    createRoutineTimezonePrompt(() => desktopRoutineZoneTargets(servers()));
   }
 
   return (
@@ -316,9 +313,6 @@ export function WorkspaceShell(props: { account: () => CentralAuthUser }) {
           </Show>
           <Show when={agentChatOpen()}>
             <WorkspaceConversation account={props.account} />
-          </Show>
-          <Show when={middlePane() === "routines"}>
-            <WorkspaceRoutineFlows />
           </Show>
           <Show when={middlePane() === "channel"}>
             <WorkspaceChannelConversation account={props.account} />

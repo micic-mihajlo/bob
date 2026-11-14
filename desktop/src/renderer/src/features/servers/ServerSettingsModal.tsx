@@ -18,7 +18,6 @@ import {
   ArrowLeftRight,
   Blocks,
   Button,
-  CalendarClock,
   ChevronRight,
   Download,
   HardDrive,
@@ -53,7 +52,7 @@ import { type ServerImportDetail, type ServerImportOptions, ServerImportPanel } 
 import { type McpPanelDetail, type McpPanelSignIn, ServerMcpPanel } from "./ServerMcpPanel";
 import type { ServerMemoryLimitOptions } from "./ServerMemoryLimitSetting";
 import type { ServerMemoryReviewOptions } from "./ServerMemoryReviewSetting";
-import { type ServerRoutineFeedOptions, ServerRoutineFeedPanel } from "./ServerRoutineFeedPanel";
+import { type ServerRoutineFeedOptions, } from "./ServerRoutineFeedPanel";
 import type { ServerTimezoneOptions } from "./ServerTimezoneSetting";
 import { type ServerTransferOptions, ServerTransferPanel } from "./ServerTransferPanel";
 import { type ServerUpdateOptions, ServerUpdatePanel } from "./ServerUpdatePanel";
@@ -206,7 +205,6 @@ export type ServerSettingsSection =
   | "updates"
   | "import"
   | "transfer"
-  | "routines"
   | "browser-profiles";
 type Section = ServerSettingsSection;
 
@@ -220,7 +218,6 @@ const sections = {
   updates: { title: "server.settings.updatesTitle", description: "server.settings.updatesDescription" },
   import: { title: "server.settings.importTitle", description: "server.settings.importDescription" },
   transfer: { title: "server.settings.transferTitle", description: "server.settings.transferDescription" },
-  routines: { title: "server.settings.routinesTitle", description: "server.settings.routinesDescription" },
   "browser-profiles": { title: "browser.profiles.title", description: "browser.profiles.subtitle" },
 } as const satisfies Record<Section, { title: AppTextKey; description: AppTextKey }>;
 
@@ -403,7 +400,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
         value === "updates" ||
         value === "import" ||
         value === "transfer" ||
-        value === "routines" ||
         value === "browser-profiles"
       )
         setSection(value);
@@ -602,12 +598,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
                 <span>{t(sections.transfer.title)}</span>
               </Tabs.Trigger>
             </Show>
-            <Show when={props.routineFeed}>
-              <Tabs.Trigger class="settings-modal-nav-item" value="routines">
-                <CalendarClock aria-hidden="true" />
-                <span>{t(sections.routines.title)}</span>
-              </Tabs.Trigger>
-            </Show>
             <Show when={props.browserProfiles}>
               <Tabs.Trigger class="settings-modal-nav-item" value="browser-profiles">
                 <AppWindow aria-hidden="true" />
@@ -738,19 +728,6 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
               <Show when={props.server.id} keyed>
                 {(serverId) => <ServerTransferPanel serverId={serverId} {...instanceTransfer()} />}
               </Show>
-            </Tabs.Content>
-          )}
-        </Show>
-        <Show when={props.routineFeed}>
-          {(routineFeed) => (
-            <Tabs.Content value="routines" class="settings-modal-tab-panel server-settings-panel" data-tab="routines">
-              <ServerRoutineFeedPanel
-                {...routineFeed()}
-                busy={busy}
-                run={run}
-                menuMount={modalElement}
-                showCopyError={host.showCopyError}
-              />
             </Tabs.Content>
           )}
         </Show>

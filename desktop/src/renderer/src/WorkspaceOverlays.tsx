@@ -674,7 +674,7 @@ function GlobalMessageSearch() {
   const { agentList } = useAgents();
   const { globalSearchOpen, searchGlobalMessages, setGlobalSearchVisibility, selectAgent, selectGlobalSearchMessage } =
     useNavigation();
-  const sources = useGlobalSearchSources(globalSearchOpen);
+  const sources = useGlobalSearchSources();
 
   return (
     <GlobalSearchOverlay

@@ -1,4 +1,4 @@
-import { BookMarked, Bot, CalendarClock, Hash, Server, Store, } from "@bob/ui";
+import { BookMarked, Bot, Hash, Server, Store, } from "@bob/ui";
 import type {
   GlobalSearchAction,
   GlobalSearchFile,
@@ -6,7 +6,7 @@ import type {
   GlobalSearchRoutine,
 } from "@bob/ui/components/GlobalSearch";
 import { useText } from "@bob/ui/text";
-import { createEffect, createMemo, createSignal } from "solid-js";
+import { createMemo, } from "solid-js";
 import { formatMessageTime } from "./app-message-projection";
 import { appPort } from "./app-port";
 import { BOB_SINGLE_BOT } from "./bob";
@@ -18,28 +18,23 @@ import { useServerSettings } from "./features/servers/server-settings";
 import { useServers } from "./features/servers/servers-context";
 import { useSettings } from "./features/settings/settings-context";
 import { navItems } from "./features/settings/settings-tabs";
-import { useUsage } from "./features/usage/usage-context";
 import { useNavigation } from "./navigation";
 
 const FILE_SEARCH_LIMIT = 50;
 
 /**
- * What global search finds besides agents and messages: channels, routines, files, commands and
- * settings pages. Routines load each time the search opens, as no store keeps every agent's list.
+ * What global search finds besides agents and messages: channels, files, commands and settings
+ * pages. Bob has no routines, so that group stays empty.
  * Files come from this computer's database, so a joined server shows no Files filter.
  */
-export function useGlobalSearchSources(open: () => boolean) {
+export function useGlobalSearchSources() {
   const { t } = useText();
   const channels = useChannels();
-  const { agentList, agentSetupOpen, creatingAgent, openAgentSetup, setSettingsRequest } = useAgents();
-  const { selectAgent, globalSearchOpener } = useNavigation();
+  const { openAgentSetup } = useAgents();
+  const { globalSearchOpener } = useNavigation();
   const { activeServer } = useServers();
   const { openServerSettings } = useServerSettings();
   const { openAppSettings, setSkillsMarketplaceOpen } = useSettings();
-  const { openSchedule } = useUsage();
-  const [routines, setRoutines] = createSignal<GlobalSearchRoutine[]>([]);
-  const [routinesLoading, setRoutinesLoading] = createSignal(false);
-  let routineRequest = 0;
 
   const local = () => activeServer()?.kind === "local";
 
@@ -49,36 +44,6 @@ export function useGlobalSearchSources(open: () => boolean) {
     { lazy: true },
   );
 
-  createEffect(
-    () => (open() ? agentList() : null),
-    (agents) => {
-      const request = ++routineRequest;
-      if (!agents) {
-        setRoutinesLoading(false);
-        return;
-      }
-      setRoutinesLoading(true);
-      const names = new Map(agents.map((agent) => [agent.id, agent.name]));
-      void Promise.all(
-        agents.map((agent) =>
-          appPort()
-            .agent.listRoutines(agent.id)
-            .catch(() => []),
-        ),
-      ).then((lists) => {
-        if (request !== routineRequest) return;
-        setRoutines(() =>
-          lists.flat().map((routine) => ({
-            id: routine.id,
-            name: routine.name,
-            agentId: routine.agentId,
-            detail: names.get(routine.agentId) ?? "",
-          })),
-        );
-        setRoutinesLoading(false);
-      });
-    },
-  );
 
   async function searchFiles(query: string, cursor?: string): Promise<GlobalSearchPage<GlobalSearchFile>> {
     const page = await appPort().agent.searchConversationFiles({
@@ -98,13 +63,6 @@ export function useGlobalSearchSources(open: () => boolean) {
     };
   }
 
-  function selectRoutine(routine: GlobalSearchRoutine): void {
-    const agentId = routine.agentId;
-    // As in `editAgent`: the agent cannot change while a new agent is being created.
-    if (!agentId || (agentSetupOpen() && creatingAgent())) return;
-    selectAgent(agentId);
-    setSettingsRequest({ agentId, nonce: Date.now(), routine: { routineId: routine.id, name: routine.name } });
-  }
 
   const actions = createMemo<GlobalSearchAction[]>(
     () => {
@@ -138,15 +96,6 @@ export function useGlobalSearchSources(open: () => boolean) {
           group: "actions",
           icon: Store,
           run: () => setSkillsMarketplaceOpen(true),
-        });
-      }
-      if (server) {
-        list.push({
-          id: "schedule",
-          label: t("routine.calendar.open"),
-          group: "actions",
-          icon: CalendarClock,
-          run: () => openSchedule(server.id, globalSearchOpener()),
         });
       }
       for (const item of navItems) {
@@ -202,11 +151,11 @@ export function useGlobalSearchSources(open: () => boolean) {
 
   return {
     channels: searchChannels,
-    routines,
-    routinesLoading,
+    routines: (): GlobalSearchRoutine[] => [],
+    routinesLoading: () => false,
     actions,
     searchFiles: () => (local() ? searchFiles : undefined),
     openChannel: (channelId: string) => void channels.open(channelId),
-    selectRoutine,
+    selectRoutine: () => {},
   };
 }

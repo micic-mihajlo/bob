@@ -59,15 +59,9 @@ export const MarketplaceModal = lazy(() =>
 export const WorkflowsPage = lazy(() =>
   import("./features/workflows/WorkflowsPage").then((module) => ({ default: module.WorkflowsPage })),
 );
-export const ScheduleView = lazy(() =>
-  import("./features/schedule/SchedulePanel").then((module) => ({ default: module.ScheduleView })),
-);
 export const TasksView = lazy(() =>
   import("./features/tasks/TasksView").then((module) => ({ default: module.TasksView })),
 );
 export const ServerOnboarding = lazy(() =>
   import("./features/onboarding/ServerOnboarding").then((module) => ({ default: module.ServerOnboarding })),
-);
-export const RoutineFlowsCanvas = lazy(() =>
-  import("./features/routine-flows/RoutineFlowsCanvas").then((module) => ({ default: module.RoutineFlowsCanvas })),
 );

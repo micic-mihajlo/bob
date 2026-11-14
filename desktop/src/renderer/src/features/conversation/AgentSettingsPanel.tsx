@@ -5,7 +5,7 @@ import {
   DEFAULT_AGENT_DEFAULTS,
   type FilePreview,
 } from "@bob/contracts/ipc";
-import { BookMarked, CalendarClock, Folder, Gauge, Puzzle, Table2, Upload } from "@bob/ui";
+import { BookMarked, Folder, Gauge, Puzzle, Table2, Upload } from "@bob/ui";
 import { SettingsLinkGroup, SettingsLinkRow } from "@bob/ui/components/SettingsPanel";
 import type { AgentProfile } from "@bob/ui/data";
 import { AgentSessionSettings, type AgentSessionSettingsApi } from "@bob/ui/features/conversation/AgentSessionSettings";
@@ -24,7 +24,7 @@ import { createBrowserProfilesStore } from "../browser/stores/browser-profiles-s
 import { type AgentFilesOptions, AgentFilesSettings } from "../files/AgentFilesSettings";
 import { createStorageUsage } from "../files/storage-usage";
 import { AgentMemoriesModal } from "./AgentMemoriesModal";
-import { AgentRoutinesSettings, type RoutineSelectionRequest } from "./AgentRoutinesSettings";
+import { type RoutineSelectionRequest } from "./AgentRoutinesSettings";
 import { AgentSkillsModal, type AgentSkillsMode, type SkillDetail } from "./AgentSkillsModal";
 import { conversationPort, type SharedTableCalls } from "./conversation-port";
 import type { ConversationRuntime } from "./conversation-runtime";
@@ -412,18 +412,6 @@ export default function AgentSettingsPanel(props: AgentSettingsPanelProps) {
           </Show>
           <Show when={!props.remoteClient || props.onPublish}>
             <SettingsLinkGroup inset title={t("agentSettings.groups.does")}>
-              <Show when={!props.remoteClient}>
-                <SettingsLinkRow
-                  icon={<CalendarClock aria-hidden="true" />}
-                  label={t("agentSettings.links.routines")}
-                  value={t("agentSettings.links.routinesCount", { count: draft.routines.count })}
-                  onClick={() =>
-                    setDraft((state) => {
-                      state.routines.open = true;
-                    })
-                  }
-                />
-              </Show>
               <Show when={!props.remoteClient && props.onOpenUsage}>
                 <SettingsLinkRow
                   icon={<Gauge aria-hidden="true" />}
@@ -457,27 +445,6 @@ export default function AgentSettingsPanel(props: AgentSettingsPanelProps) {
             onClose={props.onClose}
           />
         )}
-      </Show>
-      <Show when={draft.routines.open}>
-        <div class="agent-routines-overlay">
-          <AgentRoutinesSettings
-            port={routinesPort()}
-            onCountChange={(count) =>
-              setDraft((state) => {
-                state.routines.count = count;
-              })
-            }
-            onBack={() =>
-              setDraft((state) => {
-                state.routines.open = false;
-              })
-            }
-            onClose={props.onClose}
-            selectionRequest={props.routineSelectionRequest}
-            onSelectionRequestHandled={props.onRoutineSelectionRequestHandled}
-            onOpenRun={props.onOpenRoutineRun}
-          />
-        </div>
       </Show>
       <Show when={props.tablesVisible !== false}>
         <SharedTablesModal
