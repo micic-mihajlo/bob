@@ -17,6 +17,7 @@ import type {
   Turn,
   TurnId,
 } from "./types";
+import type { Verification } from "./verification";
 
 export interface State {
   project: Project;
@@ -44,6 +45,8 @@ export interface State {
   inbox?: InboxItem[];
   /** Optional: by agent, the move its model is generating right now. Not carried across a restart. */
   live?: Record<AgentId, LiveMove>;
+  /** Optional: what verify_change found, by workspace tree, oldest first. */
+  verifications?: Verification[];
   /** By request id: model calls, tokens and estimated cost. */
   usage?: Record<RequestId, RequestUsage>;
   rev: number;
