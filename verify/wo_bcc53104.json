@@ -1,0 +1,26 @@
+{
+  "acceptance": "A vitest test passes for formatElapsed at 45000, 185000 and 3720000 ms, giving 45s, 3m 05s and 1h 02m.",
+  "propertiesFile": "src/lib/format-time.properties.test.ts",
+  "properties": [
+    {
+      "name": "reads back the whole seconds it was given, and the whole minutes from an hour",
+      "criterion": "A vitest test passes for formatElapsed at 45000, 185000 and 3720000 ms, giving 45s, 3m 05s and 1h 02m."
+    },
+    {
+      "name": "counts seconds below a minute, minutes and seconds below an hour, and hours after",
+      "criterion": "A vitest test passes for formatElapsed at 45000, 185000 and 3720000 ms, giving 45s, 3m 05s and 1h 02m."
+    },
+    {
+      "name": "never shows a negative time",
+      "criterion": "A vitest test passes for formatElapsed at 45000, 185000 and 3720000 ms, giving 45s, 3m 05s and 1h 02m."
+    }
+  ],
+  "lean": {
+    "file": "verify/FormatTime.lean",
+    "theorems": [
+      "FormatTime.formatElapsed_seconds",
+      "FormatTime.formatElapsed_minutes",
+      "FormatTime.formatElapsed_hours"
+    ]
+  }
+}

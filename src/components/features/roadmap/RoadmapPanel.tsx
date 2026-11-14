@@ -11,6 +11,8 @@ import { Progress } from "@/components/ui/Progress";
 import { Card } from "@/components/ui/Surface";
 import { displayName } from "@/lib/client/crew";
 import { formatDeadline } from "@/lib/client/format";
+import { useNow } from "@/lib/client/use-now";
+import { formatElapsed } from "@/lib/format-time";
 import { requestLabel, requestUsage } from "@/lib/client/requests";
 import {
   forUserLine,
@@ -30,6 +32,19 @@ const PHASE_LABEL: Record<StepPhase, string> = {
   current: "Now",
   next: "Up next",
 };
+
+/** A request's elapsed time, ticking on the window's shared clock while its card is shown. */
+function Elapsed({ startedAt }: { startedAt: string | null | undefined }) {
+  const now = useNow(startedAt != null);
+  if (startedAt == null) return null;
+  const since = Date.parse(startedAt);
+  if (Number.isNaN(since)) return null;
+  return (
+    <p className="bob-roadmap-elapsed" title="Elapsed">
+      {formatElapsed(now - since)}
+    </p>
+  );
+}
 
 /**
  * The roadmap beside the captain's chat. Each request still moving gets a card: its goal and how far
@@ -121,6 +136,7 @@ export function RoadmapPanel({ onClose }: { onClose: () => void }) {
                   return (
                     <Fragment key={track.key}>
                       <Card className="bob-roadmap-card" aria-label={goal?.title ?? "Goal"}>
+                        <Elapsed startedAt={track.startedAt} />
                         <p className="bob-roadmap-label">Goal</p>
                         <h3 className="bob-roadmap-goal">{goal?.title ?? "No goal set yet"}</h3>
                         {asked ? (

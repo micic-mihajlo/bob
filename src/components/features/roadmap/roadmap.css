@@ -56,6 +56,16 @@
   font-weight: var(--bob-weight-semibold);
 }
 
+/* The request's elapsed time, large at the top of its card; tabular digits keep it from jittering. */
+.bob-roadmap-elapsed {
+  color: var(--bob-text-primary);
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--bob-weight-semibold);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
 .bob-roadmap-goal,
 .bob-roadmap-stage {
   font-size: var(--bob-text-lg);

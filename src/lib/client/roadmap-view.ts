@@ -12,6 +12,8 @@ export interface TrackView {
   key: string;
   /** The sentence the person typed, when the snapshot has it. */
   ask: string | null;
+  /** When the request was recorded, so its card can count its elapsed time. */
+  startedAt?: string | null;
   goal: Goal | null;
   stage: number;
   stageTitle: string;
@@ -31,7 +33,7 @@ export function trackViews(roadmap: Roadmap): { tracks: TrackView[]; backlog: Wo
   const tracks = roadmap.tracks ?? [];
   if (tracks.length === 0) {
     const { goal, stage, stageTitle, gates, today } = roadmap;
-    return { tracks: [{ key: "roadmap", ask: null, goal, stage, stageTitle, gates, today, backlog }], backlog: [] };
+    return { tracks: [{ key: "roadmap", ask: null, startedAt: null, goal, stage, stageTitle, gates, today, backlog }], backlog: [] };
   }
   const active = tracks.filter((track) => track.stage < roadmap.totalStages);
   const shown = active.length > 0 ? active : [tracks.reduce((last, track) => (track.updatedAt >= last.updatedAt ? track : last))];
@@ -40,6 +42,7 @@ export function trackViews(roadmap: Roadmap): { tracks: TrackView[]; backlog: Wo
     tracks: shown.map((track) => ({
       key: track.requestId,
       ask: track.ask ?? null,
+      startedAt: track.startedAt,
       goal: track.goal,
       stage: track.stage,
       stageTitle: track.stageTitle,
