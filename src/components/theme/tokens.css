@@ -266,10 +266,10 @@
   --bob-question-badge-soft: rgba(255, 255, 255, 0.1);
   --bob-message-badge-text: #e6e6e6;
   --bob-message-badge-soft: rgba(255, 255, 255, 0.1);
-  /* The composer's send button: one orange in every theme, with dark ink on it for contrast. */
-  --bob-send: #f97316;
-  --bob-send-hover: #ea580c;
-  --bob-send-text: #120a02;
+  /* The composer's send button: one blue in every theme, with a white label on it for contrast. */
+  --bob-send: #2563eb;
+  --bob-send-hover: #1d4ed8;
+  --bob-send-text: #ffffff;
   /* The "new thing is available" pill. It is deliberately not --bob-accent: an
      announcement is not an action. */
   --bob-badge-new: #ff1e5e;
