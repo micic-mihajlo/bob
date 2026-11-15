@@ -1,0 +1,18 @@
+{
+  "acceptance": "A test resolves --bob-send in each of ink, newsprint and classic and asserts it is #2563eb in each, --bob-send-hover is #1d4ed8, --bob-send-text is #ffffff, and the label contrast on the base and hover colours is at least 4.5:1.",
+  "propertiesFile": "src/send-button.properties.test.ts",
+  "properties": [
+    {
+      "name": "label contrast is readable on the blue and its hover, for any state",
+      "criterion": "A test resolves --bob-send in each of ink, newsprint and classic and asserts it is #2563eb in each, --bob-send-hover is #1d4ed8, --bob-send-text is #ffffff, and the label contrast on the base and hover colours is at least 4.5:1."
+    },
+    {
+      "name": "the disabled label is readable whatever the theme background is",
+      "criterion": "A test resolves --bob-send in each of ink, newsprint and classic and asserts it is #2563eb in each, --bob-send-hover is #1d4ed8, --bob-send-text is #ffffff, and the label contrast on the base and hover colours is at least 4.5:1."
+    },
+    {
+      "name": "every send-button state is painted from a send token, never a literal colour",
+      "criterion": "A test resolves --bob-send in each of ink, newsprint and classic and asserts it is #2563eb in each, --bob-send-hover is #1d4ed8, --bob-send-text is #ffffff, and the label contrast on the base and hover colours is at least 4.5:1."
+    }
+  ]
+}

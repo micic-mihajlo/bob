@@ -14,7 +14,7 @@ const lum = (h: string) => {
 const ratio = (a: string, b: string) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
 
 describe("send button colours", () => {
-  it("label contrast is readable on the orange and its hover, for any state", () => {
+  it("label contrast is readable on the blue and its hover, for any state", () => {
     fc.assert(
       fc.property(fc.constantFrom("--bob-send", "--bob-send-hover"), (name) => {
         expect(ratio(hex(name), hex("--bob-send-text"))).toBeGreaterThanOrEqual(4.5);
@@ -25,15 +25,19 @@ describe("send button colours", () => {
   it("the disabled label is readable whatever the theme background is", () => {
     const block = css.match(/\.voice-button\.composer-send:disabled[^{]*\{([^}]*)\}/)![1];
     const pct = Number(block.match(/color-mix\(in srgb, var\(--bob-send\) (\d+)%, white\)/)![1]) / 100;
-    const orange = hex("--bob-send");
-    const mixed =
+    const label = block.match(/color:\s*color-mix\(in srgb, var\(--bob-send\) (\d+)%, black\)/)!;
+    const lpct = Number(label[1]) / 100;
+    const blue = hex("--bob-send");
+    const mix = (pc: number, other: number) =>
       "#" +
       [1, 3, 5]
-        .map((i) => Math.round(parseInt(orange.slice(i, i + 2), 16) * pct + 255 * (1 - pct)).toString(16).padStart(2, "0"))
+        .map((i) => Math.round(parseInt(blue.slice(i, i + 2), 16) * pc + other * (1 - pc)).toString(16).padStart(2, "0"))
         .join("");
+    const mixed = mix(pct, 255);
+    const labelColour = mix(lpct, 0);
     fc.assert(
       fc.property(fc.constantFrom("ink", "newsprint", "classic"), () => {
-        expect(ratio(mixed, hex("--bob-send-text"))).toBeGreaterThanOrEqual(4.5);
+        expect(ratio(mixed, labelColour)).toBeGreaterThanOrEqual(4.5);
       }),
     );
   });
